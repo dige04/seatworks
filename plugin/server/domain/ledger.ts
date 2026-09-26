@@ -134,3 +134,27 @@ export function othersLeft(ledger: Ledger, task: Task): Task[] {
 export function activeTasks(ledger: Ledger, laneId: string): Task[] {
   return tasksOf(ledger, laneId).filter((task) => ACTIVE.includes(task.status));
 }
+
+/** Whether `task` waits on the task `on` through `after`, however far down: it comes after it, not beside it. */
+function waitsOn(ledger: Ledger, task: Task, on: string, seen = new Set<string>()): boolean {
+  return (task.after ?? []).some((id) => {
+    if (id === on) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    const before = ledger.tasks[id];
+    return before !== undefined && waitsOn(ledger, before, on, seen);
+  });
+}
+
+/** The lane's code tasks written beside `task`, or about to be: for one in the lane's copy, only those in copies of their own. */
+export function besideOf(ledger: Ledger, task: Task): Task[] {
+  return Object.values(ledger.tasks).filter(
+    (other) =>
+      other.lane === task.lane &&
+      other.id !== task.id &&
+      other.kind === "code" &&
+      !SETTLED.includes(other.status) &&
+      (task.mode === "parallel" || other.mode === "parallel") &&
+      !waitsOn(ledger, other, task.id),
+  );
+}
