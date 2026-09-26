@@ -1,6 +1,6 @@
 ---
 name: ultra-review
-compatibility: Needs python3; uses the ocr CLI when it is installed.
+compatibility: Needs python3; uses the ocr CLI, with jq to hand it the files it selects, when both are installed.
 description: "Hunts bugs across one named scope with ten independent read-only scouts, or packs the scope for an outside reviewer, with Open Code Review selecting the files and grouping them by review rule. Use when risky work is about to land, a missed bug would cost more than ten scouts, or someone outside the project is to review code they won't clone, who gets it as one packed file. Not for reviewing one change, which is one reviewer."
 ---
 
@@ -16,7 +16,7 @@ ocr scan --preview --path PATH,PATH --format json > "$TMPDIR/ocr-preview.json"  
 ocr delegate rule --format json $(jq -r '(.reviewable_files // [.files[] | select(.will_review)])[].path' "$TMPDIR/ocr-preview.json") > "$TMPDIR/ocr-rules.json"
 ```
 
-Skip the rule call when nothing is reviewable. `ocr` filters by file type, so an excluded file is not cleared; the hunt script keeps it in scope. Without `ocr`, say so and run the scripts without the two JSON files.
+Skip the rule call when nothing is reviewable. `ocr` filters by file type, so an excluded file is not cleared; the hunt script keeps it in scope. Without `ocr` or `jq`, say so and run the scripts without the two JSON files.
 
 Keep the brief the scouts will be given — the scope, the change intent, the contracts that govern it and its directives `D01`, `D02`, ... — with `note` in ultra-review as `NAME-brief.md`, which puts it at `$SEATWORKS_STATE/ultra-review/NAME-brief.md` for the scripts. The report stamps its sha256, so a later round can tell which brief it reviewed. Without directives, write concerns `G01`, `G02`, ... from repository contracts, change intent, call paths, lifecycle, data flow and blast radius, and pass their number as `--concern-count` in place of `--directive-count`, so the scouts are given them.
 
