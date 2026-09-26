@@ -60,7 +60,11 @@ const FACTS = {
   "claim-contradicted": { level: "attend", title: "Handed back as complete while its last check failed" },
   "long-turn": { level: "attend", title: "A turn running far longer than usual" },
   "context-pressure": { level: "attend", title: "A context nearly full" },
-  "rework-loop": { level: "attend", title: "Sent back again and again" },
+  "rework-loop": {
+    level: "attend",
+    title: "Sent back again and again",
+    next: "Nothing, if its record shows each round closing in; else ask its Lead what the rounds keep missing. Sending it back to the same Peer stays the Lead's default; one way out is to seat the task afresh, briefed with what the rounds learned. Then mark_incident it.",
+  },
   "patched-not-fixed": { level: "attend", title: "Several tasks patched, none fixed" },
   "accepted-unfinished": { level: "attend", title: "Work taken in unfinished" },
   "reviews-unconverged": { level: "attend", title: "Reviews piling up with nothing accepted" },

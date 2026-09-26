@@ -124,6 +124,11 @@ test("a lane's own record raises an incident about its Lead once, held while the
     "a lane's record is gone through for what no turn shows, and told about the seat that decides to send it back",
   );
   assert.match(told, /What was seen: L1-T1 \(Clean build\) has been sent back 3 times/);
+  assert.match(
+    told,
+    /\nNext: [^\n]*same Peer[^\n]*seat the task afresh, briefed with what the rounds learned/,
+    "a fresh seat is one way out, beside the same Peer, which stays the Lead's default",
+  );
   assert.equal(loops().length, 1, "the incident already on the book, not a second one");
   assert.doesNotMatch(h.heard(lead).join("\n"), /INCIDENT/, "never shown to the Lead it is about");
 
