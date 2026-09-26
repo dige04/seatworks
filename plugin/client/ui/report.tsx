@@ -31,6 +31,7 @@ function ProjectReport({ project, theme }: { project: string; theme: PluginTheme
       <Part title="Landed" hint="On the base in your copy; push it when you are ready." items={value.landed} />
       <Part title="Beyond a lane" hint="What could not be undone, and what was done about it." items={value.beyond} />
       <Part title="Withdrawn by the Supervisor" hint="Questions it took off your queue, and why." items={value.withdrawn} />
+      <Part title="Answered in chat" hint="What the Supervisor put on record as your answer, beside what you wrote." items={value.chat} />
       <SettingsCard>
         {value.numbers.map((row) => (
           <SettingsRow key={row.title} label={row.title} hint={row.detail}>

@@ -11,7 +11,8 @@ const stops = (question: Question) => question.parked === true || question.class
 
 /**
  * What happened in a project over the last day, built from its record with no agent's words in it: what needs the Human,
- * what went ahead on a recommendation they have not answered, what landed, what could not be undone, and the counts.
+ * what went ahead on a recommendation they have not answered, what landed, what the Supervisor put on record from their
+ * chat, what could not be undone, and the counts.
  */
 export function reportView(project: Project, questionsPerDay: number, now = Date.now()): ReportView {
   const ledger = loadLedger(project.state);
@@ -49,6 +50,13 @@ export function reportView(project: Project, questionsPerDay: number, now = Date
       .map((question) => ({
         ...asked(question),
         detail: `withdrawn by the Supervisor: ${question.answer!.text ?? "no reason given"}`,
+        minutes: minutesSince(now, question.answer!.at),
+      })),
+    chat: questions
+      .filter((question) => question.answer?.by === "chat" && question.answer.at >= since)
+      .map((question) => ({
+        ...asked(question),
+        detail: `${question.answer!.choice}, put on record from their words: ${question.answer!.quote?.replace(/\s+/g, " ") ?? ""}`,
         minutes: minutesSince(now, question.answer!.at),
       })),
     beyond: incidents

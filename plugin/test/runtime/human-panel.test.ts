@@ -143,6 +143,16 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
     report.withdrawn.map((item) => [item.title, item.detail]),
     [["H5 · Move the database?", "withdrawn by the Supervisor: the lane no longer touches it"]],
   );
+  assert.deepEqual(
+    report.chat.map((item) => [item.title, item.detail]),
+    [
+      [
+        "H2 · Delete old invoices, or keep them archived?",
+        "Archive, put on record from their words: Hmm. Archive them, please.",
+      ],
+    ],
+    "what the Supervisor put on record from the chat, beside what they wrote, for them to check",
+  );
   assert.deepEqual((await drawn(h)).questions, []);
 });
 
