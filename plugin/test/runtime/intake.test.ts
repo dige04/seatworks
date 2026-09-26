@@ -363,6 +363,9 @@ test("a Lead amends a task: its Peer hears at its next turn, and only a task bes
     /N runs in the lane's copy, which has one writer at a time, so it holds nothing: it keeps b\.txt as a hint/,
   );
   assert.deepEqual([h.ledger().tasks["L1-T3"]!.hints, h.ledger().tasks["L1-T3"]!.holds], [["b.txt"], []]);
+  const emptied = await amend({ task: "L1-T3", acceptance: [] });
+  assert.equal(emptied.ok, true, "what a task must say is its Lead's call");
+  assert.deepEqual(h.ledger().tasks["L1-T3"]!.acceptance, []);
   await h.call(build.lead!, "lead", "cut", { task: "L1-T1", reason: "done with it" });
   assert.match((await amend({ goal: "y" })).text, /L1-T1 is cut; start a task for what is asked now/);
 });

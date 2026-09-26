@@ -38,8 +38,6 @@ export async function amendTask(desk: DeskServices, caller: Caller, args: Args):
 
 /** Why the amendment is refused before anything is written, or the one-writer paths its new holds are checked against. */
 async function checked(desk: DeskServices, caller: Caller, args: Args, changes: Changes): Promise<string[] | string> {
-  if (changes.goal === "" || changes.acceptance?.length === 0)
-    return "A task keeps a goal and at least one acceptance line; give what it asks now.";
   const asked = laneTask(loadLedger(caller.project.state), caller, str(args.task));
   if (typeof asked === "string") return [];
   if (changes.holds === undefined || asked.task.mode !== "parallel") return [];
