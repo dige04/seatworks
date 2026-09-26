@@ -11,6 +11,7 @@ import { loadLedger } from "../store/ledger.ts";
 import { workLetters } from "../letters/work-letters.ts";
 import type { DeskServices } from "../services.ts";
 import { bringLaneIn } from "../copies/sync.ts";
+import { gitTimeout } from "../project/project.ts";
 
 type ReworkCall = { task: string; text: string };
 
@@ -42,7 +43,12 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
   // Reopened, it takes up the lane as it stands, on its own branch; one that cannot catches up at its hand-back.
   if (asked.task.status === "merged" && result.worktree && result.branch) {
     const switched = inLaneCopy ? await switchTo(inLaneCopy, result.branch, asked.lane.branch) : undefined;
-    if (!switched) await bringLaneIn({ ...result, worktree: result.worktree, branch: result.branch }, asked.lane);
+    if (!switched)
+      await bringLaneIn(
+        { ...result, worktree: result.worktree, branch: result.branch },
+        asked.lane,
+        gitTimeout(caller.project),
+      );
   }
   // Keyed by the rework's count, each letter is its own: none is dropped as a repeat.
   await desk.mail.post(result.peer, workLetters.rework(result, text));

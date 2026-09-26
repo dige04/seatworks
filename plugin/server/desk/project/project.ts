@@ -156,6 +156,9 @@ export function loadConfig(state: string): ProjectConfig {
   return read.config;
 }
 
+/** How long a git step the desk runs for the project may take: a large repository checks out and merges slowly too. */
+export const gitTimeout = (project: Project) => loadConfig(project.state).gateTimeoutMinutes * 60_000;
+
 /** An empty gate is the project's answer, kept by a read: undefined, open_lane would seed a detected gate over it. */
 function configOf(stored: ProjectFields): ProjectConfig {
   return {
