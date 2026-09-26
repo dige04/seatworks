@@ -452,6 +452,44 @@
       }
     },
     {
+      "name": "permit",
+      "title": "Answer a permission",
+      "description": "Answer a Lead's or Peer's permission request for the Human while they are out of the loop: its seat is stopped until then. Allow what its work needs within its own copy; refuse, with why, what reaches past it. A Peer's Lead is told. Refused while the Human is in the loop.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "The task or lane whose seat asks, like L1-T2 or L1, as the letter names it."
+          },
+          "request": {
+            "type": "string",
+            "description": "The request id the letter names."
+          },
+          "allow": {
+            "type": "boolean",
+            "description": "True to let it run, false to refuse it."
+          },
+          "why": {
+            "type": "string",
+            "description": "Why, in a sentence; a refused seat reads it."
+          }
+        },
+        "required": [
+          "from",
+          "request",
+          "allow",
+          "why"
+        ]
+      }
+    },
+    {
       "name": "replace_lead",
       "title": "Replace a gone Lead",
       "description": "Seat a new Lead on an open lane whose Lead is gone, where the lane stands: its copy, branch, tasks and the asks waiting on the old Lead carry over, and the new Lead is told it takes over. A Lead Paseo already started for the lane is taken on instead of a second one.",

@@ -54,7 +54,7 @@ export const watchLetters = {
     lines.push(
       "",
       steers
-        ? "A message reaches this seat inside a turn that has run a minute; otherwise when the turn ends. One stopped on a permission reads nothing until the Human decides."
+        ? "A message reaches this seat inside a turn that has run a minute; otherwise when the turn ends. One stopped on a permission reads nothing until it is answered."
         : "This seat reads mail only when its turn ends; a message waits until then.",
       "",
       to === "lead"

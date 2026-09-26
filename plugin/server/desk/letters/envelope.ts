@@ -49,6 +49,7 @@ type Kind =
   | "nudge"
   | "opened"
   | "permission"
+  | "permitted"
   | "reconcile"
   | "remind"
   | "report"

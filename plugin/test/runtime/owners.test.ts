@@ -85,7 +85,7 @@ test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and wha
     /WAITING FOR PERMISSION: L1-T1 · Peer · Clean build has stopped until this is answered\.\n\nBash: rm -rf build\n\nOnly the Human can answer this[^]*\n\nNext: If it holds the lane up, ask, so the owner can tell the Human\./,
   );
   const held = await h.call(lead, "lead", "message", { to: "L1-T1", text: "Go ahead." });
-  assert.match(held.text, /stopped on a permission only the Human can give/);
+  assert.match(held.text, /stopped on a permission; it reads this once that is answered/);
   assert.equal(h.agents.get(peer)!.answered.length, 1, "the command is left for the Human");
   assert.equal(h.runtime.outbox.pending(peer).length, 1, "and the message waits for it");
 
@@ -137,6 +137,47 @@ test("with the Human out of the loop, the Supervisor asks them directly, and no 
   }
   assert.deepEqual(h.agents.get(sup)!.answered, [], "the Human answers the Supervisor's grilling in Paseo");
   assert.equal(h.agents.get(lead)!.answered[0]?.response.behavior, "deny");
+});
+
+test("with the Human out of the loop, a Peer's permission is the Supervisor's to answer, and its Lead hears it", async () => {
+  const h = harness();
+  const sup = h.add(SUPERVISOR, h.root, "sup");
+  await h.call(sup, "supervisor", "open_lane", { title: "Build", outcome: "a.txt changes", ...scope });
+  const lead = h.ledger().lanes.L1!.lead!;
+  await h.call(lead, "lead", "add_tasks", { tasks: [task("Clean build")] });
+  const peer = h.ledger().tasks["L1-T1"]!.peer!;
+  const permit = (request: string, allow: boolean, why = "it stays in its copy") =>
+    h.call(sup, "supervisor", "permit", { from: "L1-T1", request, allow, why });
+  for (const id of ["p-1", "p-2"]) {
+    const asked: Pending = { id, kind: "tool", name: "Bash", title: `rm -rf build-${id}` };
+    h.agents.get(peer)!.pending.push(asked);
+    await h.permission(peer, asked);
+  }
+  assert.match(
+    heard(h, sup),
+    /WAITING FOR PERMISSION: L1-T1 · Peer · Clean build has stopped[^]*Bash: rm -rf build-p-1\n\nThe Human is out of the loop, so it is yours: permit with from L1-T1 and request p-1\./,
+  );
+  assert.doesNotMatch(heard(h, lead), /WAITING FOR PERMISSION/, "it is not the Lead's to answer");
+  assert.equal((await permit("p-1", true)).ok, true);
+  assert.equal((await permit("p-2", false, "it reaches past its copy")).ok, true);
+  assert.deepEqual(
+    h.agents.get(peer)!.answered.map(({ requestId, response }) => [requestId, response]),
+    [
+      ["p-1", { behavior: "allow" }],
+      ["p-2", { behavior: "deny", message: "it reaches past its copy" }],
+    ],
+  );
+  assert.match((await permit("p-1", true)).text, /L1-T1 is not waiting on permission p-1: it was answered already/);
+  assert.match(
+    heard(h, lead),
+    /PERMISSION REFUSED for L1-T1 \(Clean build\) by the owner: Bash: rm -rf build-p-2\n\nWhy: it reaches past its copy/,
+  );
+
+  h.projectSettings({ hitl: { on: true } });
+  assert.match(
+    (await permit("p-1", true)).text,
+    /^While the Human is in the loop, a seat's permission is theirs to answer/,
+  );
 });
 
 test("reaching a Peer directly tells its Lead what reached it, and is refused when there is no Lead to tell", async () => {

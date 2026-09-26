@@ -98,11 +98,26 @@ export class TurnRules {
       this.deps.log(project, `waiting on the Human: ${agent.id} ${request.title ?? request.name ?? request.kind}`);
       return;
     }
+    const who = agent.title ?? `${role.label} ${agent.id}`;
+    const permitter = this.deps.hitlOn(project) ? undefined : await this.permitterOf(project, agent.id);
+    if (permitter) {
+      await this.deps.desk.post(
+        permitter.to,
+        seatLetters.permission(agent.id, who, request, "supervisor", permitter.from),
+      );
+      return;
+    }
     const owner = await this.ownerOf(project, agent.id, role);
-    await this.deps.desk.post(
-      owner.to,
-      seatLetters.permission(agent.id, agent.title ?? `${role.label} ${agent.id}`, request, owner.reader),
-    );
+    await this.deps.desk.post(owner.to, seatLetters.permission(agent.id, who, request, owner.reader));
+  }
+
+  /** With the Human out of the loop, a Lead's or Peer's permission is whoever supervises its lane, by the task or lane it works. */
+  private async permitterOf(project: Project, agentId: string): Promise<{ to?: string; from: string } | undefined> {
+    const ledger = loadLedger(project.state);
+    const task = taskOfPeer(ledger, agentId);
+    const lane = task ? ledger.lanes[task.lane] : leadLaneOf(ledger, agentId);
+    if (!lane) return undefined;
+    return { to: await this.deps.desk.supervisorFor(project, lane.opener), from: task?.id ?? lane.id };
   }
 
   /** The Human wrote to a Lead or Peer in its own chat: whoever supervises is told, so nothing reaches a lane past its owner unseen. */

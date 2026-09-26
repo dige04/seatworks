@@ -1,6 +1,6 @@
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { can, seatOf } from "../../catalog/kit/roles.ts";
-import { midTurn } from "../../core/paseo.ts";
+import { type PermissionResponse, midTurn } from "../../core/paseo.ts";
 import type { SeatLook, SeatView, Seats, StreamRow } from "../../core/ports.ts";
 import type { Intents } from "../store/intents.ts";
 import type { Lane } from "../../domain/lane.ts";
@@ -33,6 +33,10 @@ export class Roster {
 
   look(agentId: string): Promise<SeatLook> {
     return this.seats.look(agentId);
+  }
+
+  respond(agentId: string, requestId: string, response: PermissionResponse): Promise<void> {
+    return this.seats.respond(agentId, requestId, response);
   }
 
   /** Who reads what is meant for a lane's Lead: the Lead while it is seated, else whoever supervises, who can seat one. */

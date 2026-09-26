@@ -15,6 +15,7 @@ import { holdLane } from "./hold-lane.ts";
 import { judgeCase } from "./judge.ts";
 import { message } from "./message.ts";
 import { note } from "./note.ts";
+import { permit } from "./permit.ts";
 import { landLane } from "./land-lane.ts";
 import { openLane } from "./open-lane.ts";
 import { record } from "./record.ts";
@@ -37,6 +38,7 @@ export const TOOLS: ToolDef[] = [
   resumeLane,
   askHuman,
   recordHumanAnswer,
+  permit,
   replaceLead,
   releaseLead,
   setProject,

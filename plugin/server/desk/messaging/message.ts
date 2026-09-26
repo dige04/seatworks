@@ -10,7 +10,7 @@ import { type Sending } from "../letters/message-letters.ts";
 import { messageLetters } from "../letters/message-letters.ts";
 import type { DeskServices } from "../services.ts";
 
-/** Gives `text` to a seat as mail it reads once it can; one stopped on a permission reads nothing until the Human decides it. */
+/** Gives `text` to a seat as mail it reads once it can; one stopped on a permission reads nothing until that is answered. */
 async function handTo(
   { mail, roster }: Pick<DeskServices, "mail" | "roster">,
   to: { target: string; from: string; who: string },
@@ -21,7 +21,7 @@ async function handTo(
   if (posted === "sent") return `Delivered to ${to.who}.`;
   const seat = await roster.look(to.target).catch(() => undefined);
   if ((seat?.pendingPermissions?.length ?? 0) > 0)
-    return `Queued for ${to.who}, which is stopped on a permission only the Human can give; it reads this once that is decided.`;
+    return `Queued for ${to.who}, which is stopped on a permission; it reads this once that is answered.`;
   return `Queued for ${to.who}; it reads this as soon as it can take it.`;
 }
 

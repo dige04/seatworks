@@ -5,6 +5,10 @@ import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Letter, fyi, mail } from "./envelope.ts";
 
+/** What a permission asks for, as Paseo names it. */
+const asked = (request: PendingPermission) =>
+  clip([...new Set([request.name, request.title].filter(Boolean))].join(": ") || request.kind || "a request", 600);
+
 const failedText = (who: string, message: string) => `FAILED: ${who} ended its turn with an error: ${message}`;
 
 /** What the desk sees of a seat, told to whoever answers for it: quiet, idle, failed, gone or waiting on the Human. */
@@ -83,26 +87,38 @@ export const seatLetters = {
     );
   },
 
+  /** `from` is the task or lane whose seat asks, when the reader answers it itself: the Human is out of the loop. */
   permission(
     agent: string,
     who: string,
     request: PendingPermission,
     reader: "lead" | "supervisor" | "leadGone",
+    from?: string,
   ): Letter {
-    const lines = [`WAITING FOR PERMISSION: ${who} has stopped until this is answered.`, ""];
-    lines.push(
-      clip([...new Set([request.name, request.title].filter(Boolean))].join(": ") || request.kind || "a request", 600),
-    );
+    const lines = [`WAITING FOR PERMISSION: ${who} has stopped until this is answered.`, "", asked(request)];
     if (request.description && request.description !== request.title) lines.push(clip(request.description, 600));
-    lines.push("", "Only the Human can answer this, in Paseo. Until they do, it reads nothing you send.");
+    lines.push(
+      "",
+      from
+        ? `The Human is out of the loop, so it is yours: permit with from ${from} and request ${request.id ?? ""}. Until then it reads nothing you send.`
+        : "Only the Human can answer this, in Paseo. Until they do, it reads nothing you send.",
+    );
     return mail(
       "permission",
       [agent, request.id ?? ""],
       lines.join("\n"),
-      reader === "lead"
-        ? "If it holds the lane up, ask, so the owner can tell the Human."
-        : "Tell the Human it waits on them.",
+      from
+        ? "Allow what its work needs within its own copy; refuse, with why, what reaches past it."
+        : reader === "lead"
+          ? "If it holds the lane up, ask, so the owner can tell the Human."
+          : "Tell the Human it waits on them.",
     );
+  },
+
+  /** The owner answered a Peer's permission past its Lead, which keeps the room's picture by hearing of it. */
+  permitted(task: Task, request: PendingPermission, allow: boolean, why: string): Letter {
+    const text = `PERMISSION ${allow ? "ALLOWED" : "REFUSED"} for ${task.id} (${task.title}) by the owner: ${asked(request)}${allow ? "" : `\n\nWhy: ${clip(why, 600)}`}`;
+    return fyi(mail("permitted", [task.id, request.id ?? ""], text, "Nothing now."));
   },
 
   leadGone(lane: Lane): Letter {
