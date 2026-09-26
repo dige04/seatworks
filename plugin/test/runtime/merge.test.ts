@@ -180,7 +180,7 @@ test("a merge that cannot take its lane safely waits, says why, and goes round a
   h.commit(lane.worktree!, "shared.txt", "moved\n");
   const dirty = await merge(side.id);
   assert.equal(dirty.status, "queued");
-  assert.match(dirty.held?.why ?? "", /^the lane's working copy has uncommitted changes/);
+  assert.match(dirty.mergeHeld?.why ?? "", /^the lane's working copy has uncommitted changes/);
   h.git(lane.worktree!, "checkout", "--", "a.txt");
   assert.equal(await again(side.id), "merged");
 
@@ -194,7 +194,10 @@ test("a merge that cannot take its lane safely waits, says why, and goes round a
   h.commitTo(lane.branch, "shared.txt", "moved again\n");
   const raced = await merge(second.id);
   assert.equal(raced.status, "queued");
-  assert.equal(raced.held?.why, `${lane.branch} moved while it was gated, so it goes round again with that brought in`);
+  assert.equal(
+    raced.mergeHeld?.why,
+    `${lane.branch} moved while it was gated, so it goes round again with that brought in`,
+  );
   assert.equal(h.git(h.root, "log", "-1", "--format=%s", lane.branch).trim(), "race", "the lane took nothing of it");
   assert.equal(await again(second.id), "merged");
   assert.equal(h.git(h.root, "show", `${lane.branch}:d.txt`), "side\n");
@@ -212,7 +215,7 @@ test("a merge that cannot take its lane safely waits, says why, and goes round a
   await h.runtime.desk.settled(h.project);
   assert.equal(h.ledger().tasks[quotes.id]!.status, "queued");
   assert.match(
-    h.ledger().tasks[quotes.id]!.held?.why ?? "",
+    h.ledger().tasks[quotes.id]!.mergeHeld?.why ?? "",
     new RegExp(`^its own copy cannot take ${lane.branch} in: its copy has work uncommitted$`),
   );
   rmSync(join(quotes.worktree!, "scratch.txt"));
@@ -263,7 +266,7 @@ test("each lane merges in its own queue, and a merge under way is neither cut no
   writeFileSync(join(lanes[1]!.worktree!, "a.txt"), "being written\n");
   await h.call(two!, "lead", "accept", { task: "L2-T1" });
   assert.ok(
-    await within(5000, () => h.ledger().tasks["L2-T1"]!.held !== undefined),
+    await within(5000, () => h.ledger().tasks["L2-T1"]!.mergeHeld !== undefined),
     "the second lane's merge ran while the first lane's gate ran, and waits for its own copy",
   );
   h.git(lanes[1]!.worktree!, "checkout", "--", "a.txt");

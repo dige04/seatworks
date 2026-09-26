@@ -139,7 +139,7 @@ test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and wha
     /HANDBACK L1-T1 \(Clean build\) from [^]*Next: Its Lead is gone: replace_lead puts a new Lead on the lane, this hand-back included/,
   );
   await h.tick();
-  assert.match(h.ledger().tasks["L1-T2"]!.held?.why ?? "", /L1-T1 has handed back/);
+  assert.match(h.ledger().tasks["L1-T2"]!.startHeld?.why ?? "", /L1-T1 has handed back/);
   assert.deepEqual(h.runtime.outbox.pending(lead), [], "why a task still waits is no letter for a Lead that is gone");
 });
 

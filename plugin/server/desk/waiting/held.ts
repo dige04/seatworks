@@ -18,10 +18,17 @@ export async function noteHeld(
 ): Promise<void> {
   const task = "lane" in entry;
   const why = `${holding.why} ${holding.next}`;
+  const held = { why, ...(holding.tried ? { tried: true } : {}) };
   const changed = ledgers.transact(project, (current) => {
-    const kept = task ? current.tasks[entry.id] : current.lanes[entry.id];
+    if (task) {
+      const kept = current.tasks[entry.id];
+      if (!kept || kept.status !== "waiting" || kept.startHeld?.why === why) return false;
+      kept.startHeld = held;
+      return true;
+    }
+    const kept = current.lanes[entry.id];
     if (!kept || kept.status !== "waiting" || kept.held?.why === why) return false;
-    kept.held = { why, ...(holding.tried ? { tried: true } : {}) };
+    kept.held = held;
     return true;
   });
   if (!changed) return;

@@ -92,7 +92,7 @@ function taskDetail(ledger: Ledger, task: Task, seats: Seats, now: number): stri
   if (AT_WORK.includes(task.status)) return `, Peer ${seatLine(seats, task.peer, now)}`;
   if (task.status === "waiting") {
     const after = task.after?.length ? `, after ${task.after.join(", ")}` : "";
-    return `${after}${task.held ? `. Not started: ${task.held.why}` : ""}`;
+    return `${after}${task.startHeld ? `. Not started: ${task.startHeld.why}` : ""}`;
   }
   const kept = keptPeers(ledger, task.lane).find((peer) => peer.task === task.id);
   const keeps =

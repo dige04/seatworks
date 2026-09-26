@@ -280,6 +280,6 @@ test("a Lead seated before a stop is taken on where it works, the commit its lan
     await h.call(lead, "lead", "add_tasks", {
       tasks: [{ key: "t", title: "Total", goal: "g", acceptance: ["a"], hints: ["a.txt"], outOfScope: ["the rest"] }],
     });
-    assert.equal(h.ledger().tasks["L1-T1"]!.status, "running", String(h.ledger().tasks["L1-T1"]!.held?.why));
+    assert.equal(h.ledger().tasks["L1-T1"]!.status, "running", String(h.ledger().tasks["L1-T1"]!.startHeld?.why));
   }
 });

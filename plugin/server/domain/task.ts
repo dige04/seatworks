@@ -90,7 +90,8 @@ export type Task = {
   handback?: Handback;
   after?: string[];
   opening?: { role: string };
-  held?: { why: string; tried?: boolean };
+  startHeld?: { why: string; tried?: boolean };
+  mergeHeld?: { why: string };
   amended?: Amendment[];
   reworks?: number;
   sentBack?: { at: number; text: string }[];

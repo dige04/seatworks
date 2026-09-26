@@ -199,7 +199,7 @@ test("the merge queue hands a conflict to its Peer, merges nothing as nothing, w
   assert.equal(status("L1-T4"), "queued");
   await h.call(sup, "supervisor", "resume_lane", { lane: "L1" });
   await h.runtime.desk.settled(h.project);
-  assert.deepEqual([status("L1-T4"), h.ledger().tasks["L1-T4"]!.held], ["merged", undefined]);
+  assert.deepEqual([status("L1-T4"), h.ledger().tasks["L1-T4"]!.mergeHeld], ["merged", undefined]);
   assert.equal(h.git(copy, "show", "HEAD:c.txt"), "C\n");
 
   await beside("f", "Last", "f.txt", "F\n");

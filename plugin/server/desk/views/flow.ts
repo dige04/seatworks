@@ -67,7 +67,7 @@ function tasksByLane(
       mode: task.mode,
       copy: task.mode === "parallel" ? (task.slot ?? null) : null,
       after: task.after ?? [],
-      held: task.held?.why ?? null,
+      held: (task.startHeld ?? task.mergeHeld)?.why ?? null,
       peer,
       handback: task.handback ? minutes(now, task.handback.at) : null,
     };

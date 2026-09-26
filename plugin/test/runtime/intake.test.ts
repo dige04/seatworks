@@ -214,13 +214,13 @@ test("tasks that wait are recorded, amended, held while the lane's copy is taken
   await h.call(side.peer!, "peer", "done", { outcome: "complete", summary: "b" });
   h.agents.get(side.peer!)!.status = "idle";
   await h.tick(Date.now());
-  assert.deepEqual([h.ledger().tasks["L1-T3"]!.status, h.ledger().tasks["L1-T3"]!.held], ["waiting", undefined]);
+  assert.deepEqual([h.ledger().tasks["L1-T3"]!.status, h.ledger().tasks["L1-T3"]!.startHeld], ["waiting", undefined]);
   await h.call(lead, "lead", "accept", { task: "L1-T2" });
   await h.runtime.desk.settled(h.project);
   await h.tick(Date.now());
   assert.equal(h.ledger().tasks["L1-T2"]!.status, "merged");
   assert.match(
-    h.ledger().tasks["L1-T3"]!.held?.why ?? "",
+    h.ledger().tasks["L1-T3"]!.startHeld?.why ?? "",
     /L1-T1 is still writing in the lane's working copy[^]*It starts by itself once that clears/,
   );
 
@@ -230,7 +230,7 @@ test("tasks that wait are recorded, amended, held while the lane's copy is taken
   assert.equal((await h.call(lead, "lead", "accept", { task: "L1-T1" })).ok, true);
   await h.runtime.desk.settled(h.project);
   const started = h.ledger().tasks["L1-T3"]!;
-  assert.deepEqual([started.status, started.held], ["running", undefined]);
+  assert.deepEqual([started.status, started.startHeld], ["running", undefined]);
   assert.equal(h.git(build.worktree!, "branch", "--show-current").trim(), started.branch);
   assert.equal(h.agents.get(started.peer!)!.cwd, build.worktree);
   assert.equal(started.startSha, h.git(build.worktree!, "rev-parse", build.branch).trim());
@@ -248,7 +248,7 @@ test("tasks that wait are recorded, amended, held while the lane's copy is taken
   await add("p", "Probe", { holds: ["d.txt"], parallel: true });
   await add("a", "After probe", { hints: ["d.txt"], after: ["L1-T4"] });
   await h.call(lead, "lead", "cut", { task: "L1-T4", reason: "wrong approach" });
-  assert.match(h.ledger().tasks["L1-T5"]!.held?.why ?? "", /L1-T4 was cut, so nothing of it is there to build on/);
+  assert.match(h.ledger().tasks["L1-T5"]!.startHeld?.why ?? "", /L1-T4 was cut, so nothing of it is there to build on/);
   await h.tick(Date.now());
   await h.idle(lead);
   const mail = h.agents.get(lead)!.sent.join("\n---\n");

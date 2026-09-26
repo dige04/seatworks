@@ -32,8 +32,8 @@ export async function addTasks(desk: DeskServices, caller: Caller, asked: AskedT
   const lines = plan.map((task) => {
     const entry = now[ids.get(task.key)!]!;
     const running = `${entry.status}${entry.peer ? `, Peer ${entry.peer}` : ""}`;
-    const state = entry.held
-      ? `held: ${clip(entry.held.why, 200)}`
+    const state = entry.startHeld
+      ? `held: ${clip(entry.startHeld.why, 200)}`
       : entry.status === "waiting"
         ? `waits for ${entry.after!.join(", ")}`
         : running;

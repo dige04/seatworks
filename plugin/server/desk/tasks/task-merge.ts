@@ -63,7 +63,7 @@ export class TaskMerge {
       const lane = task ? ledger.lanes[task.lane] : undefined;
       if (!task || !lane) return undefined;
       if (lane.onHold) {
-        if (task.status === "queued") task.held = { why: "its lane is on hold" };
+        if (task.status === "queued") task.mergeHeld = { why: "its lane is on hold" };
         return undefined;
       }
       if (!TASK.move(task, "merge")) return undefined;
@@ -157,8 +157,8 @@ export class TaskMerge {
   private async hold(project: Project, task: Task, lane: Lane, why: string, clears = true): Promise<void> {
     let told = false;
     this.desk.ledgers.moveTask(project, task.id, "requeue", (entry) => {
-      told = entry.held?.why === why;
-      entry.held = { why };
+      told = entry.mergeHeld?.why === why;
+      entry.mergeHeld = { why };
     });
     if (!told) await this.desk.mail.post(lane.lead, mergeLetters.waits(task, why, clears));
   }
@@ -193,7 +193,7 @@ export class TaskMerge {
   }
 
   private async finish(project: Project, task: Task, lane: Lane, outcome: Outcome, letter: Letter): Promise<void> {
-    const moved = this.desk.ledgers.moveTask(project, task.id, MOVE_OF[outcome], (entry) => delete entry.held);
+    const moved = this.desk.ledgers.moveTask(project, task.id, MOVE_OF[outcome], (entry) => delete entry.mergeHeld);
     if (typeof moved !== "object") return;
     await this.desk.mail.post(lane.lead, letter);
     recordEvent(project, { kind: `merge.${outcome}`, task: task.id });

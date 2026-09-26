@@ -31,7 +31,7 @@ export async function startWaiting(
   await putBackHalfStarted(desk, project);
   const ledger = loadLedger(project.state);
   const due = Object.values(ledger.tasks).filter(
-    (task) => task.status === "waiting" && (retryHeld || !task.held?.tried),
+    (task) => task.status === "waiting" && (retryHeld || !task.startHeld?.tried),
   );
   for (const waiting of due) {
     const lane = ledger.lanes[waiting.lane];
@@ -76,7 +76,7 @@ async function tryStart(
   if (typeof started === "string")
     return { why: started, next: "It is tried again when a task is merged or cut; cut it to drop it.", tried: true };
   ledgers.setTask(project, task.id, (entry) => {
-    delete entry.held;
+    delete entry.startHeld;
   });
   if (told)
     await mail.post(

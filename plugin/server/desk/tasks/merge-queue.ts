@@ -48,7 +48,7 @@ export class MergeQueue {
   /** What waits for a lane's copy to be clean goes again at a turn's end, when a writer there may have committed. */
   retry(project: Project): Promise<void> {
     const waiting = Object.values(loadLedger(project.state).tasks).some(
-      (task) => task.status === "queued" && task.held,
+      (task) => task.status === "queued" && task.mergeHeld,
     );
     return waiting ? this.resume(project) : Promise.resolve();
   }
