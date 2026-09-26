@@ -120,7 +120,7 @@ async function workOf(kit: Kit, project: Project, ledger: Ledger, task: Task, sy
           : undefined;
   // Read from where its branch meets the lane's: what came in with the lane is not the task's.
   const changed = lane ? await changedFiles(task.worktree, `${lane.branch}...HEAD`) : undefined;
-  const serial = lane && changed && task.mode === "parallel" ? await serialIn(kit, project, task.worktree) : [];
+  const serial = lane && changed ? await serialIn(kit, project, task.worktree) : [];
   const notes = lane && changed ? reachNotes(ledger, task, lane, changed, serial) : [];
   // Only what git actually said: a copy it could not read is not a copy with work left in it.
   const commit = await headSha(task.worktree);

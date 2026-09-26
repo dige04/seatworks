@@ -1,4 +1,4 @@
-import { firstOverlap, serialReach } from "../../core/scope.ts";
+import { covers, firstOverlap, serialReach } from "../../core/scope.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, ownCopyHolder } from "../../domain/ledger.ts";
 import type { Refusal } from "../refusal.ts";
@@ -25,6 +25,18 @@ export function lanesBeside(serial: string[], open: Scoped[], writeSet: string[]
     const paths = [...new Set([...mine.filter((path) => theirs.has(path)), ...(met ? [met] : [])])];
     return paths.length > 0 ? [{ lane: other.id, paths }] : [];
   });
+}
+
+/** The open lanes beside `lane` that may write these one-writer paths it changed: noted where the change merges or lands. */
+export function openWriters(ledger: Ledger, lane: string, paths: string[]): Beside[] {
+  if (paths.length === 0) return [];
+  return Object.values(ledger.lanes)
+    .filter((other) => other.status === "open" && other.id !== lane)
+    .map((other) => ({
+      lane: other.id,
+      paths: other.writeSet.length === 0 ? paths : paths.filter((path) => covers(other.writeSet, path)),
+    }))
+    .filter((entry) => entry.paths.length > 0);
 }
 
 type Placing = Pick<Lane, "onBranch" | "detourOf">;

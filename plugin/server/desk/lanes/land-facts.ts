@@ -10,6 +10,8 @@ import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, tasksOf } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Project, readProjectConfig, serialOnlyOf } from "../project/project.ts";
+import { besideText } from "../letters/directive.ts";
+import { openWriters } from "./placement.ts";
 
 type LandGate = { set: boolean; ok: boolean };
 
@@ -151,10 +153,10 @@ export async function landFacts(
   const { from } = change;
   if (!from) return [`What ${lane.branch} changed could not be read from git.`, ...reviewFacts(ledger, lane)];
   const serial = serialOnlyOf(project, kit).map((rule) => globToRegex(rule));
-  const counts = await diffCounts(root, from, lane.branch, fileKinds(kit), (path) =>
-    serial.some((rule) => rule.test(path)),
-  );
+  const oneWriter = (path: string) => serial.some((rule) => rule.test(path));
+  const counts = await diffCounts(root, from, lane.branch, fileKinds(kit), oneWriter);
   const files = [...new Set(counts?.files ?? [])];
+  const writers = openWriters(ledger, lane.id, files.filter(oneWriter));
   const lines = counts ? counts.src + counts.test + counts.docs : 0;
   const commits = await commitsAhead(root, from, lane.branch);
   const outside =
@@ -172,6 +174,11 @@ export async function landFacts(
         : [`Gate: ${gate.ok ? "passed" : "failed"} on the lane.`]),
     ...(await testFacts(kit, root, from, lane.branch, files)),
     ...outside,
+    ...(writers.length > 0
+      ? [
+          `It changed what one writer at a time may write, which open lanes may write too: ${besideText(writers)}. Whichever lands second settles it.`,
+        ]
+      : []),
     ...recordFacts(project, ledger, lane),
   ];
 }

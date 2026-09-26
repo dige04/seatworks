@@ -1,6 +1,8 @@
 import { covers, serialHits, uncovered } from "../../core/scope.ts";
 import { capped } from "../../core/text.ts";
 import { besideOf } from "../letters/briefs.ts";
+import { besideText } from "../letters/directive.ts";
+import { openWriters } from "../lanes/placement.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
@@ -9,7 +11,8 @@ const SHOWN = 10;
 
 /**
  * What of a task's changed files its Lead should weigh, one note each and each file once: in what a task beside it holds,
- * outside the lane's write set, or for a parallel task outside what it holds, a path one writer at a time may write marked.
+ * outside the lane's write set, or for a parallel task outside what it holds, a path one writer at a time may write marked;
+ * and apart from those, a one-writer path it changed that an open lane beside this one may write too.
  */
 export function reachNotes(ledger: Ledger, task: Task, lane: Lane, files: string[], serial: string[]): string[] {
   const notes: string[] = [];
@@ -22,6 +25,9 @@ export function reachNotes(ledger: Ledger, task: Task, lane: Lane, files: string
   const beyond = lane.writeSet.length > 0 ? uncovered(files, lane.writeSet).filter((file) => !taken.has(file)) : [];
   if (beyond.length > 0)
     notes.push(`outside the lane's write set (${lane.writeSet.join(", ")}): ${capped(beyond, SHOWN)}`);
+  const lanes = openWriters(ledger, lane.id, serialHits(files, serial));
+  if (lanes.length > 0)
+    notes.push(`one writer at a time, and open lanes beside yours may write it too: ${besideText(lanes)}`);
   if (task.mode !== "parallel") return notes;
   const loose = uncovered(files, task.holds).filter((file) => !taken.has(file) && !beyond.includes(file));
   const oneWriter = new Set(serialHits(loose, serial));

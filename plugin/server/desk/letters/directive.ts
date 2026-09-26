@@ -9,7 +9,7 @@ import { type Beside, lanesBeside } from "../lanes/placement.ts";
 
 const SHOWN_SERIAL = 8;
 
-const besideText = (beside: Beside[]): string =>
+export const besideText = (beside: Beside[]): string =>
   beside.map((entry) => `${entry.lane} (${capped(entry.paths, SHOWN_SERIAL)})`).join(", ");
 
 /** What the Supervisor hears of the open lanes a lane `how` beside and may write what it does; nothing when there are none. */

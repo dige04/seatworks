@@ -174,3 +174,23 @@ test("a Peer writing past where it was pointed is noted, not stopped: at hand-ba
     "Note: outside what it holds (src/p/): src/c.ts.",
   ]);
 });
+
+test("a one-writer path a lane changed is noted where an open lane beside it may write it too: at hand-back, merge and landing", async () => {
+  const { h, sup, lead } = await laneWriting(["src/**", "package-lock.json"]);
+  await h.call(sup, "supervisor", "open_lane", { title: "Lock", outcome: "lock", ...scope, isolate: true });
+  await h.call(lead, "lead", "add_tasks", { tasks: [planned("t", "T", { hints: ["package-lock.json"] })] });
+  await handBack(h, "L1-T1", ["package-lock.json", "src/a.ts"]);
+  await h.idle(lead);
+  const lock = "Note: one writer at a time, and open lanes beside yours may write it too: L2 (package-lock.json).";
+  assert.deepEqual(notes(h, lead), [lock]);
+  await h.call(lead, "lead", "accept", { task: "L1-T1" });
+  await h.runtime.desk.settled(h.project);
+  await h.idle(lead);
+  assert.ok(notes(h, lead, "MERGED L1-T1").includes(lock));
+  h.agents.get(lead)!.status = "idle";
+  const landed = await h.call(sup, "supervisor", "land_lane", { lane: "L1" });
+  assert.match(
+    landed.text,
+    /It changed what one writer at a time may write, which open lanes may write too: L2 \(package-lock\.json\)\. Whichever lands second settles it\./,
+  );
+});
