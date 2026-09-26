@@ -32,7 +32,6 @@ export const UpdateView = z.object({
   installs: z.boolean(),
   paseo: z.string().nullable(),
   blocked: z.string().nullable(),
-  busy: z.array(z.string()),
   updated: z.object({ from: z.string(), to: z.string() }).nullable(),
 });
 export type UpdateView = z.infer<typeof UpdateView>;

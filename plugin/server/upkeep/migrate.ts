@@ -3,6 +3,7 @@ import type { MigrateStep, MigrateView } from "../../shared/upkeep-views.ts";
 import type { Kit } from "../catalog/kit/kit.ts";
 import { stateRoot } from "../core/paths.ts";
 import { readJson, writeJson } from "../core/store.ts";
+import { plural } from "../core/text.ts";
 import { versionOf } from "./update.ts";
 
 export type LiveSeat = { provider: string; slug: string; createdAt?: string; name: string };
@@ -37,10 +38,10 @@ function seatSteps(ctx: MigrateContext, since: string): MigrateStep[] {
   return [...bySlug].map(([slug, seats]) => ({
     kind: "seat" as const,
     where: slug,
-    what: `${seats.length} seat${seats.length === 1 ? "" : "s"} started before this version`,
+    what: `${seats.length} ${plural(seats.length, "seat", "seats")} started before this version`,
     detail: [
       ...seats.map((seat) => seat.name),
-      "They keep the old prompts and tools until they are started again. Let each finish its work; the next seat started runs this version.",
+      "They keep the prompts and tools they started with, while the desk and the git shim they call are this version's: the mix Update will not make under running seats. A seat started from now on runs this version whole.",
     ],
   }));
 }

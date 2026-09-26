@@ -65,13 +65,7 @@ function versionLine(view: UpdateView | null): { title: string; state: string } 
     return { title: `Seatworks ${now}`, state: `Updated from ${view.updated.from}. The plugin is reloading.` };
   if (view.behind > 0) {
     const title = `Seatworks ${now} → ${view.next && view.next !== now ? view.next : plural(view.behind, "commit")}`;
-    return {
-      title,
-      state:
-        view.busy.length > 0
-          ? `Stop every seat first: ${view.busy.join(", ")}.`
-          : (view.blocked ?? plural(view.behind, "new commit")),
-    };
+    return { title, state: view.blocked ?? plural(view.behind, "new commit") };
   }
   if (view.blocked) return { title: `Seatworks ${now} · ${view.head}`, state: view.blocked };
   return {
@@ -136,9 +130,7 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
     // Once per mount: an update reloads the plugin, and this is what the owner needs next.
   }, []);
 
-  const canUpdate = Boolean(
-    updated && !updated.blocked && !updated.updated && updated.behind > 0 && updated.busy.length === 0,
-  );
+  const canUpdate = Boolean(updated && !updated.blocked && !updated.updated && updated.behind > 0);
   const line = versionLine(updated);
   const seen = (units: string[]) => void run("content", async () => setChanged(await content({ seen: units })));
 

@@ -102,12 +102,10 @@ test("update moves the checkout forward only when it safely can, installs only w
 
   publish({ "package.json": '{"dependencies":{"zod":"4"}}' }, "Need zod");
   const waiting = git(dir, "rev-parse", "HEAD");
-  const busy = await applyUpdate({ ...ctx, busy: ["shop-abc123 3 seats", "api-def456 1 seat"] });
-  assert.equal(
-    busy.blocked,
-    "Stop every seat first: shop-abc123 3 seats, api-def456 1 seat.",
-    "a seat keeps the version it started with",
-  );
+  const seated = { ...ctx, busy: ["shop-abc123 3 seats", "api-def456 1 seat"] };
+  const stop = "Stop every seat first: shop-abc123 3 seats, api-def456 1 seat.";
+  assert.equal((await checkUpdate(seated)).blocked, stop, "said before the owner asks for it, by the check itself");
+  assert.equal((await applyUpdate(seated)).blocked, stop, "a seat keeps the version it started with");
   assert.equal(git(dir, "rev-parse", "HEAD"), waiting);
   const view = await applyUpdate(ctx);
   assert.equal(view.updated?.to, git(dir, "rev-parse", "--short", "HEAD"));

@@ -7,6 +7,7 @@ import { readJson } from "../core/store.ts";
 import { PLUGIN_ID, nodeBin } from "../core/paths.ts";
 import { daemonLog } from "../core/logger.ts";
 import { firstUnder } from "../core/fs.ts";
+import { plural } from "../core/text.ts";
 
 export type UpdateContext = {
   dir: string;
@@ -52,7 +53,6 @@ export async function checkUpdate(ctx: UpdateContext, fetch = true): Promise<Upd
     installs: false,
     paseo: null,
     blocked: null,
-    busy: ctx.busy,
     updated: null,
   };
   const blocked = (why: string) => ({ ...view, blocked: why });
@@ -69,8 +69,10 @@ export async function checkUpdate(ctx: UpdateContext, fetch = true): Promise<Upd
     return blocked("It has local changes, so it does not update itself.");
   if (view.ahead > 0)
     return blocked(
-      `It has ${view.ahead} commit${view.ahead === 1 ? "" : "s"} ${view.upstream} does not, so it does not update itself.`,
+      `It has ${view.ahead} ${plural(view.ahead, "commit", "commits")} ${view.upstream} does not, so it does not update itself.`,
     );
+  // A seat keeps the version it started with, so updating under a running lane would run it on two versions.
+  if (view.behind > 0 && ctx.busy.length > 0) return blocked(`Stop every seat first: ${ctx.busy.join(", ")}.`);
   return view;
 }
 
@@ -112,8 +114,6 @@ async function readIncoming(dir: string, view: UpdateView): Promise<void> {
 export async function applyUpdate(ctx: UpdateContext): Promise<UpdateView> {
   const view = await checkUpdate(ctx);
   if (view.blocked || view.behind === 0) return view;
-  // A seat keeps the version it started with, so updating under a running lane would run it on two versions.
-  if (ctx.busy.length > 0) return { ...view, blocked: `Stop every seat first: ${ctx.busy.join(", ")}.` };
   const from = view.head;
   const moved = await git(ctx.dir, ["merge", "--ff-only", "--quiet", "@{u}"]);
   if (moved.code !== 0) return { ...view, blocked: `Could not move forward: ${moved.stderr.trim()}` };

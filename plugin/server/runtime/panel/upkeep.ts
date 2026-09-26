@@ -3,6 +3,7 @@ import type { Kit } from "../../catalog/kit/kit.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import { errorText } from "../../core/errors.ts";
 import { home, paseoHome, stateRoot } from "../../core/paths.ts";
+import { plural } from "../../core/text.ts";
 import type { Seats } from "../../core/ports.ts";
 import { type Project, projectOf } from "../../desk/project/project.ts";
 import type { CleanView, ContentView, MigrateView, UpdateView } from "../../../shared/upkeep-views.ts";
@@ -41,7 +42,7 @@ export class UpkeepPanel implements UpkeepRpc {
   async update(apply: boolean, fetch = true): Promise<UpdateView> {
     const counts = new Map<string, number>();
     for (const seat of await this.live()) counts.set(seat.slug, (counts.get(seat.slug) ?? 0) + 1);
-    const busy = [...counts].map(([slug, count]) => `${slug} ${count} seat${count === 1 ? "" : "s"}`);
+    const busy = [...counts].map(([slug, count]) => `${slug} ${count} ${plural(count, "seat", "seats")}`);
     const ctx = {
       dir: this.deps.kit.dir,
       managedRoot: join(paseoHome(), "plugins"),
