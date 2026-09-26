@@ -56,7 +56,6 @@ function verdictOf(check: CheckSpec, answer: Answer): string {
  * Asks whoever answers for the project about one case, and keeps what came back in its assessments, a failure included:
  * in shadow that record is all an answer does. Nothing the desk does waits on it, so it never throws.
  */
-/** Asks about a case and keeps the answer; it never rejects, since its callers go on without waiting for it. */
 export async function judge(services: DeskServices, project: Project, found: Case): Promise<void> {
   try {
     await ask(services, project, found);

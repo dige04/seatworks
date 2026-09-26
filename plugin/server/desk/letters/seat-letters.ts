@@ -25,8 +25,10 @@ export const seatLetters = {
     );
   },
 
-  /** Told the count and what happened to the last call, rather than asserting both. */
-  /** `reader` is its Lead, or whoever supervises once that Lead is gone. */
+  /**
+   * Told the count and what happened to the last call, rather than asserting both. `reader` is its Lead, or whoever
+   * supervises once that Lead is gone.
+   */
   stalled(
     task: Task,
     ending: string,
@@ -55,7 +57,6 @@ export const seatLetters = {
     );
   },
 
-  /** `reader` is the seat's owner: its Lead, or whoever supervises when the seat is a Lead. */
   /** `reader` is a Peer's Lead, whoever supervises a Lead, or whoever supervises a Peer whose Lead is gone. */
   failed(
     agent: string,

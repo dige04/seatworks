@@ -13,8 +13,10 @@ const sendingIds = (sending: Sending, text: string) => [sending.by, hash(sending
 
 /** Answers that come as mail, and what reaches a seat from another seat or the Human. */
 export const messageLetters = {
-  /** The answer to a call that ran longer than the seat that made it could wait for. */
-  /** `cut`: the call was stopped on the seat's side before its answer came, rather than outrunning the wait. */
+  /**
+   * The answer to a call that ran longer than the seat that made it could wait for; `cut` when the call was stopped on the
+   * seat's side before its answer came, rather than outrunning the wait.
+   */
   later(call: Waited, reply: { ok: boolean; text: string }, cut = false): Letter {
     const why = cut
       ? "which was stopped on your side before its answer reached you"
