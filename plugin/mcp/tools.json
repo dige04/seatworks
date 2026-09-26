@@ -482,7 +482,7 @@
     {
       "name": "permit",
       "title": "Answer a permission",
-      "description": "Answer a Lead's or Peer's permission request for the Human while they are out of the loop: its seat is stopped until then. Allow what its work needs within its own copy; refuse, with why, what reaches past it. A Peer's Lead is told. Refused while the Human is in the loop.",
+      "description": "Answer a Lead's or Peer's permission request for the Human while they are out of the loop: its seat is stopped until then. A Peer's Lead is told. Refused while the Human is in the loop.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,

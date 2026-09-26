@@ -4,13 +4,13 @@ import { clip } from "../../core/text.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Letter, fyi, mail } from "./envelope.ts";
+import { leadGone } from "./next.ts";
 
 /** What a permission asks for, as Paseo names it. */
 const asked = (request: PendingPermission) =>
   clip([...new Set([request.name, request.title].filter(Boolean))].join(": ") || request.kind || "a request", 600);
 
-const LEAD_GONE =
-  "Its Lead is gone: replace_lead puts a new Lead on the lane, which can message it to continue or cut its task.";
+const LEAD_GONE = leadGone("which can message it to continue or cut its task");
 
 const failedText = (who: string, message: string) => `FAILED: ${who} ended its turn with an error: ${message}`;
 

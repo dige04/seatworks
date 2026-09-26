@@ -2,6 +2,7 @@ import { clip, hash, outside } from "../../core/text.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { IN_QUEUE, type Task } from "../../domain/task.ts";
 import { type Letter, mail } from "./envelope.ts";
+import { SAY_IN_REPORT, leadOf } from "./next.ts";
 
 /** A call a seat was told to stop waiting for: the one identity its late answer and its lost answer share. */
 type Waited = { agent: string; tool: string; started: number };
@@ -71,20 +72,13 @@ export const messageLetters = {
           ? `Integration and acceptance: you have already accepted ${task.id} and it is waiting to merge; nothing here changed that.`
           : `Integration and acceptance: unchanged. Accepting ${task.id} is still yours to judge, and nothing here accepted it.`,
     ].join("\n");
-    return mail(
-      "reconcile",
-      ["message", ...sendingIds(sending, text)],
-      letter,
-      "If this changes what you were going to do, say so in your next report.",
-    );
+    return mail("reconcile", ["message", ...sendingIds(sending, text)], letter, SAY_IN_REPORT);
   },
 
   /** Words the Human wrote straight into a Lead's or Peer's chat, fenced as data. */
   humanWrote(lane: Lane, task: Task | undefined, seat: string, text: string): Letter {
     const closed = lane.status === "closed";
-    const who = task
-      ? `the Peer on ${task.id} (${task.title})`
-      : `the Lead ${closed ? "kept from" : "of"} ${lane.id} (${lane.title})`;
+    const who = task ? `the Peer on ${task.id} (${task.title})` : `${leadOf(lane)} (${lane.title})`;
     const lines = [
       `HUMAN WROTE to ${who} directly, past you:`,
       "<human>",

@@ -3,6 +3,7 @@ import type { Lane } from "../../domain/lane.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { capped, outside } from "../../core/text.ts";
 import { list } from "./envelope.ts";
+import { BOTH_MEET } from "./next.ts";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { type Project, conceptFile, loadConfig, serialIn } from "../project/project.ts";
 import { type Beside, lanesBeside } from "../lanes/placement.ts";
@@ -15,7 +16,7 @@ export const besideText = (beside: Beside[]): string =>
 /** What the Supervisor hears of the open lanes a lane `how` beside and may write what it does; nothing when there are none. */
 export const besideNote = (beside: Beside[], how: "opened" | "now works"): string =>
   beside.length > 0
-    ? ` It ${how} beside lanes that may write what it does: ${besideText(beside)}. Their Leads and its own are told; what two lanes both write meets when the second merges or lands, where its Lead settles it, and between lanes it is yours.`
+    ? ` It ${how} beside lanes that may write what it does: ${besideText(beside)}. Their Leads and its own are told; ${BOTH_MEET}, where its Lead settles it, and between lanes it is yours.`
     : "";
 
 /** `copy` is the lane's working copy, whose files decide which paths only one writer at a time may write. */

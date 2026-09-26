@@ -8,6 +8,7 @@ import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { type Sending } from "../letters/message-letters.ts";
 import { messageLetters } from "../letters/message-letters.ts";
+import { leadOf } from "../letters/next.ts";
 import type { DeskServices } from "../services.ts";
 
 /** Gives `text` to a seat as mail it reads once it can; one stopped on a permission reads nothing until that is answered. */
@@ -66,7 +67,7 @@ async function toLead(
   if (!(await desk.roster.seated(lane.lead))) return no(unread(`The Lead of ${lane.id} (${lane.lead})`));
   const refused = repeatsIncident(caller.project.state, lane.lead, text);
   if (refused) return no(refused);
-  const who = `the Lead ${lane.status === "closed" ? "kept from" : "of"} ${lane.id}`;
+  const who = leadOf(lane);
   return ok(await handTo(desk, { target: lane.lead, from: "the owner", who, reader: "lead" }, sending, text));
 }
 

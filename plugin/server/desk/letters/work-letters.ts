@@ -3,6 +3,7 @@ import type { Amendment } from "../../domain/amendment.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Letter, fyi, list, mail } from "./envelope.ts";
+import { BOTH_MEET, leadGone } from "./next.ts";
 
 /** A lane or task that waited, under `head`: still waiting, or started or opened now. */
 const waited = (head: "WAITING" | "STARTED" | "OPENED", entry: Lane | Task, what: string): string => {
@@ -16,7 +17,7 @@ export const workLetters = {
   handback(task: Task, file: string, body: string, peer: string, reader: "lead" | "supervisor"): Letter {
     const next =
       reader === "supervisor"
-        ? "Its Lead is gone: replace_lead puts a new Lead on the lane, this hand-back included; drop_lane only if the lane is no longer wanted."
+        ? leadGone("this hand-back included; drop_lane only if the lane is no longer wanted")
         : task.kind === "review"
           ? "Weigh its findings; cut it once you have no further question for it. A changes verdict is settled before you report the lane ready."
           : "Judge it by what the work did, then accept, rework with exactly what must change, or cut; start_review first on a big or doubtful change.";
@@ -158,7 +159,7 @@ export const workLetters = {
         "lanebeside",
         [other.id, hash(paths.join("\n"))],
         `LANE BESIDE ${other.id} (${other.title}) works beside your lane and may write what yours does: ${capped(paths, 8)}.`,
-        "Nothing now: what both lanes write meets when the second merges or lands, and settling it in your lane is yours.",
+        `Nothing now: ${BOTH_MEET}, and settling it in your lane is yours.`,
       ),
     );
   },

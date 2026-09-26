@@ -2,6 +2,7 @@ import type { Question } from "../../domain/question.ts";
 import type { Ask } from "../../domain/ask.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Letter, firstLine, fyi, mail } from "./envelope.ts";
+import { SAY_IN_REPORT } from "./next.ts";
 
 const theirDefault = (ask: Ask): string[] => (ask.default ? ["", `Their default: ${ask.default}`] : []);
 
@@ -106,9 +107,7 @@ export const askLetters = {
       "answeredFor",
       [ask.id],
       text,
-      leads
-        ? "If this changes what you were going to do, say so in your next report."
-        : "If it changes a decision of yours, carry that into the lane.",
+      leads ? SAY_IN_REPORT : "If it changes a decision of yours, carry that into the lane.",
     );
   },
 
