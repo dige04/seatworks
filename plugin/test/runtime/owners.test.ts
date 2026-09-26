@@ -7,6 +7,7 @@ type Harness = ReturnType<typeof harness>;
 
 const SUPERVISOR = "sw2-supervisor-claude/claude-opus-5";
 const heard = (h: Harness, id: string) => h.heard(id).join("\n");
+const scope = { acceptance: ["a"], outOfScope: ["anything else"] };
 const task = (title: string) => ({
   key: "t",
   title,
@@ -18,9 +19,9 @@ const task = (title: string) => ({
 
 test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and what only the Human can give waits for them", async () => {
   const h = harness();
+  h.projectSettings({ hitl: { on: true } });
   const architecture = h.add(SUPERVISOR, h.root, "architecture");
   const safety = h.add(SUPERVISOR, h.root, "safety");
-  const scope = { acceptance: ["a"], outOfScope: ["anything else"] };
   await h.call(architecture, "supervisor", "open_lane", { title: "Build", outcome: "a.txt changes", ...scope });
   await h.call(safety, "supervisor", "open_lane", {
     title: "Permissions",
@@ -122,6 +123,20 @@ test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and wha
     heard(h, architecture),
     /HANDBACK L1-T1 \(Clean build\) from [^]*Next: Its Lead is gone: replace_lead puts a new Lead on the lane, this hand-back included/,
   );
+});
+
+test("with the Human out of the loop, the Supervisor asks them directly, and no other seat stops its turn on a question", async () => {
+  const h = harness();
+  const sup = h.add(SUPERVISOR, h.root, "sup");
+  await h.call(sup, "supervisor", "open_lane", { title: "Build", outcome: "a.txt changes", ...scope });
+  const lead = h.ledger().lanes.L1!.lead!;
+  const question: Pending = { id: "q-1", kind: "question", name: "AskUserQuestion", title: "Who is it for?" };
+  for (const seat of [sup, lead]) {
+    h.agents.get(seat)!.pending.push({ ...question });
+    await h.permission(seat, { ...question });
+  }
+  assert.deepEqual(h.agents.get(sup)!.answered, [], "the Human answers the Supervisor's grilling in Paseo");
+  assert.equal(h.agents.get(lead)!.answered[0]?.response.behavior, "deny");
 });
 
 test("reaching a Peer directly tells its Lead what reached it, and is refused when there is no Lead to tell", async () => {

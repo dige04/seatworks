@@ -1,4 +1,7 @@
 {
+  "ask": {
+    "enabled": true
+  },
   "bash": {
     "patterns": [
       {

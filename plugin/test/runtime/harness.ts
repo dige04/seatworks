@@ -77,12 +77,13 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
   const { root, git } = repo();
   const state = stateRoot();
   mkdirSync(state, { recursive: true });
-  writeFileSync(
-    join(state, "settings.json"),
-    JSON.stringify({
-      mcp: { "intellij-index": { enabled: true }, "code-search": { enabled: true }, context7: { enabled: true } },
-    }),
-  );
+  const machine = {
+    mcp: { "intellij-index": { enabled: true }, "code-search": { enabled: true }, context7: { enabled: true } },
+  };
+  /** Writes the machine's settings layer over what every harness starts with. */
+  const machineSettings = (layer: Record<string, unknown>) =>
+    writeFileSync(join(state, "settings.json"), JSON.stringify({ ...machine, ...layer }));
+  machineSettings({});
   const { paseo, agents, add, workspaces, workspaceNames, workspaceProjects, archivedWorkspaces, timelineOf } =
     fakePaseo();
   const project = projectOf(root);
@@ -183,6 +184,11 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
     assert.deepStrictEqual(sent, raw, `${contract.name} answered with what JSON does not carry`);
     return contract.output.parse(sent) as z.output<C["output"]>;
   };
+  /** Writes the project's own settings layer, as the owner would in its settings.json. */
+  const projectSettings = (layer: Record<string, unknown>) => {
+    mkdirSync(project.state, { recursive: true });
+    writeFileSync(join(project.state, "settings.json"), JSON.stringify(layer));
+  };
   return {
     root,
     git,
@@ -211,6 +217,8 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
     rpc,
     timelineOf,
     restart,
+    machineSettings,
+    projectSettings,
   };
 }
 
@@ -221,10 +229,7 @@ export async function laneWithPeer(
   task: Record<string, unknown> = {},
 ) {
   const h = harness(options);
-  if (settings) {
-    mkdirSync(h.project.state, { recursive: true });
-    writeFileSync(join(h.project.state, "settings.json"), JSON.stringify(settings));
-  }
+  if (settings) h.projectSettings(settings);
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   await h.call(sup, "supervisor", "open_lane", {
     title: "Build",

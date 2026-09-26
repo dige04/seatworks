@@ -225,8 +225,8 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         );
       assert.equal(
         at(settings, "ask.enabled"),
-        false,
-        `${where}: nobody is there to answer a question that stops the turn`,
+        as === "supervisor",
+        `${where}: only the Supervisor asks the Human directly, which the desk lets through with the Human out of the loop`,
       );
       assert.equal(approval("task"), "deny", `${where}: Paseo is the only control plane`);
       assert.equal(
@@ -326,8 +326,8 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         );
       assert.deepEqual(
         [allowed("task"), allowed("question"), allowed("external_directory")],
-        ["deny", "deny", "allow"],
-        `${where}: no subagents, no question that stops the turn, and nothing waiting on a person`,
+        ["deny", as === "supervisor" ? "allow" : "deny", "allow"],
+        `${where}: no subagents, only the Supervisor asks the Human directly, and nothing waiting on a person`,
       );
       assert.equal(allowed("edit") === "deny", !edits, `${where}: edits files only where the role may`);
       assert.equal(allowed("websearch") === "deny", !searches, `${where}: searches the web only where the role may`);

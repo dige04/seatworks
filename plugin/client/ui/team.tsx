@@ -8,7 +8,7 @@ import { sourceLabel } from "./bits.tsx";
 import type { Layer, RoleChoice } from "../../shared/settings.ts";
 import type { CatalogView, ModelsRefreshed, TeamView } from "../../shared/views.ts";
 import { message } from "../format/error.ts";
-import { modelRow, setAttention, setRole, sourceOf } from "../model/layer.ts";
+import { modelRow, setAttention, setHitl, setRole, sourceOf } from "../model/layer.ts";
 import { JudgeCard } from "./judge.tsx";
 import { ModelPicker } from "./model-picker.tsx";
 import { TabBar } from "./tabs.tsx";
@@ -138,6 +138,21 @@ function IncidentMailCard({ team, values, machine, layer, disabled, save }: Prop
   );
 }
 
+/** On the Supervisor's chip, since it is who decides for the Human when they are out of the loop. */
+function HitlCard({ team, values, machine, layer, disabled, save }: Props) {
+  return (
+    <SettingsCard>
+      <SettingsSwitch
+        label="Human in the loop"
+        hint={`Off, only the concept is yours: the Supervisor grills you on it and decides everything else. On, it may queue questions for you and landings wait on your ask-first paths. ${sourceLabel(sourceOf(values, machine, (entry) => entry.hitl?.on, layer), layer)}.`}
+        value={team.hitl.on}
+        onValueChange={(next) => void save((current) => setHitl(current, { on: next }))}
+        disabled={disabled}
+      />
+    </SettingsCard>
+  );
+}
+
 export function TeamSection(props: Props) {
   const { catalog, theme, disabled, active, onActive } = props;
   const role = catalog.roles.find((entry) => entry.id === active) ?? catalog.roles[0];
@@ -146,6 +161,7 @@ export function TeamSection(props: Props) {
     <SettingsSection title="Team" info={role.description}>
       <TabBar theme={theme} active={role.id} disabled={disabled} onPick={onActive} tabs={catalog.roles.map((entry) => ({ id: entry.id, label: entry.label }))} />
       {role.can.includes("judge") ? <JudgeCard {...props} role={role} rows={roleRows({ ...props, role })} /> : <SettingsCard>{roleRows({ ...props, role })}</SettingsCard>}
+      {role.can.includes("supervise") ? <HitlCard {...props} /> : null}
       {role.can.includes("supervise") ? <IncidentMailCard {...props} /> : null}
       <ModelsCard catalog={props.catalog} disabled={props.disabled} reload={props.reload} />
     </SettingsSection>

@@ -77,7 +77,7 @@ function optionsProblem(args: AskHumanCall): string | undefined {
 }
 
 function overBudget({ teamFor }: Pick<DeskServices, "teamFor">, project: Project): string | undefined {
-  const budget = teamFor(project).attention.questionsPerDay;
+  const budget = teamFor(project).hitl.questionsPerDay;
   const asked = askedSince(project.state, Date.now() - DAY_MS);
   if (asked.length < budget) return undefined;
   const ids = asked.map((question) => question.id).join(", ");

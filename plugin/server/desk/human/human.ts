@@ -47,6 +47,6 @@ export class Human {
   }
 
   report(project: Project): ReportView {
-    return reportView(project, this.services.teamFor(project).attention.questionsPerDay);
+    return reportView(project, this.services.teamFor(project).hitl.questionsPerDay);
   }
 }

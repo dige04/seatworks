@@ -16,6 +16,8 @@ type TurnDeps = {
   kit: Kit;
   desk: Desk;
   seats: Pick<Seats, "respond">;
+  /** Whether the Human stays in the loop for this project: off, the Supervisor asks them directly. */
+  hitlOn: (project: Project) => boolean;
   remember: (project: Project) => void;
   log: (project: Project, line: string) => void;
 };
@@ -83,7 +85,9 @@ export class TurnRules {
       return;
     }
     // A seat stopped on a question reads nothing, and a team waiting on a sleeping Human is stuck: the question goes by the desk.
-    if (request.kind === "question" && request.id) {
+    // With the Human out of the loop, the Supervisor grills them on the concept with its agent's own question instead.
+    const grilling = can(role, "supervise") && !this.deps.hitlOn(project);
+    if (request.kind === "question" && request.id && !grilling) {
       await this.deps.seats.respond(agent.id, request.id, {
         behavior: "deny",
         message: `A question that stops your turn is not taken here: ${askInstead(toolsOf(this.deps.kit, role))}.`,

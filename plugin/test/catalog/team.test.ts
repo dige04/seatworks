@@ -166,6 +166,12 @@ const ERRORS: [typeof kit, Layer, Layer, RegExp[]][] = [
     ],
   ],
   [
+    kit,
+    { hitl: { questionsPerDay: 5 } },
+    { hitl: { on: true, questionsPerDay: 10 } },
+    [/^The project settings set hitl\.questionsPerDay, which only the machine's can: it counts every project's$/],
+  ],
+  [
     withRole("lead", { paseoTools: { allow: ["get_agent_activty"] } }),
     {},
     {},
@@ -312,4 +318,13 @@ test("a server that needs something the project lacks is left off its seats, wit
   const opened = tempDir("sw2-idea-");
   mkdirSync(join(opened, ".idea"));
   assert.deepEqual(servingProject(team, opened).roles.peer!.mcp, ["ide", "docs"]);
+});
+
+test("the Human is out of the loop unless the settings put them in: the project's word over the machine's, the machine's limit", () => {
+  assert.deepEqual(resolveTeam(kit).hitl, { on: false, questionsPerDay: 3 });
+  assert.deepEqual(resolveTeam(kit, { hitl: { on: true, questionsPerDay: 5 } }, { hitl: { on: false } }).hitl, {
+    on: false,
+    questionsPerDay: 5,
+  });
+  assert.equal(resolveTeam(kit, {}, { hitl: { on: true } }).hitl.on, true);
 });

@@ -1,4 +1,4 @@
-import type { AttentionChoice, Layer, McpChoice, RoleChoice } from "../../shared/settings.ts";
+import type { AttentionChoice, HitlChoice, Layer, McpChoice, RoleChoice } from "../../shared/settings.ts";
 
 export type Source = "here" | "machine" | "default";
 
@@ -80,6 +80,10 @@ export function modelRow(model: string, models: { id: string; label: string }[])
 
 export function setAttention(values: Layer, choice: AttentionChoice): Layer {
   return { ...values, attention: { ...values.attention, ...choice } };
+}
+
+export function setHitl(values: Layer, choice: HitlChoice): Layer {
+  return { ...values, hitl: { ...values.hitl, ...choice } };
 }
 
 export function setFlow(values: Layer, choice: { live?: boolean; everySeconds?: number }): Layer {

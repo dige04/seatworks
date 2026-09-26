@@ -62,8 +62,16 @@ export const AttentionChoice = z.strictObject({
   suppressed: Pattern.optional(),
   longTurnMinutes: z.number().int().min(1).optional(),
   incidentsPerLane: z.number().int().min(0).optional(),
-  questionsPerDay: z.number().int().min(0).optional(),
   judge: z.string().min(1).optional(),
+});
+
+/**
+ * Whether the Human stays in the loop between the concept and the report. Off, only the concept is theirs and the Supervisor
+ * decides the rest; on, it may queue questions for them, at most `questionsPerDay` across every project on this machine.
+ */
+export const HitlChoice = z.strictObject({
+  on: z.boolean().optional(),
+  questionsPerDay: z.number().int().min(0).optional(),
 });
 
 /** A sensor's key buys paid calls, so it is kept on this machine only and the screen never reads it back: it sees KEPT. */
@@ -83,8 +91,10 @@ export const LayerSchema = z.strictObject({
   rules: z.string().optional(),
   flow: FlowChoice.optional(),
   attention: AttentionChoice.optional(),
+  hitl: HitlChoice.optional(),
   sensor: z.record(z.string(), SensorChoice).optional(),
 });
 
 export type Layer = z.infer<typeof LayerSchema>;
 export type AttentionChoice = z.infer<typeof AttentionChoice>;
+export type HitlChoice = z.infer<typeof HitlChoice>;

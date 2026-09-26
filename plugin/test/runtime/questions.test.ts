@@ -20,10 +20,11 @@ const packet = (extra: Record<string, unknown> = {}) => ({
 });
 
 test("a question's class decides what waits on it: an irreversible one holds its lane now, a costly one at its ready report, and the Human's standing orders raise it", async () => {
-  const { h, sup, lane } = await laneWithPeer({ attention: { questionsPerDay: 6 } }, undefined, {
+  const { h, sup, lane } = await laneWithPeer({ hitl: { on: true } }, undefined, {
     holds: ["a.txt"],
     parallel: true,
   });
+  h.machineSettings({ hitl: { questionsPerDay: 6 } });
   const ask = (extra: Record<string, unknown>) => h.call(sup, "supervisor", "ask_human", packet(extra));
   assert.match(
     (await ask({ lane: "L1", class: "costly" })).text,

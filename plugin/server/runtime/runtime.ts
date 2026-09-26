@@ -93,7 +93,14 @@ export class Runtime implements HostHooks {
       sensor: options.sensor,
     });
     this.socket = this.teamSocket();
-    this.turns = new TurnRules({ kit, desk: this.desk, seats: host.seats, remember, log });
+    this.turns = new TurnRules({
+      kit,
+      desk: this.desk,
+      seats: host.seats,
+      hitlOn: (project) => this.source.teamFor(project).hitl.on,
+      remember,
+      log,
+    });
     this.watching = new Watching({ kit, source: this.source, desk: this.desk, watches: () => this.watches });
     this.watches = this.watchesOf(kit);
     this.patrol = new Patrol({

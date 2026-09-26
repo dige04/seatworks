@@ -72,15 +72,19 @@ const Attention = z.object({
   suppressed: z.string(),
   longTurnMinutes: z.number(),
   incidentsPerLane: z.number(),
-  questionsPerDay: z.number(),
   judge: z.string(),
 });
 export type Attention = z.infer<typeof Attention>;
+
+/** Whether the Human is in the loop, resolved: the project's word over the machine's, and the machine's daily question limit. */
+const Hitl = z.object({ on: z.boolean(), questionsPerDay: z.number() });
+export type Hitl = z.infer<typeof Hitl>;
 
 export const TeamView = z.object({
   project: z.string().nullable(),
   errors: z.array(z.string()),
   attention: Attention,
+  hitl: Hitl,
   rules: z.string(),
   mcp: z.record(
     z.string(),

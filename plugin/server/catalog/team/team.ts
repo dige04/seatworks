@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Layer } from "../../../shared/settings.ts";
-import type { Attention } from "../../../shared/views.ts";
+import type { Attention, Hitl } from "../../../shared/views.ts";
 import type { HarnessSpec, Kit, SensorSpec } from "../kit/kit.ts";
 import { type McpState, resolveMcp } from "./mcp-states.ts";
 import { type RoleSeat, presetOn, resolveRole } from "./role-seats.ts";
@@ -15,10 +15,13 @@ export type Team = {
   roles: Record<string, RoleSeat>;
   mcp: Record<string, McpState>;
   attention: Attention;
+  hitl: Hitl;
   judge?: JudgeChoice;
   rules: string;
   errors: string[];
 };
+
+const QUESTIONS_PER_DAY = 3;
 
 /** `unread` layers are reported, since resolving to nothing looked like a complete team the owner never wrote. */
 export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, unread: string[] = []): Team {
@@ -32,10 +35,20 @@ export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, 
   const mcp = resolveMcp(kit, layers, errors);
   const roles = resolveRoles(kit, layers, mcp, errors);
   const attention = { ...kit.attention, ...stripUndefined(machine.attention), ...stripUndefined(project.attention) };
+  // Questions are counted across every project, so only the machine can say how many a day the Human takes.
+  if (project.hitl?.questionsPerDay !== undefined)
+    errors.push(
+      "The project settings set hitl.questionsPerDay, which only the machine's can: it counts every project's",
+    );
+  const hitl = {
+    on: project.hitl?.on ?? machine.hitl?.on ?? false,
+    questionsPerDay: machine.hitl?.questionsPerDay ?? QUESTIONS_PER_DAY,
+  };
   return {
     roles,
     mcp,
     attention,
+    hitl,
     judge: judgeOf(kit, attention.judge, layers, errors),
     rules: [machine.rules, project.rules].filter((text) => text && text.trim()).join("\n\n"),
     errors,
