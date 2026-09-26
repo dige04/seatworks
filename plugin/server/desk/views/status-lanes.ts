@@ -1,7 +1,7 @@
 import type { SeatView } from "../../core/paseo.ts";
 import { minutesSince } from "../../core/time.ts";
 import type { Lane } from "../../domain/lane.ts";
-import type { Ledger } from "../../domain/ledger.ts";
+import { type Ledger, laneSpent } from "../../domain/ledger.ts";
 import { AT_WORK, type Task } from "../../domain/task.ts";
 import { keptPeers } from "../seats/kept.ts";
 
@@ -21,6 +21,7 @@ export function openLaneLines(ledger: Ledger, lane: Lane, seats: Seats, now: num
     "",
     `Branch ${lane.branch}${on}. Lead ${seatLine(seats, lane.lead, now)}.${detour}`,
     ...laneNotes(lane, now),
+    ...spentLine(ledger, lane),
     ...(aims ? laneAim(lane) : []),
     "",
     ...(tasks.length === 0 ? ["- no tasks yet"] : taskLines),
@@ -60,6 +61,11 @@ function laneNotes(lane: Lane, now: number): string[] {
       `Landing waits ${minutesSince(now, land.since)} min for the Human's approval: ${land.signals.join(" ")}`,
     );
   return notes;
+}
+
+function spentLine(ledger: Ledger, lane: Lane): string[] {
+  const spent = laneSpent(ledger, lane.id);
+  return spent === undefined ? [] : [`Spent $${spent.toFixed(2)} by its seats, as their agents report it.`];
 }
 
 function laneAim(lane: Lane): string[] {

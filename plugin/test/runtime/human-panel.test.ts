@@ -251,6 +251,7 @@ test("the Report tells from the record what needs the Human, widest stop first, 
       ["Incidents", "1"],
       ["Your answers", "none yet"],
       ["Findings re-checked", "none yet"],
+      ["Spend", "not reported"],
     ],
   );
 
@@ -431,5 +432,33 @@ test("the Flow tab draws the machine as the ledger and Paseo have it, and an unc
   assert.deepEqual(
     (await drawn(h)).supervisors.map((seat) => [seat.id, seat.status]),
     [[next, "gone"]],
+  );
+});
+
+test("what a lane's seats spent, as their agents report it, is kept across an agent starting again and shown on status, Flow and the Report", async () => {
+  const { h, sup, lane, peer } = await laneWithPeer();
+  const costs = (seat: string, totalCostUsd: number) =>
+    Object.assign(h.agents.get(seat)!, { lastUsage: { totalCostUsd } });
+  costs(lane.lead!, 0.5);
+  costs(peer, 1.25);
+  await h.tick();
+  costs(peer, 0.25);
+  await h.tick();
+  const status = (await h.call(sup, "supervisor", "status", {})).text;
+  assert.match(
+    status,
+    /\nSpent \$2\.00 by its seats, as their agents report it\.\n/,
+    "1.25 before its agent started again, 0.25 since",
+  );
+  assert.equal((await drawn(h)).lanes.find((entry) => entry.id === lane.id)!.spent, 2);
+  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  assert.ok("numbers" in report);
+  assert.deepEqual(
+    report.numbers.find((row) => row.title === "Spend"),
+    {
+      title: "Spend",
+      value: "$2.00",
+      detail: "L1 $2.00, as its seats' agents report it; an agent that reports none is not counted",
+    },
   );
 });

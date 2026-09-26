@@ -25,7 +25,11 @@ export type AgentRef = {
   gone?: boolean;
   recordedAt?: number;
   spokeAt?: number;
+  spent?: Spent;
 };
+
+/** Dollars a seat's agent reported, which count from its agent's start: `banked` is what earlier starts had reached. */
+type Spent = { banked: number; last: number };
 
 export type Ledger = {
   seq: { lane: number; ask: number; slot?: number; question?: number };
@@ -154,4 +158,12 @@ export function besideOf(ledger: Ledger, task: Task): Task[] {
       (task.mode === "parallel" || other.mode === "parallel") &&
       !waitsOn(ledger, other, task.id),
   );
+}
+
+/** What the seats of a lane spent, as their agents report it; undefined when none of them reports any. */
+export function laneSpent(ledger: Ledger, lane: string): number | undefined {
+  const spent = Object.values(ledger.agents).flatMap((agent) =>
+    agent.lane === lane && agent.spent ? [agent.spent.banked + agent.spent.last] : [],
+  );
+  return spent.length > 0 ? Math.round(spent.reduce((sum, each) => sum + each, 0) * 100) / 100 : undefined;
 }

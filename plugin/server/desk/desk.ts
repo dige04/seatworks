@@ -1,6 +1,7 @@
 import type { Kit, SensorSpec } from "../catalog/kit/kit.ts";
 import type { Team } from "../catalog/team/team.ts";
 import { KeyedQueue } from "../core/keyed-queue.ts";
+import { recordSpend } from "./seats/spend.ts";
 import { Limiter } from "../core/limiter.ts";
 import { daemonLog } from "../core/logger.ts";
 import { midTurn } from "../core/paseo.ts";
@@ -187,6 +188,10 @@ export class Desk {
 
   reapSlots(project: Project, live: Set<string>): Promise<void> {
     return reapKept(this.services, project, live);
+  }
+
+  recordSpend(project: Project, seats: Iterable<SeatView>): void {
+    recordSpend(this.services, project, seats);
   }
 
   setTask(project: Project, taskId: string, change: (task: Task) => void): Task | undefined {

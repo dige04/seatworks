@@ -50,6 +50,7 @@ const FlowLane = z.object({
   workspaceId: z.string().optional(),
   onHold: z.object({ minutes: z.number(), reason: z.string() }).optional(),
   ready: z.number().optional(),
+  spent: z.number().optional(),
 });
 export type FlowLane = z.infer<typeof FlowLane>;
 /** An open ask between seats, as the Human reads it: who asked whom and how long ago, never the words, which are the seats'. */

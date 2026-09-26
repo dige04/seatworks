@@ -4,7 +4,7 @@ import type { SeatView } from "../../core/paseo.ts";
 import { AT_WORK, SETTLED } from "../../domain/task.ts";
 import { keptCopy, keptPeers } from "../seats/kept.ts";
 import type { Lane } from "../../domain/lane.ts";
-import type { Ledger } from "../../domain/ledger.ts";
+import { type Ledger, laneSpent } from "../../domain/ledger.ts";
 import type { FlowAsk, FlowLane, FlowQuestion, FlowSeat, FlowTask, FlowView } from "../../../shared/flow-views.ts";
 import type { Project } from "../project/project.ts";
 
@@ -89,6 +89,7 @@ function laneOf(
   const land = lane.landApproval;
   const closed = lane.status === "closed";
   const idle = closed ? [] : keptPeers(ledger, lane.id).filter((peer) => seats.has(peer.id));
+  const spent = laneSpent(ledger, lane.id);
   return {
     id: lane.id,
     title: lane.title,
@@ -117,6 +118,7 @@ function laneOf(
     ...(lane.workspaceId ? { workspaceId: lane.workspaceId } : {}),
     ...(lane.onHold ? { onHold: { minutes: minutes(now, lane.onHold.at), reason: lane.onHold.reason } } : {}),
     ...(lane.ready ? { ready: minutes(now, lane.ready.at) } : {}),
+    ...(spent === undefined ? {} : { spent }),
   };
 }
 

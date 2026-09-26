@@ -166,7 +166,7 @@ current. Three of them are where you meet the work:
   permissions given or refused, asks a Lead settled when nobody answered); what went ahead on a
   recommendation, what landed, what could not be undone, how often your answers took the
   recommendation and how fast, and how many of a review's findings the next review of the same work
-  found resolved, by the role that made them.
+  found resolved, by the role that made them, and what each lane spent, as its agents report it.
 - **Orders** shows what you settled, read only: the paths you see first, the risk rules, where lanes
   work, and `CONTEXT.md`. You change them by telling the Supervisor.
 

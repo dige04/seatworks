@@ -5,7 +5,7 @@ import { memo, useMemo } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Empty } from "./bits.tsx";
 import type { FlowAsk, FlowLane, FlowSeat, FlowView } from "../../shared/flow-views.ts";
-import { leadState, seatName, seatText, taskState, where } from "../format/flow.ts";
+import { leadState, seatName, seatText, spentText, taskState, where } from "../format/flow.ts";
 import { lasting } from "../format/time.ts";
 import { ApprovalsCards } from "./approvals.tsx";
 import { QuestionCards } from "./questions.tsx";
@@ -219,7 +219,7 @@ const Lane = memo(function Lane(props: LaneProps & { onOpen: (id: string) => voi
         <Node
           theme={theme}
           title={`${seatName(lane.lead)} · ${lane.id} ${lane.title}`}
-          hint={`${where(lane)} · ${lane.base ? `${lane.branch} off ${lane.base}` : `${lane.branch}, carried on in place`}`}
+          hint={`${where(lane)} · ${lane.base ? `${lane.branch} off ${lane.base}` : `${lane.branch}, carried on in place`}${spentText(lane)}`}
           state={leadState(lane, answers, human)}
           alive={Boolean(lane.lead && lane.lead.status !== "gone" && !lane.onHold)}
           caret={opens ? (lane.open ? "▾" : "▸") : undefined}

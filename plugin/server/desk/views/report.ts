@@ -6,6 +6,7 @@ import { askedSince } from "../human/questions.ts";
 import type { Incident } from "../../domain/incident.ts";
 import { loadIncidents } from "../store/incidents.ts";
 import { loadLedger } from "../store/ledger.ts";
+import { type Ledger, laneSpent } from "../../domain/ledger.ts";
 import type { Project } from "../project/project.ts";
 import { type DatedEvent, eventsSince } from "./events-since.ts";
 import { decidedFor } from "./report-decided.ts";
@@ -69,6 +70,7 @@ export function reportView(project: Project, inputs: ReportInputs, now = Date.no
       ...numbers(project, inputs.questionsPerDay, now - DAY_MS, landed.length, waiting.length, incidents),
       answerNumbers(questions, events, since),
       recheckNumbers(kit, ledger, since),
+      spendNumbers(ledger),
     ],
   };
 }
@@ -102,6 +104,23 @@ function numbers(
       detail: marked.concat(`${incidents.filter((incident) => !incident.label).length} not marked`).join(" · "),
     },
   ];
+}
+
+/** What the project's lanes spent, as their seats' agents report it: counted from each agent's start, not over the window. */
+function spendNumbers(ledger: Ledger): ReportView["numbers"][number] {
+  const lanes = Object.values(ledger.lanes).flatMap((lane) => {
+    const spent = laneSpent(ledger, lane.id);
+    return spent === undefined ? [] : [[lane.id, spent] as const];
+  });
+  const dollars = (value: number) => `$${value.toFixed(2)}`;
+  return {
+    title: "Spend",
+    value: lanes.length > 0 ? dollars(lanes.reduce((sum, [, spent]) => sum + spent, 0)) : "not reported",
+    detail:
+      lanes.length > 0
+        ? `${lanes.map(([id, spent]) => `${id} ${dollars(spent)}`).join(" · ")}, as its seats' agents report it; an agent that reports none is not counted`
+        : "No seat's agent here reports what it spends.",
+  };
 }
 
 const median = (values: number[]): number => {

@@ -24,6 +24,10 @@ export const seatText = (seat: FlowSeat | null, answers = "you"): string => {
 /** Where a lane works: the Human's own checkout, or a copy of its own. */
 export const where = (lane: FlowLane): string => (lane.copy ? `copy ${lane.copy}` : "your checkout");
 
+/** What a lane's seats spent, as their agents report it, where any does. */
+export const spentText = (lane: FlowLane): string =>
+  lane.spent === undefined ? "" : ` · $${lane.spent.toFixed(2)} spent`;
+
 /** What a task's card says of it: why it cannot start or merge yet, what a waiting one waits for, since when a handed-back one waits, else what its seat is doing. */
 export const taskState = (task: FlowTask, answers: string): string => {
   if (task.held) return `${task.status}: ${task.held}`;
