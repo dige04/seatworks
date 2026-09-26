@@ -23,6 +23,9 @@ test("where a lane works is the Human's call: asked when their copy is off its b
     h.call(sup, "supervisor", "open_lane", lane(title, extra));
   const choice = /The Human decides where the next lane works/;
   await h.call(sup, "supervisor", "set_project", { base: "main", gate: "true" });
+  const endless = await h.call(sup, "supervisor", "set_project", { gate: "npm test", gateTimeoutMinutes: 0 });
+  assert.match(endless.text, /^Nothing was set: gateTimeoutMinutes/);
+  assert.match((await h.call(sup, "supervisor", "set_project", {})).text, /^Base main; gate true, /);
   const fresh = await status();
   assert.match(
     fresh,

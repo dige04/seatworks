@@ -47,6 +47,9 @@ const ProjectFile = z.strictObject({
   riskRules: z.array(RiskRule).optional(),
 });
 
+/** Each field of `project.json`, as a call that sets some of them names them. */
+export type ProjectFields = z.output<typeof ProjectFile>;
+
 /** Enough for every copy a machine keeps at once: copy paths are never reused, so an unbounded cache grew for good. */
 const CACHED_PROJECTS = 512;
 const cache = new Map<string, Project>();
@@ -154,7 +157,7 @@ export function loadConfig(state: string): ProjectConfig {
 }
 
 /** An empty gate is the owner's decision and must survive a read: as `undefined`, `open_lane` would seed a detected gate over it. */
-function configOf(stored: z.output<typeof ProjectFile>): ProjectConfig {
+function configOf(stored: ProjectFields): ProjectConfig {
   return {
     base: stored.base || undefined,
     gate: stored.gate,
