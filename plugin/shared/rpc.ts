@@ -18,7 +18,7 @@ import {
   TeamRead,
   WriteResult,
 } from "./views.ts";
-import { CleanView, ContentView, MigrateView, UpdateView } from "./upkeep-views.ts";
+import { CleanView, ContentView, OlderSeatsView, UpdateView } from "./upkeep-views.ts";
 import { FlowRead } from "./flow-views.ts";
 
 const project = z.string().min(1).optional();
@@ -116,10 +116,10 @@ export const updateRpc = defineRpc({
   input: z.object({ apply: z.boolean(), fetch: z.boolean().optional() }),
   output: UpdateView,
 });
-export const migrateRpc = defineRpc({
-  name: "seatworks.upkeep.migrate",
+export const olderSeatsRpc = defineRpc({
+  name: "seatworks.upkeep.older-seats",
   input: z.object({}),
-  output: MigrateView,
+  output: OlderSeatsView,
 });
 export const pathsRpc = defineRpc({
   name: "seatworks.paths.list",
@@ -149,5 +149,5 @@ export const contracts = {
   content: contentRpc,
   clean: cleanRpc,
   update: updateRpc,
-  migrate: migrateRpc,
+  olderSeats: olderSeatsRpc,
 } as const;

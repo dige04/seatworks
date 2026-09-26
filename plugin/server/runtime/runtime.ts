@@ -23,7 +23,7 @@ import { Desk } from "../desk/desk.ts";
 import { type Project, projectOf } from "../desk/project/project.ts";
 import { appendRecord } from "../desk/store/records.ts";
 import { TOOLS } from "../desk/tools/registry.ts";
-import { stampKit } from "../upkeep/migrate.ts";
+import { stampKit } from "../upkeep/older-seats.ts";
 import { codeIndex } from "./seat/code-index.ts";
 import { HumanPanel } from "./panel/human.ts";
 import { ProjectsPanel } from "./panel/projects.ts";

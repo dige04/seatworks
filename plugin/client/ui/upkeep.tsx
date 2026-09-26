@@ -4,19 +4,19 @@ import { ScrollView } from "@getpaseo/plugin/client/react-native";
 import { SettingsAction, SettingsCard, SettingsSection, SettingsSwitch } from "@getpaseo/plugin/client/ui";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Text, View } from "react-native";
-import { cleanRpc, contentRpc, migrateRpc, updateRpc } from "../../shared/rpc.ts";
+import { cleanRpc, contentRpc, olderSeatsRpc, updateRpc } from "../../shared/rpc.ts";
 import type {
   CleanItem,
   CleanView,
   ContentChange,
   ContentView,
-  MigrateView,
+  OlderSeatsView,
   UpdateView,
 } from "../../shared/upkeep-views.ts";
 import { Button } from "./bits.tsx";
 import { message } from "../format/error.ts";
 
-type Busy = "update" | "migrate" | "clean" | "content" | null;
+type Busy = "update" | "read" | "clean" | "content" | null;
 
 const plural = (count: number, one: string) => `${count} ${one}${count === 1 ? "" : "s"}`;
 
@@ -76,13 +76,13 @@ function versionLine(view: UpdateView | null): { title: string; state: string } 
 
 export function UpkeepSection({ theme }: { theme: PluginTheme }) {
   const update = useRpc(updateRpc);
-  const migrate = useRpc(migrateRpc);
+  const older = useRpc(olderSeatsRpc);
   const content = useRpc(contentRpc);
   const clean = useRpc(cleanRpc);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
   const [updated, setUpdated] = useState<UpdateView | null>(null);
-  const [migrated, setMigrated] = useState<MigrateView | null>(null);
+  const [seats, setSeats] = useState<OlderSeatsView | null>(null);
   const [changed, setChanged] = useState<ContentView | null>(null);
   const [cleaned, setCleaned] = useState<CleanView | null>(null);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
@@ -122,9 +122,9 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
 
   useEffect(() => {
     void update({ apply: false, fetch: false }).then(setUpdated, (problem: unknown) => setError(message(problem)));
-    void run("migrate", async () => {
-      const [seats, kit] = await Promise.all([migrate({}), content({})]);
-      setMigrated(seats);
+    void run("read", async () => {
+      const [started, kit] = await Promise.all([older({}), content({})]);
+      setSeats(started);
       setChanged(kit);
     });
     // Once per mount: an update reloads the plugin, and this is what the owner needs next.
@@ -178,8 +178,8 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
       />,
     );
   }
-  for (const step of migrated?.steps ?? [])
-    row(`${step.where}:${step.what}`, true, `${step.where}: ${step.what}`, step.detail.join(" "), null);
+  for (const project of seats?.projects ?? [])
+    row(`older:${project.where}`, true, `${project.where}: ${project.what}`, project.detail.join(" "), null);
 
   const items = cleaned?.items ?? [];
   const picks = items.filter((item) => chosen.has(item.path));

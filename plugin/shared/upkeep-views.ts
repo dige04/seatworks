@@ -36,19 +36,10 @@ export const UpdateView = z.object({
 });
 export type UpdateView = z.infer<typeof UpdateView>;
 
-const MigrateStep = z.object({
-  kind: z.literal("seat"),
-  where: z.string(),
-  what: z.string(),
-  detail: z.array(z.string()),
-});
-export type MigrateStep = z.infer<typeof MigrateStep>;
-export const MigrateView = z.object({
-  stamp: z.string(),
-  since: z.string(),
-  steps: z.array(MigrateStep),
-});
-export type MigrateView = z.infer<typeof MigrateView>;
+const OlderSeats = z.object({ where: z.string(), what: z.string(), detail: z.array(z.string()) });
+export type OlderSeats = z.infer<typeof OlderSeats>;
+export const OlderSeatsView = z.object({ version: z.string(), since: z.string(), projects: z.array(OlderSeats) });
+export type OlderSeatsView = z.infer<typeof OlderSeatsView>;
 
 const ContentChange = z.object({
   unit: z.string(),

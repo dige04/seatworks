@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { MigrateStep, MigrateView } from "../../shared/upkeep-views.ts";
+import type { OlderSeats, OlderSeatsView } from "../../shared/upkeep-views.ts";
 import type { Kit } from "../catalog/kit/kit.ts";
 import { stateRoot } from "../core/paths.ts";
 import { readJson, writeJson } from "../core/store.ts";
@@ -8,35 +8,34 @@ import { versionOf } from "./update.ts";
 
 export type LiveSeat = { provider: string; slug: string; createdAt?: string; name: string };
 
-export type MigrateContext = {
+export type OlderContext = {
   kit: Kit;
   home: string;
   live: LiveSeat[];
   now: number;
 };
 
-type Stamp = { stamp: string; since: string };
+type Stamp = { version: string; since: string };
 
 const stampFile = (homeDir: string) => join(stateRoot(homeDir), "kit.json");
 
 /** Which version this machine runs, and since when: a seat started earlier runs an older one. */
 export function stampKit(kit: Kit, homeDir: string, now = Date.now()): Stamp {
-  const stamp = versionOf(kit.dir);
+  const version = versionOf(kit.dir);
   const held = readJson<Partial<Stamp>>(stampFile(homeDir), {});
-  if (held.stamp === stamp && typeof held.since === "string") return { stamp, since: held.since };
-  const next = { stamp, since: new Date(now).toISOString() };
+  if (held.version === version && typeof held.since === "string") return { version, since: held.since };
+  const next = { version, since: new Date(now).toISOString() };
   writeJson(stampFile(homeDir), next);
   return next;
 }
 
-function seatSteps(ctx: MigrateContext, since: string): MigrateStep[] {
+function olderBySlug(ctx: OlderContext, since: string): OlderSeats[] {
   const old = ctx.live.filter(
     (seat) => seat.provider.startsWith(ctx.kit.prefix) && seat.createdAt && seat.createdAt < since,
   );
   const bySlug = new Map<string, LiveSeat[]>();
   for (const seat of old) bySlug.set(seat.slug, [...(bySlug.get(seat.slug) ?? []), seat]);
   return [...bySlug].map(([slug, seats]) => ({
-    kind: "seat" as const,
     where: slug,
     what: `${seats.length} ${plural(seats.length, "seat", "seats")} started before this version`,
     detail: [
@@ -46,7 +45,8 @@ function seatSteps(ctx: MigrateContext, since: string): MigrateStep[] {
   }));
 }
 
-export function migrationPlan(ctx: MigrateContext): MigrateView {
+/** The seats of each project started before the version this machine runs. */
+export function olderSeats(ctx: OlderContext): OlderSeatsView {
   const stamp = stampKit(ctx.kit, ctx.home, ctx.now);
-  return { ...stamp, steps: seatSteps(ctx, stamp.since) };
+  return { ...stamp, projects: olderBySlug(ctx, stamp.since) };
 }
