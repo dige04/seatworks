@@ -10,12 +10,8 @@ import { providerId } from "../kit/roles.ts";
 import { presetOn } from "../team/role-seats.ts";
 import type { Team } from "../team/team.ts";
 
-/** A Paseo agent profile: the provider a seat starts with and the model it starts on. */
-type Profile = Json & { id: string };
-
-/** Keys the kit sets on a provider or a profile only when it wants them, so one it stops wanting is taken off. */
+/** Keys the kit sets on a provider only when it wants them, so one it stops wanting is taken off. */
 const PROVIDER_OPTIONAL = ["command", "models", "additionalModels", "paseoTools", "description"];
-const PROFILE_OPTIONAL = ["model", "modeId", "thinkingOptionId"];
 
 function labelFor(kit: Kit, role: RoleSpec, harness: HarnessSpec): string {
   const tag = kit.prefix.replace(/[-_]+$/, "");
@@ -68,16 +64,6 @@ function desiredProvider(kit: Kit, team: Team, role: RoleSpec, harness: HarnessS
   return entry;
 }
 
-function desiredProfile(kit: Kit, team: Team, role: RoleSpec, harness: HarnessSpec): Profile {
-  const id = providerId(kit, role.role, harness.id);
-  const choice = choiceFor(team, role, harness);
-  const profile: Profile = { id, name: labelFor(kit, role, harness), provider: id };
-  if (choice.model) profile.model = choice.model;
-  if (harness.provider.profileModeId) profile.modeId = harness.provider.profileModeId;
-  if (choice.thinking) profile.thinkingOptionId = choice.thinking;
-  return profile;
-}
-
 function managedEnvKeys(kit: Kit): Set<string> {
   const keys = new Set<string>();
   for (const harness of Object.values(kit.harnesses)) {
@@ -87,22 +73,24 @@ function managedEnvKeys(kit: Kit): Set<string> {
   return keys;
 }
 
-/** Paseo's config with every provider and profile the kit's seats need, as the kit and team want them now. */
+/**
+ * Paseo's config with every provider the kit's seats need, as the kit and team want them now, and no profile of the
+ * kit's: nothing reads one, since the Human starts a Supervisor by its provider.
+ */
 function reconcile(config: Json, kit: Kit, team: Team): { config: Json; changed: string[] } {
   const next = structuredClone(config);
   const providers = child(child(next, "agents"), "providers") as Record<string, Json>;
-  const daemon = child(next, "daemon");
-  daemon.agentProfiles ??= [];
   const changed: string[] = [];
   const pairs = seatPairs(kit);
   const wanted = new Set(pairs.map((pair) => providerId(kit, pair.role.role, pair.harness.id)));
-  if (kit.prefix) dropStale(providers, daemon, kit.prefix, wanted, changed);
+  if (kit.prefix) {
+    dropStale(providers, kit.prefix, wanted, changed);
+    dropProfiles(next, kit.prefix, changed);
+  }
   const managed = managedEnvKeys(kit);
-  const profiles = daemon.agentProfiles as Json[];
   for (const { role, harness } of pairs) {
     const id = providerId(kit, role.role, harness.id);
     reconcileProvider(providers, id, desiredProvider(kit, team, role, harness), managed, changed);
-    reconcileProfile(profiles, desiredProfile(kit, team, role, harness), changed);
   }
   return { config: next, changed };
 }
@@ -113,25 +101,24 @@ function child(parent: Json, key: string): Json {
   return parent[key] as Json;
 }
 
-/** Takes off the providers and profiles under the kit's prefix that no seat needs any more. */
-function dropStale(
-  providers: Record<string, Json>,
-  daemon: Json,
-  prefix: string,
-  wanted: Set<string>,
-  changed: string[],
-): void {
+/** Takes off the providers under the kit's prefix that no seat needs any more. */
+function dropStale(providers: Record<string, Json>, prefix: string, wanted: Set<string>, changed: string[]): void {
   for (const id of Object.keys(providers)) {
     if (id.startsWith(prefix) && !wanted.has(id)) {
       delete providers[id];
       changed.push(`provider ${id} removed`);
     }
   }
-  daemon.agentProfiles = (daemon.agentProfiles as Json[]).filter((entry) => {
-    const id = entry.id;
-    const stale = typeof id === "string" && id.startsWith(prefix) && !wanted.has(id);
-    if (stale) changed.push(`profile ${id} removed`);
-    return !stale;
+}
+
+function dropProfiles(config: Json, prefix: string, changed: string[]): void {
+  const daemon = config.daemon;
+  if (!isRecord(daemon) || !Array.isArray(daemon.agentProfiles)) return;
+  daemon.agentProfiles = (daemon.agentProfiles as unknown[]).filter((entry) => {
+    const id = isRecord(entry) ? entry.id : undefined;
+    const ours = typeof id === "string" && id.startsWith(prefix);
+    if (ours) changed.push(`profile ${id} removed`);
+    return !ours;
   });
 }
 
@@ -151,18 +138,6 @@ function reconcileProvider(
   if (sameJson(merged, have)) return;
   providers[id] = merged;
   changed.push(`provider ${id}`);
-}
-
-/** One profile as the kit wants it, keeping what else the owner set on it. */
-function reconcileProfile(profiles: Json[], profile: Profile, changed: string[]): void {
-  const index = profiles.findIndex((entry) => entry.id === profile.id);
-  const current = index >= 0 ? profiles[index] : undefined;
-  const merged: Json = { ...(current ?? {}), ...profile };
-  for (const key of PROFILE_OPTIONAL) if (!(key in profile)) delete merged[key];
-  if (current && sameJson(merged, current)) return;
-  if (index >= 0) profiles[index] = merged;
-  else profiles.push(merged);
-  changed.push(`profile ${profile.id}`);
 }
 
 export function applyReconcile(kit: Kit, team: Team): string[] {

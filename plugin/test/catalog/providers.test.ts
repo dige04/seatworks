@@ -18,11 +18,14 @@ type Provider = {
   additionalModels?: unknown;
   paseoTools?: unknown;
 };
-type Config = { agents: { providers: Record<string, Provider> }; daemon: { agentProfiles: { id: string }[] } };
+type Config = {
+  agents: { providers: Record<string, Provider> };
+  daemon: { agentProfiles: { id: string; provider?: string }[] };
+};
 const written = () => JSON.parse(readFileSync(paseoConfigPath(), "utf-8")) as Config;
 const SEATS = ["lead-claude", "lead-omp", "peer-omp", "scribe-claude", "scribe-omp", "supervisor-claude"];
 
-test("the plugin writes one provider and profile per seat into Paseo's config, keeps what is the owner's, drops what the kit no longer defines, and a second pass changes nothing", () => {
+test("the plugin writes one provider per seat into Paseo's config and no profile, keeps what is the owner's, drops what the kit no longer defines and every profile of its own, and a second pass changes nothing", () => {
   const kit = makeKit();
   mkdirSync(dirname(paseoConfigPath()), { recursive: true });
   const owners: Config = {
@@ -39,7 +42,9 @@ test("the plugin writes one provider and profile per seat into Paseo's config, k
         },
       },
     },
-    daemon: { agentProfiles: [{ id: "mine" }, { id: "sw2-peer" }] },
+    daemon: {
+      agentProfiles: [{ id: "mine" }, { id: "sw2-peer" }, { id: "sw2-lead-claude", provider: "sw2-lead-claude" }],
+    },
   };
   writeFileSync(paseoConfigPath(), JSON.stringify(owners), { mode: 0o600 });
 
@@ -47,7 +52,8 @@ test("the plugin writes one provider and profile per seat into Paseo's config, k
   assert.deepEqual(
     changed.sort(),
     [
-      ...SEATS.flatMap((seat) => [`profile sw2-${seat}`, `provider sw2-${seat}`]),
+      ...SEATS.map((seat) => `provider sw2-${seat}`),
+      "profile sw2-lead-claude removed",
       "profile sw2-peer removed",
       "provider sw2-peer removed",
     ].sort(),
@@ -83,34 +89,22 @@ test("the plugin writes one provider and profile per seat into Paseo's config, k
     [undefined, undefined, [{ id: "glm", label: "GLM", isDefault: true }]],
   );
   assert.deepEqual(peer.paseoTools, { enabled: false });
-  assert.deepEqual(daemon.agentProfiles[0], { id: "mine" });
   assert.deepEqual(
-    daemon.agentProfiles.find((profile) => profile.id === "sw2-peer-omp"),
-    {
-      id: "sw2-peer-omp",
-      name: "Peer · Oh My Pi (sw2)",
-      provider: "sw2-peer-omp",
-      model: "glm",
-      modeId: "full",
-    },
+    daemon.agentProfiles,
+    [{ id: "mine" }],
+    "nothing reads a profile: the Human starts a Supervisor by its provider, so only the owner's own stay",
   );
   const held = readFileSync(paseoConfigPath(), "utf-8");
   assert.deepEqual(applyReconcile(kit, resolveTeam(kit)), []);
   assert.equal(readFileSync(paseoConfigPath(), "utf-8"), held, "a second pass writes nothing");
 
-  assert.deepEqual(applyReconcile(kit, resolveTeam(kit, { roles: { lead: { model: "haiku" } } })).sort(), [
-    "profile sw2-lead-claude",
+  assert.deepEqual(applyReconcile(kit, resolveTeam(kit, { roles: { lead: { model: "haiku" } } })), [
     "provider sw2-lead-claude",
   ]);
   assert.deepEqual(
     written().agents.providers["sw2-lead-claude"]!.additionalModels,
     [{ id: "haiku", label: "Haiku", isDefault: true }],
     "the model it starts on is the one chosen",
-  );
-  assert.equal(
-    "thinkingOptionId" in written().daemon.agentProfiles.find((profile) => profile.id === "sw2-lead-claude")!,
-    false,
-    "a thinking option the new model does not offer is taken off its profile",
   );
   const listed = makeKit();
   applyModels(listed, {
