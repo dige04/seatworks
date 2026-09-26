@@ -36,6 +36,7 @@ export const DESK_OWNED = new Set([
   "meta.json",
   "settings.json",
   "status.md",
+  "report.json",
   ...RECORDS.map((name) => `${name}.log`),
   "handbacks",
   "gates",

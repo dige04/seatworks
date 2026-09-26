@@ -242,6 +242,11 @@ test("a Claude seat's file tools are kept off what the desk owns and what sets u
         "guides/PLANS.md",
       ].map((path) => `${machine}/${path}`),
     ],
+    [
+      "where the Human last read the Report, which a seat moving on would hide what came since from them",
+      "Edit",
+      [`${project}/report.json`],
+    ],
     ["the keys the desk knows a caller by", "Read", [`${machine}/keys.json`, `${machine}/keys.json.123.tmp`]],
     [
       "a login, through the link to it in a seat's directory",
