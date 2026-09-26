@@ -1,15 +1,10 @@
 {
   "id": "jev",
   "label": "Jev",
-  "key": "OpenRouter key",
-  "url": "https://openrouter.ai/api/alpha/decisions",
-  "model": "typesafe/jev-1.13",
-  "terms": "Asked with data collection denied.",
-  "body": {
-    "provider": {
-      "data_collection": "deny"
-    }
-  },
+  "key": "TypeSafe key",
+  "url": "https://api.typesafe.ai/v1/systemone",
+  "model": "jev-1.13.0",
+  "terms": "Asked of TypeSafe directly.",
   "timeoutSeconds": 5,
   "retries": 1
 }

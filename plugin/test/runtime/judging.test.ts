@@ -263,8 +263,8 @@ test("the Flow tab says who answers the watch and how that stands: off, no key, 
   judgedBy("off");
   assert.deepEqual(await line(), { label: "", state: "off", minutes: null, detail: null });
   judgedBy("jev");
-  assert.deepEqual(await line(), { label: "Jev", state: "nokey", minutes: null, detail: "OpenRouter key" });
-  assert.deepEqual((await h.rpc(contracts.catalog, {})).sensors, [{ id: "jev", label: "Jev", key: "OpenRouter key", model: "typesafe/jev-1.13", terms: "Asked with data collection denied." }], "the switch offers each sensor the kit has, by name and the key it takes");
+  assert.deepEqual(await line(), { label: "Jev", state: "nokey", minutes: null, detail: "TypeSafe key" });
+  assert.deepEqual((await h.rpc(contracts.catalog, {})).sensors, [{ id: "jev", label: "Jev", key: "TypeSafe key", model: "jev-1.13.0", terms: "Asked of TypeSafe directly." }], "the switch offers each sensor the kit has, by name and the key it takes");
   judgedBy("jev", KEY);
   assert.equal((await line()).state, "waiting");
   await handBack(false);
