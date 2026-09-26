@@ -27,10 +27,13 @@ async function handTo(
 
 const unread = (who: string) => `${who} is not seated any more, so a message would wait for nobody.`;
 
-/** Why a settled task takes no message: a merged one's Peer is kept only to take rework, which would wake it in a copy it no longer holds. */
-const settled = (task: Task) =>
+/**
+ * Why a settled task takes no message: a merged one's Peer is kept only to take rework, which would wake it in a copy it no
+ * longer holds; rework is its Lead's to send, which `by` says when whoever supervises asks.
+ */
+const settled = (task: Task, by: "lead" | "owner") =>
   task.status === "merged"
-    ? `${task.id} is merged, and its Peer is kept only to take rework: send rework if its work must change.`
+    ? `${task.id} is merged, and its Peer is kept only to take rework: ${by === "lead" ? "send rework" : "ask its Lead to send rework"} if its work must change.`
     : SETTLED.includes(task.status)
       ? `${task.id} is ${task.status}, and its Peer went with it.`
       : undefined;
@@ -46,7 +49,8 @@ async function fromOwner(
   const lane = findLane(ledger, sending.to);
   if (lane) return toLead(desk, caller, lane, sending, text);
   const task = findTask(ledger, sending.to);
-  if (!task?.peer) return no(`There is no lane or task ${sending.to}.`);
+  if (!task) return no(`There is no lane or task ${sending.to}.`);
+  if (!task.peer) return no(`${task.id} has not started yet, so it has no Peer to reach; its Lead has it.`);
   return toPeer(desk, caller, ledger, task, task.peer, sending, text);
 }
 
@@ -78,7 +82,7 @@ async function toPeer(
 ): Promise<ToolReply> {
   const { mail, roster } = desk;
   // Checked before anything is sent, so a settled task never gets a RECONCILE.
-  const done = settled(task);
+  const done = settled(task, "owner");
   if (done) return no(done);
   if (!(await roster.seated(peer))) return no(unread(`The Peer on ${task.id}`));
   const lane = ledger.lanes[task.lane];
@@ -114,7 +118,7 @@ export async function sendMessage(
   const lane = laneOfLead(ledger, caller.id);
   const task = findTask(ledger, to);
   if (!lane || !task || task.lane !== lane.id || !task.peer) return no(`${to} is not a task in your lane.`);
-  const done = settled(task);
+  const done = settled(task, "lead");
   if (done) return no(done);
   if (!(await desk.roster.seated(task.peer))) return no(unread(`The Peer on ${task.id}`));
   return ok(await handTo(desk, { target: task.peer, from: "your lead", who: `the Peer on ${task.id}` }, sending, text));

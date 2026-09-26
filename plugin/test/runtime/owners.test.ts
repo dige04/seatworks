@@ -194,6 +194,11 @@ test("reaching a Peer directly tells its Lead what reached it, and is refused wh
   const peer = h.ledger().tasks["L1-T1"]!.peer!;
   const reach = (text: string) => h.call(sup, "supervisor", "message", { to: "L1-T1", text });
 
+  await h.call(lane.lead!, "lead", "add_tasks", { tasks: [{ ...task("Refund"), key: "r", after: ["L1-T1"] }] });
+  assert.match(
+    (await h.call(sup, "supervisor", "message", { to: "L1-T2", text: "Round the refund too." })).text,
+    /^L1-T2 has not started yet, so it has no Peer to reach; its Lead has it\.$/,
+  );
   const reached = await reach("Use banker's rounding, not half-up.");
   assert.equal(reached.ok, true, reached.text);
   await h.idle(peer);

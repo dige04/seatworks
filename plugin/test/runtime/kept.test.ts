@@ -40,7 +40,7 @@ const kept = (id: string, seat: string) =>
   );
 
 test("a Peer whose task is accepted is kept for rework until its Lead releases it, and the lane's copy never has two writers", async () => {
-  const { h, lane, peer } = await laneWithPeer();
+  const { h, sup, lane, peer } = await laneWithPeer();
   const lead = lane.lead!;
   const say = async (tool: string, args: Record<string, unknown>) => (await h.call(lead, "lead", tool, args)).text;
   const status = () => say("status", {});
@@ -71,6 +71,11 @@ test("a Peer whose task is accepted is kept for rework until its Lead releases i
     message.text,
     /^L1-T1 is merged, and its Peer is kept only to take rework: send rework if its work must change\./,
     "not with the Peer said to be gone",
+  );
+  assert.match(
+    (await h.call(sup, "supervisor", "message", { to: "L1-T1", text: "why a.txt?" })).text,
+    /^L1-T1 is merged, and its Peer is kept only to take rework: ask its Lead to send rework if its work must change\./,
+    "whoever supervises holds no rework of its own",
   );
   assert.match(await say("rework", { task: "L1-T1", text: "x" }), /L1-T2 holds the lane's working copy/);
   assert.equal(h.ledger().tasks["L1-T1"]!.status, "merged", "and nothing moved");
