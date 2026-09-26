@@ -44,7 +44,13 @@ export const HOLDS_COPY: readonly TaskStatus[] = [
 ];
 export const ACTIVE: readonly TaskStatus[] = ["running", "rework", "queued", "merging"];
 
-/** `reworks` is how many times the task had been sent back when this came: a later rework makes it an older word. */
+/** How a review marks a finding an earlier review of the same work made. */
+export type Mark = "resolved" | "open" | "wrong";
+
+/**
+ * `reworks` is how many times the task had been sent back when this came: a later rework makes it an older word. A
+ * review's also keeps its findings, and its marks on the earlier review's it was given.
+ */
 type Handback = {
   file: string;
   outcome: string;
@@ -53,6 +59,8 @@ type Handback = {
   at: number;
   reworks: number;
   gate?: { ok: boolean; note: string; sha?: string; over?: string };
+  findings?: string[];
+  marks?: Mark[];
 };
 
 export type Task = {
@@ -86,6 +94,7 @@ export type Task = {
   amended?: Amendment[];
   reworks?: number;
   sentBack?: { at: number; text: string }[];
+  rechecks?: { review: string; findings: string[] };
   acceptedAt?: number;
   silent: number;
   peerGone?: boolean;

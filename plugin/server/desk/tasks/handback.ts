@@ -4,7 +4,7 @@ import type { Kit } from "../../catalog/kit/kit.ts";
 import { changedFiles } from "../../core/git-diff.ts";
 import { currentBranch, headSha, pristineState } from "../../core/git.ts";
 import { capped, clip, plural } from "../../core/text.ts";
-import { IN_QUEUE, SETTLED, TASK, type TaskStatus } from "../../domain/task.ts";
+import { IN_QUEUE, type Mark, SETTLED, TASK, type TaskStatus } from "../../domain/task.ts";
 import { handbackCase } from "../review/evidence.ts";
 import { type Caller, type ToolReply, no, ok } from "../context.ts";
 import { taskGate } from "../project/gates.ts";
@@ -35,7 +35,11 @@ type HandingBack = {
   findings?: Finding[];
   read?: string[];
   ran?: string[];
+  earlier?: Mark[];
 };
+
+/** A finding as a line the Lead, a later review and the record read alike. */
+const findingLine = (found: Finding) => `${found.severity} ${found.where ? `${found.where}: ` : ""}${found.failure}`;
 
 type Work = { commit?: string; uncommitted: boolean; synced?: string; changed?: string[]; notes: string[] };
 
@@ -57,7 +61,14 @@ export async function handBack(desk: DeskServices, caller: Caller, args: Handing
   const work = await workOf(desk.kit, project, ledger, task, synced);
   const written = await write(desk, project, task, args, work);
   const summary = (task.kind === "review" ? args.answer : args.summary)?.trim() ?? "";
-  const already = record(desk, project, task, written, work.commit, summary);
+  const review =
+    task.kind === "review"
+      ? {
+          ...(args.findings?.length ? { findings: args.findings.map(findingLine) } : {}),
+          ...(task.rechecks && args.earlier ? { marks: args.earlier } : {}),
+        }
+      : {};
+  const already = record(desk, project, task, written, work.commit, summary, review);
   if (already) {
     const queued = already !== "gone" && IN_QUEUE.includes(already);
     return no(
@@ -175,10 +186,16 @@ function taskBody(
 function reviewBody(task: Task, args: HandingBack): { outcome: string; body: string } {
   const outcome = args.verdict?.trim() ?? "";
   const confirmed = (found: Finding) => (found.confirmedBy ? ` Confirmed by: ${found.confirmedBy}` : "");
-  const findings = (args.findings ?? []).map(
-    (found) =>
-      `- ${found.severity} ${found.where ? `${found.where}: ` : ""}${found.failure} Fix: ${found.fix}${confirmed(found)}`,
-  );
+  const findings = (args.findings ?? []).map((found) => `- ${findingLine(found)} Fix: ${found.fix}${confirmed(found)}`);
+  const rechecked = task.rechecks
+    ? [
+        "",
+        `Earlier findings, of ${task.rechecks.review}:`,
+        ...task.rechecks.findings.map(
+          (line, index) => `${index + 1}. ${line}: ${MARKED[args.earlier?.[index] ?? "none"]}`,
+        ),
+      ]
+    : [];
   const answers = listOf(args.answers);
   const asked = (task.asked ?? []).flatMap((question, index) => [`${index + 1}. ${question}`, `   ${answers[index]}`]);
   const lines = [
@@ -188,6 +205,7 @@ function reviewBody(task: Task, args: HandingBack): { outcome: string; body: str
     "",
     "Findings:",
     ...(findings.length > 0 ? findings : ["none"]),
+    ...rechecked,
     ...(asked.length > 0 ? ["", "Asked by the project's risk rules:", ...asked] : []),
     "",
     `Read: ${listOf(args.read).join("; ") || "not given"}`,
@@ -196,6 +214,8 @@ function reviewBody(task: Task, args: HandingBack): { outcome: string; body: str
   ];
   return { outcome, body: lines.join("\n") };
 }
+
+const MARKED = { resolved: "resolved", open: "still open", wrong: "wrong", none: "not marked" };
 
 const listOf = (items: string[] | undefined): string[] => (items ?? []).map((item) => item.trim()).filter(Boolean);
 
@@ -207,6 +227,7 @@ function record(
   written: Written,
   commit: string | undefined,
   summary: string,
+  review: { findings?: string[]; marks?: Mark[] },
 ): TaskStatus | "gone" | undefined {
   return ledgers.transact(project, (current) => {
     const entry = current.tasks[task.id];
@@ -222,6 +243,7 @@ function record(
       at: Date.now(),
       reworks: entry.reworks ?? 0,
       ...gate,
+      ...review,
     };
     return undefined;
   });

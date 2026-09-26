@@ -25,6 +25,7 @@ const Verdict = z.strictObject({
   findings: z.array(Finding).optional(),
   read: z.array(z.string()).optional(),
   ran: z.array(z.string()).optional(),
+  earlier: z.array(z.enum(["resolved", "open", "wrong"])).optional(),
 });
 
 export const done = defineTool({ name: "done", input: HandBack, speaks: true, handle: handBack });

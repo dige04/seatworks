@@ -1543,6 +1543,18 @@
               "type": "string"
             },
             "description": "The commands you ran."
+          },
+          "earlier": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "resolved",
+                "open",
+                "wrong"
+              ]
+            },
+            "description": "For each finding of an earlier review your brief lists, in its order: resolved, open (still there), or wrong (never a defect)."
           }
         },
         "required": [

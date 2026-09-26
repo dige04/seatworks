@@ -10,7 +10,7 @@ import { type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { holdRefusal } from "../lanes/hold.ts";
 import { changeOf } from "../lanes/land-facts.ts";
 import type { Lane } from "../../domain/lane.ts";
-import { findTask, laneOfLead, nextTaskId } from "../../domain/ledger.ts";
+import { type Ledger, findTask, laneOfLead, nextTaskId } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { seatTitle } from "../seats/names.ts";
@@ -81,6 +81,7 @@ function record(
     if (held) return held;
     const id = nextTaskId(now, "review");
     const at = Date.now();
+    const earlier = target ? rechecksOf(current, target.id) : undefined;
     const created: Task = {
       id,
       lane: lane.id,
@@ -96,6 +97,7 @@ function record(
       outOfScope: [],
       context: lane.branch,
       startSha: reading.at,
+      ...(earlier ? { rechecks: earlier } : {}),
       status: "running",
       openedAt: at,
       updatedAt: at,
@@ -105,6 +107,15 @@ function record(
     seating.take(workKey(project, id));
     return { ...created };
   });
+}
+
+/** The findings of the latest review of `task` that made any, for the next review of it to mark. */
+function rechecksOf(ledger: Ledger, task: string): Task["rechecks"] {
+  const last = Object.values(ledger.tasks)
+    .filter((entry) => entry.kind === "review" && entry.of === task && entry.handback?.findings?.length)
+    .sort((a, b) => a.handback!.at - b.handback!.at)
+    .at(-1);
+  return last && { review: last.id, findings: last.handback!.findings! };
 }
 
 /**

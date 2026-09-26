@@ -164,8 +164,9 @@ current. Three of them are where you meet the work:
   what needs you, first what stops the Supervisor or a lane, with how long each has waited; what was
   decided for you (pushes and tags, merges and landings over a red gate with their reasons,
   permissions given or refused, asks a Lead settled when nobody answered); what went ahead on a
-  recommendation, what landed, what could not be undone, and how often your answers took the
-  recommendation and how fast.
+  recommendation, what landed, what could not be undone, how often your answers took the
+  recommendation and how fast, and how many of a review's findings the next review of the same work
+  found resolved, by the role that made them.
 - **Orders** shows what you settled, read only: the paths you see first, the risk rules, where lanes
   work, and `CONTEXT.md`. You change them by telling the Supervisor.
 

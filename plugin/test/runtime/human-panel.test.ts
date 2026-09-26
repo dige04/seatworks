@@ -250,6 +250,7 @@ test("the Report tells from the record what needs the Human, widest stop first, 
       ["Landings", "0 landed"],
       ["Incidents", "1"],
       ["Your answers", "none yet"],
+      ["Findings re-checked", "none yet"],
     ],
   );
 

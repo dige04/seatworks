@@ -101,6 +101,12 @@ export function reviewBrief(
       ]
     : [`REVIEW ${review.id}: ${review.title}`, "", `${place.where} Read whatever the question needs.`];
   lines.push("", "Open question:", focus);
+  if (review.rechecks)
+    lines.push(
+      "",
+      `${review.rechecks.review}, an earlier review of this work, found these; say in earlier, in this order, whether each is resolved, still open, or wrong:`,
+      ...review.rechecks.findings.map((line, index) => `${index + 1}. ${line}`),
+    );
   if (review.asked)
     lines.push(
       "",

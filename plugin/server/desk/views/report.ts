@@ -9,6 +9,7 @@ import { loadLedger } from "../store/ledger.ts";
 import type { Project } from "../project/project.ts";
 import { type DatedEvent, eventsSince } from "./events-since.ts";
 import { decidedFor } from "./report-decided.ts";
+import { recheckNumbers } from "./report-rechecks.ts";
 import { type Seated, needsOf, stops } from "./report-needs.ts";
 
 /** `from` is when the Human last marked the Report read, none before they ever have; `human` whether they are in the loop. */
@@ -67,6 +68,7 @@ export function reportView(project: Project, inputs: ReportInputs, now = Date.no
     numbers: [
       ...numbers(project, inputs.questionsPerDay, now - DAY_MS, landed.length, waiting.length, incidents),
       answerNumbers(questions, events, since),
+      recheckNumbers(kit, ledger, since),
     ],
   };
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { contracts } from "../../shared/rpc.ts";
 import { harness } from "./harness.ts";
 import { heldGit } from "./lane-gates.ts";
 
@@ -383,5 +384,48 @@ test("a verdict names the commit it read, and accepting or landing says how far 
       `\\n- The lane's latest review of the whole lane, L1-R2, read ${lane.branch} at ${tip.slice(0, 7)}; 1 commit came after it\\.\\n`,
     ),
     "whoever lands it reads how far the lane moved past the verdict",
+  );
+});
+
+test("a review of work an earlier review sent back marks each earlier finding, and the Report counts how many were resolved", async () => {
+  const { h, lane, lead } = await opened("Rounding");
+  await h.call(lead, "lead", "add_tasks", {
+    tasks: [{ key: "t", title: "Round", goal: "g", ...scope, hints: ["a.txt"] }],
+  });
+  const peer = h.ledger().tasks["L1-T1"]!.peer!;
+  h.commit(lane.worktree!, "a.txt", "rounded\n");
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "rounded" });
+  await h.call(lead, "lead", "start_review", { task: "L1-T1", focus: "Is the rounding right?" });
+  const second = { severity: "P2", failure: "totals in cents are assumed", fix: "say the unit" };
+  await h.call(reviews(h).at(-1)!.peer!, "reviewer", "done", {
+    verdict: "changes",
+    answer: "Two problems.",
+    findings: [finding, second],
+  });
+  await h.call(lead, "lead", "rework", { task: "L1-T1", text: "Round half up, and say the unit." });
+  h.commit(lane.worktree!, "a.txt", "rounded half up\n");
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "half up" });
+
+  await h.call(lead, "lead", "start_review", { task: "L1-T1", focus: "Is it right now?" });
+  const again = reviews(h).at(-1)!;
+  assert.match(
+    h.agents.get(again.peer!)!.prompt!,
+    /L1-R1, an earlier review of this work, found these; say in earlier, in this order, whether each is resolved, still open, or wrong:\n1\. P1 a\.txt:1: rounds half down\n2\. P2 totals in cents are assumed\n/,
+  );
+  const marked = await h.call(again.peer!, "reviewer", "done", {
+    verdict: "accept",
+    answer: "Right now.",
+    earlier: ["resolved", "wrong"],
+  });
+  assert.equal(marked.ok, true, marked.text);
+  assert.match(
+    h.heard(lead).join("\n"),
+    /Earlier findings, of L1-R1:\n1\. P1 a\.txt:1: rounds half down: resolved\n2\. P2 totals in cents are assumed: wrong\n/,
+  );
+  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  assert.ok("numbers" in report);
+  assert.deepEqual(
+    report.numbers.find((row) => row.title === "Findings re-checked"),
+    { title: "Findings re-checked", value: "1 of 2 resolved", detail: "Reviewer: 1 resolved, 0 still open, 1 wrong" },
   );
 });
