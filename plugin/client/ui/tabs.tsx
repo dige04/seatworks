@@ -2,7 +2,7 @@ import type { PluginTheme } from "@getpaseo/plugin";
 import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 
-type Tab = { id: string; label: string; count?: number };
+type Tab = { id: string; label: string };
 
 export function TabBar({
   tabs,
@@ -57,9 +57,7 @@ export function TabBar({
             style={[styles.tab, on ? styles.on : null]}
             onPress={() => onPick(tab.id)}
           >
-            <Text style={[styles.label, on ? styles.labelOn : null]}>
-              {typeof tab.count === "number" ? `${tab.label}  ${tab.count}` : tab.label}
-            </Text>
+            <Text style={[styles.label, on ? styles.labelOn : null]}>{tab.label}</Text>
           </Pressable>
         );
       })}

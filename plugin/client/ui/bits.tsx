@@ -158,20 +158,12 @@ export function Empty({ title, body, theme }: { title: string; body: string; the
 }
 
 /** A capitalised group heading, shared by the Health tab and the watch card. */
-export function Heading({
-  text,
-  theme,
-  tone = "muted",
-}: {
-  text: string;
-  theme: PluginTheme;
-  tone?: "muted" | "danger";
-}) {
+export function Heading({ text, theme }: { text: string; theme: PluginTheme }) {
   return (
     <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 6 }}>
       <Text
         style={{
-          color: tone === "danger" ? theme.colors.statusDanger : theme.colors.foregroundMuted,
+          color: theme.colors.foregroundMuted,
           fontSize: 12,
           fontWeight: "500",
           letterSpacing: 0.6,
@@ -188,6 +180,6 @@ export function Rule({ theme }: { theme: PluginTheme }) {
   return <View style={{ height: 1, backgroundColor: theme.colors.border }} />;
 }
 
-export function Dot({ color, size = 8 }: { color: string; size?: number }) {
-  return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: color }} />;
+export function Dot({ color }: { color: string }) {
+  return <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />;
 }

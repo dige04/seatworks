@@ -186,21 +186,19 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
       >
         {trouble}
         {tab === "team" ? (
-          <>
-            <TeamSection
-              catalog={data.catalog}
-              team={data.team}
-              values={data.values}
-              machine={data.machine}
-              layer={layer}
-              theme={theme}
-              disabled={locked}
-              active={chip}
-              onActive={setChip}
-              save={save}
-              reload={reload}
-            />
-          </>
+          <TeamSection
+            catalog={data.catalog}
+            team={data.team}
+            values={data.values}
+            machine={data.machine}
+            layer={layer}
+            theme={theme}
+            disabled={locked}
+            active={chip}
+            onActive={setChip}
+            save={save}
+            reload={reload}
+          />
         ) : null}
         {tab === "flow" ? (
           <FlowSection
@@ -236,7 +234,7 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
             layer={layer}
             theme={theme}
             disabled={locked}
-            save={(change) => save(change)}
+            save={save}
             addServer={addServer}
           />
         ) : null}

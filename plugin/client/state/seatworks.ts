@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   catalogRpc,
   doctorRpc,
-  flowRpc,
   mcpParseRpc,
   pathsRpc,
   projectsAddRpc,
@@ -71,7 +70,6 @@ export function useSeatworks(project?: string) {
     preview: useRpc(teamPreviewRpc),
     doctor: useRpc(doctorRpc),
     status: useRpc(statusRpc),
-    flow: useRpc(flowRpc),
     paths: useRpc(pathsRpc),
   };
   const paseo = usePaseo();
@@ -124,7 +122,7 @@ export function useSeatworks(project?: string) {
         candidates: known.filter((entry) => offerable.has(entry.root)),
         team,
         values: settings.status === "ready" ? settings.values : {},
-        machine: settings.machine ?? {},
+        machine: settings.machine,
         revision: settings.revision,
         settingsError: settings.status === "ready" ? null : settings.error,
       });
@@ -184,21 +182,6 @@ export function useSeatworks(project?: string) {
     },
     [data, project, writing],
   );
-
-  const addProject = useCallback(async (root: string): Promise<string | null> => {
-    setSaveError(null);
-    try {
-      const result = await latest.current.add({ root });
-      if ("error" in result) {
-        setSaveError(result.error);
-        return null;
-      }
-      return result.slug;
-    } catch (error) {
-      setSaveError(message(error));
-      return null;
-    }
-  }, []);
 
   /** Attaches `root` with the setup the screen chose, in one call: the desk folds it into what the project holds. */
   const attach = useCallback(
@@ -307,7 +290,6 @@ export function useSeatworks(project?: string) {
     saving,
     saved,
     saveError,
-    addProject,
     addServer,
     attach,
     detach,

@@ -239,7 +239,7 @@ export function ServersSection({ catalog, team, values, machine, layer, theme, d
             entry={entry}
             current={state.settings}
             disabled={disabled}
-            save={(change) => save(change)}
+            save={save}
             labelOf={(key) =>
               sourceLabel(
                 sourceOf(values, machine, (current) => current.mcp?.[active]?.settings?.[key], layer),
