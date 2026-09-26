@@ -29,7 +29,7 @@ The plugin **serves** SLP so it works better with Paseo. It must **never constra
 
 | Who | Owns | Speaks to |
 |---|---|---|
-| Human | Intent, priorities, external commitments; push and release | the Supervisor |
+| Human | Intent, priorities, external commitments; the concept; push and release while in the loop | the Supervisor |
 | Supervisor | Intent interpretation, cross-boundary observation and intervention; landing lanes | the Human, the Leads; a Peer only with its Lead told first |
 | Lead | One lane: topology, sequencing, ownership, integration and **acceptance** | the Supervisor, its Peers and Reviewers |
 | Peer | One task, and the engineering judgment inside it; may refuse the Lead's framing | its Lead |
@@ -39,28 +39,35 @@ The plugin **serves** SLP so it works better with Paseo. It must **never constra
 - **The Supervisor directs attention; it does not scan.** W tells it when a Lead or a Peer needs
   attention. The Supervisor decides whether and how to step in: one open question, a council, a
   hold, or the Human. It never writes code and never decides a technical result.
-- **W is one eye and two brains.** The eye reads each Lead's and Peer's work (thinking, words,
-  commands) and reports to the Supervisor when it sees an anti-pattern (`docs/ANTIPATTERNS.md`) or
-  one of SLP's moments: a Lead making an architecture decision, a Peer struggling with an unclear
-  idea, a sharp change of direction, an agent saying it was wrong. The brains are Jev, a cheap typed
-  model asked one condition at a time, and the Watcher seat, a model that judges; which of them runs
-  is settings. W never decides, never steps in, and never speaks to the seat it watches.
+- **W is one eye and two brains.** The eye looks at each Lead's and Peer's new thinking, words and
+  briefs every few minutes and at a turn's end, beside the code facts from commands and turns, and
+  reports to the Supervisor when it sees an anti-pattern (`docs/ANTIPATTERNS.md`) or one of SLP's
+  moments: a Lead making an architecture decision, a Peer struggling with an unclear idea, a sharp
+  change of direction, an agent saying it was wrong. The brains are a sensor, a cheap typed model
+  asked one condition at a time, and the Watcher seat, a model that judges; `attention.brain` says
+  which run. What they find opens an incident. W never decides, never steps in, and never speaks to
+  the seat it watches.
 - **R is evidence for acceptance.** The Lead answers for its Peers' work and starts Reviewers to
   review it. A verdict never decides anything on its own.
 - **A lane is a team:** its Lead, its Peers and its Reviewers. One Lead runs several Peers at once,
   and several lanes run at once, as long as they do not collide. Each seat has one mission, a Peer
   one task and a Lead one lane; its superior ends it, never the desk.
-- **Merges are the desk's.** No seat may merge, pull, rebase, reset, check out, switch, cherry-pick,
-  stash, update a ref, push, or change working copies or branches: the git shim and each agent's
-  own rules refuse it. A Lead's `accept` puts a task in its lane's merge queue and the desk merges
-  it; the Supervisor's `land_lane` has the desk land the lane on base. A seat only settles, and
-  commits, the conflicts the desk leaves in its own copy.
+- **Branches are the desk's; a task branch is its Peer's.** The desk makes every branch and copy,
+  merges a task the Lead `accept`s into its lane, and lands a lane on base at the Supervisor's
+  `land_lane`. A writing seat may merge, rebase, reset or cherry-pick only on its own `task/*`
+  branch; no seat pulls, checks out, switches, stashes, updates a ref or pushes: the git shim and
+  each agent's own rules refuse it. A base that conflicts with a lane is never left half merged: the
+  Lead has a task take it in on its own branch.
+- **The Human in the loop is a setting**, `hitl.on`, off by default. Off, only the concept goes to
+  the Human, through the Supervisor's grilling; the Supervisor decides the rest, answers the seats'
+  permission prompts with `permit`, and pushes with `push`. On, their question queue, standing orders
+  and landing approvals apply. Code that waits for the Human reads the flag.
 
-**Where the code is not there yet.** Read this before you trust the watch:
-- Its code facts read commands and turn length; nothing reads a seat's thinking or words.
-- `attention.judge` picks one brain, asked only at a hand-back, a review or a destructive command,
-  and only in shadow.
-- An attention-level incident about a Peer or a Reviewer goes to its Lead, not to the Supervisor.
+**Where the code is not there yet.**
+- Every watch signal and pattern ships in shadow, told to no one until labels turn it on.
+- The `old-is-gone-test` pattern is missing: it needs the names of the tests a diff removes.
+- A Codex Lead can still write the project's files: Codex's workspace sandbox always lets a seat
+  write where it works.
 
 ## What the plugin may decide
 
@@ -79,19 +86,21 @@ These eight rules settle most questions about where a behaviour belongs.
 1. **Code owns only the SLP concept.** Agents, models, tools, MCP servers, thresholds and the watch's
    questions are data or settings; changing them never needs a code change. The name of an agent, an
    MCP server or a sensor in the plugin's code is a defect, and a test fails on it.
-2. **One door to the Human.** Only the Supervisor puts a question to the Human, on their queue. What
-   the panel shows is the desk's record and the Supervisor's words. When the Human types into a Lead's
+2. **One door to the Human.** Only the Supervisor puts a question to the Human: on their queue while
+   they are in the loop, in its own chat and about the concept alone while they are not. What the
+   panel shows is the desk's record and the Supervisor's words. When the Human types into a Lead's
    or Peer's chat, the desk tells whoever supervises.
 3. **Driven by events.** No seat runs on a heartbeat. A letter that asks nothing waits for one that
    does, so it never wakes a seat on its own. What W finds reaches the Supervisor as an event.
 4. **Evidence, not claims.** Accepting, reporting ready and landing always carry the desk's facts:
    gate, rehearsals, reviews. A seat saying "done" is a claim to check.
-5. **Layered by what can be undone.** What can be undone goes ahead; what cannot waits for the Human,
-   or is held, and the Supervisor hears of it at once.
+5. **Layered by what can be undone.** What can be undone goes ahead; what cannot waits for the Human
+   while they are in the loop, or is held, and the Supervisor hears of it at once.
 6. **What code can check is code.** A prompt keeps only judgement. An instruction that depends on the
    situation is the `Next:` line of the letter that brings the situation, not a table in a prompt.
-7. **No switch that turns a constraint off.** Two exceptions: a watch question's `mode`, which
-   calibration decides, and the Human's own standing orders.
+7. **No switch that turns a constraint off.** Three exceptions, each set by who it constrains or by
+   evidence: a watch signal's or pattern's shadow or on, which labels decide; the Human's standing
+   orders; and the Human-in-the-loop flag.
 8. **A signal earns its way.** A new question or incident ships in shadow, recorded and acted on by
    nothing, until labels show it is worth someone's attention.
 
@@ -284,10 +293,10 @@ its own, however short.
   `writes`, `follows`. Nothing in `server/` compares a role to a name; capabilities decide routing,
   acceptance, watching and judging.
 - **A `roles.json` in the state root replaces the shipped one**, as does any catalog file of the same
-  name there (a sensor by its id, in `sensor/`), and may point at its own prompts and
-  skills, so another arrangement needs no fork. A role of its own takes its sandbox, deltas and rules
-  from the state root's `own/harness/<agent>/` first, or is `like` a role that has them. Going your own
-  way inherits the machinery, not the wording.
+  name there (a sensor by its id, in `sensor/`), so another arrangement needs no fork. Its roles may
+  point at their own prompts and skills; a role of its own takes its sandbox, deltas and rules from
+  the state root's `own/harness/<agent>/` first, or is `like` a role that has them. Going your own way
+  inherits the machinery, not the wording.
 
 ## Where things live that you would not guess
 
