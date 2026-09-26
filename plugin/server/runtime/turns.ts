@@ -3,11 +3,8 @@ import type { Attention } from "../../shared/views.ts";
 import type { Kit } from "../catalog/kit/kit.ts";
 import { can, seatOf, worksTasks } from "../catalog/kit/roles.ts";
 import type { TurnEnded } from "../core/ports.ts";
-import type { Lane } from "../domain/lane.ts";
-import { DECIDED, TASK, type Task } from "../domain/task.ts";
-import { fact, findingsOf } from "../domain/incident.ts";
 import type { Desk } from "../desk/desk.ts";
-import { type Ledger, leadLaneOf, taskOfPeer } from "../domain/ledger.ts";
+import { leadLaneOf, taskOfPeer } from "../domain/ledger.ts";
 import { loadLedger } from "../desk/store/ledger.ts";
 import { seatLetters } from "../desk/letters/seat-letters.ts";
 import { messageLetters } from "../desk/letters/message-letters.ts";
@@ -19,7 +16,7 @@ import { ownerOf } from "./owner-of.ts";
 type TurnDeps = {
   kit: Kit;
   desk: Desk;
-  attention: (project: Project) => Pick<Attention, "silentTurns" | "quietChars">;
+  attention: (project: Project) => Pick<Attention, "quietChars">;
   remember: (project: Project) => void;
   troubles: Troubles;
 };
@@ -106,83 +103,16 @@ export class TurnRules {
     const recorded = (ledger.agents[agent.id]?.recordedAt ?? 0) >= started;
     // The read-only status tool counts as heard from, but not as reaching somebody.
     const spoke = (ledger.agents[agent.id]?.spokeAt ?? 0) >= started;
-    if (worksTasks(role)) await this.workerEnded(project, ledger, event, text, recorded, spoke);
-  }
-
-  private async workerEnded(
-    project: Project,
-    ledger: Ledger,
-    event: TurnEnded,
-    text: string,
-    recorded: boolean,
-    spoke: boolean,
-  ): Promise<void> {
-    const task = taskOfPeer(ledger, event.agent.id);
-    if (!task) return;
-    if (DECIDED.includes(task.status) && !recorded) return;
-    // Handed back, or its merge failed: what comes next is its Lead's call, so a quiet turn is no silence.
-    if (recorded || task.status === "done" || task.status === "failed")
-      return this.heard(project, task, recorded, spoke);
-    // A call still in flight is not silence: a nudge here started a second gate beside the first.
-    if (this.deps.desk.inFlight(event.agent.id)) return;
-    await this.silent(project, ledger.lanes[task.lane], task, event, text);
-  }
-
-  /** Heard from, so the quiet count restarts; left standing it was a lifetime tally. */
-  private heard(project: Project, task: Task, recorded: boolean, spoke: boolean): void {
-    const { desk } = this.deps;
-    if (spoke && task.silent > 0)
-      desk.setTask(project, task.id, (entry) => {
-        entry.silent = 0;
-      });
-    // Nothing else sets a stalled task back to running once its Peer works again.
-    if (recorded && task.status === "stalled")
-      desk.moveTask(project, task.id, "resume", (entry) => {
-        delete entry.peerGone;
-      });
-  }
-
-  /** A turn ended with no hand-back and no ask: counted and nudged, then stalled and told to its Lead, and once to whoever supervises. */
-  private async silent(
-    project: Project,
-    lane: Lane | undefined,
-    task: Task,
-    event: TurnEnded,
-    text: string,
-  ): Promise<void> {
-    const { desk } = this.deps;
-    const { agent, timeline } = event;
-    const { silentTurns, quietChars } = this.deps.attention(project);
-    const denied = deniedCall(timeline, this.deps.kit.ecosystem.watch.refused, quietChars);
-    desk.event(project, {
-      kind: "turn.silent",
-      task: task.id,
-      denied: denied?.what ?? null,
-      refused: denied?.refused ?? false,
+    if (!worksTasks(role)) return;
+    const denied = deniedCall(timeline, this.deps.kit.ecosystem.watch.refused, this.deps.attention(project).quietChars);
+    await this.deps.desk.workerEnded(project, ledger, {
+      seat: { id: agent.id, provider: agent.provider, title: agent.title },
+      text,
+      recorded,
+      spoke,
+      calling: this.deps.desk.inFlight(agent.id),
+      ...(denied ? { denied } : {}),
       lastCall: JSON.stringify(lastToolCall(timeline) ?? null).slice(0, 600),
     });
-    const updated = desk.setTask(project, task.id, (entry) => {
-      entry.silent += 1;
-      if (entry.silent >= silentTurns || denied) TASK.move(entry, "stall");
-    });
-    if (!updated) return;
-    if (updated.status !== "stalled") {
-      await desk.post(agent.id, seatLetters.nudge(updated, "done"));
-      return;
-    }
-    const reader = await desk.readerOf(project, lane);
-    await desk.post(reader.to, seatLetters.stalled(task, text, updated.silent, denied, reader.as));
-    desk.event(project, {
-      kind: "task.silent",
-      task: task.id,
-      denied: denied?.what ?? null,
-      refused: denied?.refused ?? false,
-    });
-    if (task.status === "stalled") return;
-    const why = denied
-      ? `its Peer's last call ${denied.refused ? "was refused" : "did not finish"}: ${denied.what}`
-      : `its Peer ended ${updated.silent} turns without a hand-back or an ask`;
-    const seat = { id: agent.id, provider: agent.provider, title: agent.title };
-    await desk.notice(project, seat, findingsOf([fact("stalled", why)]));
   }
 }

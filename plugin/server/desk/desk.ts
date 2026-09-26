@@ -3,6 +3,7 @@ import type { Team } from "../catalog/team/team.ts";
 import { KeyedQueue } from "../core/keyed-queue.ts";
 import { recordSpend } from "./seats/spend.ts";
 import { dueAsks } from "./messaging/due-asks.ts";
+import { type WorkerTurn, workerEnded } from "./tasks/silence.ts";
 import { Limiter } from "../core/limiter.ts";
 import { daemonLog } from "../core/logger.ts";
 import {
@@ -208,6 +209,10 @@ export class Desk {
     missingOf: (ids: string[]) => Promise<Set<string>>,
   ): Promise<void> {
     return dueAsks(this.services, project, ledger, seats, now, missingOf);
+  }
+
+  workerEnded(project: Project, ledger: Ledger, turn: WorkerTurn): Promise<void> {
+    return workerEnded(this.services, project, ledger, turn);
   }
 
   recordSpend(project: Project, seats: Iterable<SeatView>): void {
