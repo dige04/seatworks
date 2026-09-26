@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { setTimeout as sleep } from "node:timers/promises";
 import { spawnSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -160,6 +161,14 @@ test("the merge queue hands a conflict to its Peer, merges nothing as nothing, w
     h.events("merge.failed").map((event) => event.task),
     ["L1-T3"],
   );
+  const crashed = h.ledger().tasks["L1-T3"]!.peer!;
+  const heard = h.ledger().agents[crashed]!;
+  while (Date.now() <= Math.max(heard.recordedAt ?? 0, heard.spokeAt ?? 0)) await sleep(1);
+  for (const words of ["Waiting on the merge.", "Still waiting."]) {
+    await h.beginTurn(crashed);
+    await h.endTurn(crashed, words);
+  }
+  assert.equal(status("L1-T3"), "failed", "a failed merge waits on its Lead, however quiet its Peer is meanwhile");
 
   const side = await beside("s", "Side", "c.txt", "C\n");
   writeFileSync(join(copy, "a.txt"), "half written\n");
