@@ -103,6 +103,22 @@ export class Watching {
     this.troubles.set(project.slug, list);
   }
 
+  /** A seat whose agent shows the watch no thinking: what reads thinking is blind to it, which the Human can only see here. */
+  private blind(project: Project, watch: SeatWatch, look: SeatLook): void {
+    const { seat } = watch;
+    this.deps.desk.event(project, {
+      kind: "watch.thoughtless",
+      agent: seat.id,
+      provider: seat.provider,
+      looks: look.thoughtless,
+    });
+    this.troubled(
+      project,
+      "watch.thoughtless",
+      `${look.thoughtless} looks at ${seat.title ?? seat.id} held its words and no thinking: what the watch reads in thinking is blind to it until its agent shows its thinking`,
+    );
+  }
+
   /** A call the harness refused because its input was not JSON; it never reaches the desk, so only this reports it. */
   malformedCalls(event: TurnEnded): void {
     const seat = seatOf(this.deps.kit, event.agent.provider);
@@ -127,6 +143,8 @@ export class Watching {
   /** A look's new words go to the brains: the seat's own only, its thinking and what it said, never a tool's output. */
   looked(watch: SeatWatch, look: SeatLook): void {
     const project = projectOf(watch.seat.cwd);
+    if (look.thoughtless === this.deps.source.teamFor(project).attention.thoughtlessLooks)
+      this.blind(project, watch, look);
     const items = look.units.flatMap((unit) =>
       (unit.kind === "thought" || unit.kind === "said") && unit.text.trim()
         ? [{ kind: unit.kind, text: unit.text }]

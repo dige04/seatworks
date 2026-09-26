@@ -5,6 +5,7 @@
   "lookMinutes": 5,
   "lookItemChars": 1500,
   "quoteChars": 400,
+  "thoughtlessLooks": 3,
   "watcherAnswerMinutes": 15,
   "leadIdleMinutes": 12,
   "askWaitingMinutes": 15,

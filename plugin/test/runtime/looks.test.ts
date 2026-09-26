@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type TestContext, test } from "node:test";
 import { stateRoot } from "../../server/core/paths.ts";
 import type { Judge, Question } from "../../server/core/ports.ts";
+import { contracts } from "../../shared/rpc.ts";
 import { settle } from "./fake-timeline.ts";
 import { type harness, laneWithPeer } from "./harness.ts";
 import { book } from "./noticed.ts";
@@ -256,4 +257,26 @@ test("a hand-back whose thinking saw a part fail or go undone is read beside wha
   const read = sensed.asked.find((entry) => "withholds-gap" in entry.questions)!;
   assert.equal(read.state.handback, "Totals round half up.", "what it handed back is read beside its thinking");
   assert.ok(Object.values(book(h)).some((item) => item.kind === "withholds-gap"));
+});
+
+test("a seat whose looks carry words but never thinking is recorded once, so what reads thinking is known to be blind to it", async (t) => {
+  const sensed = brain({});
+  const { h, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  brains("sensor");
+  const looked = looksOf(h, t);
+  for (const id of ["t1", "t2", "t3", "t4"]) {
+    timeline.beat("turn_started", id);
+    timeline.add({ type: "user_message", text: "Go on.", clientMessageId: `sw2-message-${id}` }, id);
+    timeline.add({ type: "assistant_message", text: `Working on it, ${id}.`, messageId: id }, id);
+    timeline.beat("turn_completed", id);
+    await looked();
+  }
+  assert.deepEqual(
+    h.events("watch.thoughtless").map((event) => event.looks),
+    [3],
+    "three looks with words and no thinking, told once",
+  );
+  const flow = await h.rpc(contracts.flow, { project: h.project.slug });
+  assert.ok("watch" in flow);
+  assert.match(flow.watch.trouble.map((entry) => entry.detail).join("\n"), /no thinking/);
 });

@@ -12,11 +12,13 @@ import { daemonLog } from "../../core/logger.ts";
 
 export type WatchedSeat = { id: string; provider: string; cwd: string; title?: string | null };
 
+/** `thoughtless` counts the looks with words and no thinking while the seat has never shown any. */
 export type SeatLook = {
   units: Unit[];
   facts: string[];
   since: number;
   instruction?: { text: string; from: string[] };
+  thoughtless: number;
 };
 
 /**
@@ -55,6 +57,8 @@ export class SeatWatch {
   private looked = 0;
   private lookedAt = Date.now();
   private readonly lookFacts = new Set<string>();
+  private thoughtless = 0;
+  private thinks = false;
   private readonly context: () => SeatContext | undefined;
   private current: SeatContext | undefined;
 
@@ -130,7 +134,15 @@ export class SeatWatch {
     this.lookedAt = now;
     const facts = [...this.lookFacts];
     this.lookFacts.clear();
-    return { units, facts, since, instruction: this.window.instruction() };
+    if (units.some((unit) => unit.kind === "thought")) this.thinks = true;
+    else if (!this.thinks && units.some((unit) => unit.kind === "said")) this.thoughtless += 1;
+    return {
+      units,
+      facts,
+      since,
+      instruction: this.window.instruction(),
+      thoughtless: this.thinks ? 0 : this.thoughtless,
+    };
   }
 
   longTurn(now: number, long: LongTurn): Fact[] {
