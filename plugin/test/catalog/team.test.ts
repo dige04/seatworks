@@ -297,6 +297,18 @@ test("each seat is told and given what its servers, its role and the Human say, 
     "what every seat is told reaches a seat with no server, and nothing meant for another",
   );
 
+  const peer = kit.roles.find((role) => role.role === "peer")!;
+  const twinned = resolveTeam({
+    ...kit,
+    roles: [...kit.roles, { ...peer, role: "twin", label: "Twin", like: "peer" }],
+  });
+  assert.match(rulesFor(twinned, "peer"), /Your IDE tools: .*\n\nCheck diagnostics before handing back\./);
+  assert.equal(
+    rulesFor(twinned, "twin"),
+    rulesFor(twinned, "peer"),
+    "a role like another is given that role's servers, and told of their tools and notes as that role is",
+  );
+
   const widened = resolveTeam(kit, {}, { mcp: { docs: { enabled: true, roles: ["peer", "scribe"] } } });
   assert.deepEqual(
     [widened.errors, widened.roles.scribe!.mcp, widened.roles.lead!.mcp],

@@ -5,7 +5,7 @@ import type { Attention, Hitl } from "../../../shared/views.ts";
 import type { HarnessSpec, Kit, SensorSpec } from "../kit/kit.ts";
 import { type McpState, resolveMcp } from "./mcp-states.ts";
 import { type RoleSeat, presetOn, resolveRole } from "./role-seats.ts";
-import { can } from "../kit/roles.ts";
+import { can, seatedAs } from "../kit/roles.ts";
 
 /**
  * The brains that read what the watch's eye sees, as the settings chose: the sensor, with its key where a settings layer
@@ -156,15 +156,16 @@ export function rulesFor(team: Team, roleName: string): string {
   const seat = team.roles[roleName];
   if (!seat) return "";
   const parts: string[] = [];
+  const as = seatedAs(seat.role);
   for (const id of seat.mcp) {
     const state = team.mcp[id]!;
     const { entry } = state;
     const lines: string[] = [];
     const rule = state.rule ?? (entry?.rule ? readFileSync(join(entry.dir, entry.rule), "utf-8").trim() : "");
     if (rule.trim()) lines.push(rule.trim());
-    const tools = entry?.kind === "proxy" ? ((state.tools ?? entry.tools)?.[roleName] ?? []) : [];
+    const tools = entry?.kind === "proxy" ? ((state.tools ?? entry.tools)?.[as] ?? []) : [];
     if (tools.length > 0) lines.push(`Your ${state.label} tools: ${tools.map((tool) => `\`${tool}\``).join(", ")}.`);
-    const note = entry?.roleNotes?.[roleName];
+    const note = entry?.roleNotes?.[as];
     if (note) lines.push(note);
     if (lines.length > 0) parts.push(lines.join("\n\n"));
   }
