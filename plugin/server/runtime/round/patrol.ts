@@ -254,7 +254,14 @@ export class Patrol {
     mkdirSync(project.state, { recursive: true });
     writeFileSync(
       join(project.state, "status.md"),
-      statusPage(this.deps.kit, project, seats, now, this.deps.outbox.held()),
+      statusPage(
+        this.deps.kit,
+        project,
+        seats,
+        now,
+        this.deps.outbox.held(),
+        this.deps.source.teamFor(project).hitl.on,
+      ),
     );
   }
 }

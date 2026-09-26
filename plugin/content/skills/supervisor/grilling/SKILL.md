@@ -44,7 +44,7 @@ Each answer reshapes the tree: ask what can be asked now.
   meant, and propose the term to keep.
 - **Test with a scenario.** When a rule is stated, invent the case at its edge and ask what happens
   there.
-- **Say when the words disagree** with CONTEXT.md or with the code, and ask which is right.
+- **Say when the words disagree** with CONTEXT.md or the code, and ask which is right.
 
 ## Writing it down
 
@@ -54,20 +54,21 @@ answer replaces its line. Create the file with the first settled answer, not bef
 
 ## Read-back
 
-Before the first lane opens, give the Human one screen to correct: the lanes you will open, each
-with its outcome and acceptance, what you assumed, and what will bring them back (a question only they
-can answer, an act that cannot be undone). With it, settle what the desk keeps for every lane: where
-lanes work when their copy makes that a question (`set_project` `laneHome`), and which paths no landing
-touches before the Human looks (`set_project` `askFirst`). Offer the ones this work reaches among
-access (auth, login, session, passwords, secrets, credentials, tokens), money (payments, billing) and
-what ships (CI workflows, Docker, `.env`, infra, deploy, terraform, k8s, helm); they keep or drop each,
-and nothing waits for them unless they keep one. Name the risk rules this work reaches (the kit's put a
-question to every review of migrations, schemas and SQL; `set_project` `riskRules` replaces them), and
-ask for a command that rehearses one, such as a migration run twice on a copy, where they have one. A correction is a settled answer like any other; what
-they want to be woken for, in their words, goes in `$SEATWORKS_STATE/notebook.md`.
+Before the first lane opens, give the Human one screen to correct: the lanes you will open, each with
+its outcome and acceptance, what you assumed, and what will bring them back (a question only they can
+answer, an act that cannot be undone). With it, settle what the desk keeps for every lane: where lanes
+work when their copy makes that a question (`set_project` `laneHome`), and which paths no landing
+touches before the Human looks while they are in the loop (`set_project` `askFirst`). Offer the ones
+this work reaches among access (auth, login, session, passwords, secrets, credentials, tokens), money
+(payments, billing) and what ships (CI workflows, Docker, `.env`, infra, deploy, terraform, k8s, helm);
+they keep or drop each, and nothing waits for them unless they keep one. Name the risk rules this work
+reaches (the kit's put a question to every review of migrations, schemas and SQL; `set_project`
+`riskRules` replaces them), and ask for a command that rehearses one, such as a migration run twice on a
+copy, where they have one. A correction is a settled answer like any other; what they want to be woken
+for, in their words, goes in `$SEATWORKS_STATE/notebook.md`.
 
 ## Ends in
 
 Every branch visited, nothing about the concept silently assumed, and the Human's confirmation that
 you have understood. If the Human says to start before that, start, and name what is still open in
-the lane's out of scope or as the point where its Lead must ask.
+out of scope or as where its Lead must ask.

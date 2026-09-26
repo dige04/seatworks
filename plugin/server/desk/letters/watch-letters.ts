@@ -20,11 +20,14 @@ const MOMENT_NEXT: Record<Moment, string> = {
 
 /** What the watch raises with whoever supervises: an incident, or a moment SLP wakes them for. */
 export const watchLetters = {
-  /** `to` is who reads it: a Lead is sent those about its own Peers, and acts on them as their Lead. */
+  /**
+   * `to` is who reads it: a Lead is sent those about its own Peers, and acts on them as their Lead. `steers` when a message
+   * reaches the seat mid-turn; `human` when the Human is in the loop, else a page is the Supervisor's to hold and decide.
+   */
   incident(
     incident: Incident,
     place: { lane?: Lane; task?: Task },
-    steers: boolean,
+    { steers, human }: { steers: boolean; human: boolean },
     to: "lead" | "supervisor" = "supervisor",
   ): Letter {
     const lines = [
@@ -64,9 +67,11 @@ export const watchLetters = {
         ? "Read the Peer's record with record on its task, take the smallest step (usually none), then mark_incident it from the record alone."
         : incident.level !== "page"
           ? "Read the record, take the smallest step (most often none), then mark_incident it from the record alone."
-          : place.lane
-            ? "If it may reach past the lane unasked, hold_lane it and tell the Human; then read the record and mark_incident it."
-            : "Tell the Human what it did; then read the record and mark_incident it.";
+          : !human
+            ? `${place.lane ? "If it may reach past the lane unasked, hold_lane it. " : ""}Decide what follows and put it in your report; then read the record and mark_incident it.`
+            : place.lane
+              ? "If it may reach past the lane unasked, hold_lane it and tell the Human; then read the record and mark_incident it."
+              : "Tell the Human what it did; then read the record and mark_incident it.";
     return mail("incident", [incident.id, incident.opened, incident.level], lines.join("\n"), next);
   },
 

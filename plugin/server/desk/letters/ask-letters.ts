@@ -10,7 +10,7 @@ function askNext(ask: Ask): string {
   if (ask.task)
     return `Its Lead is gone: answer ${ask.id} if you can; replace_lead puts a new Lead on the lane where it stands.`;
   if (ask.kind === "question")
-    return `If CONTEXT.md settles it, answer ${ask.id}; else ask the Human with your recommendation, write their answer into CONTEXT.md, then answer. The Lead runs on its default meanwhile.`;
+    return `If CONTEXT.md settles it, answer ${ask.id}; if it is what the project does, ask the Human and write it into CONTEXT.md; else decide. The Lead runs on its default.`;
   return `Decide and answer ${ask.id}; a kit or setup error goes to the Human word for word.`;
 }
 

@@ -149,7 +149,7 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     seatLetters.gone(task),
     seatLetters.failed("agent-3", 1, "Peer agent-3", "overloaded", "lead"),
     seatLetters.permission("agent-3", "Peer agent-3", { id: "p1", name: "Bash", title: "npm install" }, "lead"),
-    watchLetters.incident(incident, { lane, task }, true, "lead"),
+    watchLetters.incident(incident, { lane, task }, { steers: true, human: true }, "lead"),
     workLetters.amended(lane, amendment, "lead"),
     seatLetters.notStarted(task),
     workLetters.held(task, "L1-T1 is not accepted yet.", "It starts by itself."),
@@ -219,7 +219,7 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
   const question = { ...need, kind: "question" as const };
   assert.match(
     next(askLetters.askTo(question, "the Lead of L1", "supervisor")),
-    /^If CONTEXT\.md settles it, answer A1; else ask the Human/,
+    /^If CONTEXT\.md settles it, answer A1; if it is what the project does, ask the Human and write it into CONTEXT\.md; else decide\./,
   );
   assert.match(
     next(askLetters.askTo({ ...question, task: "L1-T1" }, "the Peer on L1-T1", "supervisor")),
@@ -261,6 +261,17 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     next(askLetters.escalated({ ...ask, status: "open" }, 30, "L1")),
     /^Answer only what is not an engineering call/,
   );
+  const page = { ...incident, level: "page" as const };
+  assert.match(
+    next(watchLetters.incident(page, { lane, task }, { steers: true, human: true })),
+    /hold_lane it and tell the Human/,
+  );
+  const alone = next(watchLetters.incident(page, { lane, task }, { steers: true, human: false }));
+  assert.match(
+    alone,
+    /^If it may reach past the lane unasked, hold_lane it\. Decide what follows and put it in your report/,
+  );
+  assert.doesNotMatch(alone, /Human/, "with the Human out of the loop, a page is the Supervisor's to hold and decide");
   for (const moment of ["ARCHITECTURE", "STRUGGLING", "TURNING"] as const)
     assert.match(next(watchLetters.moment(moment, task, "x")), /Nothing, if /, `${moment} offers nothing first`);
   assert.match(

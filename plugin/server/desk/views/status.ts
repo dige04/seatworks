@@ -41,17 +41,31 @@ const opening = (text: string) => text.split(/\r?\n/).find((line) => line.trim()
 const stamp = (now: number): string => `${new Date(now).toISOString().slice(0, 16)}Z`;
 
 /** The whole project's page, as the panel shows it and status.md keeps it: supervisors waiting on the Human included. */
-export function statusPage(kit: Kit, project: Project, seats: Seats, now: number, held: Held[]): string {
+export function statusPage(
+  kit: Kit,
+  project: Project,
+  seats: Seats,
+  now: number,
+  held: Held[],
+  human: boolean,
+): string {
   const waiting = [...seats.values()].filter(
     (seat) =>
       can(seatOf(kit, seat.provider)?.role, "supervise") &&
       projectOf(seat.cwd).slug === project.slug &&
       (seat.pendingPermissions?.length ?? 0) > 0,
   );
-  return statusText(project, loadLedger(project.state), loadConfig(project.state), seats, now, { waiting, held });
+  return statusText(project, loadLedger(project.state), loadConfig(project.state), seats, now, {
+    waiting,
+    held,
+    human,
+  });
 }
 
-/** The status page: the whole project, or one lane when `laneId` names it; `copy` adds the project's own checkout. */
+/**
+ * The status page: the whole project, or one lane when `laneId` names it; `copy` adds the project's own checkout, and `human`
+ * says whether the Human is in the loop.
+ */
 export function statusText(
   project: Project,
   ledger: Ledger,
@@ -63,14 +77,14 @@ export function statusText(
     waiting = [],
     held = [],
     copy,
-    human = true,
-  }: { laneId?: string; waiting?: SeatView[]; held?: Held[]; copy?: OwnCheckout; human?: boolean } = {},
+    human,
+  }: { laneId?: string; waiting?: SeatView[]; held?: Held[]; copy?: OwnCheckout; human: boolean },
 ): string {
   const lanes = Object.values(ledger.lanes).filter((lane) => (laneId ? lane.id === laneId : true));
   const open = lanes.filter((lane) => lane.status === "open");
   const pending = lanes.filter((lane) => lane.status === "waiting");
   const lines = [
-    ...heading(project, config, now),
+    ...heading(project, config, now, human),
     ...(copy ? ownCopyLines(project, ledger, config, copy, human) : []),
     ...mailLines(project, ledger, seats, now, held),
     ...waitingOnHuman(waiting),
@@ -85,11 +99,12 @@ export function statusText(
   return `${lines.join("\n")}\n`;
 }
 
-/** How the project is set up, the Human's standing orders included. */
-function heading(project: Project, config: ProjectConfig, now: number): string[] {
+/** How the project is set up, and what waits for the Human: nothing while they are out of the loop. */
+function heading(project: Project, config: ProjectConfig, now: number, human: boolean): string[] {
   const gate = config.gate || (config.gate === "" ? "none, by this project's own choice" : "none");
-  const asked =
-    config.askFirst.length > 0
+  const asked = !human
+    ? "The Human is out of the loop: only the concept is theirs, so no landing waits for them and nothing queues for them."
+    : config.askFirst.length > 0
       ? `A landing that touches ${config.askFirst.join(", ")} waits for the Human (askFirst).`
       : "No landing waits for the Human (askFirst is empty).";
   const rules = config.riskRules ? `Risk rules of its own: ${config.riskRules.length}.` : "The kit's risk rules.";

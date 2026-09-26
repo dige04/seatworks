@@ -150,9 +150,10 @@ async function deliver(
   sending: Incident[],
   now: number,
 ): Promise<string[]> {
-  const { kit, incidents, mail } = services;
+  const { kit, incidents, mail, teamFor } = services;
   const harness = seatOf(kit, seat.provider)?.harness;
   const steers = harness?.steers === true;
+  const human = teamFor(project).hitl.on;
   const told: string[] = [];
   for (const level of ["page", "attend"] as const) {
     const batch = sending.filter((incident) => incident.level === level);
@@ -182,7 +183,7 @@ async function deliver(
     });
     for (const incident of batch) {
       try {
-        await mail.post(to, watchLetters.incident(incident, place, steers, as));
+        await mail.post(to, watchLetters.incident(incident, place, { steers, human }, as));
       } catch (error) {
         recordEvent(project, { kind: "incident.post-failed", id: incident.id, error: errorText(error) });
       }

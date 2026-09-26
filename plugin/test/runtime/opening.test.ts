@@ -114,10 +114,9 @@ test("with the Human out of the loop, where a lane works is the Supervisor's to 
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   await h.call(sup, "supervisor", "set_project", { base: "main", gate: "true" });
   h.git(h.root, "switch", "-qc", "fix/login");
-  assert.match(
-    (await h.call(sup, "supervisor", "status", {})).text,
-    /You choose where the next lane works, before it opens: carry on fix\/login here \(onBranch\)/,
-  );
+  const status = (await h.call(sup, "supervisor", "status", {})).text;
+  assert.match(status, /You choose where the next lane works, before it opens: carry on fix\/login here \(onBranch\)/);
+  assert.match(status, /The Human is out of the loop: only the concept is theirs, so no landing waits for them/);
   const refused = await h.call(sup, "supervisor", "open_lane", lane("First"));
   assert.match(
     refused.text,

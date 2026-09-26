@@ -133,7 +133,8 @@ export class ProjectsPanel implements ProjectsRpc {
     const project = this.deps.source.named(slug);
     if (!project) return { text: "", error: unknownProject(slug) };
     const seats = new Map((await this.deps.seats.open()).map((seat) => [seat.id, seat]));
-    return { text: statusPage(this.deps.kit, project, seats, Date.now(), this.deps.held()) };
+    const human = this.deps.source.teamFor(project).hitl.on;
+    return { text: statusPage(this.deps.kit, project, seats, Date.now(), this.deps.held(), human) };
   }
 
   async flow(slug: string, since?: string, open?: string[]): Promise<FlowRead> {
