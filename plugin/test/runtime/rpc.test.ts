@@ -54,16 +54,11 @@ test("every contract the panel calls is served, the first call brings the daemon
 });
 
 test("the plugin finds its own directory where Paseo's home is, and one that cannot find it still answers every panel call, with why", async (t) => {
-  const given = { home: process.env.PASEO_HOME, dir: process.env.SEATWORKS_PLUGIN_DIR };
+  const given = process.env.PASEO_HOME;
   t.after(() => {
-    for (const [key, value] of [
-      ["PASEO_HOME", given.home],
-      ["SEATWORKS_PLUGIN_DIR", given.dir],
-    ] as const)
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
+    if (given === undefined) delete process.env.PASEO_HOME;
+    else process.env.PASEO_HOME = given;
   });
-  delete process.env.SEATWORKS_PLUGIN_DIR;
   const moved = tempDir("sw2-paseo-home-");
   process.env.PASEO_HOME = moved;
   writeFileSync(
