@@ -2,7 +2,7 @@ import { join } from "node:path";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import { errorText } from "../../core/errors.ts";
-import { home, stateRoot } from "../../core/paths.ts";
+import { home, paseoHome, stateRoot } from "../../core/paths.ts";
 import type { Seats } from "../../core/ports.ts";
 import { type Project, projectOf } from "../../desk/project/project.ts";
 import type { CleanView, ContentChange, MigrateStep, MigrateView, UpdateView } from "../../../shared/upkeep-views.ts";
@@ -44,7 +44,7 @@ export class UpkeepPanel implements UpkeepRpc {
     const busy = [...counts].map(([slug, count]) => `${slug} ${count} seat${count === 1 ? "" : "s"}`);
     const ctx = {
       dir: this.deps.kit.dir,
-      managedRoot: join(home(), ".paseo", "plugins"),
+      managedRoot: join(paseoHome(), "plugins"),
       busy,
       install: npmInstall,
       reload: reloadSoon,

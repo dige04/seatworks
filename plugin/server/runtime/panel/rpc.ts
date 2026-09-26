@@ -48,6 +48,14 @@ export type Panel = { settings: SettingsRpc; projects: ProjectsRpc; upkeep: Upke
 /** Serves one contract: the handler takes what its input schema reads and gives what its output schema holds. */
 type Serve = <C extends Contract>(contract: C, answer: (input: z.output<C["input"]>) => Out<C>) => void;
 
+/** Every panel call answered with why the plugin cannot serve it, so the panel shows that rather than nothing. */
+export function refuseRpc(handle: (contract: Contract, answer: () => never) => void, reason: string): void {
+  for (const contract of Object.values(contracts))
+    handle(contract, () => {
+      throw new Error(reason);
+    });
+}
+
 export function registerRpc(handle: Serve, panel: Panel): void {
   const { settings, projects, upkeep, human } = panel;
   handle(contracts.catalog, () => settings.catalog());

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { accessSync, constants, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, delimiter, extname, join } from "node:path";
+import { basename, delimiter, extname, join, resolve } from "node:path";
 import { getPath, isRecord } from "./json.ts";
 
 export const PLUGIN_ID = "seatworks-v2";
@@ -17,8 +17,14 @@ export function expandHome(value: string, homeDir = home()): string {
   return value;
 }
 
+/** Where Paseo keeps its config and plugins: PASEO_HOME when the daemon was given one, read as Paseo reads it. */
+export function paseoHome(homeDir = home()): string {
+  const given = process.env.PASEO_HOME;
+  return given ? resolve(expandHome(given, homeDir)) : join(homeDir, ".paseo");
+}
+
 export function paseoConfigPath(homeDir = home()): string {
-  return join(homeDir, ".paseo", "config.json");
+  return join(paseoHome(homeDir), "config.json");
 }
 
 export const RECORDS = ["events", "attention", "assessments"] as const;

@@ -4,9 +4,11 @@ import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { stateRoot } from "../../server/core/paths.ts";
+import contribute from "../../index.server.ts";
+import { pluginDir, stateRoot } from "../../server/core/paths.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { KEPT } from "../../shared/settings.ts";
+import { reported } from "../console.ts";
 import { tempDir } from "../tempdir.ts";
 import { fakeConfig } from "./fake-paseo.ts";
 import { daemon, served, which } from "./served.ts";
@@ -51,6 +53,49 @@ test("every contract the panel calls is served, the first call brings the daemon
     /No project named nowhere-000000/,
     "a refusal, not a team missing its roles",
   );
+});
+
+test("the plugin finds its own directory where Paseo's home is, and one that cannot find it still answers every panel call, with why", async (t) => {
+  const given = { home: process.env.PASEO_HOME, dir: process.env.SEATWORKS_PLUGIN_DIR };
+  t.after(() => {
+    for (const [key, value] of [
+      ["PASEO_HOME", given.home],
+      ["SEATWORKS_PLUGIN_DIR", given.dir],
+    ] as const)
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+  });
+  delete process.env.SEATWORKS_PLUGIN_DIR;
+  const moved = tempDir("sw2-paseo-home-");
+  process.env.PASEO_HOME = moved;
+  writeFileSync(
+    join(moved, "config.json"),
+    JSON.stringify({ plugins: { "seatworks-v2": { source: "directory", path: "/kit" } } }),
+  );
+  assert.equal(pluginDir(), "/kit", "Paseo's home is where PASEO_HOME says, when the daemon was given one");
+
+  writeFileSync(join(moved, "config.json"), "{}\n");
+  const said = reported(t);
+  const handlers = new Map<string, () => unknown>();
+  const server = {
+    handle: (contract: { name: string }, handler: () => unknown) => void handlers.set(contract.name, handler),
+  };
+  const cleanup = contribute(server as never);
+  assert.equal(typeof cleanup, "function");
+  assert.deepEqual(
+    Object.values(contracts)
+      .map((contract) => contract.name)
+      .filter((name) => !handlers.has(name)),
+    [],
+    "every panel call is still served, rather than none and the panel left guessing",
+  );
+  const why = (text: string) => text.includes(join(moved, "config.json")) && text.includes("plugins.seatworks-v2");
+  await assert.rejects(
+    async () => handlers.get(contracts.projects.name)!(),
+    (error: Error) => why(error.message),
+    "each answers with where the plugin looked for its directory",
+  );
+  assert.ok(why(said()), "and the daemon log says the same");
 });
 
 test("settings: machine and project layers saved by revision, checked before saving, keys never read back, a broken file never quoted", async () => {
