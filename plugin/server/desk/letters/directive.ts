@@ -1,58 +1,19 @@
-import { type Issue, issueOf } from "../../core/issues.ts";
+import type { Issue } from "../../core/issues.ts";
 import type { Lane } from "../../domain/lane.ts";
-import { loadLedger } from "../store/ledger.ts";
 import { capped, outside } from "../../core/text.ts";
 import { list } from "./envelope.ts";
-import { BOTH_MEET } from "./next.ts";
-import type { Kit } from "../../catalog/kit/kit.ts";
-import { type Project, conceptFile, loadConfig, serialIn } from "../project/project.ts";
-import { type Beside, lanesBeside } from "../lanes/placement.ts";
+import { type Beside, besideText } from "../lanes/placement.ts";
+import type { ProjectConfig } from "../project/project.ts";
 
 const SHOWN_SERIAL = 8;
 
-export const besideText = (beside: Beside[]): string =>
-  beside.map((entry) => `${entry.lane} (${capped(entry.paths, SHOWN_SERIAL)})`).join(", ");
-
-/** What the Supervisor hears of the open lanes a lane `how` beside that may write what it does; nothing when none. */
-export const besideNote = (beside: Beside[], how: "opened" | "now works"): string =>
-  beside.length > 0
-    ? ` It ${how} beside lanes that may write what it does: ${besideText(beside)}. Their Leads and its own are told; ${BOTH_MEET}, and who settles it then is yours to choose.`
-    : "";
-
-/** `copy` is the lane's working copy, whose files decide which paths only one writer at a time may write. */
-export async function directiveFor(
-  kit: Kit,
-  project: Project,
-  lane: Lane,
-  copy: string,
-  issue?: Issue,
-): Promise<{ text: string; beside: Beside[] }> {
-  const serial = await serialIn(kit, project, copy);
-  const open = Object.values(loadLedger(project.state).lanes).filter(
-    (other) => other.id !== lane.id && other.status === "open",
-  );
-  const beside = lanesBeside(serial, open, lane.writeSet, lane.contracts);
-  return {
-    text: directive(lane, { gate: gateRegime(project), serial, beside, concept: conceptFile(project.state), issue }),
-    beside,
-  };
-}
-
-function takeover(lane: Lane, was: string): string {
+/** What a Lead seated on a lane already under way is told first: that it takes over from `was`, gone. */
+export function takeover(lane: Lane, was: string): string {
   return `You take over ${lane.id} from its Lead ${was}, which is gone. The lane branch, its working copy, its tasks and the asks waiting on its Lead are as that Lead left them: call status and read the branch's log before you start anything, and carry on from there rather than over it.`;
 }
 
-/**
- * What a Lead seated on a lane already under way is told: that it takes over, then the directive, its issue read anew.
- */
-export async function takeoverFor(kit: Kit, project: Project, lane: Lane, copy: string): Promise<string> {
-  const issue = await issueOf(kit.ecosystem.issues, lane.issue, project.root);
-  return `${takeover(lane, lane.lead ?? "its first Lead")}\n\n${(await directiveFor(kit, project, lane, copy, issue)).text}`;
-}
-
 /** Which gate regime this project runs, because a Lead plans its splits against it. */
-function gateRegime(project: Project): string {
-  const config = loadConfig(project.state);
+export function gateRegime(config: Pick<ProjectConfig, "gate" | "gateOn">): string {
   if (!config.gate) return "none set, so nothing is checked for you";
   return config.gateOn === "task"
     ? `${config.gate} runs on every task with the lane brought in, and its verdict reaches the Lead with the hand-back; the lane takes a task red only when its Lead accepts it over the gate with a reason`

@@ -10,8 +10,7 @@ import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, tasksOf } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Project, readProjectConfig, serialOnlyOf } from "../project/project.ts";
-import { besideText } from "../letters/directive.ts";
-import { openWriters } from "./placement.ts";
+import { besideText, openWriters } from "./placement.ts";
 
 type LandGate = { set: boolean; ok: boolean };
 

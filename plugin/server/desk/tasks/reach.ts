@@ -1,6 +1,6 @@
 import { covers, serialHits, uncovered } from "../../core/scope.ts";
 import { capped } from "../../core/text.ts";
-import { besideText } from "../letters/directive.ts";
+import { besideText } from "../lanes/placement.ts";
 import { openWriters } from "../lanes/placement.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, besideOf } from "../../domain/ledger.ts";

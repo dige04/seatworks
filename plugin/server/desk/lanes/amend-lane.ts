@@ -6,7 +6,7 @@ import { loadLedger } from "../store/ledger.ts";
 import { workLetters } from "../letters/work-letters.ts";
 import { serialIn } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
-import { besideNote } from "../letters/directive.ts";
+import { besideNote } from "./placement.ts";
 import { recordEvent } from "../store/event-log.ts";
 import { lanesBeside, tellBeside } from "./placement.ts";
 

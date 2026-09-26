@@ -5,12 +5,13 @@ import { headSha } from "../../core/git.ts";
 import type { SeatView } from "../../core/paseo.ts";
 import { outside } from "../../core/text.ts";
 import { workKey } from "../claims.ts";
-import { besideNote, directiveFor } from "../letters/directive.ts";
-import { type Beside, tellBeside } from "./placement.ts";
-import type { Issue } from "../../core/issues.ts";
+import { directive, gateRegime, takeover } from "../letters/directive.ts";
+import { type Beside, besideNote, lanesBeside, tellBeside } from "./placement.ts";
+import { type Issue, issueOf } from "../../core/issues.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { seatTitle } from "../seats/names.ts";
-import { type Project, loadConfig } from "../project/project.ts";
+import { type Project, conceptFile, loadConfig, serialIn } from "../project/project.ts";
+import { loadLedger } from "../store/ledger.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 
@@ -144,14 +145,15 @@ async function giveBackCopy(
 }
 
 async function launchLead(
-  { kit, ledgers, agents }: Pick<DeskServices, "kit" | "ledgers" | "agents">,
+  desk: Pick<DeskServices, "kit" | "ledgers" | "agents">,
   project: Project,
   lane: Lane,
   how: Seating,
   copy: Copy,
   leadRole: RoleSpec,
 ): Promise<Seated> {
-  const directed = await directiveFor(kit, project, lane, copy.path, how.issue);
+  const directed = await directiveFor(desk, project, lane, copy.path, how.issue);
+  const { ledgers, agents } = desk;
   const startSha = lane.onBranch ? await headSha(copy.path) : undefined;
   // Where the Lead works goes on record before it starts, so a lane a stop leaves without its Lead still knows.
   ledgers.setLane(project, lane.id, (entry) => {
@@ -171,4 +173,33 @@ async function launchLead(
   const slot = copy.id ?? "in place";
   recordEvent(project, { kind: "lane.opened", lane: lane.id, lead, branch: lane.branch, base: lane.base, slot });
   return { slot: copy, lead, beside: directed.beside };
+}
+
+/** `copy` is the lane's working copy, whose files decide which paths only one writer at a time may write. */
+async function directiveFor(
+  { kit }: Pick<DeskServices, "kit">,
+  project: Project,
+  lane: Lane,
+  copy: string,
+  issue?: Issue,
+): Promise<{ text: string; beside: Beside[] }> {
+  const serial = await serialIn(kit, project, copy);
+  const open = Object.values(loadLedger(project.state).lanes).filter(
+    (other) => other.id !== lane.id && other.status === "open",
+  );
+  const beside = lanesBeside(serial, open, lane.writeSet, lane.contracts);
+  const gate = gateRegime(loadConfig(project.state));
+  return { text: directive(lane, { gate, serial, beside, concept: conceptFile(project.state), issue }), beside };
+}
+
+/** What a Lead seated on a lane already under way is told: that it takes over, then the directive, its issue read anew. */
+export async function takeoverFor(
+  desk: Pick<DeskServices, "kit">,
+  project: Project,
+  lane: Lane,
+  copy: string,
+): Promise<string> {
+  const issue = await issueOf(desk.kit.ecosystem.issues, lane.issue, project.root);
+  const directed = await directiveFor(desk, project, lane, copy, issue);
+  return `${takeover(lane, lane.lead ?? "its first Lead")}\n\n${directed.text}`;
 }

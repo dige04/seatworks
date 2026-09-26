@@ -1,6 +1,8 @@
 import { covers, firstOverlap, serialReach } from "../../core/scope.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, ownCopyHolder } from "../../domain/ledger.ts";
+import { capped } from "../../core/text.ts";
+import { BOTH_MEET } from "../letters/next.ts";
 import { workLetters } from "../letters/work-letters.ts";
 import type { Project } from "../project/project.ts";
 import type { DeskBase } from "../base.ts";
@@ -9,6 +11,17 @@ import { loadLedger } from "../store/ledger.ts";
 
 /** An open lane a lane works beside, and what both may write: one-writer paths both reach, or where scopes meet. */
 export type Beside = { lane: string; paths: string[] };
+
+const SHOWN_PATHS = 8;
+
+export const besideText = (beside: Beside[]): string =>
+  beside.map((entry) => `${entry.lane} (${capped(entry.paths, SHOWN_PATHS)})`).join(", ");
+
+/** What the Supervisor hears of the open lanes a lane `how` beside that may write what it does; nothing when none. */
+export const besideNote = (beside: Beside[], how: "opened" | "now works"): string =>
+  beside.length > 0
+    ? ` It ${how} beside lanes that may write what it does: ${besideText(beside)}. Their Leads and its own are told; ${BOTH_MEET}, and who settles it then is yours to choose.`
+    : "";
 
 type Scoped = Pick<Lane, "id" | "writeSet" | "contracts">;
 

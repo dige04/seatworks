@@ -4,7 +4,7 @@ import { errorText } from "../../core/errors.ts";
 import { plural } from "../../core/text.ts";
 import { workKey } from "../claims.ts";
 import { type Caller, type ToolReply, no, ok } from "../context.ts";
-import { takeoverFor } from "../letters/directive.ts";
+import { takeoverFor } from "./lead-seat.ts";
 import { holdRefusal } from "./hold.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { findLane } from "../../domain/ledger.ts";
@@ -95,7 +95,7 @@ async function takeOver(
       {
         parent: caller.id,
         title: seatTitle.of(lane, leadRole),
-        prompt: await takeoverFor(kit, caller.project, lane, lane.worktree),
+        prompt: await takeoverFor({ kit }, caller.project, lane, lane.worktree),
         labels: { "seatworks.lane": lane.id, "seatworks.role": leadRole.role },
       },
     );
