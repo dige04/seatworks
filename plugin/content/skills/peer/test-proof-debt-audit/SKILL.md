@@ -18,7 +18,7 @@ Expected values that exist only because of history are debt: a test pinning a re
 
 ## Ends in
 
-One entry per proof in `done`: location, claimed behavior, actual observation, a scenario where it passes with the behavior broken, your disposition, and the smallest replacement; for assessment only, report and stop. One entry, as an illustration of the depth rather than a template for its content:
+One entry per proof in `done`, in the summary working a task or the answer reviewing, where a proof that passes with the behavior broken is also a finding: location, claimed behavior, actual observation, a scenario where it passes with the behavior broken, your disposition, and the smallest replacement; for assessment only, report and stop. One entry, as an illustration of the depth rather than a template for its content:
 
 ```text
 Location      test/export.test.ts:41 "exports every row"

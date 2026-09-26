@@ -24,8 +24,9 @@ caller and test moves to it in the same change>
 
 ## Intermediate states
 
-Red inside the lane is fine. No compatibility, bridge or transition code, unless a shipped consumer
-needs it: <none, or the consumer, why, and when the layer goes>.
+Red between tasks only where the gate runs on the lane (the directive's Gate line). No compatibility,
+bridge or transition code, unless a shipped consumer needs it: <none, or the consumer, why, and when
+the layer goes>.
 
 ## Decisions (one line each)
 

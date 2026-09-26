@@ -19,13 +19,12 @@ You look for ways the change lets untrusted input or a careless caller cause har
 
 ## Ends in
 
-`done`. Working a task, fixed issues are commits with their abuse-case tests in `checks`; a decision that isn't yours (the auth model, accepting a risk, rotating a secret, CORS or rate-limit policy) goes in `leftUndone` with the consequence of each option, or to `ask` when it blocks the task, and a problem outside what your goal reaches goes in `discovered`. Reviewing, each finding goes in `done`'s findings with its test described, not written. Write each finding as:
+`done`. Working a task, fixed issues are commits with their abuse-case tests in `checks`; a decision that isn't yours (the auth model, accepting a risk, rotating a secret, CORS or rate-limit policy) goes in `leftUndone` with the consequence of each option, or to `ask` when it blocks the task, and a problem outside what your goal reaches goes in `discovered`. Reviewing, each goes in `done`'s findings, its test described rather than written:
 
 ```text
-S1          P0-P3, confidence high | medium | low
-Where       path:line
-Path        input source -> sink
-Abuse case  the input or call sequence, and what it achieves
-Fix         the smallest change that closes it
-Test        the test that fails today and passes after the fix
+severity     P0-P3
+where        path:line
+failure      input source -> sink, the abuse case and what it achieves, and your confidence
+fix          the smallest change that closes it
+confirmedBy  the test that fails today and passes after the fix, or the trace that showed it
 ```

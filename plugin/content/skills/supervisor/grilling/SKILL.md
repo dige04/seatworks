@@ -16,15 +16,13 @@ architecture across lanes are yours: decide them, list them at the foot of the r
 **Assumed**, one line each, so the Human can overturn one, and do not ask; how a lane is built is its
 Lead's.
 
-A fact the repository or the tools can give you is never a question. Read only what settles it, and
-ask the rest of the round meanwhile.
+A fact the repository or the tools can give you is never a question: read only what settles it.
 
 ## Rounds
 
 Map the request as a tree: every decision branches into the ones that hang on it. A round asks every
 decision whose prerequisites are already settled, and no other: one hanging on a question still open
-belongs to a later round. Number each, give your recommended answer, and
-wait for the Human's answers before the next round.
+belongs to a later round. Number each, recommend an answer, and wait for the Human's answers before the next round.
 
 ```text
 ❓ **Q1 - <title>**: <the question, with the choices when there are some>
@@ -56,8 +54,7 @@ answer replaces its line. Create the file with the first settled answer, not bef
 
 Before the first lane opens, give the Human one screen to correct: the lanes you will open, each with
 its outcome and acceptance, what you assumed, and what will bring them back (a question only they can
-answer, an act that cannot be undone). With it, settle what the desk keeps for every lane: where lanes
-work when their copy makes that a question (`set_project` `laneHome`), and which paths no landing
+answer, an act that cannot be undone). With it, settle what the desk keeps for every lane: where lanes work when their copy makes that a question (`set_project` `laneHome`, their words as `humanSaid` while they are in the loop), and which paths no landing
 touches before the Human looks while they are in the loop (`set_project` `askFirst`). Offer the ones
 this work reaches among access (auth, login, session, passwords, secrets, credentials, tokens), money
 (payments, billing) and what ships (CI workflows, Docker, `.env`, infra, deploy, terraform, k8s, helm);

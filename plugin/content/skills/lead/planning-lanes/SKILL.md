@@ -27,7 +27,7 @@ Split the way the work divides, not by a count: pieces that do not call each oth
 
 - Split only for a reason you can name: work whose paths do not meet and can run in parallel, a mechanical fan-out too big for one sitting, separately accepted deliverables, or shipped production state that needs a staged change.
 - Never split by layer, to show progress, or into phases that keep a half-built state compiling: one writer changes a contract with all its callers and tests.
-- Red inside the lane is fine when the gate runs on the lane, the default; the directive says when it runs per task instead.
+- A task may leave the build red for the next only where the gate runs on the lane. By default it runs on each task, so each hands back green or is accepted over the gate with a reason; the directive's Gate line says which.
 - A compatibility layer is legitimate only for a named shipped consumer: a published API, persisted production data, an independently deployed service or client. Record the consumer and when the layer goes; everything else changes in place.
 
 ## Settle design first

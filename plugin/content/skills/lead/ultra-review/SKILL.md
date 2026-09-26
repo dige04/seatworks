@@ -16,9 +16,9 @@ ocr scan --preview --path PATH,PATH --format json > "$TMPDIR/ocr-preview.json"  
 ocr delegate rule --format json $(jq -r '(.reviewable_files // [.files[] | select(.will_review)])[].path' "$TMPDIR/ocr-preview.json") > "$TMPDIR/ocr-rules.json"
 ```
 
-Skip the rule call when nothing is reviewable. The tool filters by file type, so an excluded file is not a cleared one; the hunt script keeps excluded files in scope. Without `ocr`, say so and run the scripts without the two JSON files.
+Skip the rule call when nothing is reviewable. `ocr` filters by file type, so an excluded file is not cleared; the hunt script keeps it in scope. Without `ocr`, say so and run the scripts without the two JSON files.
 
-Keep the brief the scouts will be given — the scope, the change intent, the contracts that govern it and its directives `D01`, `D02`, ... — with `note` in ultra-review as `NAME-brief.md`, which puts it at `$SEATWORKS_STATE/ultra-review/NAME-brief.md` for the scripts. The report stamps that file's sha256, so a later round can tell whether the brief it reviewed was this one. Without directives, write concerns `G01`, `G02`, ... from repository contracts, change intent, call paths, lifecycle, data flow and blast radius. Pass their number as `--concern-count` in place of `--directive-count`, so the scouts are given them.
+Keep the brief the scouts will be given — the scope, the change intent, the contracts that govern it and its directives `D01`, `D02`, ... — with `note` in ultra-review as `NAME-brief.md`, which puts it at `$SEATWORKS_STATE/ultra-review/NAME-brief.md` for the scripts. The report stamps its sha256, so a later round can tell which brief it reviewed. Without directives, write concerns `G01`, `G02`, ... from repository contracts, change intent, call paths, lifecycle, data flow and blast radius, and pass their number as `--concern-count` in place of `--directive-count`.
 
 ## 2a. hunt
 
@@ -29,17 +29,17 @@ python3 "$SEATWORKS_KIT/content/skills/lead/ultra-review/scripts/create_ultra_re
   --ocr-preview "$TMPDIR/ocr-preview.json" --ocr-rules "$TMPDIR/ocr-rules.json"
 ```
 
-It writes this round's report, never over an earlier one, with a coverage ledger, and prints the units (each rule group with its files and rule text, plus the excluded files) and each scout's units and directives: two scouts per unit, three per directive. Give a risky unit a third scout yourself.
+It writes this round's report beside earlier ones, with a coverage ledger, and prints the units (each rule group with its files and rule text, plus the excluded files) and each scout's units and directives: two scouts per unit, three per directive. Give a risky unit a third scout yourself.
 
 Scouts read the lane branch, or a task's branch when started with that `task`. When the scope is a task not yet accepted, start `scout-01` to `scout-10` in one turn, each with `start_review`, that task and that title; otherwise with no task. Each focus carries:
 
 - the scope, change intent and relevant repository contracts;
 - its units' files and rule text, and its directives and concerns, each with a search angle no other scout on that unit has, because copies of one focus find the same bugs twice;
-- warnings from earlier rounds: confirmed fixes, rejected false positives, open routes, where a rejection is a warning, not a filter;
+- warnings from earlier rounds: confirmed fixes, rejected false positives, open routes; a rejection warns, never filters;
 - static inspection only: run nothing that builds or tests, since ten scouts building at once collide;
-- the ask, returned as findings in its hand-back: every candidate, speculative ones included, with severity `P0`–`P3`, confidence, `file:line`, evidence, contract violated, plausible failure, durable fix hypothesis and a read-only disconfirming check; and each assigned file marked reviewed, or skipped with a reason.
+- the ask: every candidate, speculative ones included, as a hand-back finding: `P0`–`P3` as severity, `file:line` as where, the plausible failure with its evidence, broken contract and confidence as failure, the durable fix hypothesis as fix, a read-only check that would disprove it as confirmedBy; and in its answer, each assigned file reviewed, or skipped with why.
 
-End your turn; handbacks arrive as mail. Share no candidate before consolidation, and restart only a scout that went silent without handing back, under its original title and assignment. `cut` each scout once its findings are in the report. Then fill the report's TODOs: each file's coverage status, findings `F001`, `F002`, ... grouped by root cause with the fields above and no raw candidate list, one Verification Queue line per finding, and the strongest reason not to merge yet; with no candidates, `No candidates reported.` under Findings.
+End your turn. Share no candidate before consolidation, and restart only a scout that went silent without handing back, under its original title and assignment. `cut` each scout once its findings are in the report. Then fill the report's TODOs, keeping it with `note` in ultra-review under its own name: each file's coverage status, findings `F001`, `F002`, ... grouped by root cause with the fields above and no raw candidate list, one Verification Queue line per finding, and the strongest reason not to merge yet; with no candidates, `No candidates reported.` under Findings.
 
 ## 2b. pack
 
@@ -49,7 +49,7 @@ python3 "$SEATWORKS_KIT/content/skills/lead/ultra-review/scripts/review_pack.py"
   --include AGENTS.md --exclude-tests --task "BRIEF" --out "$SEATWORKS_STATE/ultra-review/NAME-review.md" --dry-run
 ```
 
-It packs the reviewable files with the change's diff, turns each rule group into a reviewer question, and writes the reviewer prompt. Add `--focus` for an excluded file that carries behavior and `--include` for each governing document the reviewer needs to judge the architecture. For a large or architecture review, `--format zip` builds a source snapshot without the diff and writes the prompt beside it, so the reviewer reads source truth rather than a patch. `ask` the owner with the dry run's file count and size, defaulting to build, then build without `--dry-run`.
+It packs the reviewable files with the change's diff, turns each rule group into a reviewer question, and writes the reviewer prompt. Add `--focus` for an excluded file that carries behavior and `--include` for each governing document the reviewer needs to judge the architecture. For a large or architecture review, `--format zip` builds a source snapshot without the diff, prompt beside it, so the reviewer reads source truth, not a patch. `ask` the owner with the dry run's file count and size, defaulting to build, then build without `--dry-run`.
 
 ## Ends in
 
