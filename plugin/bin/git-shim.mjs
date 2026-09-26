@@ -1,14 +1,20 @@
 // A seat's git, first on its PATH: refuses what only the desk does to branches and working copies, however the command
-// is spelled (-C, -c, --git-dir, an alias), and runs everything else as the real git would. Run as: git-shim.mjs <git> <args>.
+// is spelled (-C, -c, --git-dir, an alias), and runs everything else as the real git would. A seat may move its own task
+// branch (merge into it, rebase, reset, cherry-pick) but no other. Run as: git-shim.mjs <git> <args>.
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 const [git, ...argv] = process.argv.slice(2);
 
 const VALUED = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--super-prefix", "--config-env", "--list-cmds", "--attr-source"]);
 
-const DESKS = new Set(["push", "pull", "merge", "checkout", "switch", "reset", "rebase", "cherry-pick", "update-ref", "stash"]);
+const DESKS = new Set(["push", "pull", "checkout", "switch", "update-ref", "stash"]);
 
-const OWN = new Set([...DESKS, "add", "blame", "branch", "commit", "config", "diff", "fetch", "grep", "log", "ls-files", "rev-parse", "show", "status", "worktree"]);
+/** Commands that move the branch checked out: a seat's own when that is a task branch, as add_tasks names them. */
+const MOVES = new Set(["merge", "rebase", "reset", "cherry-pick"]);
+const TASK_BRANCH = /^task\//;
+
+const OWN = new Set([...DESKS, ...MOVES, "add", "blame", "branch", "commit", "config", "diff", "fetch", "grep", "log", "ls-files", "rev-parse", "show", "status", "worktree"]);
 
 /** The options git reads before its command, the command, and what follows it. */
 function split(args) {
@@ -26,9 +32,30 @@ function rewritesBranch(arg) {
   return /^-[acCdDfhilmMqrtuv]+$/.test(arg) && /[fdDmMC]/.test(arg);
 }
 
+/** The branch checked out where `globals` point, or the one a rebase under way is moving; nothing on a detached head. */
+function checkedOut(globals) {
+  const read = (...args) => spawnSync(git, [...globals, ...args], { encoding: "utf-8" });
+  const branch = read("symbolic-ref", "--short", "-q", "HEAD");
+  if (branch.status === 0) return branch.stdout.trim();
+  for (const dir of ["rebase-merge", "rebase-apply"]) {
+    const head = read("rev-parse", "--path-format=absolute", "--git-path", `${dir}/head-name`);
+    try {
+      if (head.status === 0) return readFileSync(head.stdout.trim(), "utf-8").trim().replace(/^refs\/heads\//, "");
+    } catch {
+      // No rebase of that kind under way.
+    }
+  }
+  return undefined;
+}
+
 /** Why `command` with `rest` is the desk's to run, not a seat's; nothing when it is the seat's. */
-function refusal(command, rest) {
+function refusal(command, rest, globals) {
   if (DESKS.has(command)) return `git ${command} moves branches or working copies, and that is the desk's to do`;
+  if (MOVES.has(command)) {
+    const branch = checkedOut(globals);
+    if (!branch || !TASK_BRANCH.test(branch))
+      return `git ${command} would move ${branch ?? "a detached head"}, and only a task's own branch is its seat's to move`;
+  }
   if (command === "worktree" && rest[0] !== "list") return "git worktree changes working copies, and that is the desk's to do";
   if (command === "branch" && rest.some(rewritesBranch)) return "git branch that forces, deletes, renames or overwrites a branch is the desk's to do";
   return undefined;
@@ -53,7 +80,7 @@ function refuse(why) {
 
 let { globals, command, rest } = split(argv);
 for (let depth = 0; command && depth < 10; depth++) {
-  const why = refusal(command, rest);
+  const why = refusal(command, rest, globals);
   if (why) refuse(why);
   const words = expanded(globals, command);
   if (!words) break;

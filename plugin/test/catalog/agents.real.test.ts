@@ -22,7 +22,9 @@ import { tempDir } from "../tempdir.ts";
 
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const DESK_GIT = "push pull merge checkout switch reset rebase cherry-pick update-ref stash worktree".split(" ");
+const DESK_GIT = "push pull checkout switch update-ref stash worktree".split(" ");
+/** What moves the branch checked out: a writing seat's own task branch, which the git shim guards; refused outright to the rest. */
+const MOVES = "merge reset rebase cherry-pick".split(" ");
 const SEARCHES = ["supervisor", "lead", "peer"];
 const BUILT_INS: Record<string, string[]> = {
   claude:
@@ -61,6 +63,9 @@ test("every role builds on every agent the kit ships, each in that agent's own t
     const waits = !["lead", "supervisor"].includes(as);
     const searches = SEARCHES.includes(as);
     const bare = as === "watcher";
+    // A seat that writes may move its own task branch, which only the shim can tell; one that does not is refused outright.
+    const refusedGit = can(role, "write") ? DESK_GIT : [...DESK_GIT, ...MOVES];
+    const freedGit = can(role, "write") ? MOVES : [];
     assert.deepEqual(
       at(paseo, `agents.providers.${providerId(kit, role.role, harness.id)}.paseoTools`),
       { enabled: false },
@@ -108,10 +113,15 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         `${where}: only the Supervisor speaks the Human's language; the rest write English, which the watch reads best`,
       );
       const deny = list(at(settings, "permissions.deny"));
-      for (const command of DESK_GIT)
+      for (const command of refusedGit)
         assert.ok(
           [`Bash(git ${command} *)`, `Bash(git -C * ${command} *)`].every((rule) => deny.includes(rule)),
           `${where}: only the desk does git ${command}, with -C or without`,
+        );
+      for (const command of freedGit)
+        assert.ok(
+          !deny.includes(`Bash(git ${command} *)`),
+          `${where}: git ${command} on its own task branch is its own`,
         );
       for (const tool of ["Edit", "Write", "MultiEdit", "NotebookEdit"])
         assert.equal(
@@ -176,11 +186,17 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         `${where}: writes into the state only where its content says`,
       );
       const rules = readFileSync(join(dir, "rules", "seatworks.rules"), "utf-8");
-      for (const command of DESK_GIT)
+      for (const command of refusedGit)
         assert.match(
           rules,
           new RegExp(`\\["git", (\\[[^\\]]*)?"${command}"`),
           `${where}: only the desk does git ${command}`,
+        );
+      for (const command of freedGit)
+        assert.doesNotMatch(
+          rules,
+          new RegExp(`\\["git", (\\[[^\\]]*)?"${command}"`),
+          `${where}: git ${command} is its own`,
         );
       assert.equal(
         /"git", "commit"/.test(rules),
@@ -206,8 +222,9 @@ test("every role builds on every agent the kit ships, each in that agent's own t
           denied.includes(rule),
         );
       const approval = (tool: string) => at(settings, `tools.approval.${tool}`);
-      for (const command of DESK_GIT)
+      for (const command of refusedGit)
         assert.ok(refuses(command), `${where}: only the desk does git ${command}, with -C or without`);
+      for (const command of freedGit) assert.ok(!refuses(command), `${where}: git ${command} is its own`);
       assert.ok(
         !denied.some((rule) => /^git (-C \* )?[a-z-]+\*$/.test(rule)),
         `${where}: no pattern takes in a longer command, as git merge* took git merge-base`,
@@ -308,11 +325,13 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       const bash = (at(settings, "permission.bash") ?? {}) as Record<string, unknown>;
       const allowed = (tool: string) => at(settings, `permission.${tool}`);
       assert.equal(Object.keys(bash)[0], "*", `${where}: the allow comes first, since the last rule that matches wins`);
-      for (const command of DESK_GIT)
+      for (const command of refusedGit)
         assert.ok(
           bash[`git ${command} *`] === "deny" && bash[`git -C * ${command} *`] === "deny",
           `${where}: only the desk does git ${command}, with -C or without`,
         );
+      for (const command of freedGit)
+        assert.notEqual(bash[`git ${command} *`], "deny", `${where}: git ${command} is its own`);
       assert.equal(
         bash["git commit *"] === "deny",
         ["supervisor", "lead", "reviewer"].includes(as),
