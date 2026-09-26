@@ -49,7 +49,7 @@ Reduce the reports to the smallest model keeping every unit the verdict needs: t
 
 ## 4. Verification and cross-examination
 
-For a material factual dispute, start one to three Verifiers, each with one proposition verbatim, the sources and a distinct mandate: support, disconfirm, or audit coverage; never identical focuses as a vote. Where evidence leaves a material disagreement, `message` the original reviewer only the disputed unit and its evidence, for a cross-examination response in a second hand-back.
+For a material factual dispute, start one to three Verifiers, each with one proposition verbatim, the sources and a distinct mandate: support, disconfirm, or audit coverage; never identical focuses as a vote. When the reports split on a claim a command, a test or a trace through the code can settle, a Verifier runs that check and its result settles the claim: arguments, however many agree, do not. Where evidence leaves a material disagreement, `message` the original reviewer only the disputed unit and its evidence, for a cross-examination response in a second hand-back.
 
 ## 5. Draft, audit, verdict
 
