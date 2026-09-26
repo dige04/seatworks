@@ -18,6 +18,10 @@ Lead's.
 
 A fact the repository or the tools can give you is never a question: read only what settles it, and ask the rest of the round meanwhile.
 
+Some constraints leave no trace in the repository, so ask for each the work reaches, early: a budget or deadline, a
+stack or service it must use, the scale it must bear, who uses it, a contract others already depend on, and the shape
+of data that already exists. Missed, each one is found only when a lane built without it has to be built again.
+
 ## Rounds
 
 Map the request as a tree: every decision branches into the ones that hang on it. A round asks every
@@ -53,8 +57,9 @@ answer replaces its line. Create the file with the first settled answer, not bef
 ## Read-back
 
 Before the first lane opens, give the Human one screen to correct: the lanes you will open, each with
-its outcome and acceptance, what you assumed, and what will bring them back (a question only they can
-answer, an act that cannot be undone). With it, settle what the desk keeps for every lane: where lanes work when their copy makes that a question (`set_project` `laneHome`, their words as `humanSaid` while they are in the loop), and which paths no landing
+its outcome and acceptance, what you assumed, the defaults you will take for them when a question
+comes up while they are away, and what will bring them back (a question only they can answer, an act
+that cannot be undone). With it, settle what the desk keeps for every lane: where lanes work when their copy makes that a question (`set_project` `laneHome`, their words as `humanSaid` while they are in the loop), and which paths no landing
 touches before the Human looks while they are in the loop (`set_project` `askFirst`). Offer the ones
 this work reaches among access (auth, login, session, passwords, secrets, credentials, tokens), money
 (payments, billing) and what ships (CI workflows, Docker, `.env`, infra, deploy, terraform, k8s, helm);
