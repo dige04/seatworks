@@ -41,7 +41,7 @@ export async function readLook(
   const role = seatOf(kit, seat.provider)?.role;
   if (brains.mode === "off" || !role) return;
   const ledger = ledgerOf(project);
-  const place = placeIn(ledger, seat);
+  const place = placeIn(kit, ledger, seat);
   const items = [...look.items, ...briefsSince(ledger, seat, place, look.since)].map((item) => ({
     ...item,
     text: clip(item.text, cut.item),

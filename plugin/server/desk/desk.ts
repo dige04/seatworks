@@ -5,7 +5,7 @@ import { daemonLog } from "../core/logger.ts";
 import { midTurn } from "../core/paseo.ts";
 import { intentsPath } from "../core/paths.ts";
 import type { Judge, SeatView, Seats, Workspaces } from "../core/ports.ts";
-import type { Finding } from "../domain/incident.ts";
+import { type Fact, type Finding, findingsOf } from "../domain/incident.ts";
 import type { TaskMove, TaskStatus } from "../domain/task.ts";
 import type { DeskBase } from "./base.ts";
 import { ToolCalls } from "./calls/tool-calls.ts";
@@ -116,10 +116,12 @@ export class Desk {
     return notice(this.services, project, seat, findings);
   }
 
-  /** A moment of a seat's turn asked about as review's evidence: what the code saw, and the instruction behind it. */
-  evidence(project: Project, seat: Noticed, moment: Moment): void {
-    for (const found of momentCases(this.services.kit, placeOf(project, seat), moment))
+  /** What the code saw in a seat's turn: its facts booked for whoever supervises, and the moment asked about as review's evidence. */
+  saw(project: Project, seat: Noticed, facts: Fact[], moment: Omit<Moment, "facts">): ReturnType<typeof notice> {
+    const place = placeOf(this.services.kit, project, seat);
+    for (const found of momentCases(this.services.kit, place, { ...moment, facts }))
       void judge(this.services, project, found);
+    return notice(this.services, project, seat, findingsOf(facts), place);
   }
 
   async look(project: Project, seat: Noticed, look: Look): Promise<void> {

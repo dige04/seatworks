@@ -29,7 +29,11 @@ test("what the watch sees reaches whoever supervises, the Flow tab shows what wa
   await new Promise((resolve) => setTimeout(resolve, 20));
   await h.idle(sup);
   const sent = h.agents.get(sup)!.sent.join("\n");
-  assert.match(sent, /INCIDENT I2 \(destructive, page\)/, "a page is irreversible and often done already");
+  assert.match(
+    sent,
+    /INCIDENT I2 \(destructive, page\) on the Coder on L1-T1 \(Clean build\)/,
+    "a page is irreversible and often done already, and names the seat by its role as the kit calls it",
+  );
   assert.match(sent, /INCIDENT I1 \(suppressed, attend\)/, "and the rest is told as soon");
   Object.assign(h.agents.get(sup)!, { archivedAt: new Date().toISOString() });
   await notice(h, h.ledger().tasks["L1-T1"]!.peer!, "test-weakened", "attend", "src/a.test.ts: 3 assertions become 1");

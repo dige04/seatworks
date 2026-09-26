@@ -11,7 +11,7 @@ import { loadLedger } from "../desk/store/ledger.ts";
 import { type Project, gateCommands, projectOf, readProjectConfig } from "../desk/project/project.ts";
 import type { TeamSource } from "./team-source.ts";
 import { malformed } from "./timeline.ts";
-import { type Fact, findingsOf } from "../domain/incident.ts";
+import type { Fact } from "../domain/incident.ts";
 import { callsTo } from "./watch/facts.ts";
 import type { SeatContext, SeatLook, SeatWatch, WatchedSeat, Watches } from "./watch/watches.ts";
 import { daemonLog } from "../core/logger.ts";
@@ -81,13 +81,8 @@ export class Watching {
   private noticed(watch: SeatWatch, facts: Fact[]): void {
     if (this.deps.watches().get(watch.seat.id) !== watch) return;
     const project = projectOf(watch.seat.cwd);
-    this.deps.desk.evidence(project, watch.seat, {
-      facts,
-      instruction: watch.window.instruction(),
-      turn: watch.turnId,
-    });
     this.deps.desk
-      .notice(project, watch.seat, findingsOf(facts))
+      .saw(project, watch.seat, facts, { instruction: watch.window.instruction(), turn: watch.turnId })
       .catch((error) => daemonLog.error("what the watch noticed could not be recorded:", error));
   }
 

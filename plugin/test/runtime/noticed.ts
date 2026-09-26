@@ -31,10 +31,10 @@ export function notice(
 export const book = (h: Harness, project: Project = h.project): Record<string, Incident> =>
   loadIncidents(project.state).items;
 
-/** Every notice the watch has handed the desk since this was called, each awaited to its end. */
+/** Every notice the watch has handed the desk since this was called, from a turn or the patrol, each awaited to its end. */
 export function noticesOf(h: Harness, t: TestContext): () => Promise<void> {
-  const spy = t.mock.method(h.runtime.desk, "notice");
+  const spies = [t.mock.method(h.runtime.desk, "notice"), t.mock.method(h.runtime.desk, "saw")];
   return async () => {
-    await Promise.all(spy.mock.calls.flatMap((call) => call.result ?? []));
+    await Promise.all(spies.flatMap((spy) => spy.mock.calls.flatMap((call) => call.result ?? [])));
   };
 }

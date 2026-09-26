@@ -1,4 +1,5 @@
 import { recordEvent } from "../store/event-log.ts";
+import type { Kit } from "../../catalog/kit/kit.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import { type Finding, type Incident, deliveryOf, factNext, factTitle, tell, unheard } from "../../domain/incident.ts";
 import { closeSeat, forget, settledAsNoise, sight } from "../store/incidents.ts";
@@ -15,13 +16,17 @@ export type Noticed = { id: string; provider: string; title?: string | null };
 
 export type Placed = { where: string; lane?: Lane; task?: Task };
 
-/** Where a seat works, as a letter names it: the Peer on a task, the Lead of a lane, or the seat by its title. */
-export function placeIn(ledger: Ledger | undefined, seat: Noticed): Placed {
+/** Where a seat works, as a letter names it: its role as the kit calls it on a task or of a lane, or its title alone. */
+export function placeIn(kit: Kit, ledger: Ledger | undefined, seat: Noticed): Placed {
   const task = ledger && taskOfPeer(ledger, seat.id);
   const lane = task ? ledger.lanes[task.lane] : ledger && laneOfLead(ledger, seat.id);
-  if (task) return { where: `the Peer on ${task.id} (${task.title})`, lane, task };
-  if (lane) return { where: `the Lead of ${lane.id} (${lane.title})`, lane };
-  return { where: seat.title ? `${seat.title} (${seat.id})` : seat.id };
+  const role = seatOf(kit, seat.provider)?.role.label;
+  if (task && role) return { where: `the ${role} on ${task.id} (${task.title})`, lane, task };
+  if (lane && role) return { where: `the ${role} of ${lane.id} (${lane.title})`, lane };
+  const named = seat.title ? `${seat.title} (${seat.id})` : seat.id;
+  if (task) return { where: `${named} on ${task.id} (${task.title})`, lane, task };
+  if (lane) return { where: `${named} of ${lane.id} (${lane.title})`, lane };
+  return { where: named };
 }
 
 /** The ledger if it can be read: one that cannot leaves a seat named by its title alone. */
@@ -33,7 +38,7 @@ export function ledgerOf(project: Project): Ledger | undefined {
   }
 }
 
-export const placeOf = (project: Project, seat: Noticed): Placed => placeIn(ledgerOf(project), seat);
+export const placeOf = (kit: Kit, project: Project, seat: Noticed): Placed => placeIn(kit, ledgerOf(project), seat);
 
 type Noticing = Pick<DeskServices, "kit" | "incidents" | "teamFor" | "mail" | "roster">;
 
@@ -42,7 +47,7 @@ export async function notice(
   project: Project,
   seat: Noticed,
   findings: Finding[],
-  place = placeOf(project, seat),
+  place = placeOf(services.kit, project, seat),
   now = Date.now(),
 ): Promise<{ opened: Incident[]; sent: string[]; place: Placed }> {
   if (findings.length === 0) return { opened: [], sent: [], place };
@@ -202,7 +207,7 @@ export async function retell(services: Noticing, project: Project, now = Date.no
   );
   for (const seat of [...new Set(nobody.map((item) => item.seat))]) {
     const noticed = { id: seat, provider: nobody.find((item) => item.seat === seat)!.provider ?? "" };
-    const place = placeOf(project, noticed);
+    const place = placeOf(services.kit, project, noticed);
     // Only once somebody is seated to read them; `deliver` then finds that somebody again.
     let reader: string | undefined;
     try {
