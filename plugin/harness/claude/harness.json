@@ -63,7 +63,8 @@
     },
     "profileModeId": "bypassPermissions",
     "command": [
-      "KIT/bin/seat-room"
+      "NODE",
+      "KIT/bin/seat-room.mjs"
     ],
     "forceFlags": {
       "--setting-sources": "user"

@@ -3,7 +3,7 @@ import { readFileSync, statSync } from "node:fs";
 import { writeConfigAtomic } from "../../core/config-file.ts";
 import { type Json, isRecord, sameJson } from "../../core/json.ts";
 import { daemonLog } from "../../core/logger.ts";
-import { paseoConfigPath } from "../../core/paths.ts";
+import { nodeBin, paseoConfigPath } from "../../core/paths.ts";
 import { paseoToolsPolicy, supportsRole } from "../kit/harness-files.ts";
 import type { HarnessSpec, Kit, ModelSpec, RoleSpec } from "../kit/kit.ts";
 import { providerId } from "../kit/roles.ts";
@@ -56,7 +56,10 @@ function desiredProvider(kit: Kit, team: Team, role: RoleSpec, harness: HarnessS
     env: { ...(harness.provider.env ?? {}), SEATWORKS_ROLE: role.role, SEATWORKS_KIT: kit.dir },
   };
   if (role.description) entry.description = role.description;
-  const command = (harness.provider.command ?? []).map((part) => part.replaceAll("KIT", kit.dir));
+  // NODE is the daemon's own node, which runs the kit's scripts alike on every platform.
+  const command = (harness.provider.command ?? []).map((part) =>
+    part === "NODE" ? nodeBin() : part.replaceAll("KIT", kit.dir),
+  );
   if (command.length > 0) entry.command = command;
   const models = defaultModel(harness, choiceFor(team, role, harness));
   if (models.length > 0) entry.additionalModels = models;

@@ -101,7 +101,7 @@ export function makeKit(): Kit {
     provider: {
       env: { CLAUDE_CODE_DISABLE_CRON: "1", SEATWORKS_HARNESS: "claude", SEATWORKS_AGENT_BIN: "claude" },
       profileModeId: "bypassPermissions",
-      command: ["KIT/bin/seat-room"],
+      command: ["NODE", "KIT/bin/seat-room.mjs"],
     },
   });
   put(dir, "harness/claude/settings.json", { autoMemoryEnabled: false, permissions: { deny: ["WebSearch"] } });

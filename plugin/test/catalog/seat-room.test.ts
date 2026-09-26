@@ -6,12 +6,12 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { tempDir } from "../tempdir.ts";
 
-const SEAT_ROOM = fileURLToPath(new URL("../../bin/seat-room", import.meta.url));
+const SEAT_ROOM = fileURLToPath(new URL("../../bin/seat-room.mjs", import.meta.url));
 const PLUGIN = fileURLToPath(new URL("../..", import.meta.url));
 
 function open(env: Record<string, string>, args: string[]): Promise<{ code: number | null; stderr: string }> {
   return new Promise((resolve) => {
-    const child = spawn(SEAT_ROOM, args, { env, stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(process.execPath, [SEAT_ROOM, ...args], { env, stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
     child.stderr.on("data", (chunk) => (stderr += String(chunk)));
     child.on("close", (code) => resolve({ code, stderr }));
@@ -22,7 +22,7 @@ const acme = tempDir("sw2-seat-room-kit-");
 mkdirSync(join(acme, "harness", "acme"), { recursive: true });
 writeFileSync(
   join(acme, "harness", "acme", "harness.json"),
-  JSON.stringify({ configDirEnv: "ACME_HOME", provider: { command: ["KIT/bin/seat-room"] } }),
+  JSON.stringify({ configDirEnv: "ACME_HOME", provider: { command: ["NODE", "KIT/bin/seat-room.mjs"] } }),
 );
 const ROWS: [string, string, string, string, string | undefined, string[], number, string | null][] = [
   ["a launch the plugin did not configure", acme, "acme", "ACME_HOME", undefined, ["--print"], 2, null],

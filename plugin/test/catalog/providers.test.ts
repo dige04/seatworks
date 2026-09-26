@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { applyModels } from "../../server/catalog/paseo/models.ts";
 import { applyReconcile } from "../../server/catalog/paseo/providers.ts";
 import { resolveTeam } from "../../server/catalog/team/team.ts";
-import { paseoConfigPath } from "../../server/core/paths.ts";
+import { nodeBin, paseoConfigPath } from "../../server/core/paths.ts";
 import { makeKit } from "../kit.ts";
 
 type Provider = {
@@ -63,7 +63,7 @@ test("the plugin writes one provider and profile per seat into Paseo's config, k
   const lead = agents.providers["sw2-lead-claude"]!;
   assert.deepEqual(
     [lead.extends, lead.label, lead.command, lead.env?.SEATWORKS_ROLE, lead.env?.SEATWORKS_KIT],
-    ["claude", "Lead · Claude Code (sw2)", [`${kit.dir}/bin/seat-room`], "lead", kit.dir],
+    ["claude", "Lead · Claude Code (sw2)", [nodeBin(), `${kit.dir}/bin/seat-room.mjs`], "lead", kit.dir],
   );
   assert.equal(
     lead.models,
