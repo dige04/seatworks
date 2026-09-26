@@ -304,3 +304,31 @@ test("mail reaches a running seat inside its turn where its harness can take it 
   assert.match(toPeer.text, /Queued for the Peer on L1-T1/);
   assert.deepEqual(h.agents.get(peer)!.sent, [], "the Peer's harness cannot, and sending would replace its turn");
 });
+
+test("with the Human out of the loop, a Lead's ask nobody answers in time goes back to the Lead to settle, and its owner hears so", async () => {
+  const h = harness();
+  const sup = h.add(SUPERVISOR, h.root, "sup");
+  const { lead } = await lane(h, sup, "Endpoint");
+  const start = Date.now();
+  await h.call(lead, "lead", "ask", { kind: "question", text: "Keep the old endpoint?", default: "keep it" });
+  const id = Object.values(h.ledger().asks).at(-1)!.id;
+  h.agents.get(sup)!.status = "running";
+  await h.tick(start + 44 * 60_000);
+  assert.equal(h.ledger().asks[id]!.status, "open", "the owner's reminders take their time first");
+  await h.tick(start + 46 * 60_000);
+  assert.equal(h.ledger().asks[id]!.status, "answered");
+  assert.match(
+    heard(h, lead),
+    new RegExp(
+      `NO ANSWER to your ask ${id} in 46 minutes: Keep the old endpoint\\?\\n\\nNext: Settle it yourself from CONTEXT\\.md`,
+    ),
+  );
+  assert.match(heard(h, sup), new RegExp(`LAPSED ${id} from the Lead of L1: unanswered for 46 minutes`));
+  assert.match((await h.call(sup, "supervisor", "answer", { ask: id, text: "keep it" })).text, /already answered/);
+
+  h.projectSettings({ hitl: { on: true } });
+  await h.call(lead, "lead", "ask", { kind: "question", text: "Rename it?", default: "no" });
+  const kept = Object.values(h.ledger().asks).at(-1)!.id;
+  await h.tick(start + 200 * 60_000);
+  assert.equal(h.ledger().asks[kept]!.status, "open", "in the loop, the Human's answer is waited for");
+});

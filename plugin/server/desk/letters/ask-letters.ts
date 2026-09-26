@@ -1,7 +1,7 @@
 import type { Question } from "../../domain/question.ts";
 import type { Ask } from "../../domain/ask.ts";
 import type { Lane } from "../../domain/lane.ts";
-import { type Letter, firstLine, mail } from "./envelope.ts";
+import { type Letter, firstLine, fyi, mail } from "./envelope.ts";
 
 const theirDefault = (ask: Ask): string[] => (ask.default ? ["", `Their default: ${ask.default}`] : []);
 
@@ -95,6 +95,28 @@ export const askLetters = {
       [ask.id, ask.reminders],
       `STILL OPEN after ${minutes} minutes: ask ${ask.id} (${ask.kind}): ${firstLine(ask.text)}`,
       "Answer it now: whoever asked is waiting on you.",
+    );
+  },
+
+  /** With the Human out of the loop, a Lead's ask nobody answered in time is its own to settle, from what it has. */
+  lapsed(ask: Ask, minutes: number): Letter {
+    return mail(
+      "lapsed",
+      [ask.id],
+      `NO ANSWER to your ask ${ask.id} in ${minutes} minutes: ${firstLine(ask.text)}`,
+      "Settle it yourself from CONTEXT.md, your directive and the code, or go on with your default; say which in your report.",
+    );
+  },
+
+  /** Whoever supervises hears the ask it left went back to its Lead, so it does not answer what is settled already. */
+  lapsedFor(ask: Ask, minutes: number): Letter {
+    return fyi(
+      mail(
+        "lapsed",
+        [ask.id],
+        `LAPSED ${ask.id} from the Lead of ${ask.lane ?? "a lane"}: unanswered for ${minutes} minutes, so its Lead settles it from what it has.`,
+        "Nothing now; tell the Lead if what it settles on is wrong.",
+      ),
     );
   },
 

@@ -40,6 +40,7 @@ type Kind =
   | "landback"
   | "landheld"
   | "lanebeside"
+  | "lapsed"
   | "later"
   | "leadgone"
   | "merge"
