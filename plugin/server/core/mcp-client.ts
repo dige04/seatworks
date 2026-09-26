@@ -1,9 +1,10 @@
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { errorText } from "./errors.ts";
+import { PLUGIN_ID } from "./paths.ts";
 
 /** One exchange with an MCP server over HTTP, handshake first and closed after: what the desk asks of a code index is brief. */
 async function withServer<T>(url: string, timeoutMs: number, use: (client: Client) => Promise<T>): Promise<T> {
-  const client = new Client({ name: "seatworks-desk", version: "3" });
+  const client = new Client({ name: PLUGIN_ID, version: "3" });
   try {
     await client.connect(new StreamableHTTPClientTransport(new URL(url)), { timeout: timeoutMs });
     return await use(client);

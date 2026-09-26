@@ -105,7 +105,6 @@ export function intentsPath(homeDir = home()): string {
 }
 
 export function pluginDir(configPath = paseoConfigPath()): string | undefined {
-  if (process.env.SEATWORKS_PLUGIN_DIR) return process.env.SEATWORKS_PLUGIN_DIR;
   try {
     const entry = getPath(JSON.parse(readFileSync(configPath, "utf-8")) as unknown, ["plugins", PLUGIN_ID]);
     return isRecord(entry) && entry.source === "directory" && typeof entry.path === "string" ? entry.path : undefined;
