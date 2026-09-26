@@ -2,13 +2,12 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { z } from "zod";
 import type { Attention } from "../../../shared/views.ts";
-import { ATTENTION } from "./attention.ts";
 import { DESK_OWNED } from "../../core/paths.ts";
 import { EcosystemFile } from "./schema/ecosystem.ts";
 import { HarnessFile } from "./schema/harness.ts";
 import { McpFile } from "./schema/mcp.ts";
 import { PaseoFile, RefusedFile, RolesFile } from "./schema/roles.ts";
-import { ChecksFile, PatternsFile, SensorFile } from "./schema/sensor.ts";
+import { AttentionFile, ChecksFile, PatternsFile, SensorFile } from "./schema/sensor.ts";
 
 type ThinkingSpec = { id: string; label: string; isDefault?: boolean };
 export type ModelSpec = { id: string; label: string; isDefault?: boolean; thinkingOptions?: ThinkingSpec[] };
@@ -142,7 +141,6 @@ export function loadKit(dir: string, stateDir?: string): Kit {
     roles,
     problems,
   );
-  const { watch } = ecosystem;
   return {
     dir,
     prefix: raw.providerPrefix ?? "",
@@ -151,13 +149,7 @@ export function loadKit(dir: string, stateDir?: string): Kit {
     mcp: loadMcp(dir),
     toolSets: loadToolSets(dir),
     own: stateDir ? join(stateDir, "own") : undefined,
-    attention: {
-      ...ATTENTION,
-      destructive: watch.destructive,
-      testPath: watch.testPath,
-      suppressed: watch.suppressed,
-      ...raw.attention,
-    },
+    attention: parsed(AttentionFile, chosen(join(dir, "catalog", "attention.json"), stateDir), "attention.json"),
     ecosystem,
     paseoTools: parsed(PaseoFile, chosen(join(dir, "catalog", "paseo.json"), stateDir), "paseo.json").tools,
     refused,

@@ -15,7 +15,6 @@ export function makeKit(): Kit {
   const dir = tempDir("sw2-kit-");
   put(dir, "roles.json", {
     providerPrefix: "sw2-",
-    attention: { leadIdleMinutes: 15 },
     roles: [
       {
         role: "supervisor",
@@ -168,6 +167,9 @@ export function makeKit(): Kit {
   // The shipped ecosystem, Paseo's tools, the watch's questions and what a seat's PATH refuses are the world's, not this fixture's to make up.
   for (const name of ["ecosystem.json", "paseo.json", "checks.json", "refused.json"])
     put(dir, `catalog/${name}`, readFileSync(new URL(`../catalog/${name}`, import.meta.url), "utf-8"));
+  // The shipped thresholds, with no brain, since no role of the fixture's can judge, and one threshold of its own.
+  const attention = JSON.parse(readFileSync(new URL("../catalog/attention.json", import.meta.url), "utf-8")) as object;
+  put(dir, "catalog/attention.json", { ...attention, brain: "off", sensor: "", leadIdleMinutes: 15 });
   // No role of the fixture's is watched, so no pattern could read one.
   put(dir, "catalog/patterns.json", {});
   put(dir, "mcp/tools.json", {

@@ -1,5 +1,9 @@
 import { z } from "zod";
+import { AttentionChoice } from "../../../../shared/settings.ts";
 import { Json, text } from "./fields.ts";
+
+/** `catalog/attention.json`: every watch threshold and pattern with its default, which a settings layer may override. */
+export const AttentionFile = AttentionChoice.required().extend({ sensor: z.string() });
 
 /** A model the watch may ask over HTTP; `key` names the secret it takes, which the machine settings keep. */
 export const SensorFile = z.strictObject({

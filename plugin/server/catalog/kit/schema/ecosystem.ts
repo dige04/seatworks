@@ -32,9 +32,6 @@ export const EcosystemFile = z.strictObject({
   /** How a lane's issue is read: the first form whose `match` takes the reference runs, and prints title, url and body as JSON. */
   issues: z.array(z.strictObject({ match: Pattern, run: z.array(text).min(1) })),
   watch: z.strictObject({
-    destructive: Pattern,
-    testPath: Pattern,
-    suppressed: Pattern,
     skipped: Pattern,
     assertion: Pattern,
     refused: Pattern,

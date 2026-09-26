@@ -1,9 +1,5 @@
 {
   "providerPrefix": "sw2-",
-  "attention": {
-    "brain": "both",
-    "sensor": "jev"
-  },
   "roles": [
     {
       "role": "supervisor",

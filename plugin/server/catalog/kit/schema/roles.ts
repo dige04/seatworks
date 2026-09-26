@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { AttentionChoice } from "../../../../shared/settings.ts";
 import { text, texts } from "./fields.ts";
 
 const Role = z.strictObject({
@@ -36,10 +35,9 @@ const LikeRole = z.strictObject({
   defaults: z.strictObject({ harness: text, model: text.optional(), thinking: text.optional() }),
 });
 
-/** `roles.json`: the kit's roles and the attention it starts with. */
+/** `roles.json`: the kit's roles. */
 export const RolesFile = z.strictObject({
   providerPrefix: z.string().optional(),
-  attention: AttentionChoice.optional(),
   roles: z.array(z.union([LikeRole, Role])),
 });
 

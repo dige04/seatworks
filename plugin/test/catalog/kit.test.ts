@@ -17,11 +17,11 @@ function put(dir: string, path: string, value: unknown): void {
   writeFileSync(join(dir, path), JSON.stringify(value));
 }
 
-/** A kit of the test's own over the shipped ecosystem, Paseo's tools, the watch's questions and refused commands, and no patterns. */
+/** A kit of the test's own over the shipped ecosystem, Paseo's tools, the watch's thresholds and questions and refused commands, and no patterns. */
 function kitDir(files: Record<string, unknown>): string {
   const dir = tempDir("sw2-kit-");
   mkdirSync(join(dir, "catalog"), { recursive: true });
-  for (const name of ["ecosystem.json", "paseo.json", "checks.json", "refused.json"])
+  for (const name of ["ecosystem.json", "paseo.json", "attention.json", "checks.json", "refused.json"])
     copyFileSync(new URL(`../../catalog/${name}`, import.meta.url), join(dir, "catalog", name));
   put(dir, "catalog/patterns.json", {});
   for (const [path, value] of Object.entries(files)) put(dir, path, value);
