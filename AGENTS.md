@@ -283,7 +283,8 @@ its own, however short.
   `review`, `watched`, `judge`), `tools` (a set in `mcp/tools.json`), prompt, skills, defaults,
   `writes`, `follows`. Nothing in `server/` compares a role to a name; capabilities decide routing,
   acceptance, watching and judging.
-- **A `roles.json` in the state root replaces the shipped one**, and may point at its own prompts and
+- **A `roles.json` in the state root replaces the shipped one**, as does any catalog file of the same
+  name there (a sensor by its id, in `sensor/`), and may point at its own prompts and
   skills, so another arrangement needs no fork. A role of its own takes its sandbox, deltas and rules
   from the state root's `own/harness/<agent>/` first, or is `like` a role that has them. Going your own
   way inherits the machinery, not the wording.

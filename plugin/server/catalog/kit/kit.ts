@@ -108,14 +108,17 @@ function loadMcp(dir: string): Record<string, McpEntry> {
   return entries;
 }
 
-function loadSensors(dir: string): Record<string, SensorSpec> {
-  const root = join(dir, "catalog", "sensor");
+/** The shipped sensors, each replaced by one of the same name in the state root's `sensor` folder, which may add more. */
+function loadSensors(dir: string, stateDir?: string): Record<string, SensorSpec> {
   const sensors: Record<string, SensorSpec> = {};
-  for (const name of existsSync(root) ? readdirSync(root).filter((entry) => entry.endsWith(".json")) : []) {
-    const sensor = parsed(SensorFile, join(root, name), `catalog/sensor/${name}`);
-    if (`${sensor.id}.json` !== name) throw new Error(`catalog/sensor/${name} names itself ${sensor.id}`);
-    sensors[sensor.id] = sensor;
-  }
+  const roots = [{ root: join(dir, "catalog", "sensor"), shown: "catalog/sensor" }];
+  if (stateDir) roots.push({ root: join(stateDir, "sensor"), shown: join(stateDir, "sensor") });
+  for (const { root, shown } of roots)
+    for (const name of existsSync(root) ? readdirSync(root).filter((entry) => entry.endsWith(".json")) : []) {
+      const sensor = parsed(SensorFile, join(root, name), `${shown}/${name}`);
+      if (`${sensor.id}.json` !== name) throw new Error(`${shown}/${name} names itself ${sensor.id}`);
+      sensors[sensor.id] = sensor;
+    }
   return sensors;
 }
 
@@ -133,7 +136,7 @@ export function loadKit(dir: string, stateDir?: string): Kit {
   const roles = loadRoles(raw.roles, harnesses);
   const refused = parsed(RefusedFile, chosen(join(dir, "catalog", "refused.json"), stateDir), "refused.json");
   checkRefused(refused, harnesses);
-  const patterns = parsed(PatternsFile, join(dir, "catalog", "patterns.json"), "patterns.json");
+  const patterns = parsed(PatternsFile, chosen(join(dir, "catalog", "patterns.json"), stateDir), "patterns.json");
   checkPatterns(patterns, roles);
   const { watch } = ecosystem;
   return {
@@ -154,8 +157,8 @@ export function loadKit(dir: string, stateDir?: string): Kit {
     ecosystem,
     paseoTools: parsed(PaseoFile, chosen(join(dir, "catalog", "paseo.json"), stateDir), "paseo.json").tools,
     refused,
-    sensors: loadSensors(dir),
-    checks: parsed(ChecksFile, join(dir, "catalog", "checks.json"), "checks.json"),
+    sensors: loadSensors(dir, stateDir),
+    checks: parsed(ChecksFile, chosen(join(dir, "catalog", "checks.json"), stateDir), "checks.json"),
     patterns,
   };
 }

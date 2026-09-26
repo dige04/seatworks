@@ -252,13 +252,21 @@ test("a roles or refused file in the state root replaces the shipped one, and a 
   writeFileSync(prompt, "# Driver\n\nYou drive.\n");
   put(mine, "roles.json", { providerPrefix: "sw2-", roles: [{ ...lead, role: "driver", label: "Driver", prompt }] });
   put(mine, "refused.json", { hub: "the forge's" });
+  const [first] = Object.keys(checks);
+  put(mine, "checks.json", { [first!]: checks[first!] });
+  put(mine, "patterns.json", {});
+  put(mine, "sensor/judge.json", { ...sensor, model: "judge-2" });
   const own = loadKit(dir, mine);
   assert.deepEqual(
     own.roles.map((role) => role.role),
     ["driver"],
     "and that arrangement is the one that runs",
   );
-  assert.deepEqual(own.refused, { hub: "the forge's" });
+  assert.deepEqual(
+    [own.refused, Object.keys(own.checks), own.patterns, own.sensors.judge?.model],
+    [{ hub: "the forge's" }, [first], {}, "judge-2"],
+    "and so do the watch's questions, patterns and sensors",
+  );
   assert.match(
     renderPrompt(own, own.roles[0]!, "claude", { guides: "/g", state: "/s" }),
     /You drive\./,
