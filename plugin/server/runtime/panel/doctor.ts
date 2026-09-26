@@ -9,19 +9,7 @@ import { errorText } from "../../core/errors.ts";
 import { reaches, toolNames } from "../../core/mcp-client.ts";
 import { executableIn, expandHome, pathDirs } from "../../core/paths.ts";
 
-type Probes = {
-  has(bin: string): boolean;
-  exists(path: string): boolean;
-  tools(url: string, timeoutMs: number): Promise<{ names?: string[]; error?: string }>;
-  reaches(url: string, timeoutMs: number): Promise<{ ok: boolean; error?: string }>;
-};
-
-export const realProbes: Probes = {
-  has: (bin) => executableIn(pathDirs(), bin) !== undefined,
-  exists: existsSync,
-  tools: toolNames,
-  reaches,
-};
+const onPath = (bin: string): boolean => executableIn(pathDirs(), bin) !== undefined;
 
 /** What the panel's Health section shows: the settings, the tools on PATH, each agent the seats run on, and each MCP server in use. */
 export async function doctor(kit: Kit, team: Team): Promise<Check[]> {
@@ -41,7 +29,7 @@ export async function doctor(kit: Kit, team: Team): Promise<Check[]> {
 function binChecks(): Check[] {
   return ["git", "jq"].map((bin) => {
     // Asked once: `has` spawns a shell and blocks the loop the seats' tool calls are served on.
-    const ok = realProbes.has(bin);
+    const ok = onPath(bin);
     return { id: `bin:${bin}`, ok, detail: ok ? `${bin} is on PATH.` : `${bin} is not on PATH; seats need it.` };
   });
 }
@@ -56,7 +44,7 @@ function harnessChecks(kit: Kit, team: Team): Check[] {
     const harness = kit.harnesses[id]!;
     const bin = harness.provider.env?.SEATWORKS_AGENT_BIN;
     if (bin) {
-      const ok = realProbes.has(bin);
+      const ok = onPath(bin);
       checks.push({
         id: `harness:${id}`,
         ok,
@@ -67,7 +55,7 @@ function harnessChecks(kit: Kit, team: Team): Check[] {
     }
     for (const check of harness.checks ?? []) {
       const path = expandHome(check.path);
-      const ok = realProbes.exists(path);
+      const ok = existsSync(path);
       checks.push({
         id: `harness:${id}:${check.path}`,
         ok,
@@ -99,7 +87,7 @@ async function proxyCheck(state: McpState, proxy: ProxySpec, users: RoleSeat[], 
   const id = `mcp:${state.id}`;
   if (proxy.backend.type === "stdio") {
     const bin = proxy.backend.command[0] ?? "";
-    const ok = Boolean(bin) && realProbes.has(bin);
+    const ok = Boolean(bin) && onPath(bin);
     return {
       id,
       ok,
@@ -107,7 +95,7 @@ async function proxyCheck(state: McpState, proxy: ProxySpec, users: RoleSeat[], 
     };
   }
   const { url } = proxy.backend;
-  const listed = await realProbes.tools(url, 3000);
+  const listed = await toolNames(url, 3000);
   if (!listed.names) return { id, ok: false, detail: `No ${state.label} server answered at ${url}.${help}` };
   const exposed = new Set(listed.names);
   const needed = new Set<string>([
@@ -132,7 +120,7 @@ async function directCheck(state: McpState, help: string): Promise<Check | undef
   const direct = (shaped ?? (state.entry?.server ? { ...state.entry.server } : undefined)) as
     { type?: string; command?: string; url?: string } | undefined;
   if (direct?.type === "stdio" && direct.command) {
-    const ok = realProbes.has(direct.command);
+    const ok = onPath(direct.command);
     return {
       id,
       ok,
@@ -149,7 +137,7 @@ async function directCheck(state: McpState, help: string): Promise<Check | undef
       detail: `${state.label} is an SSE server at ${direct.url}; the desk does not probe that transport, so this is not a check.${help}`,
     };
   if (!direct?.url) return undefined;
-  const answered = await realProbes.reaches(direct.url, 8000);
+  const answered = await reaches(direct.url, 8000);
   return {
     id,
     ok: answered.ok,

@@ -18,9 +18,8 @@ import { resolveTeam, rulesFor, withHarness } from "../../server/catalog/team/te
 import { describeTeam } from "../../server/runtime/panel/team-view.ts";
 import { readConfig } from "../../server/core/config-file.ts";
 import { git } from "../../server/core/git.ts";
-import { guidesDir } from "../../server/core/paths.ts";
+import { executableIn, guidesDir, pathDirs } from "../../server/core/paths.ts";
 import type { AgentConfig } from "../../server/core/ports.ts";
-import { realProbes } from "../../server/runtime/panel/doctor.ts";
 import { tempDir } from "../tempdir.ts";
 
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -30,7 +29,7 @@ const allOn = (kit: ReturnType<typeof loadKit>) => ({
   mcp: Object.fromEntries(Object.keys(kit.mcp).map((id) => [id, { enabled: true }])),
 });
 const installed = (harness: ReturnType<typeof loadKit>["harnesses"][string]) =>
-  !harness.modelCatalog || realProbes.has(harness.modelCatalog.command[0]!);
+  !harness.modelCatalog || executableIn(pathDirs(), harness.modelCatalog.command[0]!) !== undefined;
 
 test("the shipped kit resolves to a complete team, and every role's seat builds with no hidden word or placeholder in it", () => {
   const kit = loadKit(PLUGIN);

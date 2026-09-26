@@ -15,9 +15,8 @@ import { materialize, seatDir } from "../../server/catalog/seat/seats.ts";
 import { serversFor } from "../../server/catalog/seat/servers.ts";
 import { resolveTeam, withHarness } from "../../server/catalog/team/team.ts";
 import { readConfig } from "../../server/core/config-file.ts";
-import { stateRoot } from "../../server/core/paths.ts";
+import { executableIn, pathDirs, stateRoot } from "../../server/core/paths.ts";
 import { ANSWER_WITHIN_MS } from "../../server/desk/calls/tool-calls.ts";
-import { realProbes } from "../../server/runtime/panel/doctor.ts";
 import { tempDir } from "../tempdir.ts";
 
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -97,7 +96,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       assert.equal(can(role, "write"), false, `${where}: touches no work`);
       assert.deepEqual(stateWrites(role, project.state), [], `${where}: writes nothing under the project's state`);
     }
-    if (harness.modelCatalog && !realProbes.has(harness.modelCatalog.command[0]!)) {
+    if (harness.modelCatalog && !executableIn(pathDirs(), harness.modelCatalog.command[0]!)) {
       t.diagnostic(`${harness.id} is not installed here, so its ${role.role} seat was not built`);
       continue;
     }
