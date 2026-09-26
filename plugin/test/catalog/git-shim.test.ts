@@ -163,3 +163,38 @@ test("a seat settles what conflicts on its task's branch through its git: mergin
   assert.equal(git("commit", "-qm", "settle").status, 0);
   assert.equal(git("reset", "--soft", "HEAD~1").status, 0, "its own history is its own");
 });
+
+test("a seat's git works only in its own copy of the project: the Human's checkout and other seats' copies are refused, any other repository is not", () => {
+  const root = tempDir("sw2-shim-own-copy-");
+  const real = (...args: string[]) =>
+    execFileSync("git", ["-C", root, "-c", "user.name=t", "-c", "user.email=t@x", ...args], { encoding: "utf-8" });
+  real("init", "-q", "-b", "main");
+  real("commit", "-q", "--allow-empty", "-m", "seed");
+  const copies = tempDir("sw2-shim-copies-");
+  const [mine, theirs] = [join(copies, "S0"), join(copies, "S1")];
+  real("worktree", "add", "-q", "-b", "task/l1-t1", mine);
+  real("worktree", "add", "-q", "-b", "task/l1-t2", theirs);
+  const scratch = tempDir("sw2-shim-scratch-");
+  execFileSync("git", ["-C", scratch, "init", "-q"]);
+  const dir = seatBin(loadKit(PLUGIN), tempDir("sw2-shim-own-copy-state-"))!;
+  const git = (cwd: string, ...args: string[]) =>
+    spawnSync(join(dir, "git"), args, { cwd, encoding: "utf-8", env: { ...process.env, SEATWORKS_WORKTREE: mine } });
+  for (const [where, cwd, args] of [
+    ["its own copy", mine, ["status"]],
+    ["its own copy, named from a folder inside it", join(mine, "."), ["log", "--oneline"]],
+    ["a repository of its own making, as a test suite's", scratch, ["status"]],
+    ["no repository at all", tempDir("sw2-shim-bare-"), ["--version"]],
+  ] as const) {
+    const ran = git(cwd, ...args);
+    assert.equal(ran.status, 0, `${where}: ${ran.stderr}`);
+  }
+  for (const [where, cwd, args] of [
+    ["the Human's own checkout", root, ["status"]],
+    ["another seat's copy", theirs, ["log"]],
+    ["the Human's checkout named with -C", mine, ["-C", root, "commit", "--allow-empty", "-m", "x"]],
+    ["or by its parts", mine, [`--git-dir=${join(root, ".git")}`, `--work-tree=${root}`, "status"]],
+  ] as const) {
+    const ran = git(cwd, ...args);
+    assert.match(ran.stderr, /^git: refused: this git works in [^\n]*, not in your own copy/, where);
+  }
+});

@@ -63,6 +63,8 @@ export class SeatLaunch {
     // Created, the seat brings the key made for it; opened again, it is given back the one it was bound to.
     const key = request.reason === "create" ? request.env[SEAT_KEY] : this.keys.keyOf(request.agentId);
     if (request.reason === "create" && key) this.keys.bind(request.agentId, key);
-    return key ? { ...opened, env: { ...opened.env, [SEAT_KEY]: key } } : opened;
+    // The seat's own copy, the one its git shim lets it work in.
+    const env = { ...opened.env, SEATWORKS_WORKTREE: request.cwd };
+    return { ...opened, env: key ? { ...env, [SEAT_KEY]: key } : env };
   }
 }
