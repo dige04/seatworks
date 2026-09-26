@@ -242,7 +242,7 @@ type WatchDeps = {
   context: (seat: WatchedSeat) => SeatContext | undefined;
   found: (watch: SeatWatch, facts: Fact[]) => void;
   looked: (watch: SeatWatch, look: SeatLook) => void;
-  /** A person wrote in the seat's own chat, past the desk. */
+  /** A person wrote in the seat's own chat, past the desk: read off the followed stream, so only a watched role's chat is heard. */
   spoke: (seat: WatchedSeat, text: string) => void;
 };
 

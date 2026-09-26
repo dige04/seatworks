@@ -4,35 +4,25 @@ import { watchPatterns } from "../catalog/kit/ecosystem-patterns.ts";
 import { TEAM_SERVER } from "../catalog/kit/kit.ts";
 import { seatOf } from "../catalog/kit/roles.ts";
 import { errorText } from "../core/errors.ts";
-import type { TurnEnded } from "../core/ports.ts";
 import type { Desk } from "../desk/desk.ts";
 import { laneOfLead, taskOfPeer } from "../domain/ledger.ts";
 import { loadLedger } from "../desk/store/ledger.ts";
 import { type Project, gateCommands, projectOf, readProjectConfig } from "../desk/project/project.ts";
 import type { TeamSource } from "./team-source.ts";
-import { malformed } from "./timeline.ts";
+import type { Troubles } from "./troubles.ts";
 import type { Fact } from "../domain/incident.ts";
 import { callsTo } from "./watch/facts.ts";
 import type { SeatContext, SeatLook, SeatWatch, WatchedSeat, Watches } from "./watch/watches.ts";
 import { daemonLog } from "../core/logger.ts";
 
-const TROUBLES = 10;
+type WatchingDeps = { kit: Kit; source: TeamSource; desk: Desk; watches: () => Watches; troubles: Troubles };
 
-export type Trouble = { kind: string; at: number; detail: string };
-
-type WatchingDeps = { kit: Kit; source: TeamSource; desk: Desk; watches: () => Watches };
-
-/** Between the watch and the desk: what the watch reads of a seat, what it noticed, and trouble shown on screen rather than mailed. */
+/** Between the watch and the desk: what the watch reads of a seat, and what it noticed. */
 export class Watching {
   private readonly deps: WatchingDeps;
-  private readonly troubles = new Map<string, Trouble[]>();
 
   constructor(deps: WatchingDeps) {
     this.deps = deps;
-  }
-
-  troublesOf(project: Project): Trouble[] {
-    return this.troubles.get(project.slug) ?? [];
   }
 
   context(seat: WatchedSeat): SeatContext | undefined {
@@ -95,14 +85,6 @@ export class Watching {
       .catch((error) => daemonLog.error("what the watch noticed could not be recorded:", error));
   }
 
-  /** Trouble nobody is mailed about, kept where a screen can show it rather than only in the log. */
-  private troubled(project: Project, kind: string, detail: string): void {
-    const list = this.troubles.get(project.slug) ?? [];
-    list.push({ kind, at: Date.now(), detail });
-    if (list.length > TROUBLES) list.splice(0, list.length - TROUBLES);
-    this.troubles.set(project.slug, list);
-  }
-
   /** A seat whose agent shows the watch no thinking: what reads thinking is blind to it, which the Human can only see here. */
   private blind(project: Project, watch: SeatWatch, look: SeatLook): void {
     const { seat } = watch;
@@ -112,32 +94,11 @@ export class Watching {
       provider: seat.provider,
       looks: look.thoughtless,
     });
-    this.troubled(
+    this.deps.troubles.add(
       project,
       "watch.thoughtless",
       `${look.thoughtless} looks at ${seat.title ?? seat.id} held its words and no thinking: what the watch reads in thinking is blind to it until its agent shows its thinking`,
     );
-  }
-
-  /** A call the harness refused because its input was not JSON; it never reaches the desk, so only this reports it. */
-  malformedCalls(event: TurnEnded): void {
-    const seat = seatOf(this.deps.kit, event.agent.provider);
-    if (!seat?.role.tools) return;
-    const project = projectOf(event.agent.cwd);
-    for (const call of malformed(event.timeline, seat.harness.timeline?.unparsed)) {
-      this.deps.desk.event(project, {
-        kind: "call.malformed",
-        agent: event.agent.id,
-        role: seat.role.role,
-        tool: call.tool,
-        error: call.quote,
-      });
-      this.troubled(
-        project,
-        "call.malformed",
-        `the ${seat.role.label}'s ${call.tool} was written with an input that is not JSON, and never reached the desk`,
-      );
-    }
   }
 
   /** A look's new words go to the brains: the seat's own only, its thinking and what it said, never a tool's output. */

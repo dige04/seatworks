@@ -13,7 +13,8 @@ import { holdOn } from "../desk/lanes/hold.ts";
 import { seatLetters } from "../desk/letters/seat-letters.ts";
 import { messageLetters } from "../desk/letters/message-letters.ts";
 import { type Project, projectOf } from "../desk/project/project.ts";
-import { deniedCall, lastToolCall, outputText } from "./timeline.ts";
+import { deniedCall, lastToolCall, malformed, outputText } from "./timeline.ts";
+import type { Troubles } from "./troubles.ts";
 
 type TurnDeps = {
   kit: Kit;
@@ -24,6 +25,7 @@ type TurnDeps = {
   attention: (project: Project) => Pick<Attention, "silentTurns" | "quietChars">;
   remember: (project: Project) => void;
   log: (project: Project, line: string) => void;
+  troubles: Troubles;
 };
 
 /** Where a seat puts a question instead, by the tools it holds: one that holds no way to ask settles it itself. */
@@ -45,6 +47,27 @@ export class TurnRules {
 
   started(agentId: string): void {
     this.startedAt.set(agentId, Date.now());
+  }
+
+  /** A call the harness refused because its input was not JSON; it never reaches the desk, so only this reports it. */
+  malformedCalls(event: TurnEnded): void {
+    const seat = seatOf(this.deps.kit, event.agent.provider);
+    if (!seat?.role.tools) return;
+    const project = projectOf(event.agent.cwd);
+    for (const call of malformed(event.timeline, seat.harness.timeline?.unparsed)) {
+      this.deps.desk.event(project, {
+        kind: "call.malformed",
+        agent: event.agent.id,
+        role: seat.role.role,
+        tool: call.tool,
+        error: call.quote,
+      });
+      this.deps.troubles.add(
+        project,
+        "call.malformed",
+        `the ${seat.role.label}'s ${call.tool} was written with an input that is not JSON, and never reached the desk`,
+      );
+    }
   }
 
   forget(agentId: string): void {

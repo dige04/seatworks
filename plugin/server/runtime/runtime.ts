@@ -45,6 +45,7 @@ import { PermissionWaits } from "./permission-waits.ts";
 import { Watches } from "./watch/watches.ts";
 import { watchView } from "./panel/watch-view.ts";
 import { Watching } from "./watching.ts";
+import { Troubles } from "./troubles.ts";
 
 type RuntimeOptions = {
   outboxFile?: string;
@@ -59,6 +60,7 @@ export class Runtime implements HostHooks {
   readonly panel: Panel;
   private readonly keys = new SeatKeys();
   private readonly waits = new PermissionWaits();
+  private readonly troubles = new Troubles();
   private readonly socket: TeamSocket;
   private readonly source: TeamSource;
   private readonly seating: Seating;
@@ -102,8 +104,15 @@ export class Runtime implements HostHooks {
       attention: (project) => this.source.teamFor(project).attention,
       remember,
       log,
+      troubles: this.troubles,
     });
-    this.watching = new Watching({ kit, source: this.source, desk: this.desk, watches: () => this.watches });
+    this.watching = new Watching({
+      kit,
+      source: this.source,
+      desk: this.desk,
+      watches: () => this.watches,
+      troubles: this.troubles,
+    });
     this.watches = this.watchesOf(kit);
     this.patrol = new Patrol({
       kit,
@@ -149,8 +158,7 @@ export class Runtime implements HostHooks {
     const changed = () => this.teamChanged();
     const reconcile = () => this.sync.reconcile();
     const seats = this.host.seats;
-    const watch = (project: Project) =>
-      watchView(project, this.watching.troublesOf(project), source.teamFor(project), kit);
+    const watch = (project: Project) => watchView(project, this.troubles.of(project), source.teamFor(project), kit);
     const settings = new SettingsPanel({
       kit,
       source,
@@ -264,7 +272,7 @@ export class Runtime implements HostHooks {
 
   async turnEnded(event: TurnEnded): Promise<void> {
     this.outbox.turnEnded(event.agent.id);
-    this.watching.malformedCalls(event);
+    this.turns.malformedCalls(event);
     try {
       const archiving = this.desk.archiving(event.agent.id);
       if (archiving) await this.desk.archive(event.agent.id, true);
