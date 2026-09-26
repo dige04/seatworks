@@ -117,7 +117,7 @@ test("a kept Lead keeps its lane's copy until the Supervisor releases it or the 
   assert.match(
     (await h.call(sup, "supervisor", "status", {})).text,
     new RegExp(
-      `## Kept Leads\\n\\n- L1 Part B, landed: Lead ${lead} idle \\d+ min, in S0\\. release lane L1 once its work is done or the Human asks\\.`,
+      `## Kept Leads\\n\\n- L1 Part B, landed: Lead ${lead} idle \\d+ min, in S0\\. Kept until it is released\\.`,
     ),
   );
 

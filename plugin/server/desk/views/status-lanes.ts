@@ -49,10 +49,12 @@ function laneNotes(lane: Lane, now: number): string[] {
   const land = lane.landApproval;
   const notes: string[] = [];
   if (lane.onHold)
-    notes.push(`On hold for ${minutesSince(now, lane.onHold.at)} min: ${lane.onHold.reason} resume_lane lifts it.`);
+    notes.push(
+      `On hold for ${minutesSince(now, lane.onHold.at)} min: ${lane.onHold.reason} It is held until it is resumed.`,
+    );
   if (lane.ready) notes.push(`Reported ready ${minutesSince(now, lane.ready.at)} min ago.`);
   if (land?.approved)
-    notes.push(`Landing approved by the Human ${minutesSince(now, land.approved.at)} min ago; land_lane lands it.`);
+    notes.push(`Landing approved by the Human ${minutesSince(now, land.approved.at)} min ago; nothing holds it now.`);
   else if (land)
     notes.push(
       `Landing waits ${minutesSince(now, land.since)} min for the Human's approval: ${land.signals.join(" ")}`,
@@ -88,6 +90,6 @@ function taskDetail(ledger: Ledger, task: Task, seats: Seats, now: number): stri
   }
   const kept = keptPeers(ledger, task.lane).find((peer) => peer.task === task.id);
   const keeps =
-    kept && seats.has(kept.id) ? `; its Peer ${seatLine(seats, kept.id, now)} is kept until you release it` : "";
+    kept && seats.has(kept.id) ? `; its Peer ${seatLine(seats, kept.id, now)} is kept until its Lead releases it` : "";
   return `${task.handback ? `, hand-back ${minutesSince(now, task.handback.at)} min ago` : ""}${keeps}`;
 }

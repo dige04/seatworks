@@ -36,7 +36,7 @@ const live = (h: Harness) =>
 
 const kept = (id: string, seat: string) =>
   new RegExp(
-    `- ${id} [^:]+: merged, hand-back \\d+ min ago; its Peer ${seat} idle \\d+ min is kept until you release it`,
+    `- ${id} [^:]+: merged, hand-back \\d+ min ago; its Peer ${seat} idle \\d+ min is kept until its Lead releases it`,
   );
 
 test("a Peer whose task is accepted is kept for rework until its Lead releases it, and the lane's copy never has two writers", async () => {
@@ -62,7 +62,7 @@ test("a Peer whose task is accepted is kept for rework until its Lead releases i
   assert.match(
     await status(),
     new RegExp(
-      `- L1-T1 Clean build: merged, hand-back \\d+ min ago; its Peer ${peer} idle \\d+ min is kept until you release it`,
+      `- L1-T1 Clean build: merged, hand-back \\d+ min ago; its Peer ${peer} idle \\d+ min is kept until its Lead releases it`,
     ),
   );
   const message = await h.call(lead, "lead", "message", { to: "L1-T1", text: "why a.txt?" });
@@ -127,7 +127,11 @@ test("a Peer whose task is accepted is kept for rework until its Lead releases i
   h.agents.get(second.peer!)!.status = "running";
   assert.equal((await h.call(lead, "lead", "release", { task: "L1-T2" })).ok, true);
   assert.equal(h.agents.get(second.peer!)!.archivedAt, null, "archived once its turn ends, not under it");
-  assert.doesNotMatch(await status(), /is kept until you release it/, "though Paseo lists it until that turn ends");
+  assert.doesNotMatch(
+    await status(),
+    /is kept until its Lead releases it/,
+    "though Paseo lists it until that turn ends",
+  );
   assert.match(
     await say("rework", { task: "L1-T2", text: "x" }),
     /The Peer on L1-T2 is gone: add a task for what must change\./,
@@ -142,7 +146,7 @@ test("a Peer whose task is accepted is kept for rework until its Lead releases i
   seat.archivedAt = new Date().toISOString();
   await h.runtime.archived({ id: third, provider: seat.provider, cwd: seat.cwd, title: seat.title });
   assert.equal(h.ledger().agents[third]!.gone, true, "the Human archived it in Paseo");
-  assert.doesNotMatch(await status(), /is kept until you release it/);
+  assert.doesNotMatch(await status(), /is kept until its Lead releases it/);
 
   await h.call(lead, "lead", "add_tasks", { tasks: [task("w", "Fourth")] });
   const fourth = h.ledger().tasks["L1-T4"]!.peer!;
@@ -190,7 +194,7 @@ test("a task beside others keeps its Peer in its own copy once merged, until its
   assert.ok(existsSync(side.worktree!), "and it keeps the copy it works in");
   assert.match(
     (await h.call(lead, "lead", "status", {})).text,
-    new RegExp(`- L1-T2 Beside: merged[^\\n]*; its Peer ${side.peer} idle \\d+ min is kept until you release it`),
+    new RegExp(`- L1-T2 Beside: merged[^\\n]*; its Peer ${side.peer} idle \\d+ min is kept until its Lead releases it`),
   );
 
   const asked = await h.call(lead, "lead", "message", { to: "L1-T2", text: "why b.txt alone?" });

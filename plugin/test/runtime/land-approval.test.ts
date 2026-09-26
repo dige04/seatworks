@@ -189,7 +189,7 @@ test("an approval that cannot land yet stands through a dirty base, a hold and a
   assert.doesNotMatch(told.slice(told.lastIndexOf("APPROVED L1")), /drop_lane/);
   assert.match(
     (await h.call(sup, "supervisor", "status", {})).text,
-    /Landing approved by the Human \d+ min ago; land_lane lands it\./,
+    /Landing approved by the Human \d+ min ago; nothing holds it now\./,
   );
 
   assert.doesNotMatch((await hold()).text, /called off/);

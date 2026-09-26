@@ -33,7 +33,7 @@ test("a lane on hold stops its seats, keeps their mail, refuses every move, and 
   assert.match(h.agents.get(peer)!.interrupted.join("\n"), /^HOLD: the work on L1-T1 is stopped: the migration/);
   assert.match(
     (await h.call(sup, "supervisor", "status", {})).text,
-    /On hold for 0 min: the migration would drop a table the Human needs\. resume_lane lifts it\./,
+    /On hold for 0 min: the migration would drop a table the Human needs\. It is held until it is resumed\./,
   );
 
   for (const seat of [lead, peer]) h.agents.get(seat)!.status = "idle";

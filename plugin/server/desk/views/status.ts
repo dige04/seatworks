@@ -161,8 +161,7 @@ function mailLines(project: Project, ledger: Ledger, seats: Seats, now: number, 
   const queued = mine.filter((letter) => seats.has(letter.to));
   const lines: string[] = [];
   if (stranded.length > 0) {
-    const intro =
-      "The seat each of these was addressed to is gone, and no other seat is sent them: pass on what still matters before each is given up on.";
+    const intro = "The seat each of these was addressed to is gone, and no other seat is sent them.";
     lines.push("## Mail with nobody to read it", "", intro, "");
     for (const letter of stranded) {
       const age = `waiting ${minutesSince(now, letter.at)} min, given up on in ${left(letter.until - now)}`;
@@ -204,7 +203,7 @@ function keptLines(ledger: Ledger, seats: Seats, now: number): string[] {
   const line = (lane: Lane) => {
     const copy = keptCopy(ledger, lane) ? `, in ${lane.slot}` : "";
     const how = lane.landed ? "landed" : "dropped";
-    return `- ${lane.id} ${lane.title}, ${how}: Lead ${seatLine(seats, lane.lead, now)}${copy}. release lane ${lane.id} once its work is done or the Human asks.`;
+    return `- ${lane.id} ${lane.title}, ${how}: Lead ${seatLine(seats, lane.lead, now)}${copy}. Kept until it is released.`;
   };
   return ["## Kept Leads", "", ...kept.map(line), ""];
 }
