@@ -105,7 +105,7 @@ const FlowView = z.object({
   project: z.string(),
   at: z.number(),
   revision: z.string(),
-  supervisors: z.array(FlowSeat),
+  supervisors: z.array(FlowSeat.extend({ label: z.string() })),
   lanes: z.array(FlowLane),
   moreLanes: z.number(),
   asks: z.array(FlowAsk),

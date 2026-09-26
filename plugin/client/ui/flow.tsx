@@ -259,7 +259,7 @@ export function FlowSection({ following, flow, error, live, theme, disabled, onL
             <View style={{ paddingBottom: PAD }}>
               {flow.supervisors.map((seat) => (
                 <View key={seat.id} style={styles.lane}>
-                  <Node theme={theme} title={seat.role === "supervisor" ? "Supervisor" : `Supervisor · ${seat.role}`} hint={seat.id} state={seatText(seat)} alive={seat.status !== "gone"} onChat={chatOf(navigation, seat)} />
+                  <Node theme={theme} title={seat.label} hint={seat.id} state={seatText(seat)} alive={seat.status !== "gone"} onChat={chatOf(navigation, seat)} />
                 </View>
               ))}
               {flow.lanes.map((lane) => (

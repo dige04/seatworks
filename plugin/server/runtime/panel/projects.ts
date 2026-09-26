@@ -141,7 +141,7 @@ export class ProjectsPanel implements ProjectsRpc {
     const project = this.deps.source.named(slug);
     if (!project) return { error: unknownProject(slug) };
     const seats = new Map((await this.deps.seats.open()).map((seat) => [seat.id, seat]));
-    const supervises = new Set(rolesThatCan(this.deps.kit, "supervise").map((role) => role.role));
+    const supervises = new Map(rolesThatCan(this.deps.kit, "supervise").map((role) => [role.role, role.label]));
     const seated = [...seats.values()]
       .map((seat) => ({ seat, role: seatOf(this.deps.kit, seat.provider)?.role }))
       .filter(

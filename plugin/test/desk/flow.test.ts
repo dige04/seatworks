@@ -41,18 +41,31 @@ test("whoever supervises is shown by the capability the kit gives, one per conce
     ["seat-sup", seat("seat-sup", "sw2-supervisor-claude")],
     ["seat-arch", seat("seat-arch", "sw2-architecture-claude")],
   ]);
+  const labels: Record<string, string> = {
+    supervisor: "Supervisor",
+    architecture: "Architect",
+    safety: "Safety officer",
+  };
   const shown = (supervises: string[]) =>
-    flowView(project, ledger, seats, now, new Set(), new Set(supervises)).supervisors.map((entry) => [
-      entry.role,
-      entry.status,
-    ]);
+    flowView(
+      project,
+      ledger,
+      seats,
+      now,
+      new Set(),
+      new Map(supervises.map((role) => [role, labels[role]!])),
+    ).supervisors.map((entry) => [entry.label, entry.status]);
   assert.deepEqual(shown([]), []);
-  assert.deepEqual(shown(["supervisor"]), [["supervisor", "idle"]]);
-  assert.deepEqual(shown(["supervisor", "architecture", "safety"]).sort(), [
-    ["architecture", "idle"],
-    ["safety", "gone"],
-    ["supervisor", "idle"],
-  ]);
+  assert.deepEqual(shown(["supervisor"]), [["Supervisor", "idle"]]);
+  assert.deepEqual(
+    shown(["supervisor", "architecture", "safety"]).sort(),
+    [
+      ["Architect", "idle"],
+      ["Safety officer", "gone"],
+      ["Supervisor", "idle"],
+    ],
+    "each named as the kit labels its role, for the canvas to show",
+  );
 
   for (let index = 0; index < 60; index += 1) ledger.lanes[`L${index}`] = lane(`L${index}`);
   const view = flowView(project, ledger, new Map(), now);

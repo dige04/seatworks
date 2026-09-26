@@ -143,14 +143,17 @@ function questionsOf(ledger: Ledger, now: number): FlowQuestion[] {
     }));
 }
 
-/** Every supervising seat, one per concern; a concern with nobody seated shows its last seat as gone. */
+/**
+ * Every supervising seat, one per concern, named as the kit labels its role; a concern with nobody seated shows its last
+ * seat as gone.
+ */
 function supervisorsOf(
   ledger: Ledger,
   seats: Map<string, SeatView>,
   now: number,
-  supervises: ReadonlySet<string>,
+  supervises: ReadonlyMap<string, string>,
   seated: { id: string; role: string }[],
-): FlowSeat[] {
+): FlowView["supervisors"] {
   // The Supervisor seated now: `ledger.agents` keeps each role's newest gone seat, so its first entry may be archived.
   const recorded = Object.values(ledger.agents).filter((agent) => supervises.has(agent.role));
   const live = recorded
@@ -166,7 +169,7 @@ function supervisorsOf(
     covered.add(agent.role);
     shown.set(agent.id, seatOf(seats, agent.id, agent.role, now, heard(agent.id))!);
   }
-  return [...shown.values()];
+  return [...shown.values()].map((seat) => ({ ...seat, label: supervises.get(seat.role) ?? seat.role }));
 }
 
 /** `seated` comes from the roster: the ledger records a seat only after its first successful tool call. */
@@ -176,7 +179,7 @@ export function flowView(
   seats: Map<string, SeatView>,
   now: number,
   open: ReadonlySet<string> = new Set(),
-  supervises: ReadonlySet<string> = new Set(),
+  supervises: ReadonlyMap<string, string> = new Map(),
   seated: { id: string; role: string }[] = [],
 ): Omit<FlowView, "watch"> {
   const { counts, held } = tasksByLane(ledger, seats, now, open);
