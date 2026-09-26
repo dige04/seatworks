@@ -18,13 +18,17 @@ type Brains = {
   seat?: { id: string; role: string };
 };
 
-/** The kit as the machine's and the project's settings leave it: each role's seat, the MCP servers, attention and the judge. */
+/** The sensor that asks review's checks, with its key where the machine keeps one; none when the kit knows no such sensor. */
+type ReviewJudge = { sensor?: { id: string; sensor: SensorSpec; key?: string } };
+
+/** The kit as the machine's and the project's settings leave it: each role's seat, the MCP servers, attention and the judges. */
 export type Team = {
   roles: Record<string, RoleSeat>;
   mcp: Record<string, McpState>;
   attention: Attention;
   hitl: Hitl;
   brains: Brains;
+  review: ReviewJudge;
   rules: string;
   language?: string;
   errors: string[];
@@ -69,6 +73,7 @@ export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, 
     attention,
     hitl,
     brains: brainsOf(kit, attention, layers, errors),
+    review: reviewOf(kit, layers, errors),
     rules: [machine.rules, project.rules].filter((text) => text && text.trim()).join("\n\n"),
     ...(machine.language ? { language: machine.language } : {}),
     errors,
@@ -122,6 +127,25 @@ function brainsOf(kit: Kit, attention: Attention, layers: Layer[], errors: strin
     ...(found && mode !== "seat" ? { sensor: { id: attention.sensor, sensor: found, ...(key ? { key } : {}) } } : {}),
     ...(seat && mode !== "sensor" ? { seat: { id: seat, role: seat } } : {}),
   };
+}
+
+/** Review's own sensor, the kit's where no layer names one: the watch's brain never switches it off. */
+function reviewOf(kit: Kit, layers: Layer[], errors: string[]): ReviewJudge {
+  const id =
+    layers
+      .map((layer) => layer.review?.sensor)
+      .filter(Boolean)
+      .at(-1) ?? kit.attention.sensor;
+  const found = kit.sensors[id];
+  if (!found) {
+    if (id) errors.push(`Review's sensor is ${id}, which is no sensor the kit knows`);
+    return {};
+  }
+  const key = layers
+    .map((layer) => layer.sensor?.[id]?.key)
+    .filter(Boolean)
+    .at(-1);
+  return { sensor: { id, sensor: found, ...(key ? { key } : {}) } };
 }
 
 function stripUndefined<T extends object>(value: T | undefined): Partial<T> {

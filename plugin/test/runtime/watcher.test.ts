@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { stateRoot } from "../../server/core/paths.ts";
 import { settle } from "./fake-timeline.ts";
-import { harness, heldRound, laneWithPeer, nobodySeated } from "./harness.ts";
+import { type harness, heldRound, laneWithPeer, nobodySeated } from "./harness.ts";
 import { hookAgent } from "./noticed.ts";
 
 type Harness = ReturnType<typeof harness>;
@@ -41,40 +41,37 @@ const watchersOf = (h: Harness) =>
 /** The case id a letter or prompt asks about, the last one it names. */
 const caseIn = (text: string) => [...text.matchAll(/CASE (C\w+) about/g)].at(-1)![1]!;
 
-/** A lane with a Peer that hands back complete, the watch judged by the Watcher: each hand-back is a case. */
+/** The questions the last case in `text` asks, by name. */
+const questionsIn = (text: string) =>
+  [...text.slice(text.lastIndexOf("Questions:")).matchAll(/^([a-z][\w-]*): /gm)].map((match) => match[1]!);
+
+/** A lane with a Peer that thinks at each turn, the watch judged by the Watcher: each turn's end is a case. */
 async function watched() {
-  const h = harness();
+  const { h, sup, lane, peer, timeline } = await laneWithPeer();
   judgedBy("seat");
-  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
-  await h.call(sup, "supervisor", "open_lane", {
-    title: "Rounding",
-    outcome: "money rounds correctly",
-    acceptance: ["a"],
-    outOfScope: ["anything else"],
-  });
-  const lane = h.ledger().lanes.L1!;
-  await h.call(lane.lead!, "lead", "add_tasks", {
-    tasks: [
-      { key: "t", title: "Round", goal: "g", acceptance: ["a"], hints: ["a.txt"], outOfScope: ["the CSV export"] },
-    ],
-  });
-  const peer = h.ledger().tasks["L1-T1"]!.peer!;
-  const handBack = async (summary: string, again = false) => {
-    if (again) await h.call(lane.lead!, "lead", "rework", { task: "L1-T1", text: "Again." });
-    await h.call(peer, "peer", "done", { outcome: "complete", summary });
+  let turns = 0;
+  const thinks = (thought: string, stream = timeline) => {
+    const id = `t${++turns}`;
+    stream.beat("turn_started", id);
+    stream.add({ type: "user_message", text: "Go on.", clientMessageId: `sw2-message-${id}` }, id);
+    stream.add({ type: "reasoning", text: thought }, id);
+    stream.beat("turn_completed", id);
   };
-  const judge = (by: string, id: string, says: string, why = "Nothing is left.") =>
-    h.call(by, "watcher", "judge", { case: id, answers: [{ question: "summary_admits_gap", says, why }] });
-  return { h, sup, lane, handBack, judge };
+  const judge = (by: string, text: string, says: string, why = "Nothing shows it.") =>
+    h.call(by, "watcher", "judge", {
+      case: caseIn(text),
+      answers: questionsIn(text).map((question) => ({ question, says, why })),
+    });
+  return { h, sup, lane, peer, thinks, judge };
 }
 
 test("the Watcher's life: seated for a case, answering by the rules, kept while needed, let go after", async (t) => {
-  const { h, sup, handBack, judge } = await watched();
+  const { h, sup, thinks, judge } = await watched();
   const role = h.runtime.kit.roles.find((entry) => entry.role === "watcher")!;
   const label = role.label;
   role.label = "Case reader";
   t.after(() => void (role.label = label));
-  await handBack("Rounds half up; the refund path is stubbed for now.");
+  thinks("The parser is missing, so I'll build a stub for it.");
   await until(() => watchersOf(h).length === 1, "a Watcher is seated for the case");
   const [watcher] = watchersOf(h);
   assert.equal(watcher!.title, "Case reader", "titled as its role is named");
@@ -82,54 +79,62 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
   assert.equal(watcher!.cwd, h.project.root);
   assert.match(
     watcher!.prompt!,
-    /^CASE C\w+ about L1-T1: questions on the fields below\.\n\nsummary:\nRounds half up; the refund path is stubbed for now\.\n\nout_of_scope:\n- the CSV export\n\nQuestions:\nsummary_admits_gap: Does `summary` say that something the task asked for was not done\?\n {3}yes: [^\n]+\n {3}no: [^\n]+\n\nNext: judge C\w+: /,
+    /^CASE C\w+ about L1-T1: questions on the fields below\.\n\nseat:\nthe Peer on L1-T1 \(Clean build\)\n\ngoal:\ng\n[^]*items:\n- \[thought\] The parser is missing, so I'll build a stub for it\.\n\nQuestions:\nstruggling: [^\n]+\n {3}yes: [^\n]+\n {3}no: [^\n]+\n[^]*\n\nNext: judge C\w+: /,
   );
-  const first = caseIn(watcher!.prompt!);
-  const said = (answers: { question: string; says: string; why: string }[], id = first, by = watcher!.id) =>
+  const first = watcher!.prompt!;
+  const asked = questionsIn(first);
+  assert.ok(asked.includes("stand-in") && !asked.includes("pre-solves"), "the patterns that watch a Peer");
+  const all = asked.map((question) => ({ question, says: "no", why: "Nothing shows it." }));
+  const said = (answers: { question: string; says: string; why: string }[], id = caseIn(first), by = watcher!.id) =>
     h.call(by, "watcher", "judge", { case: id, answers });
-  const yes = { question: "summary_admits_gap", says: "yes", why: "It says so." };
-  assert.match((await said([yes], "C0")).text, /C0 is not waiting for an answer/);
+  assert.match((await said(all, "C0")).text, /C0 is not waiting for an answer/);
   assert.match(
-    (await said([{ ...yes, question: "summary" }])).text,
-    /^Nothing was recorded: answer summary_admits_gap once; summary is no question of C\w+\.$/,
+    (await said([{ ...all[0]!, question: "summary" }, ...all.slice(1)])).text,
+    new RegExp(`^Nothing was recorded: answer ${asked[0]} once; summary is no question of C\\w+\\.$`),
   );
-  assert.match((await said([yes, yes])).text, /answer summary_admits_gap once/);
-  assert.match((await said([{ ...yes, says: "probably" }])).text, /summary_admits_gap takes yes, no, unsure/);
-  assert.match((await said([{ ...yes, why: " " }])).text, /give summary_admits_gap a why/);
-  assert.match((await said([yes, { ...yes, question: "toString" }])).text, /toString is no question of C\w+/);
+  assert.match((await said([...all, all[0]!])).text, new RegExp(`answer ${asked[0]} once`));
+  assert.match(
+    (await said([{ ...all[0]!, says: "probably" }, ...all.slice(1)])).text,
+    new RegExp(`${asked[0]} takes yes, no, unsure`),
+  );
+  assert.match((await said([{ ...all[0]!, why: " " }, ...all.slice(1)])).text, new RegExp(`give ${asked[0]} a why`));
+  assert.match((await said([...all, { ...all[0]!, question: "toString" }])).text, /toString is no question of C\w+/);
   const other = h.add("sw2-watcher-claude/claude-opus-5", h.root, "another Watcher");
-  assert.match((await said([yes], first, other)).text, /was sent to another Watcher/);
+  assert.match((await said(all, caseIn(first), other)).text, /was sent to another Watcher/);
   h.agents.get(other)!.archivedAt = new Date().toISOString();
   await settle();
   assert.deepEqual(kept(h.project.state), [], "nothing is kept of a refused answer");
-  const answered = await judge(watcher!.id, first, "Yes", "It says the refund path is stubbed for now.");
+  const answered = await judge(watcher!.id, first, "Yes", "It says it will build a stub for the parser.");
   assert.equal(answered.ok, true, answered.text);
   await settle();
   const [line] = kept(h.project.state);
   assert.deepEqual(
-    [line!.by, line!.model, line!.answers, line!.why, line!.verdicts],
+    [line!.by, line!.model, line!.answers, line!.why],
     [
       "watcher",
       watcher!.provider,
-      { summary_admits_gap: { noul: 1 } },
-      { summary_admits_gap: "It says the refund path is stubbed for now." },
-      { summary_admits_gap: "yes" },
+      Object.fromEntries(asked.map((question) => [question, { noul: 1 }])),
+      Object.fromEntries(asked.map((question) => [question, "It says it will build a stub for the parser."])),
     ],
     "what it answers is kept beside the case",
   );
-  assert.match((await said([yes])).text, /is not waiting for an answer/, "a case is answered once");
+  assert.match((await said(all)).text, /is not waiting for an answer/, "a case is answered once");
 
   const mailed = () => h.heard(watcher!.id).join("\n");
-  await handBack("Rounds half up; the refund path works too.", true);
+  thinks("The refund path works too.");
   await h.idle(watcher!.id);
-  await until(() => /the refund path works too/.test(mailed()), "the next case is mailed to it");
-  assert.match(mailed(), /CASE C\w+ about L1-T1[^]*the refund path works too\./);
+  await until(() => /The refund path works too/.test(mailed()), "the next case is mailed to it");
+  assert.match(mailed(), /CASE C\w+ about L1-T1[^]*The refund path works too\./);
   assert.equal(watchersOf(h).length, 1, "the next case goes to the same Watcher");
-  assert.equal((await judge(watcher!.id, caseIn(mailed()), "unsure")).ok, true);
+  assert.equal((await judge(watcher!.id, mailed(), "unsure")).ok, true);
   await settle();
-  assert.deepEqual(kept(h.project.state).at(-1)!.verdicts, { summary_admits_gap: "unclear" }, "unsure is the middle");
+  assert.deepEqual(
+    Object.values(kept(h.project.state).at(-1)!.answers as Record<string, unknown>)[0],
+    { noul: 0.5 },
+    "unsure is the middle",
+  );
 
-  await handBack("Rounded, third time.", true);
+  thinks("Rounded, third time.");
   await until(() => /third time/.test(mailed()), "the third case is sent");
   await h.tick(Date.now() + 16 * 60_000);
   await settle();
@@ -140,20 +145,20 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
   );
   assert.equal(watcher!.archivedAt, null, "while a lane is open and the watch is judged by it, the Watcher stays");
 
-  await handBack("Rounded, fourth time.", true);
+  thinks("Rounded, fourth time.");
   await until(() => /fourth time/.test(mailed()), "the fourth case is sent");
   judgedBy("off");
   await h.tick();
   assert.equal(watcher!.archivedAt, null, "judged by something else, it stays while its case waits");
-  assert.equal((await judge(watcher!.id, caseIn(mailed()), "no")).ok, true);
+  assert.equal((await judge(watcher!.id, mailed(), "no")).ok, true);
   await h.tick();
   assert.ok(watcher!.archivedAt, "and is let go once none does");
 
   judgedBy("seat");
-  await handBack("Rounded, fifth time.", true);
+  thinks("Rounded, fifth time.");
   await until(() => watchersOf(h).length === 1, "a Watcher is seated again");
   const [renewed] = watchersOf(h);
-  assert.equal((await judge(renewed!.id, caseIn(renewed!.prompt!), "no")).ok, true);
+  assert.equal((await judge(renewed!.id, renewed!.prompt!, "no")).ok, true);
   renewed!.status = "idle";
   assert.equal((await h.call(sup, "supervisor", "drop_lane", { lane: "L1", reason: "not wanted after all" })).ok, true);
   await h.tick();
@@ -161,25 +166,17 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
 });
 
 test("cases at once seat one Watcher, and a case is given up only when nobody can take it, never by a round that could not yet see its Watcher", async (t) => {
-  const { h, sup, lane, peer, timeline } = await laneWithPeer();
-  judgedBy("seat");
+  const { h, sup, lane, thinks } = await watched();
   h.agents.get(sup)!.archivedAt = new Date().toISOString();
-  await h.call(peer, "peer", "done", { outcome: "complete", summary: "Rounded." });
+  thinks("Rounded.");
   await until(() => kept(h.project.state).length === 1, "the case is kept");
   assert.deepEqual(watchersOf(h), [], "with no Supervisor seated no Watcher is seated");
   assert.match(String(kept(h.project.state)[0]!.unasked), /no Supervisor is seated/);
 
   h.agents.get(sup)!.archivedAt = null;
-  await h.call(sup, "supervisor", "set_project", { gate: "npm test", gateOn: "lane" });
-  await h.call(lane.lead!, "lead", "rework", { task: "L1-T1", text: "Again." });
-  const copy = h.ledger().tasks["L1-T1"]!.worktree!;
-  // A change before any look opens one question, and a hand-back no gate backs another, both as the turn ends.
-  timeline.beat("turn_started", "t1");
-  timeline.add({ type: "user_message", text: "The total is wrong.", clientMessageId: "sw2-rework-t1" }, "t1");
-  const edit = { type: "edit", filePath: join(copy, "src/cart.ts"), oldString: "a", newString: "b" };
-  timeline.add({ type: "tool_call", callId: "e1", name: "Edit", status: "completed", detail: edit }, "t1");
-  await h.call(peer, "peer", "done", { outcome: "partial", summary: "Half of it." });
-  timeline.beat("turn_completed", "t1");
+  // The Peer's turn and its Lead's end together: two cases, both for one Watcher.
+  thinks("Half of it is done.");
+  thinks("The Peer is halfway there.", h.timelineOf(lane.lead!));
   const cases = () => {
     const [watcher] = watchersOf(h);
     if (!watcher) return 0;
@@ -215,31 +212,26 @@ test("cases at once seat one Watcher, and a case is given up only when nobody ca
     };
     return { ...real, agents: { create } };
   });
-  await slow.handBack("Rounded.");
+  slow.thinks("Rounded.");
+  await settle();
   await slow.h.tick(Date.now() + 16 * 60_000);
   seat();
   await until(() => watchersOf(slow.h).length === 1, "the Watcher is seated at last");
   const [late] = watchersOf(slow.h);
-  assert.equal(
-    (await slow.judge(late!.id, caseIn(late!.prompt!), "no")).ok,
-    true,
-    "its time runs from when it was sent",
-  );
+  assert.equal((await slow.judge(late!.id, late!.prompt!, "no")).ok, true, "its time runs from when it was sent");
   await settle();
-  assert.deepEqual(
-    kept(slow.h.project.state).map((line) => line.verdicts),
-    [{ summary_admits_gap: "no" }],
-  );
+  assert.equal(kept(slow.h.project.state).length, 1);
+  assert.equal(kept(slow.h.project.state)[0]!.unasked, undefined);
 
   late!.archivedAt = new Date().toISOString();
   await slow.h.runtime.archived(hookAgent(slow.h, late!.id));
   const { round, release } = await heldRound(slow.h, t);
-  await slow.handBack("Rounded again.", true);
+  slow.thinks("Rounded again.");
   await until(() => watchersOf(slow.h).length === 1, "a new Watcher is seated while the round is held");
   release();
   await round;
   const [next] = watchersOf(slow.h);
-  const answered = await slow.judge(next!.id, caseIn(next!.prompt!), "no");
+  const answered = await slow.judge(next!.id, next!.prompt!, "no");
   assert.equal(
     answered.ok,
     true,

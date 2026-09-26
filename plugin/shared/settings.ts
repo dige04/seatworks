@@ -74,6 +74,9 @@ export const AttentionChoice = z.strictObject({
   sensor: z.string().min(1).optional(),
 });
 
+/** Which sensor asks review's checks, apart from whatever reads for the watch; the machine keeps its key under `sensor`. */
+const ReviewChoice = z.strictObject({ sensor: z.string().min(1).optional() });
+
 /** Off, only the concept is the Human's; on, questions may queue for them, at most `questionsPerDay` across this machine. */
 export const HitlChoice = z.strictObject({
   on: z.boolean().optional(),
@@ -97,6 +100,7 @@ export const LayerSchema = z.strictObject({
   rules: z.string().optional(),
   flow: FlowChoice.optional(),
   attention: AttentionChoice.optional(),
+  review: ReviewChoice.optional(),
   hitl: HitlChoice.optional(),
   sensor: z.record(z.string(), SensorChoice).optional(),
   /** The language whoever supervises speaks to the Human in; the rest of the team writes English, which the watch reads. */

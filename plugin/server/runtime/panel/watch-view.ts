@@ -22,16 +22,20 @@ function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJu
   const named = [sensor?.sensor.label, seatLabel].filter(Boolean).join(" and ");
   const label = named.charAt(0).toUpperCase() + named.slice(1);
   if (sensor && !sensor.key && !seat) return { label, state: "nokey", minutes: null, detail: sensor.sensor.key };
-  let last: { at?: string; by?: string; unasked?: string } | undefined;
-  try {
-    last = JSON.parse(
-      lastBytes(join(project.state, "assessments.log"), 16 * 1024)
-        .trim()
-        .split("\n")
-        .at(-1) ?? "",
-    ) as typeof last;
-  } catch {
-    // No assessment yet, or a last line cut mid-write: nothing has answered.
+  let last: { episode?: string; at?: string; by?: string; unasked?: string } | undefined;
+  // Review keeps its answers beside the watch's; only a look's are the watch's.
+  for (const kept of lastBytes(join(project.state, "assessments.log"), 16 * 1024)
+    .trim()
+    .split("\n")
+    .reverse()) {
+    try {
+      const read = JSON.parse(kept) as NonNullable<typeof last>;
+      if (read.episode !== "look") continue;
+      last = read;
+      break;
+    } catch {
+      // A line cut mid-write says nothing of how the brains answer.
+    }
   }
   if (!last?.at || (last.by !== sensor?.id && last.by !== seat?.id))
     return { label, state: "waiting", minutes: null, detail: null };

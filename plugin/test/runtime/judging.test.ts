@@ -43,14 +43,16 @@ function sensor(nouls: Record<string, number>, picks: Answer = { choice: "claims
   return { asked, make, of, fail, unmake };
 }
 
-/** The machine settings with the watch read by `sensor` alone, by the Watcher seat, or by no brain, and its key where one is given. */
-function judgedBy(sensor: string, key?: string): void {
+/** The machine settings: the watch's brain as `brain` reads, with the kit's sensor where it reads by one, and that sensor's key where one is given. */
+function judgedBy(brain: "off" | "sensor" | "seat", key?: string): void {
   const file = join(stateRoot(), "settings.json");
   const settings = JSON.parse(readFileSync(file, "utf-8")) as Record<string, unknown>;
-  const attention = sensor === "off" || sensor === "seat" ? { brain: sensor } : { brain: "sensor", sensor };
-  const sensors = key && sensor !== "off" ? { [sensor]: { key } } : undefined;
-  writeFileSync(file, JSON.stringify({ ...settings, attention, sensor: sensors }));
+  const attention = brain === "sensor" ? { brain, sensor: "jev" } : { brain };
+  writeFileSync(file, JSON.stringify({ ...settings, attention, sensor: key ? { jev: { key } } : undefined }));
 }
+
+const watchersOf = (h: ReturnType<typeof harness>) =>
+  [...h.agents.values()].filter((agent) => agent.provider.startsWith("sw2-watcher-"));
 
 type Kept = {
   at: string;
@@ -58,7 +60,7 @@ type Kept = {
   episode: string;
   by: string;
   state: Record<string, unknown>;
-  checks: Record<string, string>;
+  checks?: Record<string, string>;
   questions?: Record<string, Question>;
   model?: string;
   tokens?: number;
@@ -79,7 +81,7 @@ const kept = (state: string): Kept[] => {
         .split("\n")
         .map((line) => JSON.parse(line) as Kept)
     : [];
-  for (const line of lines) for (const check of Object.values(line.checks)) everAsked.add(check);
+  for (const line of lines) for (const check of Object.values(line.checks ?? {})) everAsked.add(check);
   return lines;
 };
 
@@ -130,10 +132,10 @@ function turn(
   );
 }
 
-test("a hand-back is asked about in shadow, and what the sensor says is kept, never sent", async () => {
+test("a hand-back is asked about in shadow by review's own sensor, whatever reads for the watch, and what it says is kept, never sent", async () => {
   const { asked, make, of } = sensor({ summary_admits_gap: 0.9, review_ran_invariant: 0.1 });
   const h = harness({ sensor: make });
-  judgedBy("jev", KEY);
+  judgedBy("off", KEY);
   const { opened, lead, peer } = await lane(h, "a.txt");
   h.commit(opened.worktree!, "a.txt", "rounded\n");
   await h.call(peer, "peer", "done", {
@@ -219,7 +221,7 @@ test("a turn's moments are asked about: an act, an unbacked hand-back, a change 
     { choice: "claims_code_bug", confidence: 0.4 },
   );
   const { h, sup, lane: opened, peer, timeline } = await laneWithPeer(undefined, { sensor: make });
-  judgedBy("jev", KEY);
+  judgedBy("off", KEY);
   const noticed = noticesOf(h, t);
   const moment = async () => {
     await settle();
@@ -231,7 +233,7 @@ test("a turn's moments are asked about: an act, an unbacked hand-back, a change 
   const edit = { type: "edit", filePath: join(copy, "src/cart.ts"), oldString: "a", newString: "b" };
   const verdicts = (check: string) =>
     kept(h.project.state)
-      .filter((line) => Object.values(line.checks).includes(check))
+      .filter((line) => Object.values(line.checks ?? {}).includes(check))
       .map((line) => line.verdicts);
 
   turn(timeline, "t1", "Clean the build before the release.", "rework", { type: "shell", command: "rm -rf build" });
@@ -317,71 +319,46 @@ test("a turn's moments are asked about: an act, an unbacked hand-back, a change 
   assert.equal(h.events("watch.fact").filter((event) => event.fact === "edit-before-look").length, lookless);
 });
 
-test("nothing is asked when it cannot be, and the Flow tab says who answers and how that stands", async (t) => {
+test("review records what it cannot ask as unasked, asks nothing its catalog turns off, and never seats the Watcher", async (t) => {
   const judged = sensor({ summary_admits_gap: 0.3 });
   const h = harness({ sensor: judged.make });
   const { lead, peer } = await lane(h, "a.txt");
-  const line = async () => {
-    const view = await h.rpc(contracts.flow, { project: h.project.slug });
-    assert.ok("watch" in view);
-    return view.watch.judge;
-  };
   const handBack = async (summary: string) => {
     await h.call(peer, "peer", "done", { outcome: "complete", summary });
     await h.call(lead, "lead", "rework", { task: "L1-T1", text: "Again." });
     await settle();
   };
+  const unasked = () => h.events("review.unasked").map(({ subject, by, error }) => [subject, by, error]);
+
+  judgedBy("seat");
+  await handBack("first");
+  assert.deepEqual(
+    kept(h.project.state).map((line) => [line.subject, line.by, line.unasked, line.answers]),
+    [["L1-T1", "jev", "Jev has no OpenRouter key on this machine", undefined]],
+    "with no key, the check is kept as unasked",
+  );
+  assert.deepEqual(unasked(), [["L1-T1", "jev", "Jev has no OpenRouter key on this machine"]]);
+  assert.deepEqual(watchersOf(h), [], "nor is the Watcher seat, which judges the watch, ever asked in its place");
 
   judgedBy("off", KEY);
-  assert.deepEqual(await line(), { label: "", state: "off", minutes: null, detail: null });
-  await handBack("first");
-  judgedBy("jev");
-  assert.deepEqual(await line(), { label: "Jev", state: "nokey", minutes: null, detail: "OpenRouter key" });
-  assert.deepEqual(
-    (await h.rpc(contracts.catalog, {})).sensors,
-    [
-      {
-        id: "jev",
-        label: "Jev",
-        key: "OpenRouter key",
-        model: "typesafe/jev-1.13",
-        terms: "Asked with data collection denied.",
-      },
-    ],
-    "the switch offers each sensor the kit has, by name and the key it takes",
-  );
-  await handBack("second");
-  judgedBy("jev", KEY);
-  assert.equal((await line()).state, "waiting");
   const gap = h.runtime.kit.checks.summary_admits_gap!;
   t.after(() => void (gap.mode = "shadow"));
   gap.mode = "off";
   await handBack("off in the catalog");
   gap.mode = "shadow";
-  assert.deepEqual([judged.asked.length, kept(h.project.state).length], [0, 0]);
-
+  assert.deepEqual([judged.asked.length, kept(h.project.state).length], [0, 1]);
   await handBack("answered");
-  assert.deepEqual(await line(), { label: "Jev", state: "answering", minutes: 0, detail: null });
+  assert.deepEqual(kept(h.project.state).at(-1)!.verdicts, { summary_admits_gap: "unclear" });
+
   judged.fail(new Error("503: busy"));
   await handBack("third");
-  const unasked = kept(h.project.state).at(-1)!;
   assert.deepEqual(
-    [unasked.subject, unasked.unasked, unasked.answers],
-    ["L1-T1", "503: busy", undefined],
-    "kept, unasked",
+    [kept(h.project.state).at(-1)!.unasked, unasked().at(-1)],
+    ["503: busy", ["L1-T1", "jev", "503: busy"]],
+    "a sensor that fails is kept, unasked",
   );
-  const events = h.events("watch.unasked").map(({ subject, by, error }) => [subject, by, error]);
-  assert.deepEqual(events, [["L1-T1", "jev", "503: busy"]]);
-  assert.deepEqual(await line(), { label: "Jev", state: "failing", minutes: 0, detail: "503: busy" });
-  judgedBy("seat");
-  const other = await line();
-  assert.deepEqual(
-    other,
-    { label: "The Watcher", state: "waiting", minutes: null, detail: null },
-    "another judge's line is not its",
-  );
+  judged.fail();
 
-  judgedBy("jev", KEY);
   rmSync(join(h.project.state, "assessments.log"));
   mkdirSync(join(h.project.state, "assessments.log"));
   const said = reported(t);
@@ -397,5 +374,63 @@ test("nothing is asked when it cannot be, and the Flow tab says who answers and 
     said(),
     /review's evidence could not be asked about L1-T1:[^]*that key is not one this sensor takes/,
     "a sensor that cannot be made is reported, and the desk goes on",
+  );
+});
+
+test("the Flow tab says which of the watch's brains read and how that stands, from the watch's own answers alone", async () => {
+  const judged = sensor({});
+  const { h, peer, timeline } = await laneWithPeer(undefined, { sensor: judged.make });
+  const line = async () => {
+    const view = await h.rpc(contracts.flow, { project: h.project.slug });
+    assert.ok("watch" in view);
+    return view.watch.judge;
+  };
+  let turns = 0;
+  const thinks = async () => {
+    const id = `t${++turns}`;
+    timeline.beat("turn_started", id);
+    timeline.add({ type: "user_message", text: "Go on.", clientMessageId: `sw2-message-${id}` }, id);
+    timeline.add({ type: "reasoning", text: `Thought ${id}: the rounding is next.` }, id);
+    timeline.beat("turn_completed", id);
+    await settle();
+    await settle();
+  };
+
+  judgedBy("off", KEY);
+  assert.deepEqual(await line(), { label: "", state: "off", minutes: null, detail: null });
+  judgedBy("sensor");
+  assert.deepEqual(await line(), { label: "Jev", state: "nokey", minutes: null, detail: "OpenRouter key" });
+  assert.deepEqual(
+    (await h.rpc(contracts.catalog, {})).sensors,
+    [
+      {
+        id: "jev",
+        label: "Jev",
+        key: "OpenRouter key",
+        model: "typesafe/jev-1.13",
+        terms: "Asked with data collection denied.",
+      },
+    ],
+    "the switch offers each sensor the kit has, by name and the key it takes",
+  );
+  judgedBy("sensor", KEY);
+  assert.equal((await line()).state, "waiting");
+  await thinks();
+  assert.deepEqual(await line(), { label: "Jev", state: "answering", minutes: 0, detail: null });
+  judged.fail(new Error("503: busy"));
+  await thinks();
+  assert.deepEqual(await line(), { label: "Jev", state: "failing", minutes: 0, detail: "503: busy" });
+  judged.fail();
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "Rounded." });
+  await settle();
+  assert.equal(kept(h.project.state).at(-1)!.subject, "L1-T1", "review has asked since");
+  assert.equal((await line()).state, "failing", "what review asked is not the watch's answer");
+  const events = h.events("watch.unasked").map(({ by, error }) => [by, error]);
+  assert.deepEqual(events, [["jev", "503: busy"]]);
+  judgedBy("seat");
+  assert.deepEqual(
+    await line(),
+    { label: "The Watcher", state: "waiting", minutes: null, detail: null },
+    "another judge's line is not its",
   );
 });

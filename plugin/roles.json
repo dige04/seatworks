@@ -136,7 +136,7 @@
     {
       "role": "watcher",
       "label": "Watcher",
-      "description": "Judges what the watch's eye read of a Lead or a Peer against its patterns, and a moment the desk asks about; it cannot touch the work",
+      "description": "Judges what the watch's eye read of a Lead or a Peer against its patterns; it cannot touch the work",
       "follows": "peer",
       "can": [
         "judge"
