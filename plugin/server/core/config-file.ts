@@ -14,6 +14,16 @@ export function readConfig<T>(path: string, fallback: T): T {
   }
 }
 
+/** A config file's value; one that cannot be read throws, naming it, rather than stand in as empty. */
+export function readConfigStrict<T>(path: string): T {
+  try {
+    const text = readFileSync(path, "utf-8");
+    return (isToml(path) ? parse(text) : JSON.parse(text)) as T;
+  } catch (error) {
+    throw new Error(`${path} could not be read: ${errorText(error)}`, { cause: error });
+  }
+}
+
 /** Unparseable is a fault, not absent: seeding over a harness's config would erase its account and history. */
 export function configFault(path: string): string | undefined {
   if (!existsSync(path)) return undefined;
