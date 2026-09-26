@@ -145,7 +145,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       );
       assert.equal(
         deny.includes("Edit(./**)"),
-        ["lead", "reviewer"].includes(as),
+        ["supervisor", "lead", "reviewer"].includes(as),
         `${where}: an Edit deny binds the sandbox too, so its shell writes nothing in the working copy, as on Codex; its pages under the state and $TMPDIR lie outside it`,
       );
       assert.equal(
@@ -212,12 +212,12 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         `${where}: searches the web only where the role may`,
       );
       const profile = at(settings, "default_permissions");
-      if (as === "lead") {
+      if (["supervisor", "lead"].includes(as)) {
         const rules = (at(settings, `permissions.${String(profile)}.filesystem`) ?? {}) as Record<string, string>;
         assert.deepEqual(
           [rules[":root"], rules[":cwd"], rules[":workspace_roots"]],
           ["read", undefined, undefined],
-          `${where}: reads the project and writes nothing in it, as a Lead on every other agent`,
+          `${where}: reads the project and writes nothing in it, as on Claude`,
         );
         assert.deepEqual(
           stateWrites(role, project.state).filter((path) => rules[path] !== "write"),
