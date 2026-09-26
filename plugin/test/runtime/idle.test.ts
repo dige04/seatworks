@@ -14,8 +14,10 @@ test("an idle Lead with nothing running, asked or reported ready wakes whoever s
     ["Held", true],
     ["Ready", true],
     ["Parked", true],
+    ["Detoured", true],
   ] as const)
     await h.call(sup, "supervisor", "open_lane", { title, ...scope, isolate });
+  await h.call(sup, "supervisor", "open_lane", { title: "Clearing", ...scope, isolate: true, detourOf: "L5" });
   const lanes = h.ledger().lanes;
   await h.call(sup, "supervisor", "hold_lane", { lane: "L2", reason: "the Human is reading it" });
   await h.call(lanes.L3!.lead!, "lead", "report", { summary: "done", ready: true });
@@ -32,8 +34,8 @@ test("an idle Lead with nothing running, asked or reported ready wakes whoever s
   );
   assert.doesNotMatch(
     said,
-    /lane-idle, attend\) on the Lead of L[234]/,
-    "a Lead told to wait, or waiting on whoever lands it or on the Human, is not idle",
+    /lane-idle, attend\) on the Lead of L[2345]/,
+    "a Lead told to wait, or waiting on whoever lands it, on the Human or on a lane clearing its way, is not idle",
   );
   assert.doesNotMatch(h.heard(lanes.L1!.lead!).join("\n"), /INCIDENT/, "never to the Lead it is about");
 });

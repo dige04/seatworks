@@ -187,12 +187,17 @@ export class Patrol {
     }
   }
 
-  /** A Lead waiting on nobody: not on hold, not reported ready, and no landing of its lane waiting for the Human. */
+  /**
+   * A Lead waiting on nobody: not on hold, not reported ready, no landing of its lane waiting for the Human, and no lane
+   * open to clear the way for it.
+   */
   private async idleLanes(project: Project, ledger: Ledger, seats: SeatMap, now: number): Promise<void> {
     const { desk, turns } = this.deps;
     const { leadIdleMinutes } = this.deps.source.teamFor(project).attention;
-    for (const lane of Object.values(ledger.lanes).filter(
-      (entry) => entry.status === "open" && entry.lead && !entry.onHold && !entry.ready && !entry.landApproval,
+    const open = Object.values(ledger.lanes).filter((entry) => entry.status === "open");
+    const detoured = new Set(open.flatMap((entry) => (entry.detourOf ? [entry.detourOf] : [])));
+    for (const lane of open.filter(
+      (entry) => entry.lead && !entry.onHold && !entry.ready && !entry.landApproval && !detoured.has(entry.id),
     )) {
       const lead = seats.get(lane.lead!);
       if (!lead || lead.status !== "idle") continue;
