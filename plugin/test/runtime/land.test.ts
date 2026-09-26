@@ -233,7 +233,7 @@ test("what git shows of a lane goes with its landing as evidence, and holds noth
     "test/cart.test.ts: adds a skip marker.",
     "docs/notes.md is outside the lane's write set, src/**, test/**.",
     "package-lock.json is outside the lane's write set, src/**, test/**.",
-    "L2-T1 was accepted over its red gate: false: the gate failed with exit 1.",
+    "L2-T1 was accepted over its red gate: false: the gate failed with exit 1; the same gate on lane/l2-cart at",
   ])
     assert.ok(evidence.includes(line), `${line}\n${evidence}`);
 });

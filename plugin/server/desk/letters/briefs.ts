@@ -2,7 +2,7 @@ import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { list } from "./envelope.ts";
 import { clip } from "../../core/text.ts";
-import type { SetUp } from "../copies/slots.ts";
+import type { SetUp } from "../copies/setup.ts";
 
 function besideLine(task: Task, beside: Task[]): string {
   if (beside.length === 0) return "";

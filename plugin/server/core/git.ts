@@ -198,6 +198,11 @@ export async function addWorktree(
   };
 }
 
+/** A copy of `sha` with no branch of its own, for a run that leaves nothing behind. */
+export async function addDetached(root: string, path: string, sha: string, timeout: number): Promise<boolean> {
+  return (await git(root, ["worktree", "add", "--detach", path, sha], timeout)).code === 0;
+}
+
 /** Keeps git's own commands, the Human's prune or remove among them, from taking a copy away under whoever works there. */
 export async function lockWorktree(root: string, path: string, reason: string): Promise<void> {
   await git(root, ["worktree", "lock", "--reason", reason, path]);

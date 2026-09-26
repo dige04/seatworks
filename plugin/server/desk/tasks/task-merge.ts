@@ -126,7 +126,7 @@ export class TaskMerge {
     const last = task.handback?.gate;
     if (last && last.sha === head) return last;
     const files = await changedFiles(task.worktree, `${lane.branch}...HEAD`);
-    const run = await taskGate(this.desk, project, task.id, task.worktree, files);
+    const run = await taskGate(this.desk, project, task, task.worktree, files);
     if (!run) return undefined;
     this.desk.ledgers.setTask(project, task.id, (entry) => {
       if (entry.handback) entry.handback.gate = { ok: run.ok, note: run.note, sha: head };

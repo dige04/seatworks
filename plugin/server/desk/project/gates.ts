@@ -6,7 +6,12 @@ import type { Kit } from "../../catalog/kit/kit.ts";
 import type { DeskBase } from "../base.ts";
 import { changeOf } from "../lanes/land-facts.ts";
 import type { Lane } from "../../domain/lane.ts";
-import { type Project, loadConfig, riskRulesOf, rulesFor } from "./project.ts";
+import { type Project, gitTimeout, loadConfig, riskRulesOf, rulesFor } from "./project.ts";
+import { rmSync } from "node:fs";
+import { addDetached, headSha, removeWorktree } from "../../core/git.ts";
+import { worktreeRoot } from "../../core/paths.ts";
+import { bringIncluded } from "../copies/worktree-include.ts";
+import { setUpCopy } from "../copies/setup.ts";
 
 /** `ran` is whether anything ran: a lane with no gate and nothing to rehearse passes with nothing run. */
 type GateVerdict = { ok: boolean; text: string; ran: boolean };
@@ -90,12 +95,13 @@ type GateRun = { ok: boolean; note: string; tail: string; logFile: string };
  * that fails. Undefined when this project does not gate tasks.
  */
 export async function taskGate(
-  desk: Pick<DeskBase, "kit" | "stopping">,
+  desk: Pick<DeskBase, "kit" | "stopping" | "ledgers" | "log">,
   project: Project,
-  taskId: string,
+  task: { id: string; lane: string },
   cwd: string,
   files: string[] | undefined,
 ): Promise<GateRun | undefined> {
+  const taskId = task.id;
   const config = loadConfig(project.state);
   if (!config.gate || config.gateOn !== "task") return undefined;
   const steps = [{ command: config.gate, what: config.gate }, ...rehearsals(project, desk.kit, files)];
@@ -108,7 +114,42 @@ export async function taskGate(
         : `${run.what} ${run.failed}`,
   );
   const last = runs.at(-1)!;
-  return { ok: last.ok, tail: last.tail, logFile: last.logFile, note: notes.join("; ") };
+  const lane = desk.ledgers.read(project).lanes[task.lane];
+  const tip = !runs[0]!.ok && lane ? [await onLaneTip(desk, project, lane, config.gate)] : [];
+  return { ok: last.ok, tail: last.tail, logFile: last.logFile, note: [...notes, ...tip].join("; ") };
+}
+
+/**
+ * Whether the gate that failed on a task fails on its lane's tip too, run there in a copy made as a task's is, once for
+ * each tip: a red task on a red lane is not the task's doing alone, which the Lead weighs before overGate.
+ */
+async function onLaneTip(
+  desk: Pick<DeskBase, "stopping" | "ledgers" | "log">,
+  project: Project,
+  lane: Lane,
+  command: string,
+): Promise<string> {
+  const sha = await headSha(project.root, lane.branch);
+  if (!sha) return `the same gate was not run on ${lane.branch}, which git could not read`;
+  const said = (ok: boolean) =>
+    `the same gate on ${lane.branch} at ${sha.slice(0, 7)}, in a copy made as a task's is, ${ok ? "passes" : "fails too"}`;
+  if (lane.tipGate?.sha === sha) return said(lane.tipGate.ok);
+  const copy = { id: `tip-${lane.id}`, path: join(worktreeRoot(), project.slug, `tip-${lane.id}-${sha.slice(0, 12)}`) };
+  if (!(await addDetached(project.root, copy.path, sha, gitTimeout(project))))
+    return `the same gate was not run on ${lane.branch}: git could not make a copy of it`;
+  try {
+    const missed = await bringIncluded(project.root, copy.path);
+    if (missed) desk.log(project, `the copy of ${lane.branch}'s tip: ${missed}`);
+    await setUpCopy(desk, project, copy);
+    const [run] = await runSteps(desk, project, `${lane.id}-tip`, copy.path, [{ command, what: command }], true);
+    desk.ledgers.setLane(project, lane.id, (entry) => {
+      entry.tipGate = { sha, ok: run!.ok };
+    });
+    return said(run!.ok);
+  } finally {
+    await removeWorktree(project.root, copy.path);
+    rmSync(copy.path, { recursive: true, force: true });
+  }
 }
 
 /** What the MERGED letter says about the gate, from what actually ran. */

@@ -13,7 +13,7 @@ import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 import { backOnLane } from "../copies/sync.ts";
-import type { SetUp } from "../copies/slots.ts";
+import type { SetUp } from "../copies/setup.ts";
 
 type Copy = { id?: string; path: string; workspaceId?: string; setUp?: SetUp };
 

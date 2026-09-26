@@ -123,7 +123,7 @@ async function workOf(kit: Kit, project: Project, ledger: Ledger, task: Task, sy
 
 /** Gated at hand-back, so the Lead has the verdict before it accepts. */
 async function write(
-  desk: Pick<DeskServices, "kit" | "stopping">,
+  desk: Pick<DeskServices, "kit" | "stopping" | "ledgers" | "log">,
   project: Project,
   task: Task,
   args: HandingBack,
@@ -132,7 +132,7 @@ async function write(
   const { outcome, body } = task.kind === "review" ? reviewBody(task, args) : taskBody(args, work);
   const run =
     task.kind !== "review" && task.worktree
-      ? await taskGate(desk, project, task.id, task.worktree, work.changed)
+      ? await taskGate(desk, project, task, task.worktree, work.changed)
       : undefined;
   const red =
     run &&

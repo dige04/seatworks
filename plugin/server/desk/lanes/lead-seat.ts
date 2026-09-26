@@ -8,7 +8,7 @@ import { workKey } from "../claims.ts";
 import { directive, gateRegime, takeover } from "../letters/directive.ts";
 import { type Beside, besideNote, lanesBeside, tellBeside } from "./placement.ts";
 import { type Issue, issueOf } from "../../core/issues.ts";
-import type { SetUp } from "../copies/slots.ts";
+import type { SetUp } from "../copies/setup.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { seatTitle } from "../seats/names.ts";
 import { type Project, conceptFile, loadConfig, serialIn } from "../project/project.ts";

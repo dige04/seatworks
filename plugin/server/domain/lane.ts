@@ -48,6 +48,7 @@ export type Lane = {
   held?: { why: string; tried?: boolean };
   onHold?: { at: number; by: string; reason: string };
   ready?: { at: number };
+  tipGate?: { sha: string; ok: boolean };
   landApproval?: {
     since: number;
     head: string;

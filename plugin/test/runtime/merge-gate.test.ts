@@ -76,7 +76,7 @@ test("a task that goes red with its lane brought in stays out until its Lead acc
   assert.equal(h.git(lane.worktree!, "show", `${lane.branch}:y.txt`), "y.txt\n");
   assert.match(
     after(h, lead, "MERGED L1-T3"),
-    /Gate: ran on this task: test ! -f x\.txt \|\| test ! -f y\.txt: the gate failed with exit 1 — merged over it: y replaces x next task/,
+    /Gate: ran on this task: test ! -f x\.txt \|\| test ! -f y\.txt: the gate failed with exit 1; the same gate on [^\n]*, passes — merged over it: y replaces x next task/,
   );
   assert.ok(h.events("gate.overridden").some((event) => event.task === "L1-T3" && event.reason === reason));
 
@@ -151,7 +151,7 @@ test("what the gate did reaches the Lead: with the hand-back, when its verdict i
   const red = await handedBack(h, lead, "B", "b.txt");
   assert.match(
     after(h, lead, `HANDBACK ${red.id}`),
-    /Gate: echo red; exit 1: the gate failed with exit 1\. The lane takes it red only if you accept it over the gate with a reason\./,
+    /Gate: echo red; exit 1: the gate failed with exit 1; the same gate on [^\n]*, fails too\. The lane takes it red only if you accept it over the gate with a reason\./,
   );
   assert.equal((await accept(h, lead, red.id)).ok, false);
   assert.equal(
@@ -184,7 +184,10 @@ test("a change a risk rule reaches is rehearsed with its gate, and a red rehears
   const first = await handedBack(h, lead, "Migrate", "db/", "db/001.sql");
   assert.deepEqual(
     [first.handback!.gate!.ok, first.handback!.gate!.note],
-    [false, "false: the gate failed with exit 1"],
+    [
+      false,
+      `false: the gate failed with exit 1; the same gate on ${lane.branch} at ${h.git(h.root, "rev-parse", "--short=7", lane.branch).trim()}, in a copy made as a task's is, fails too`,
+    ],
     "a red gate stays red whatever the rehearsals after it would say, and they do not run",
   );
   await cut(first.id);
@@ -216,5 +219,38 @@ test("a change a risk rule reaches is rehearsed with its gate, and a red rehears
   assert.match(
     heard(h, lead),
     /MERGE RED L1-T\d+ \(Add b\)[^]*rehearsing that no two migrations share a number, failed with exit 1/,
+  );
+});
+
+test("a task's red gate comes with the same gate on its lane's tip, in a copy made as a task's is, run once for each tip", async () => {
+  const { h, sup, lane } = await laneWithPeer();
+  const lead = lane.lead!;
+  const runs = join(tempDir("sw2-tip-runs-"), "runs");
+  await h.call(sup, "supervisor", "set_project", { gate: `echo run >> '${runs}'; test ! -f BROKEN`, gateOn: "task" });
+  const tip = () => h.git(h.root, "rev-parse", "--short=7", lane.branch).trim();
+  await handedBack(h, lead, "Breaks", "BROKEN");
+  assert.match(
+    after(h, lead, "HANDBACK L1-T2"),
+    new RegExp(
+      `Gate: [^\\n]*the gate failed with exit 1; the same gate on ${lane.branch} at ${tip()}, in a copy made as a task's is, passes\\.`,
+    ),
+  );
+  h.commitTo(lane.branch, "BROKEN", "on the lane\n");
+  await handedBack(h, lead, "Beside", "c.txt");
+  await handedBack(h, lead, "Again", "d.txt");
+  for (const id of ["L1-T3", "L1-T4"])
+    assert.match(
+      after(h, lead, `HANDBACK ${id}`),
+      new RegExp(`the same gate on ${lane.branch} at ${tip()}, in a copy made as a task's is, fails too\\.`),
+    );
+  assert.equal(
+    readFileSync(runs, "utf-8").split("\n").filter(Boolean).length,
+    5,
+    "the tip's run is kept for its commit",
+  );
+  assert.deepEqual(
+    h.git(h.root, "worktree", "list", "--porcelain").match(/^worktree .*tip-.*$/gm),
+    null,
+    "and the copy it ran in is gone",
   );
 });

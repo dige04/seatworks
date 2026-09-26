@@ -4,7 +4,7 @@ import { capped, outside } from "../../core/text.ts";
 import { list } from "./envelope.ts";
 import { type Beside, besideText } from "../lanes/placement.ts";
 import type { ProjectConfig } from "../project/project.ts";
-import type { SetUp } from "../copies/slots.ts";
+import type { SetUp } from "../copies/setup.ts";
 import { setUpLine } from "./briefs.ts";
 
 const SHOWN_SERIAL = 8;
