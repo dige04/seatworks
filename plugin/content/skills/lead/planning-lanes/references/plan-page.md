@@ -22,6 +22,11 @@ caller and test moves to it in the same change>
 |---|---|---|
 | <L1-T1> | <paths, or none in the lane's copy> | only task, or the named reason: independent paths held in parallel, mechanical fan-out, separate deliverable |
 
+## Known and assumed (one line each)
+
+- Known: <a fact checked in the code or by a command, and where>
+- Assumed: <what the plan rests on unchecked, and which task checks it first>
+
 ## Intermediate states
 
 Red between tasks only where the gate runs on the lane (the directive's Gate line). No compatibility,

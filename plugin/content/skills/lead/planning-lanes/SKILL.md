@@ -28,6 +28,8 @@ Split the way the work divides, not by a count: pieces that do not call each oth
 - Split only for a reason you can name: work whose paths do not meet and can run in parallel, a mechanical fan-out too big for one sitting, separately accepted deliverables, or shipped production state that needs a staged change.
 - Never split by layer, to show progress, or into phases that keep a half-built state compiling: one writer changes a contract with all its callers and tests.
 - A task may leave the build red for the next only where the gate runs on the lane. By default it runs on each task, so each hands back green or is accepted over the gate with a reason; the directive's Gate line says which.
+- Parallel tasks resting on the same unchecked assumption about the environment or a contract: run one first, the rest `after` it, so a wrong assumption costs one task, not all of them.
+- For a lane heavy on one contract, a task of its own may write the acceptance tests from the settled contract alone, before or beside the tasks that build it, so the tests are not fitted to the code.
 - A compatibility layer is legitimate only for a named shipped consumer: a published API, persisted production data, an independently deployed service or client. Record the consumer and when the layer goes; everything else changes in place.
 
 ## Settle design first
@@ -36,10 +38,12 @@ Settle every choice that changes ownership, public behavior, safety, compatibili
 
 ## The plan page
 
-Keep it with `note` in plans, as `$SEATWORKS_STATE/plans/<lane>.md`, from the template in [references/plan-page.md](references/plan-page.md): outcome, final contract, one row per task with why it is separate, intermediate states, decisions, the end check, and getting back. It holds the present only, under 80 lines, replacing lines rather than adding them, so a successor can resume the lane from it.
+Keep it with `note` in plans, as `$SEATWORKS_STATE/plans/<lane>.md`, from the template in [references/plan-page.md](references/plan-page.md): outcome, final contract, one row per task with why it is separate, what is known and what is assumed, intermediate states, decisions, the end check, and getting back. It holds the present only, under 80 lines, replacing lines rather than adding them, so a successor can resume the lane from it.
+
+Nobody approves a plan before its tasks start. Where a wrong plan would cost the rework of several tasks, put the plan page to `council` first.
 
 Getting back is not optional for a lane that migrates data, writes outside the repository, or makes a call nobody can take back: a plan that says how to reach the outcome but not how to get out of it is missing the half needed under pressure. A lane that leaves nothing behind says so in one line.
 
 ## Ends in
 
-The plan page, then one `add_tasks` laying out every task it names, each with what it waits for, and `parallel`, with the paths it holds, only where they meet no other task's.
+The plan page, then one `add_tasks` laying out every task it names, each with what it waits for, and `parallel`, with the paths it holds, only where they meet no other task's: as narrow as you know them, a folder where you do not.
