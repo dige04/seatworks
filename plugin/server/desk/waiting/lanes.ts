@@ -95,9 +95,10 @@ async function putBackHalfOpen(desk: DeskServices, project: Project): Promise<vo
     halfOpen(ledger).map((lane) => {
       const slot = Object.values(ledger.slots).find((entry) => entry.lane === lane.id);
       const lead = leadSeatOf(seats, project, lane.id);
-      if (lead) {
+      const role = lead?.labels?.["seatworks.role"];
+      if (lead && role) {
         lane.lead = lead.id;
-        ledger.agents[lead.id] = { id: lead.id, role: lead.labels!["seatworks.role"] ?? "lead", lane: lane.id };
+        ledger.agents[lead.id] = { id: lead.id, role, lane: lane.id };
       } else {
         LANE.move(lane, lane.after ? "wait" : "close");
         delete lane.held;

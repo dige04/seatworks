@@ -113,9 +113,9 @@ async function putBackHalfStarted(desk: DeskServices, project: Project): Promise
           entry.labels?.["seatworks.project"] === project.slug &&
           entry.labels["seatworks.task"] === task.id,
       );
-      if (seat) {
+      const role = seat?.labels?.["seatworks.role"];
+      if (seat && role) {
         task.peer = seat.id;
-        const role = seat.labels!["seatworks.role"] ?? "peer";
         ledger.agents[seat.id] = { id: seat.id, role, lane: task.lane, task: task.id };
         return [];
       }
