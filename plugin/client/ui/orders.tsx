@@ -6,12 +6,6 @@ import { ordersRpc } from "../../shared/rpc.ts";
 import type { OrdersView } from "../../shared/views.ts";
 import { useProjectRead } from "../state/reads.ts";
 
-const HOMES: Record<string, string> = {
-  onBranch: "On the branch your copy is on, carried on where it is.",
-  newBranch: "On a new branch off the base, in your own copy.",
-  isolate: "In a copy of their own; yours is left alone.",
-};
-
 /** `human` is whether the Human is in the loop: out of it, no landing waits for them and the Supervisor chooses for them. */
 function Orders({ orders, human, theme }: { orders: OrdersView; human: boolean; theme: PluginTheme }) {
   const { fault, askFirst, riskRules, ownRules, laneHome, concept } = orders;
@@ -55,11 +49,10 @@ function Orders({ orders, human, theme }: { orders: OrdersView; human: boolean; 
         <SettingsRow
           label="Where lanes work"
           hint={
-            laneHome
-              ? (HOMES[laneHome] ?? laneHome)
-              : human
-                ? "Asked of you when your copy makes it a question."
-                : "The Supervisor chooses when your copy makes it a question."
+            laneHome ??
+            (human
+              ? "Asked of you when your copy makes it a question."
+              : "The Supervisor chooses when your copy makes it a question.")
           }
         />
       </SettingsCard>

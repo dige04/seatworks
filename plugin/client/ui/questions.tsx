@@ -13,16 +13,9 @@ import { questionAnswerRpc } from "../../shared/rpc.ts";
 import type { FlowQuestion } from "../../shared/flow-views.ts";
 import type { QuestionAnswered } from "../../shared/views.ts";
 import { message } from "../format/error.ts";
+import { ago } from "../format/time.ts";
 
 type Answer = (input: RpcInput<typeof questionAnswerRpc>) => Promise<QuestionAnswered>;
-
-const CLASSES: Record<FlowQuestion["class"], string> = {
-  reversible: "Reversible: while you are silent the lane goes on as recommended, and you can turn it back",
-  costly: "Costly: while you are silent the lane goes on as recommended, and stops when it reports ready",
-  irreversible: "Irreversible: the lane waits for you",
-};
-
-const ago = (minutes: number): string => (minutes < 1 ? "just now" : `${minutes} min ago`);
 
 /** One question the Supervisor put to the Human, answered here: an option, or decline, with a note that goes with it. */
 function Question({
@@ -57,7 +50,7 @@ function Question({
     <SettingsCard>
       <SettingsRow
         label={`${question.id} · ${question.question}`}
-        hint={`${now}${CLASSES[question.class]}${place}; asked ${ago(question.minutes)}. ${question.why} If you stay silent: ${question.ifSilent}`}
+        hint={`${now}${question.class.replace(/^./, (first) => first.toUpperCase())}${place}; asked ${ago(question.minutes)}. ${question.why} If you stay silent: ${question.ifSilent}`}
       />
       {question.options.map((option) => {
         const recommended = option.label === question.recommend;

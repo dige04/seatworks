@@ -11,8 +11,7 @@ import { Text } from "react-native";
 import { KEPT, type Layer } from "../../shared/settings.ts";
 import type { CatalogView, TeamView } from "../../shared/views.ts";
 import { sourceLabel } from "./bits.tsx";
-import { setAttention, sourceOf } from "../model/layer.ts";
-import { withKey } from "../model/layer.ts";
+import { setAttention, sourceOf, withKey } from "../model/layer.ts";
 import { TabBar } from "./tabs.tsx";
 
 type Props = {

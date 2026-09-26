@@ -1,8 +1,9 @@
 import { useRpc } from "@getpaseo/plugin/client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { flowRpc } from "../../shared/rpc.ts";
 import type { FlowView } from "../../shared/flow-views.ts";
 import { message } from "../format/error.ts";
+import { useLatest } from "./latest.ts";
 
 /** One project's Flow, read when it is opened and, while `live`, again every `everyMs`. */
 export function useFlow(
@@ -11,9 +12,7 @@ export function useFlow(
   everyMs: number,
   openKey: string,
 ): { flow: FlowView | null; error: string | null } {
-  const call = useRpc(flowRpc);
-  const latest = useRef(call);
-  latest.current = call;
+  const latest = useLatest(useRpc(flowRpc));
   const [flow, setFlow] = useState<FlowView | null>(null);
   const [error, setError] = useState<string | null>(null);
 

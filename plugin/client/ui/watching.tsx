@@ -2,24 +2,14 @@ import type { PluginTheme } from "@getpaseo/plugin";
 import { SettingsCard } from "@getpaseo/plugin/client/ui";
 import { type ReactNode, useMemo } from "react";
 import { Text, View } from "react-native";
-import { Dot, Rule } from "./bits.tsx";
+import { Dot, Heading, Rule } from "./bits.tsx";
 import type { WatchJudge, WatchView } from "../../shared/flow-views.ts";
+import { ago } from "../format/time.ts";
 import { incidentState, judgeWords } from "../format/watch.ts";
-
-const ago = (minutes: number): string =>
-  minutes < 1 ? "just now" : minutes < 60 ? `${minutes} min ago` : `${Math.round(minutes / 60)} h ago`;
 
 function useStyles(theme: PluginTheme) {
   return useMemo(
     () => ({
-      heading: {
-        color: theme.colors.foregroundMuted,
-        fontSize: 12,
-        fontWeight: "500" as const,
-        letterSpacing: 0.6,
-        textTransform: "uppercase" as const,
-        paddingTop: 6,
-      },
       row: {
         flexDirection: "row" as const,
         alignItems: "flex-start" as const,
@@ -37,10 +27,9 @@ function useStyles(theme: PluginTheme) {
 }
 
 function Section({ title, children, theme }: { title: string; children: ReactNode; theme: PluginTheme }) {
-  const styles = useStyles(theme);
   return (
     <>
-      <Text style={styles.heading}>{title}</Text>
+      <Heading text={title} theme={theme} />
       <SettingsCard>
         <View>{children}</View>
       </SettingsCard>

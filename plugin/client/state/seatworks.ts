@@ -18,6 +18,7 @@ import {
 import type { Layer } from "../../shared/settings.ts";
 import type { CatalogView, ProjectRow, TeamView } from "../../shared/views.ts";
 import { message } from "../format/error.ts";
+import { useLatest } from "./latest.ts";
 import { keptRoles, setMcp } from "../model/layer.ts";
 
 export type PaseoProject = { name: string; root: string };
@@ -73,8 +74,7 @@ export function useSeatworks(project?: string) {
     paths: useRpc(pathsRpc),
   };
   const paseo = usePaseo();
-  const latest = useRef(bound);
-  latest.current = bound;
+  const latest = useLatest(bound);
   const [data, setData] = useState<Data>({ status: "loading" });
   const [saving, setSaving] = useState(false);
   // Set by a save, cleared by its reload: the controls stay locked until drawn from what it produced.

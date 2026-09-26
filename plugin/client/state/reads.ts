@@ -1,8 +1,9 @@
 import type { PluginRpcContract } from "@getpaseo/plugin";
 import { useRpc } from "@getpaseo/plugin/client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ZodType, output } from "zod";
 import { message } from "../format/error.ts";
+import { useLatest } from "./latest.ts";
 
 type Answer<O extends ZodType> = Exclude<output<O>, { error: string }>;
 
@@ -11,10 +12,7 @@ export function useProjectRead<I extends ZodType, O extends ZodType>(
   contract: PluginRpcContract<I, O>,
   project: string,
 ): { value: Answer<O> | null; error: string | null; reload: () => void } {
-  const call = useRpc(contract);
-  // Held aside, since a new function each render would read the project again each render.
-  const latest = useRef(call);
-  latest.current = call;
+  const latest = useLatest(useRpc(contract));
   const [state, setState] = useState<{ value: Answer<O> | null; error: string | null }>({ value: null, error: null });
   const [round, setRound] = useState(0);
   useEffect(() => {

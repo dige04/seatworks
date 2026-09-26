@@ -5,7 +5,8 @@ import { memo, useMemo } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Empty } from "./bits.tsx";
 import type { FlowAsk, FlowLane, FlowSeat, FlowView } from "../../shared/flow-views.ts";
-import { ago, leadState, seatName, seatText, taskState, where } from "../format/flow.ts";
+import { leadState, seatName, seatText, taskState, where } from "../format/flow.ts";
+import { lasting } from "../format/time.ts";
 import { ApprovalsCards } from "./approvals.tsx";
 import { QuestionCards } from "./questions.tsx";
 import { WatchCard } from "./watching.tsx";
@@ -253,7 +254,7 @@ function AsksCard({ asks, theme }: { asks: FlowAsk[]; theme: PluginTheme }) {
               style={styles.hint}
             >{`from ${ask.from ?? "a seat"} to ${ask.to ?? "a seat no longer on record"}`}</Text>
           </View>
-          <Text style={styles.quiet}>{ago(ask.minutes)}</Text>
+          <Text style={styles.quiet}>{lasting(ask.minutes)}</Text>
         </View>
       ))}
     </SettingsCard>

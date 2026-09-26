@@ -3,11 +3,9 @@ import { SettingsAction, SettingsCard, SettingsRow, SettingsSection } from "@get
 import { Text } from "react-native";
 import { Empty } from "./bits.tsx";
 import { reportRpc } from "../../shared/rpc.ts";
+import { ago } from "../format/time.ts";
 import type { ReportItem } from "../../shared/views.ts";
 import { useProjectRead } from "../state/reads.ts";
-
-const ago = (minutes: number): string =>
-  minutes < 1 ? "just now" : minutes < 90 ? `${minutes} min ago` : `${Math.round(minutes / 60)} h ago`;
 
 function Part({ title, hint, items, none }: { title: string; hint: string; items: ReportItem[]; none?: string }) {
   if (items.length === 0 && !none) return null;

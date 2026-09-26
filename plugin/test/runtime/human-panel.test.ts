@@ -180,7 +180,7 @@ test("Orders reads back the Human's standing orders and the project's concept, a
   assert.ok("askFirst" in read);
   assert.deepEqual(
     [read.fault, read.askFirst, read.laneHome, read.ownRules, read.riskRules.length],
-    [null, ["src/auth"], "isolate", false, 1],
+    [null, ["src/auth"], "In a copy of their own; yours is left alone.", false, 1],
   );
   assert.match(read.riskRules[0]!.reviewQuestion, /second time/);
   assert.deepEqual([read.concept?.text, read.concept?.more], ["# Invoices\n\nAn invoice is never edited.\n", false]);

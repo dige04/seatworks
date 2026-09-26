@@ -12,10 +12,10 @@ import { Text } from "react-native";
 import { landDecideRpc } from "../../shared/rpc.ts";
 import type { FlowLane } from "../../shared/flow-views.ts";
 import type { LandDecided } from "../../shared/views.ts";
+import { message } from "../format/error.ts";
+import { ago } from "../format/time.ts";
 
 type Decide = (input: RpcInput<typeof landDecideRpc>) => Promise<LandDecided>;
-
-const waited = (minutes: number) => (minutes < 1 ? "since just now" : `${minutes} min`);
 
 /** Something held for the Human: their word comes from here and nowhere else, since no seat may give it for them. */
 function Held({
@@ -48,7 +48,7 @@ function Held({
         setSaid(answer);
         if ("decided" in answer) field.current?.replaceText("");
       })
-      .catch((error: unknown) => setSaid({ error: error instanceof Error ? error.message : String(error) }))
+      .catch((error: unknown) => setSaid({ error: message(error) }))
       .finally(() => setBusy(false));
   };
   return (
@@ -111,7 +111,7 @@ export function ApprovalsCards({
             decide={land}
             theme={theme}
             label={`${lane.id} ${lane.title} waits for you to land it on ${lane.base ?? "its base"}`}
-            hint={`${decider ? `Held while you were in the loop: the ${decider} lands lanes now; your word still reaches it. ` : ""}${lane.landApproval.signals.join(" ")} Waiting ${waited(lane.landApproval.minutes)}; the branch is ${lane.branch}.\n\nWhat the desk read of it:\n${lane.landApproval.evidence.map((fact) => `· ${fact}`).join("\n")}`}
+            hint={`${decider ? `Held while you were in the loop: the ${decider} lands lanes now; your word still reaches it. ` : ""}${lane.landApproval.signals.join(" ")} Held ${ago(lane.landApproval.minutes)}; the branch is ${lane.branch}.\n\nWhat the desk read of it:\n${lane.landApproval.evidence.map((fact) => `· ${fact}`).join("\n")}`}
             approved="It lands now, as the project lands lanes; if something stops it, it lands when the Supervisor lands it again."
             sentBack="Nothing lands; the lane stays open and its Lead gets your note."
           />

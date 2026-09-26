@@ -13,7 +13,7 @@ import type {
   OlderSeatsView,
   UpdateView,
 } from "../../shared/upkeep-views.ts";
-import { Button } from "./bits.tsx";
+import { Button, Dot } from "./bits.tsx";
 import { message } from "../format/error.ts";
 
 type Busy = "update" | "read" | "clean" | "content" | null;
@@ -96,8 +96,6 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
         borderTopWidth: 1,
         borderColor: theme.colors.border,
       },
-      dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.statusWarning },
-      quiet: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.border },
       words: { flex: 1, gap: 2 },
       label: { color: theme.colors.foreground, fontSize: 13 },
       detail: { color: theme.colors.foregroundMuted, fontSize: 12 },
@@ -137,7 +135,7 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
   const row = (key: string, warn: boolean, label: string, detail: string | null, actions: ReactNode) =>
     rows.push(
       <View key={key} style={styles.row}>
-        <View style={warn ? styles.dot : styles.quiet} />
+        <Dot color={warn ? theme.colors.statusWarning : theme.colors.border} />
         <View style={styles.words}>
           <Text style={styles.label}>{label}</Text>
           {detail ? <Text style={styles.detail}>{detail}</Text> : null}

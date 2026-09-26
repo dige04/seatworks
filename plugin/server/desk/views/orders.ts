@@ -1,9 +1,15 @@
 import { readFileSync, statSync } from "node:fs";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import type { OrdersView } from "../../../shared/views.ts";
-import { type Project, conceptFile, readProjectConfig } from "../project/project.ts";
+import { type LaneHome, type Project, conceptFile, readProjectConfig } from "../project/project.ts";
 
 const SHOWN = 4000;
+
+const HOMES: Record<LaneHome, string> = {
+  onBranch: "On the branch your copy is on, carried on where it is.",
+  newBranch: "On a new branch off the base, in your own copy.",
+  isolate: "In a copy of their own; yours is left alone.",
+};
 
 /**
  * What the Human settled for a project, for them to read: their standing orders, and its concept as the Supervisor wrote it
@@ -26,7 +32,7 @@ export function ordersView(kit: Kit, project: Project, now = Date.now()): Orders
         }))
       : [],
     ownRules: config?.riskRules !== undefined,
-    laneHome: config?.laneHome ?? null,
+    laneHome: config?.laneHome ? HOMES[config.laneHome] : null,
     concept: file
       ? {
           text: text.slice(0, SHOWN),
