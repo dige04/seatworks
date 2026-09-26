@@ -125,6 +125,10 @@ async function liveWorkspaces(bound: Bound): Promise<{ id: string; name: string;
 
 export function workspacesOn(bound: Bound): Workspaces {
   return {
+    async open(path: string): Promise<Workspace> {
+      const workspace = await reach(bound).workspaces.open(path);
+      return { id: workspace.id, project: workspace.projectId ?? "" };
+    },
     async named(name: string): Promise<Workspace | undefined> {
       const found = (await liveWorkspaces(bound)).find((entry) => entry.name === name);
       return found && { id: found.id, project: found.project };

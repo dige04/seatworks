@@ -14,8 +14,9 @@ import { daemon, served, which } from "./served.ts";
 const git = (cwd: string, ...args: string[]) =>
   execFileSync("git", ["-c", "user.email=t@t", "-c", "user.name=t", ...args], { cwd, encoding: "utf-8" });
 
-test("a project attached by path, set up, detached only when idle and attached again, and the setup screen's candidates and folders", async (t) => {
-  const { call } = served();
+test("a project attached by path, set up, opened in Paseo's own project list, detached only when idle and attached again, and the setup screen's candidates and folders", async (t) => {
+  const paseo = daemon();
+  const { call } = served(paseo);
   const listed = async () => (await call(contracts.projects, {})).map((entry) => entry.slug);
   const root = realpathSync(tempDir("sw2-rpc-attach-"));
   git(root, "init", "-q");
@@ -34,6 +35,11 @@ test("a project attached by path, set up, detached only when idle and attached a
     "a path inside the project registers the project root, before any agent has run in it",
   );
   assert.ok((await listed()).includes(added.slug));
+  assert.deepEqual(
+    [...paseo.opened.keys()],
+    [root],
+    "attaching opens the project root in Paseo, where the Human starts its Supervisor",
+  );
   const read = which(await call(contracts.settingsRead, { project: added.slug }), "values");
   const values = {
     rules: "Never touch the release branch.",
@@ -88,6 +94,11 @@ test("a project attached by path, set up, detached only when idle and attached a
   writeFileSync(ledger, JSON.stringify(closed));
   assert.deepEqual(await remove(), { removed: added.slug });
   assert.equal((await listed()).includes(added.slug), false);
+  assert.deepEqual(
+    [[...paseo.opened.keys()], paseo.archived],
+    [[root], []],
+    "attached twice it is one project in Paseo, and detaching leaves it there: it is the Human's",
+  );
   assert.match(which(await remove(), "error").error, /has been seen/);
   const back = which(await call(contracts.projectsAdd, { root }), "slug");
   assert.equal(back.slug, added.slug);

@@ -4,9 +4,10 @@ import { join } from "node:path";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { can, rolesThatCan, seatOf } from "../../catalog/kit/roles.ts";
 import { errorText } from "../../core/errors.ts";
+import { daemonLog } from "../../core/logger.ts";
 import { gitCommonDir } from "../../core/git.ts";
 import { worktreeRoot } from "../../core/paths.ts";
-import type { SeatView, Seats } from "../../core/ports.ts";
+import type { SeatView, Seats, Workspaces } from "../../core/ports.ts";
 import { type Project, projectOf } from "../../desk/project/project.ts";
 import { loadLedger, readLedger } from "../../desk/store/ledger.ts";
 import { flowView } from "../../desk/views/flow.ts";
@@ -25,6 +26,7 @@ type ProjectsDeps = {
   kit: Kit;
   source: TeamSource;
   seats: Seats;
+  workspaces: Workspaces;
   held: () => { to: string; text: string; at: number; until: number }[];
   watch: (project: Project, seats: Iterable<SeatView>) => WatchView;
   changed: () => void;
@@ -54,6 +56,15 @@ export class ProjectsPanel implements ProjectsRpc {
       return { error: `${project.root} could not be put on record; see the daemon log.` };
     writeProjectBlock(this.deps.kit, project.root);
     await this.deps.reconcile();
+    // Paseo's own project list is where the Human starts the Supervisor; detaching leaves it there, as the Human's.
+    await this.deps.workspaces
+      .open(project.root)
+      .catch((error: unknown) =>
+        daemonLog.error(
+          `${project.root} is attached, but Paseo did not open it as a project; open it in Paseo:`,
+          error,
+        ),
+      );
     return { slug: project.slug, root: project.root };
   }
 

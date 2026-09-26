@@ -19,8 +19,23 @@ export function daemon(
   models: (provider: string) => Listed = () => ({ error: "not listed" }),
 ) {
   const asked: { kind: "refresh" | "list"; provider: string; cwd?: string }[] = [];
+  const opened = new Map<string, string>();
+  const archived: string[] = [];
   return {
     asked,
+    opened,
+    archived,
+    workspaces: {
+      // The daemon finds the folder's workspace, or makes one (open_project_request).
+      async open(cwd: string) {
+        if (!opened.has(cwd)) opened.set(cwd, `ws-${opened.size + 1}`);
+        return { id: opened.get(cwd)!, projectId: `prj:${cwd}` };
+      },
+      async archive(id: string) {
+        archived.push(id);
+        return { archivedAt: new Date().toISOString() };
+      },
+    },
     providers: {
       async refresh(options: { cwd?: string; providers?: string[] }) {
         for (const provider of options.providers ?? []) asked.push({ kind: "refresh", provider, cwd: options.cwd });

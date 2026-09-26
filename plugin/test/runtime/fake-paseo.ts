@@ -211,6 +211,11 @@ export function fakePaseo() {
       },
     },
     workspaces: {
+      // The daemon finds the folder's oldest live workspace, or makes one (open_project_request).
+      async open(cwd: string) {
+        const found = [...workspaces].find(([id, path]) => path === cwd && !archivedWorkspaces.has(id));
+        return found ? workspace(found[0]) : paseo.workspaces.create({ source: { path: cwd } });
+      },
       // The daemon files a directory under the given project, or makes one of the directory when given none.
       async create({ title, source }: { title?: string; source: { path: string; projectId?: string } }) {
         const id = `ws-${workspaces.size + 1}`;

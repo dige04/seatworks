@@ -122,9 +122,12 @@ what you pick.
    Seatworks block, between `<!-- seatworks:begin … -->` and `<!-- seatworks:end -->`, at the end of
    the project's `AGENTS.md`, which every agent working there reads. Commit it: a lane in a copy of
    its own sees only what is committed, and a lane in your checkout waits while it is uncommitted.
+   Attaching also opens the project in Paseo's own project list, and gives Paseo one provider for each
+   role and the agent your team gives it there; they follow your settings, and go once no attached
+   project uses them.
 3. Open **Health** and choose **Run**.
-4. Start an agent in that project with the provider **Supervisor · Claude Code (sw2)**, and tell it
-   what you want.
+4. In Paseo, open that project, start an agent with the Supervisor's provider, such as
+   **Supervisor · Claude Code (sw2)**, and tell it what you want.
 
 The plugin starts everyone else as the work needs them. A lane works in your checkout on a new
 branch, unless the Supervisor or your standing order (`laneHome`) keeps it on the branch you are on or

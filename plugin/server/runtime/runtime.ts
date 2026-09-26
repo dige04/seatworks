@@ -150,7 +150,16 @@ export class Runtime implements HostHooks {
       watchView(project, this.watching.troublesOf(project), source.teamFor(project), kit);
     return {
       settings: new SettingsPanel({ kit, source, changed, reconcile, models: () => this.refreshModels() }),
-      projects: new ProjectsPanel({ kit, source, seats, held: () => this.outbox.held(), watch, changed, reconcile }),
+      projects: new ProjectsPanel({
+        kit,
+        source,
+        seats,
+        workspaces: this.host.workspaces,
+        held: () => this.outbox.held(),
+        watch,
+        changed,
+        reconcile,
+      }),
       upkeep: new UpkeepPanel({ kit, source, seats, reconcile, changed }),
       human: new HumanPanel(source, this.desk.human),
     };

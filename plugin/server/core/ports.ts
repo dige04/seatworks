@@ -61,6 +61,8 @@ export type Seats = {
 export type Workspace = { id: string; project: string };
 
 export type Workspaces = {
+  /** The folder as Paseo's own project list shows it: its workspace found, or made. */
+  open(path: string): Promise<Workspace>;
   named(name: string): Promise<Workspace | undefined>;
   owned(prefix: string): Promise<{ id: string; name: string }[]>;
   make(title: string, path: string, project?: string): Promise<Workspace>;
