@@ -179,7 +179,9 @@ export class TurnRules {
     const task = taskOfPeer(ledger, event.agent.id);
     if (!task) return;
     if (DECIDED.includes(task.status) && !recorded) return;
-    if (recorded || task.status === "done") return this.heard(project, task, recorded, spoke);
+    // Handed back, or its merge failed: what comes next is its Lead's call, so a quiet turn is no silence.
+    if (recorded || task.status === "done" || task.status === "failed")
+      return this.heard(project, task, recorded, spoke);
     // A call still in flight is not silence: a nudge here started a second gate beside the first.
     if (this.deps.desk.inFlight(event.agent.id)) return;
     await this.silent(project, ledger.lanes[task.lane], task, event, text);

@@ -169,6 +169,7 @@ test("the merge queue hands a conflict to its Peer, merges nothing as nothing, w
     await h.endTurn(crashed, words);
   }
   assert.equal(status("L1-T3"), "failed", "a failed merge waits on its Lead, however quiet its Peer is meanwhile");
+  assert.doesNotMatch(h.heard(crashed).join("\n"), /Your turn ended without calling done/);
 
   const side = await beside("s", "Side", "c.txt", "C\n");
   writeFileSync(join(copy, "a.txt"), "half written\n");
