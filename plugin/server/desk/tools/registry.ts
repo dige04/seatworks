@@ -26,6 +26,7 @@ import { replaceLead } from "./replace-lead.ts";
 import { resumeLane } from "./resume-lane.ts";
 import { report } from "./report.ts";
 import { rework } from "./rework.ts";
+import { reseat } from "./reseat.ts";
 import { setProject } from "./set-project.ts";
 import { startReview } from "./start-review.ts";
 import { status } from "./status.ts";
@@ -50,6 +51,7 @@ export const TOOLS: ToolDef[] = [
   startReview,
   accept,
   rework,
+  reseat,
   amendTask,
   cut,
   releasePeer,

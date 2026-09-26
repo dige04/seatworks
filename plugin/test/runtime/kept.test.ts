@@ -155,7 +155,7 @@ test("a Peer whose task is accepted is kept for rework until its Lead releases i
   h.agents.get(fourth)!.archivedAt = new Date().toISOString();
   assert.match(
     await say("rework", { task: "L1-T4", text: "x" }),
-    /The Peer on L1-T4 is gone; cut the task and start a new one\./,
+    /The Peer on L1-T4 is gone: reseat the task for a fresh Peer on its branch and copy, or cut it\./,
   );
   assert.equal(h.ledger().tasks["L1-T4"]!.status, "done", "not left waiting on a rework nobody will do");
 
@@ -250,4 +250,39 @@ test("a task beside others keeps its Peer in its own copy once merged, until its
   await h.endTurn(last.peer!, "done");
   assert.equal(existsSync(last.worktree!), false);
   assert.equal(h.git(h.root, "branch", "--list", last.branch!).trim(), "", "its work is in the landed lane");
+});
+
+test("a Lead reseats a task: its Peer goes, a fresh one takes the same branch and copy, briefed from the record the desk kept", async () => {
+  const { h, lane, peer } = await laneWithPeer();
+  const lead = lane.lead!;
+  const copy = h.ledger().lanes.L1!.worktree!;
+  h.commit(copy, "a.txt", "half\n");
+  await h.call(peer, "peer", "done", { outcome: "partial", summary: "Parsed the file; the totals are still wrong." });
+  await h.idle(peer);
+  await h.call(lead, "lead", "rework", { task: "L1-T1", text: "Totals must count refunds as negative." });
+  await h.call(peer, "peer", "done", { outcome: "partial", summary: "Refunds now subtract, but tax is doubled." });
+  await h.idle(peer);
+  const reseat = (args: Record<string, unknown>) => h.call(lead, "lead", "reseat", args);
+  assert.match((await reseat({ task: "L1-T9", why: "x" })).text, /L1-T9 is not a task in your lane/);
+  const done = await reseat({ task: "L1-T1", why: "It keeps circling the same two bugs." });
+  assert.equal(done.ok, true, done.text);
+  const task = h.ledger().tasks["L1-T1"]!;
+  const fresh = task.peer!;
+  assert.notEqual(fresh, peer);
+  assert.ok(h.agents.get(peer)!.archivedAt, "the Peer it had goes: one at a time on a task");
+  assert.equal(h.agents.get(fresh)!.cwd, h.agents.get(peer)!.cwd, "the same copy");
+  assert.equal(h.git(copy, "branch", "--show-current").trim(), task.branch, "on the same branch");
+  assert.equal(task.status, "rework");
+  const brief = h.agents.get(fresh)!.prompt ?? "";
+  assert.match(brief, /^TASK L1-T1: Clean build/m);
+  assert.match(
+    brief,
+    /You take over L1-T1 from the Peer that worked it before you: It keeps circling the same two bugs\./,
+  );
+  assert.match(
+    brief,
+    /Parsed the file; the totals are still wrong\.[^]*Totals must count refunds as negative\.[^]*Refunds now subtract, but tax is doubled\./,
+  );
+  assert.doesNotMatch(brief, /\bseat\b|incident/i);
+  assert.match(done.text, new RegExp(`^L1-T1 has a fresh Peer, ${fresh}, on ${task.branch}`));
 });

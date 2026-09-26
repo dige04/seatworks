@@ -1091,6 +1091,34 @@
       }
     },
     {
+      "name": "reseat",
+      "title": "Give a task a fresh Peer",
+      "description": "Let the Peer on a task go and seat a fresh one on the same branch and copy, briefed by the desk with the brief, its hand-backs, your reworks and its reviews' verdicts, as they were. For a Peer circling after corrections, or gone; the work it committed stays.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Task id, like L1-T2: one at work, handed back, stalled or whose merge failed."
+          },
+          "why": {
+            "type": "string",
+            "description": "Why a fresh Peer, which it reads first."
+          }
+        },
+        "required": [
+          "task",
+          "why"
+        ]
+      }
+    },
+    {
       "name": "amend_task",
       "title": "Amend a task",
       "description": "Change what a task asks while its Peer works on it. Give only the fields that change; the old values are kept with why, and the Peer reads the change at its next turn. A task whose contract changed is better cut and started again.",

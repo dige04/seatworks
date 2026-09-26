@@ -26,7 +26,7 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
     return no(
       asked.task.status === "merged"
         ? `The Peer on ${asked.task.id} is gone: add a task for what must change.`
-        : `The Peer on ${asked.task.id} is gone; cut the task and start a new one.`,
+        : `The Peer on ${asked.task.id} is gone: reseat the task for a fresh Peer on its branch and copy, or cut it.`,
     );
   // Sent back after its merge, a task in the lane's copy takes it onto its branch again: nothing may be left there.
   const inLaneCopy = laneCopyToReopen(loadLedger(caller.project.state), asked.lane, asked.task);
@@ -38,7 +38,7 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
       `The lane's working copy has work uncommitted (${await uncommittedIn(inLaneCopy)}), so ${asked.task.id} cannot go back onto its branch there. ${whose}`,
     );
   }
-  const result = sendBack(desk, caller, str(args.task));
+  const result = sendBack(desk, caller, str(args.task), text);
   if (typeof result === "string") return no(result);
   // Reopened, it takes up the lane as it stands, on its own branch; one that cannot catches up at its hand-back.
   if (asked.task.status === "merged" && result.worktree && result.branch) {
@@ -60,7 +60,7 @@ function laneCopyToReopen(ledger: Ledger, lane: Lane, task: Task): string | unde
   return lane.worktree;
 }
 
-function sendBack({ ledgers }: Pick<DeskServices, "ledgers">, caller: Caller, id: string): Task | string {
+function sendBack({ ledgers }: Pick<DeskServices, "ledgers">, caller: Caller, id: string, text: string): Task | string {
   return ledgers.transact(caller.project, (ledger): Task | string => {
     const found = laneTask(ledger, caller, id);
     if (typeof found === "string") return found;
@@ -78,6 +78,7 @@ function sendBack({ ledgers }: Pick<DeskServices, "ledgers">, caller: Caller, id
     if (reopened) delete lane.ready;
     task.silent = 0;
     task.reworks = (task.reworks ?? 0) + 1;
+    task.sentBack = [...(task.sentBack ?? []), { at: Date.now(), text }];
     task.updatedAt = Date.now();
     return { ...task };
   });

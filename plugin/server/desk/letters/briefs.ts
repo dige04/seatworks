@@ -61,6 +61,23 @@ export function taskBrief(task: Task, lane: Lane, beside: Task[], setUp?: SetUp)
     .join("\n");
 }
 
+/** One thing the desk kept of a task, as it was written: a hand-back, a Lead's rework, or a review's verdict. */
+export type Kept = { at: number; what: "hand-back" | "rework" | "review"; text: string };
+
+const KEPT_AS = { "hand-back": "Its hand-back", rework: "What your Lead sent back", review: "A review of it" };
+
+/** The brief of a task a fresh Peer takes over, then why, and what came before it as the desk kept it. */
+export function reseatBrief(task: Task, lane: Lane, beside: Task[], why: string, record: Kept[]): string {
+  return [
+    taskBrief(task, lane, beside),
+    "",
+    `You take over ${task.id} from the Peer that worked it before you: ${why}`,
+    `Its branch and copy hold what that Peer committed and left: read git log, git status and the diff from ${task.startSha ?? lane.branch} before you change anything, and carry on from there rather than over it. What it wrote below is its account, to check against the code, not to trust.`,
+    ...(record.length > 0 ? ["", "What came before, oldest first:"] : []),
+    ...record.map((kept) => `${KEPT_AS[kept.what]}:\n<record>\n${clip(kept.text, 2500)}\n</record>`),
+  ].join("\n");
+}
+
 /**
  * `place` says where the change can be read and how; the desk works it out, since where it is depends on what has
  * happened to the task's copy and branch since.
