@@ -1,4 +1,9 @@
-import { AS_DESK, type LandAs, cleanState, currentBranch, git, headSha, isAncestor } from "./git.ts";
+import { AS_DESK, cleanState, currentBranch, git, headSha, isAncestor } from "./git.ts";
+
+export const LAND_AS = ["squash", "merge", "ff"] as const;
+
+/** How a lane goes onto its base: one commit, a merge commit, or its own commits fast-forwarded. */
+export type LandAs = (typeof LAND_AS)[number];
 
 type LandResult = { landed: boolean; how: string };
 

@@ -6,15 +6,13 @@ import type { SeatView } from "../../core/paseo.ts";
 import { outside } from "../../core/text.ts";
 import { workKey } from "../claims.ts";
 import { besideNote, directiveFor } from "../letters/directive.ts";
-import { workLetters } from "../letters/work-letters.ts";
-import type { Beside } from "./placement.ts";
+import { type Beside, tellBeside } from "./placement.ts";
 import type { Issue } from "../../core/issues.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { seatTitle } from "../seats/names.ts";
 import { type Project, loadConfig } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
-import { loadLedger } from "../store/ledger.ts";
 
 type Copy = { id?: string; path: string; workspaceId?: string };
 type Seating = { ownCopy: boolean; from?: string; role?: string; parent?: string; issue?: Issue };
@@ -87,17 +85,6 @@ export async function startLead(
   } finally {
     desk.seating.release(workKey(project, lane.id));
   }
-}
-
-/** The Leads of the lanes `lane` works beside hear what both may write, as word that wakes nobody. */
-export async function tellBeside(
-  { mail }: Pick<DeskServices, "mail">,
-  project: Project,
-  lane: Lane,
-  beside: Beside[],
-): Promise<void> {
-  const lanes = loadLedger(project.state).lanes;
-  for (const entry of beside) await mail.post(lanes[entry.lane]?.lead, workLetters.laneBeside(lane, entry.paths));
 }
 
 /** Drops the copy a lane took for a Lead that never started: it has been given back, and the lane waits or closes without it. */

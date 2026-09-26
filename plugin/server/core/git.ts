@@ -115,12 +115,11 @@ export async function commitsAhead(cwd: string, base: string, branch: string): P
   return Number.isInteger(count) ? count : undefined;
 }
 
-/** Whether everything on `branch` is already in `into` — undefined when git could not say, because a branch is about to be deleted on this answer. */
+/** Whether everything on `branch` is already in `into`; undefined when git could not say, as a branch is deleted on this answer. */
 export async function contains(cwd: string, into: string, branch: string): Promise<boolean | undefined> {
   if (!(await branchExists(cwd, branch))) return undefined;
-  const run = await git(cwd, ["rev-list", "--count", `${into}..${branch}`]);
-  const count = Number(run.stdout.trim());
-  return run.code === 0 && Number.isInteger(count) ? count === 0 : undefined;
+  const ahead = await commitsAhead(cwd, into, branch);
+  return ahead === undefined ? undefined : ahead === 0;
 }
 
 /** `timeout` is the project's to set: checking out a large repository takes what it takes. */
@@ -240,10 +239,6 @@ export async function mergeBase(cwd: string, base: string, branch: string): Prom
 export async function isAncestor(root: string, base: string, branch: string): Promise<boolean> {
   return (await git(root, ["merge-base", "--is-ancestor", base, branch])).code === 0;
 }
-
-export type LandAs = "squash" | "merge" | "ff";
-
-export const LAND_AS: LandAs[] = ["squash", "merge", "ff"];
 
 /** Where a landed lane's own commits stay reachable once its branch is gone: squashed, base never carries them. */
 export const landedRef = (lane: string) => `refs/seatworks/lanes/${lane}`;

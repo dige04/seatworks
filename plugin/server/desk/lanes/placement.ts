@@ -1,7 +1,11 @@
 import { covers, firstOverlap, serialReach } from "../../core/scope.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, ownCopyHolder } from "../../domain/ledger.ts";
+import { workLetters } from "../letters/work-letters.ts";
+import type { Project } from "../project/project.ts";
+import type { DeskBase } from "../base.ts";
 import type { Refusal } from "../refusal.ts";
+import { loadLedger } from "../store/ledger.ts";
 
 /** An open lane a lane works beside, and what both may write: one-writer paths both reach, or where their scopes meet. */
 export type Beside = { lane: string; paths: string[] };
@@ -25,6 +29,17 @@ export function lanesBeside(serial: string[], open: Scoped[], writeSet: string[]
     const paths = [...new Set([...mine.filter((path) => theirs.has(path)), ...(met ? [met] : [])])];
     return paths.length > 0 ? [{ lane: other.id, paths }] : [];
   });
+}
+
+/** The Leads of the lanes `lane` works beside hear what both may write, as word that wakes nobody. */
+export async function tellBeside(
+  { mail }: Pick<DeskBase, "mail">,
+  project: Project,
+  lane: Lane,
+  beside: Beside[],
+): Promise<void> {
+  const lanes = loadLedger(project.state).lanes;
+  for (const entry of beside) await mail.post(lanes[entry.lane]?.lead, workLetters.laneBeside(lane, entry.paths));
 }
 
 /** The open lanes beside `lane` that may write these one-writer paths it changed: noted where the change merges or lands. */

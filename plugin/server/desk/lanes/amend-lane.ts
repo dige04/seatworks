@@ -8,8 +8,7 @@ import { serialIn } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { besideNote } from "../letters/directive.ts";
 import { recordEvent } from "../store/event-log.ts";
-import { tellBeside } from "./lead-seat.ts";
-import { lanesBeside } from "./placement.ts";
+import { lanesBeside, tellBeside } from "./placement.ts";
 
 /** Changes what a lane is asked while it is open or waiting, keeping what it was asked before; its Lead is told what moved. */
 export async function amendLane(
