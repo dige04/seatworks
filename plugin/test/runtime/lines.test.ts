@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { test } from "node:test";
 import { PaseoHost } from "../../server/adapters/paseo/host.ts";
-import { deskSocket } from "../../server/core/paths.ts";
+import { deskSocket, stateRoot } from "../../server/core/paths.ts";
 import type { TeamSocket } from "../../server/runtime/seat/team-socket.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { reported } from "../console.ts";
@@ -168,4 +168,42 @@ test("a seat's line to the desk carries its choices and its calls, and a call st
     await within(5000, () => /could not be mailed/.test(said())),
     "a reply lost on its way that cannot be mailed either is reported, and the line goes on",
   );
+});
+
+test("a seat Paseo starts again after it was archived is served nothing, and told why, as is any seat while the keys cannot be read", async (t) => {
+  const h = harness();
+  const socket = (h.runtime as unknown as { socket: TeamSocket }).socket;
+  socket.listen();
+  t.after(() => socket.close());
+  const hello = async (key: string) => {
+    const line = connect(deskSocket());
+    t.after(() => line.destroy());
+    const heard: Heard[] = [];
+    createInterface({ input: line }).on("line", (text) => heard.push(JSON.parse(text) as Heard));
+    await new Promise((resolve) => line.on("connect", resolve));
+    line.write(`${JSON.stringify({ type: "hello", key, role: "lead", cwd: h.root })}\n`);
+    assert.ok(await within(2000, () => heard.length > 0), "the desk answers the hello");
+    return heard[0] as Heard & { why?: string };
+  };
+  const open = (key?: string) =>
+    h.runtime.sessionOpen({
+      agentId: "agent-9",
+      reason: key ? "create" : "resume",
+      provider: "sw2-lead-claude",
+      cwd: h.root,
+      env: key ? { SEATWORKS_DESK_KEY: key } : {},
+    });
+  open("k-9");
+  assert.equal((await hello("k-9")).type, "welcome");
+  await h.runtime.archived({ id: "agent-9", provider: "sw2-lead-claude", cwd: h.root });
+  const revived = open().env.SEATWORKS_DESK_KEY ?? "";
+  const refused = await hello(revived);
+  assert.equal(refused.type, "refused");
+  assert.match(refused.why ?? "", /agent was archived, and the desk serves no archived seat/, "the true reason");
+
+  const said = reported(t);
+  writeFileSync(join(stateRoot(), "keys.json"), "{not json");
+  const unread = await hello("k-9");
+  assert.match(unread.why ?? "", /keys\.json is there but could not be read/);
+  assert.match(said(), /keys\.json/);
 });

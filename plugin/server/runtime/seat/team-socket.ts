@@ -18,17 +18,24 @@ type Choices = Record<string, Record<string, string[]>>;
 
 /** What the lines need of the desk: whose a key is, the sets a role's fields take, the calls, and a lost answer's letter. */
 type LineDesk = {
-  agentOf(key: string): string | undefined;
+  whose(key: string): { agent: string } | { refused: string };
   choices(role: string, cwd: string): Choices;
   answer(request: ToolRequest, cancelled: AbortSignal): Promise<ToolReply>;
   mailLost(request: ToolRequest, reply: ToolReply): Promise<unknown>;
 };
 
 type Call = { request: ToolRequest; stop: AbortController; reply?: ToolReply };
-type Line = { socket: Socket; agent?: string; role: string; cwd: string; shown?: string; calls: Map<string, Call> };
+type Line = {
+  socket: Socket;
+  agent?: string;
+  refused?: string;
+  role: string;
+  cwd: string;
+  shown?: string;
+  calls: Map<string, Call>;
+};
 
-const UNKNOWN =
-  "The desk does not know this agent's key, so it carries out nothing from it: the agent was started before the desk knew its agents by key. Say so, and ask for it to be archived and started again.";
+const UNHEARD = "The desk does not know which agent this is: its team server has not said. Say so, and end your turn.";
 
 /** Where seats' team servers reach the desk: one line each, a call answered on the line it came by. */
 export class TeamSocket {
@@ -99,9 +106,12 @@ export class TeamSocket {
 
   private hello(line: Line, said: { key: string; role: string; cwd: string }): void {
     if (line.agent) return;
-    const agent = this.desk.agentOf(said.key);
-    if (!agent) return this.send(line, { type: "refused", why: UNKNOWN });
-    Object.assign(line, { agent, role: said.role, cwd: said.cwd });
+    const whose = this.desk.whose(said.key);
+    if ("refused" in whose) {
+      line.refused = whose.refused;
+      return this.send(line, { type: "refused", why: whose.refused });
+    }
+    Object.assign(line, { agent: whose.agent, role: said.role, cwd: said.cwd });
     this.offer(line, "welcome");
   }
 
@@ -114,7 +124,7 @@ export class TeamSocket {
   }
 
   private call(line: Line, said: { id: string; tool: string; args: Record<string, unknown> }): void {
-    if (!line.agent) return this.send(line, { type: "result", id: said.id, ok: false, text: UNKNOWN });
+    if (!line.agent) return this.send(line, { type: "result", id: said.id, ok: false, text: line.refused ?? UNHEARD });
     const call: Call = {
       request: {
         id: randomUUID(),

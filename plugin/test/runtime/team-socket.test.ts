@@ -48,7 +48,7 @@ test("the line's ends: no desk, a socket file left behind, a pipe closed under a
   const path = join(tempDir("sw2-sock-"), "d.sock");
   writeFileSync(path, "left behind");
   const socket = new TeamSocket(path, {
-    agentOf: (key) => (key === "k1" ? "agent-1" : undefined),
+    whose: (key) => (key === "k1" ? { agent: "agent-1" } : { refused: "unknown" }),
     choices: () => ({}),
     answer: (_request, stop) => (cancelled.push(stop), new Promise<ToolReply>(() => {})),
     mailLost: async () => undefined,

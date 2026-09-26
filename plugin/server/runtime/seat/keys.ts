@@ -11,9 +11,8 @@ const isBound = (value: unknown): value is Bound =>
   isRecord(value) && Object.values(value).every((key) => typeof key === "string");
 
 /**
- * Which agent each seat's key belongs to. A key is made as the seat is created, before Paseo names the agent, and bound
- * when it does; kept on disk, since a resumed seat's team server starts again with the key it was created with. A file that
- * cannot be read is never written over: binding a seat refuses it, and a key looked up in it is found by nobody.
+ * Which agent each seat's key belongs to, kept on disk since a resumed seat's server starts again with the key it was
+ * created with. A file that cannot be read is never written over, and a seat showing its key then is refused with why.
  */
 export class SeatKeys {
   private readonly file: string;
@@ -35,11 +34,24 @@ export class SeatKeys {
   }
 
   keyOf(agent: string): string | undefined {
-    return this.all()[agent];
+    const read = this.read();
+    return "value" in read ? read.value[agent] : undefined;
   }
 
-  agentOf(key: string): string | undefined {
-    return key ? Object.entries(this.all()).find(([, held]) => held === key)?.[0] : undefined;
+  /** Whose `key` is, or why the desk carries out nothing from the seat that shows it. */
+  whose(key: string): { agent: string } | { refused: string } {
+    const read = this.read();
+    if ("fault" in read)
+      return {
+        refused: `${keptFault(read.fault).message} Until then the desk knows no seat by its key, so it carries out nothing from this one. Say so, and end your turn.`,
+      };
+    const agent = key ? Object.entries(read.value).find(([, held]) => held === key)?.[0] : undefined;
+    return agent
+      ? { agent }
+      : {
+          refused:
+            "The desk does not know this agent's key: this agent was archived, and the desk serves no archived seat, so it carries out nothing from it. Say so, and end your turn.",
+        };
   }
 
   forget(agent: string): void {
@@ -49,14 +61,13 @@ export class SeatKeys {
     writeJson(this.file, rest);
   }
 
-  private all(): Bound {
+  private read(): { value: Bound } | { fault: string } {
     const read = readKept<Bound>(this.file, {}, isBound);
-    if ("value" in read) {
-      this.told = undefined;
-      return read.value;
+    if ("value" in read) this.told = undefined;
+    else if (this.told !== read.fault) {
+      daemonLog.error(keptFault(read.fault).message);
+      this.told = read.fault;
     }
-    if (this.told !== read.fault) daemonLog.error(keptFault(read.fault).message);
-    this.told = read.fault;
-    return {};
+    return read;
   }
 }
