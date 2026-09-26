@@ -230,11 +230,27 @@
         "approval": "deny"
       },
       {
+        "match": "npx claude *",
+        "approval": "deny"
+      },
+      {
+        "match": "bunx claude *",
+        "approval": "deny"
+      },
+      {
         "match": "codex",
         "approval": "deny"
       },
       {
         "match": "codex *",
+        "approval": "deny"
+      },
+      {
+        "match": "npx codex *",
+        "approval": "deny"
+      },
+      {
+        "match": "bunx codex *",
         "approval": "deny"
       },
       {
@@ -246,11 +262,27 @@
         "approval": "deny"
       },
       {
+        "match": "npx opencode *",
+        "approval": "deny"
+      },
+      {
+        "match": "bunx opencode *",
+        "approval": "deny"
+      },
+      {
         "match": "omp",
         "approval": "deny"
       },
       {
         "match": "omp *",
+        "approval": "deny"
+      },
+      {
+        "match": "npx omp *",
+        "approval": "deny"
+      },
+      {
+        "match": "bunx omp *",
         "approval": "deny"
       },
       {
@@ -262,43 +294,11 @@
         "approval": "deny"
       },
       {
-        "match": "devin",
+        "match": "npx pi *",
         "approval": "deny"
       },
       {
-        "match": "devin *",
-        "approval": "deny"
-      },
-      {
-        "match": "npx claude*",
-        "approval": "deny"
-      },
-      {
-        "match": "npx codex*",
-        "approval": "deny"
-      },
-      {
-        "match": "npx opencode*",
-        "approval": "deny"
-      },
-      {
-        "match": "npx omp*",
-        "approval": "deny"
-      },
-      {
-        "match": "bunx claude*",
-        "approval": "deny"
-      },
-      {
-        "match": "bunx codex*",
-        "approval": "deny"
-      },
-      {
-        "match": "bunx opencode*",
-        "approval": "deny"
-      },
-      {
-        "match": "bunx omp*",
+        "match": "bunx pi *",
         "approval": "deny"
       }
     ]

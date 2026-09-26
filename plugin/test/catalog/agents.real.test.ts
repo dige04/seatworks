@@ -44,6 +44,8 @@ const at = (value: unknown, path: string): unknown =>
       value,
     );
 const list = (value: unknown): string[] => (Array.isArray(value) ? value.map(String) : []);
+/** Every way a shell starts `agent` that each agent's rules refuse, the catalog's agents all alike. */
+const startsOf = (agent: string) => [agent, `${agent} *`, `npx ${agent} *`, `bunx ${agent} *`];
 
 test("every role builds on every agent the kit ships, each in that agent's own terms", (t) => {
   const kit = loadKit(PLUGIN);
@@ -136,7 +138,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       );
       for (const agent of agents)
         assert.ok(
-          deny.includes(`Bash(${agent} *)`),
+          startsOf(agent).every((start) => deny.includes(`Bash(${start})`)),
           `${where}: a seat does not start ${agent} from its shell, past Paseo`,
         );
       assert.equal(
@@ -204,15 +206,18 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         `${where}: commits only where the role commits`,
       );
       assert.equal(/pattern = \["sleep"\]/.test(rules), !waits, `${where}: sleeps only where the role may`);
-      const forbidden =
-        rules.match(
-          /prefix_rule\(pattern = \[\[([^\]]*)\]\], decision = "forbidden", justification = "Agents are started by the desk/,
-        )?.[1] ?? "";
-      for (const agent of agents)
-        assert.ok(
-          forbidden.includes(`"${agent}"`),
-          `${where}: a seat does not start ${agent} from its shell, past Paseo`,
-        );
+      const names = (text: string | undefined) => [...(text ?? "").matchAll(/"([^"]+)"/g)].map((match) => match[1]!);
+      const forbidden = rules.match(
+        /prefix_rule\(pattern = \[\[([^\]]*)\]\], decision = "forbidden", justification = "Agents are started by the desk/,
+      )?.[1];
+      const through = rules.match(
+        /prefix_rule\(pattern = \[\["npx", "bunx"\], \[([^\]]*)\]\], decision = "forbidden", justification = "Agents are started by the desk/,
+      )?.[1];
+      assert.deepEqual(
+        [names(forbidden).sort(), names(through).sort()],
+        [[...agents].sort(), [...agents].sort()],
+        `${where}: a seat starts no agent the catalog ships from its shell, past Paseo, and its rules name no other`,
+      );
     }
     if (harness.id === "omp") {
       const patterns = (at(settings, "bash.patterns") ?? []) as { approval: string; match: string }[];
@@ -237,7 +242,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       assert.equal(denied.includes("sleep *"), !waits, `${where}: sleeps only where the role may`);
       for (const agent of agents)
         assert.ok(
-          [agent, `${agent} *`].every((rule) => denied.includes(rule)),
+          startsOf(agent).every((rule) => denied.includes(rule)),
           `${where}: a seat does not start ${agent} from its shell, past Paseo`,
         );
       assert.equal(
@@ -340,7 +345,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       assert.equal(bash["sleep *"] === "deny", !waits, `${where}: sleeps only where the role may`);
       for (const agent of agents)
         assert.ok(
-          bash["*"] === "deny" || (bash[agent] === "deny" && bash[`${agent} *`] === "deny"),
+          bash["*"] === "deny" || startsOf(agent).every((start) => bash[start] === "deny"),
           `${where}: a seat does not start ${agent} from its shell, past Paseo`,
         );
       assert.deepEqual(
