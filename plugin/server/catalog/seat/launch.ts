@@ -11,7 +11,8 @@ import {
   PASEO_SERVER,
   type RoleSpec,
 } from "../kit/kit.ts";
-import { agentDefault, seatOf } from "../kit/roles.ts";
+import { seatOf } from "../kit/roles.ts";
+import { modelFor, thinkingFor } from "../team/model-choice.ts";
 import type { Team } from "../team/team.ts";
 import { preapprovedFor } from "./servers.ts";
 
@@ -38,7 +39,7 @@ export function applyRole(
   const { model, preferred } = modelOf(kit, team, config, role, harness);
   if (model) next.model = model.id;
   if (harness.provider.profileModeId) next.modeId = harness.provider.profileModeId;
-  const thinking = thinkingOf(config.thinkingOptionId, model, preferred);
+  const thinking = thinkingFor(harness, model, preferred, config.thinkingOptionId);
   if (thinking !== undefined) next.thinkingOptionId = thinking;
   else delete next.thinkingOptionId;
   const prompt = render(role);
@@ -68,20 +69,8 @@ function modelOf(
   const chosen = team.roles[role.role];
   const own = chosen?.harness.id === harness.id ? chosen : undefined;
   const listed = (harness.models ?? []).find((entry) => entry.id === config.model);
-  const model = listed ?? own?.model ?? agentDefault(kit.roles, harness);
+  const model = listed ?? own?.model ?? modelFor(harness, undefined, kit.roles);
   return { model, preferred: own && own.model?.id === model?.id ? own.thinking : undefined };
-}
-
-/** Paseo's thinking where the model offers it, else the team's, else the model's default; with no options offered, only the team's. */
-function thinkingOf(
-  given: string | undefined,
-  model: ModelSpec | undefined,
-  preferred: string | undefined,
-): string | undefined {
-  const options = model?.thinkingOptions ?? [];
-  if (options.length === 0) return preferred || undefined;
-  const valid = (id: string | undefined) => Boolean(id) && options.some((option) => option.id === id);
-  return [given, preferred].find(valid) ?? (options.find((option) => option.isDefault) ?? options[0])!.id;
 }
 
 /** The paths the role writes under the state, and the project as its context, where the harness takes them at launch. */

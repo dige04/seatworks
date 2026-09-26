@@ -2,7 +2,8 @@ import type { Layer } from "../../../shared/settings.ts";
 import { supportsRole } from "../kit/harness-files.ts";
 import type { HarnessSpec, Kit, ModelSpec, RoleSpec } from "../kit/kit.ts";
 import { type McpState, transportOf } from "./mcp-states.ts";
-import { agentDefault, seatedAs } from "../kit/roles.ts";
+import { seatedAs } from "../kit/roles.ts";
+import { modelFor, thinkingFor } from "./model-choice.ts";
 
 /** What a role's seats run: a harness, model and thinking, the Human's rules for the role and its MCP servers. */
 export type RoleSeat = {
@@ -48,38 +49,6 @@ export function resolveRole(
     errors.push(`${model!.label} on ${harness.label} has no thinking option ${choice.thinking} for the ${role.label}`);
   const thinking = thinkingFor(harness, model, choice.thinking);
   return { role, harness, model, thinking, rules, mcp: serversFor(role, harness, mcp, errors) };
-}
-
-/** What a role runs on a harness its seat is not on: its preset where the harness is its own, else that harness's default. */
-export function presetOn(
-  role: RoleSpec,
-  harness: HarnessSpec,
-  roles: RoleSpec[],
-): { model?: ModelSpec; thinking?: string } {
-  const preset = harness.id === role.defaults.harness ? role.defaults : undefined;
-  // The kit's own model for its own harness, whether or not the catalog lists it, as resolveRole keeps it.
-  const model = modelFor(harness, preset?.model, roles);
-  return { model, thinking: thinkingFor(harness, model, preset?.thinking) };
-}
-
-/** The model named, listed or not, since which model a seat runs is the owner's choice; else another role's preset or Paseo's first. */
-function modelFor(harness: HarnessSpec, id: string | undefined, roles: RoleSpec[]): ModelSpec | undefined {
-  if (!id) return agentDefault(roles, harness);
-  return (harness.models ?? []).find((entry) => entry.id === id) ?? { id, label: id };
-}
-
-/** The thinking chosen where the model offers it, else its default; a model the catalog does not list keeps the choice, as no options listed is not a list of none. */
-function thinkingFor(
-  harness: HarnessSpec,
-  model: ModelSpec | undefined,
-  chosen: string | undefined,
-): string | undefined {
-  const options = model?.thinkingOptions ?? [];
-  if (options.length === 0)
-    return model && !(harness.models ?? []).some((entry) => entry.id === model.id) ? chosen : undefined;
-  return options.some((option) => option.id === chosen)
-    ? chosen
-    : (options.find((option) => option.isDefault) ?? options[0])?.id;
 }
 
 /** The harness, model and thinking the layers leave the role on, and the Human's rules for it. */

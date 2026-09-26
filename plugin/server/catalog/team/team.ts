@@ -4,7 +4,8 @@ import type { Layer } from "../../../shared/settings.ts";
 import type { Attention, Hitl } from "../../../shared/views.ts";
 import type { HarnessSpec, Kit, SensorSpec } from "../kit/kit.ts";
 import { type McpState, resolveMcp } from "./mcp-states.ts";
-import { type RoleSeat, presetOn, resolveRole } from "./role-seats.ts";
+import { presetOn } from "./model-choice.ts";
+import { type RoleSeat, resolveRole } from "./role-seats.ts";
 import { can, seatedAs } from "../kit/roles.ts";
 
 /**

@@ -1,4 +1,4 @@
-import type { ArgSchema, HarnessSpec, Kit, ModelSpec, RoleSpec } from "./kit.ts";
+import type { ArgSchema, HarnessSpec, Kit, RoleSpec } from "./kit.ts";
 
 export function providerId(kit: Kit, role: string, harness: string): string {
   return `${kit.prefix}${role}-${harness}`;
@@ -58,16 +58,4 @@ export function toolsOf(kit: Kit, role: RoleSpec | undefined): string[] {
 
 export function schemaOf(kit: Kit, role: RoleSpec, tool: string): ArgSchema | undefined {
   return role.tools ? kit.toolSets[role.tools]?.[tool] : undefined;
-}
-
-/** Another role's preset for this agent, else Paseo's first: Paseo's own default cannot be read back, since the plugin sets it. */
-export function agentDefault(roles: RoleSpec[], harness: HarnessSpec): ModelSpec | undefined {
-  const models = harness.models ?? [];
-  const preset = roles
-    .map((role) => role.defaults)
-    .find(
-      (defaults) =>
-        defaults.harness === harness.id && defaults.model && models.some((entry) => entry.id === defaults.model),
-    );
-  return models.find((entry) => entry.id === preset?.model) ?? models[0];
 }
