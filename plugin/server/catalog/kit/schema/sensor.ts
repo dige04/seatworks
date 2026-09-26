@@ -73,7 +73,7 @@ export const ChecksFile = z.record(
 const Pattern = z
   .strictObject({
     title: text,
-    source: text,
+    source: text.optional(),
     watches: z.array(text).min(1),
     reads: z.array(z.enum(["thought", "said", "brief"])).min(1),
     instructions: text.includes("`text`").optional(),
