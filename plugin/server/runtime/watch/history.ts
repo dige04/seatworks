@@ -1,7 +1,7 @@
 import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { SETTLED } from "../../domain/task.ts";
-import { type Fact, type FactKind, fact } from "./fact-kinds.ts";
+import { type Fact, type FactKind, fact } from "../../domain/incident.ts";
 
 /**
  * What a lane's history shows that no turn window can. One fact per kind per lane, naming every task:

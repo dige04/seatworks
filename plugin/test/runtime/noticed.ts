@@ -1,6 +1,7 @@
 import type { TestContext } from "node:test";
 import type { HookAgent } from "../../server/core/ports.ts";
-import { type Incident, loadIncidents } from "../../server/desk/store/incidents.ts";
+import type { Incident } from "../../server/domain/incident.ts";
+import { loadIncidents } from "../../server/desk/store/incidents.ts";
 import type { Noticed } from "../../server/desk/watch/notice.ts";
 import type { Project } from "../../server/desk/project/project.ts";
 import type { harness } from "./harness.ts";

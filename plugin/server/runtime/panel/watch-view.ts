@@ -8,7 +8,7 @@ import { loadIncidents } from "../../desk/store/incidents.ts";
 import { type Ledger, laneOfLead, taskOfPeer } from "../../domain/ledger.ts";
 import { loadLedger } from "../../desk/store/ledger.ts";
 import type { Project } from "../../desk/project/project.ts";
-import { factTitle } from "../watch/fact-kinds.ts";
+import { factTitle } from "../../domain/incident.ts";
 
 const INCIDENTS_SHOWN = 200;
 

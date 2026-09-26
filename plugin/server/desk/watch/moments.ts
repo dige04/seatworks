@@ -2,8 +2,7 @@ import type { DeskServices } from "../services.ts";
 import type { Project } from "../project/project.ts";
 import { notice } from "./notice.ts";
 
-/** The moments SLP wakes whoever supervises for, as the desk sees them happen: a task struggling, structure settling, a sharp turn, a Lead idle with nothing going. */
-type MomentKind = "struggling" | "architecture" | "turning" | "lane-idle";
+type MomentKind = "struggling" | "architecture" | "turning";
 
 /** A moment about `seat`, raised as a code fact of W's: an incident opened or sighted and told to whoever supervises. */
 export async function tellMoment(

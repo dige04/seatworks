@@ -2,7 +2,7 @@ import { isAbsolute, relative } from "node:path";
 import { weakened } from "../../catalog/kit/patterns.ts";
 import { covers, normalize } from "../../core/scope.ts";
 import { oneLine } from "../../core/text.ts";
-import { type Fact, fact } from "./fact-kinds.ts";
+import { type Fact, fact } from "../../domain/incident.ts";
 import type { Call, Unit } from "./window.ts";
 
 /** `skipped` and `assertion` are global, since they are counted; `runners` are the commands whose first word says little. */

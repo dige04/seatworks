@@ -1,5 +1,5 @@
 import { oneLine } from "../../core/text.ts";
-import { type Fact, fact } from "./fact-kinds.ts";
+import { type Fact, fact } from "../../domain/incident.ts";
 import { type Rules, PROSE, escapes, failed, isGate, str } from "./facts.ts";
 import type { Call, Window } from "./window.ts";
 

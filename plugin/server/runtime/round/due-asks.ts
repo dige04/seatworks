@@ -10,7 +10,7 @@ import { ASK, type Ask } from "../../domain/ask.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { TeamSource } from "../team-source.ts";
-import { fact } from "../watch/fact-kinds.ts";
+import { fact } from "../../domain/incident.ts";
 import { decide } from "../watch/findings.ts";
 
 type AskDeps = { kit: Kit; desk: Desk; source: TeamSource };

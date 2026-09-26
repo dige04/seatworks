@@ -2,7 +2,7 @@ import { clip } from "../../core/text.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import type { Finding } from "../../domain/incident.ts";
-import type { Incident } from "../store/incidents.ts";
+import type { Incident } from "../../domain/incident.ts";
 import { type Letter, mail } from "./envelope.ts";
 
 const line = (text: string, limit: number) => clip(text.replace(/\s+/g, " ").trim(), limit);

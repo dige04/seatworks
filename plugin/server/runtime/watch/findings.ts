@@ -1,5 +1,5 @@
 import type { Finding } from "../../domain/incident.ts";
-import type { Fact } from "./fact-kinds.ts";
+import type { Fact } from "../../domain/incident.ts";
 
 const FIRST = ["destructive", "stuck", "no-recovery", "long-turn"];
 

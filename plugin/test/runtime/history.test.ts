@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import type { Lane } from "../../server/domain/lane.ts";
 import { type Ledger, emptyLedger } from "../../server/domain/ledger.ts";
 import type { Task } from "../../server/domain/task.ts";
-import type { FactKind } from "../../server/runtime/watch/fact-kinds.ts";
+import type { FactKind } from "../../server/domain/incident.ts";
 import { deskFacts } from "../../server/runtime/watch/history.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { recordPatterns } from "../../server/catalog/kit/patterns.ts";

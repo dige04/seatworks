@@ -1,6 +1,6 @@
 import { isAbsolute, relative } from "node:path";
 import { oneLine, within } from "../../core/text.ts";
-import { type Fact, fact } from "./fact-kinds.ts";
+import { type Fact, fact } from "../../domain/incident.ts";
 import { type Rules } from "./facts.ts";
 import type { Call } from "./window.ts";
 

@@ -1,7 +1,6 @@
-import type { Finding, Held, Level } from "../../domain/incident.ts";
+import type { Finding, Held, Incident, Level } from "../../domain/incident.ts";
 import type { LaneStatus } from "../../domain/lane.ts";
 import type { TaskStatus } from "../../domain/task.ts";
-import type { Incident } from "./incidents.ts";
 import type { Task } from "../../domain/task.ts";
 
 /**

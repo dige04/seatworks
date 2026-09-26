@@ -1,5 +1,5 @@
 import { keptFault } from "../../core/store.ts";
-import { type Incidents, loadIncidents, readIncidentsFile, saveIncidents } from "./incidents.ts";
+import { type Incidents, readIncidentsFile, saveIncidents } from "./incidents.ts";
 import type { Project } from "../project/project.ts";
 import type { Sync } from "./ledger-store.ts";
 
@@ -9,11 +9,6 @@ export class IncidentStore {
 
   constructor(touched: (project: Project) => void) {
     this.touched = touched;
-  }
-
-  /** The book for a view: one that cannot be read shows as empty. */
-  view(project: Project): Incidents {
-    return loadIncidents(project.state);
   }
 
   transact<T>(project: Project, change: (book: Incidents) => Sync<T>): T {

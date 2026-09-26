@@ -1,31 +1,9 @@
 import { join } from "node:path";
 import { isRecord } from "../../core/json.ts";
 import { readJsonFile, readKept, writeJson } from "../../core/store.ts";
-import { type Held, close } from "../../domain/incident.ts";
+import { type Incident, close } from "../../domain/incident.ts";
 
-export type Incident = {
-  id: string;
-  seat: string;
-  provider?: string;
-  where: string;
-  lane?: string;
-  task?: string;
-  kind: string;
-  level: "page" | "attend";
-  quote: string;
-  theirs?: true;
-  later?: string;
-  facts: string[];
-  opened: number;
-  last: number;
-  count: number;
-  open: boolean;
-  told?: number;
-  held?: Held;
-  label?: "useful" | "noise" | "unknown";
-  note?: string;
-  closed?: number;
-};
+export type { Incident } from "../../domain/incident.ts";
 
 export type Incidents = { next: number; items: Record<string, Incident> };
 

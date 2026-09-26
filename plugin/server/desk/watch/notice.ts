@@ -1,7 +1,7 @@
 import { recordEvent } from "../store/event-log.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
-import { type Finding, deliveryOf, tell, unheard } from "../../domain/incident.ts";
-import { type Incident, closeSeat, forget, settledAsNoise, sight } from "../store/incidents.ts";
+import { type Finding, type Incident, deliveryOf, tell, unheard } from "../../domain/incident.ts";
+import { closeSeat, forget, settledAsNoise, sight } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { laneOfLead, taskOfPeer } from "../../domain/ledger.ts";
