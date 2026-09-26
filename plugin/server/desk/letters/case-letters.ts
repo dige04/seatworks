@@ -40,7 +40,7 @@ export const caseLetters = {
       "case",
       [id],
       lines.join("\n").trimEnd(),
-      `judge ${id}: for each question yes, no, unsure or a choice's name, with why in one sentence.`,
+      `judge ${id}: for each question yes, no, unsure or a choice's name, with why in one sentence quoting the words that decided it.`,
     );
   },
 };

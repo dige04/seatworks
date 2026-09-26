@@ -136,7 +136,7 @@
     {
       "role": "watcher",
       "label": "Watcher",
-      "description": "Answers the watch's questions about one moment of the work at a time, from what the desk read then; it cannot touch the work",
+      "description": "Judges what the watch's eye read of a Lead or a Peer against its patterns, and a moment the desk asks about; it cannot touch the work",
       "follows": "peer",
       "can": [
         "judge"

@@ -1520,7 +1520,7 @@
     {
       "name": "judge",
       "title": "Judge the case",
-      "description": "Answer a case: one answer for each of its questions, by the name the case gives it, each with why in one sentence. Your answers are kept beside what happened; nobody is sent them.",
+      "description": "Answer a case: one answer for each of its questions, by the name the case gives it, each with why in one sentence quoting the words that decided it. Answers are kept; a pattern's yes reaches whoever supervises only once its signal is on.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
