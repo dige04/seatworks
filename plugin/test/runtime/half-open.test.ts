@@ -109,22 +109,21 @@ test("a lane whose Lead is gone gets one where it stands, with the asks that wai
   assert.equal(seated.cwd, lane.worktree);
   assert.match(
     seated.prompt ?? "",
-    new RegExp(`^You take over L1 from its Lead ${lane.lead}, which is gone\\.[^]*OWNER DIRECTIVE L1: Build`),
+    new RegExp(`^You take over L1 from its Lead ${lane.lead}, which is gone\\.[^]*SUPERVISOR DIRECTIVE L1: Build`),
   );
-  assert.doesNotMatch(seated.prompt ?? "", /supervisor/i);
   assert.deepEqual(
     Object.values(h.ledger().asks).map((ask) => ask.to),
     [now.lead, sup],
-    "one put to the owner while the lane had no Lead stays the owner's",
+    "one put to the Supervisor while the lane had no Lead stays the Supervisor's",
   );
   assert.equal(h.ledger().tasks["L1-T1"]!.status, "running");
   assert.match((await h.call(sup, "supervisor", "answer", { ask: "A2", text: "cents" })).text, /Its lane's Lead/);
   assert.match(
     h.heard(now.lead!).join("\n"),
     new RegExp(
-      `ANSWERED FOR YOU: A2 \\(question\\) from ${peer}, put to the owner while your lane had no Lead, was answered by the owner\\.[^]*cents`,
+      `ANSWERED FOR YOU: A2 \\(question\\) from ${peer}, put to the Supervisor while your lane had no Lead, was answered by the Supervisor\\.[^]*cents`,
     ),
-    "the owner reaching a Peer past its Lead never leaves the Lead out of sight",
+    "the Supervisor reaching a Peer past its Lead never leaves the Lead out of sight",
   );
 
   h.agents.get(now.lead!)!.archivedAt = new Date().toISOString();

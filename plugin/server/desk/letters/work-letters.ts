@@ -113,7 +113,7 @@ export const workLetters = {
     const by =
       lane.onHold?.by === "desk"
         ? "the desk has stopped this lane for the Human's answer"
-        : "the owner has stopped this lane";
+        : "the Supervisor has stopped this lane";
     const what = task
       ? `HOLD: the work on ${task.id} is stopped: ${reason}`
       : `HOLD ${lane.id} (${lane.title}): ${by}: ${reason}`;
@@ -128,7 +128,7 @@ export const workLetters = {
   resumed(lane: Lane, note: string, task?: Task): Letter {
     const what = task
       ? `RESUMED: the work on ${task.id} goes on.`
-      : `RESUMED ${lane.id} (${lane.title}): the owner lifted the hold.`;
+      : `RESUMED ${lane.id} (${lane.title}): the Supervisor lifted the hold.`;
     return mail(
       "resumed",
       [lane.id, task?.id ?? "lead", Date.now()],

@@ -22,7 +22,7 @@ export const status = defineTool({
     const led = can(caller.role, "lead") ? leadLaneOf(ledger, caller.id) : undefined;
     if (led?.status === "closed")
       return ok(
-        `Lane ${led.id} (${led.title}) is closed${led.landed ? " and landed" : ""}. You are kept on with what you know of it until the owner releases you: nothing of it is yours to do.`,
+        `Lane ${led.id} (${led.title}) is closed${led.landed ? " and landed" : ""}. You are kept on with what you know of it until the Supervisor or the Human releases you: nothing of it is yours to do.`,
       );
     const lane = led?.id;
     const copy = can(caller.role, "supervise") ? await ownCopy(caller.project.root) : undefined;

@@ -80,8 +80,8 @@ export async function askUp(
   const as = reader === lane.lead ? "lead" : "supervisor";
   const concept = conceptFile(project.state);
   await mail.post(reader, askLetters.askTo(entry, `the Peer on ${task.id} (${task.title})`, as, concept));
-  const owner = reader === lane.lead ? "" : ", of the owner, because your lead is not there";
-  return ok(`Asked as ${entry.id}${owner}. End your turn; the answer arrives as a message.`);
+  const above = reader === lane.lead ? "" : ", of whoever supervises the project, because your lead is not there";
+  return ok(`Asked as ${entry.id}${above}. End your turn; the answer arrives as a message.`);
 }
 
 /**
@@ -122,11 +122,11 @@ export async function answerAsk(
   const waiting = ask.to === caller.id ? undefined : ask.to;
   const waitingRole = roleNamed(kit, result.waitingRole ?? "");
   if (waiting) {
-    const by = can(waitingRole, "supervise") ? `${caller.role.label} ${caller.id}` : "the owner";
+    const by = can(waitingRole, "supervise") ? `${caller.role.label} ${caller.id}` : "the Supervisor";
     await mail.post(waiting, askLetters.answeredFor(ask, by, can(waitingRole, "lead")));
   }
   const lead = await leadPassed(roster, caller, ask, waiting);
-  if (lead) await mail.post(lead, askLetters.answeredFor(ask, "the owner", true, false));
+  if (lead) await mail.post(lead, askLetters.answeredFor(ask, "the Supervisor", true, false));
   const posted = await mail.post(ask.from, askLetters.answered(ask));
   recordEvent(caller.project, { kind: "ask.answered", ask: ask.id, by: caller.id, told: waiting ?? lead ?? null });
   const has = posted === "sent" ? "has it" : "reads it as soon as it can take it";

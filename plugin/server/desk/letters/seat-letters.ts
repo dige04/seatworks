@@ -107,14 +107,14 @@ export const seatLetters = {
       from
         ? "Allow what its work needs within its own copy; refuse, with why, what reaches past it."
         : reader === "lead"
-          ? "If it holds the lane up, ask, so the owner can tell the Human."
+          ? "If it holds the lane up, ask, so the Supervisor can tell the Human."
           : "Tell the Human it waits on them.",
     );
   },
 
-  /** The owner answered a Peer's permission past its Lead, which keeps the room's picture by hearing of it. */
+  /** The Supervisor answered a Peer's permission past its Lead, which keeps the room's picture by hearing of it. */
   permitted(task: Task, request: PendingPermission, allow: boolean, why: string): Letter {
-    const text = `PERMISSION ${allow ? "ALLOWED" : "REFUSED"} for ${task.id} (${task.title}) by the owner: ${asked(request)}${allow ? "" : `\n\nWhy: ${clip(why, 600)}`}`;
+    const text = `PERMISSION ${allow ? "ALLOWED" : "REFUSED"} for ${task.id} (${task.title}) by the Supervisor: ${asked(request)}${allow ? "" : `\n\nWhy: ${clip(why, 600)}`}`;
     return fyi(mail("permitted", [task.id, request.id ?? ""], text, "Nothing now."));
   },
 

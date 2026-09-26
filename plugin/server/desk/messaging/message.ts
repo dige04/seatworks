@@ -32,14 +32,14 @@ const unread = (who: string) => `${who} is not seated any more, so a message wou
  * Why a settled task takes no message: a merged one's Peer in the lane's copy is kept only to take rework, since a
  * message would wake it in a copy it no longer holds; rework is its Lead's, as `by` says when whoever supervises asks.
  */
-const settled = (task: Task, by: "lead" | "owner") =>
+const settled = (task: Task, by: "lead" | "supervisor") =>
   task.status === "merged" && task.mode !== "parallel"
     ? `${task.id} is merged, and its Peer is kept only to take rework: ${by === "lead" ? "send rework" : "ask its Lead to send rework"} if its work must change.`
     : task.status !== "merged" && SETTLED.includes(task.status)
       ? `${task.id} is ${task.status}, and its Peer went with it.`
       : undefined;
 
-async function fromOwner(
+async function fromSupervisor(
   desk: DeskServices,
   caller: Caller,
   ledger: Ledger,
@@ -67,7 +67,7 @@ async function toLead(
   const refused = repeatsIncident(caller.project.state, lane.lead, text);
   if (refused) return no(refused);
   const who = leadOf(lane);
-  return ok(await handTo(desk, { target: lane.lead, from: "the owner", who, reader: "lead" }, sending, text));
+  return ok(await handTo(desk, { target: lane.lead, from: "the Supervisor", who, reader: "lead" }, sending, text));
 }
 
 /** The Supervisor may reach a Peer directly, but its Lead is always told first: no hidden command chains. */
@@ -82,7 +82,7 @@ async function toPeer(
 ): Promise<ToolReply> {
   const { mail, roster } = desk;
   // Checked before anything is sent, so a settled task never gets a RECONCILE.
-  const done = settled(task, "owner");
+  const done = settled(task, "supervisor");
   if (done) return no(done);
   if (!(await roster.seated(peer))) return no(unread(`The Peer on ${task.id}`));
   const lane = ledger.lanes[task.lane];
@@ -100,7 +100,7 @@ async function toPeer(
   await mail.post(lead, messageLetters.reconciled(lane, task, peer, text, sending));
   const handed = await handTo(
     desk,
-    { target: peer, from: "the project owner", who: `the Peer on ${task.id}`, reader: "worker" },
+    { target: peer, from: "whoever supervises the project", who: `the Peer on ${task.id}`, reader: "worker" },
     sending,
     text,
   );
@@ -115,7 +115,7 @@ export async function sendMessage(
   const { to, text } = sent;
   const ledger = loadLedger(caller.project.state);
   const sending: Sending = { by: caller.id, to, at: Date.now() };
-  if (can(caller.role, "supervise")) return fromOwner(desk, caller, ledger, sending, text);
+  if (can(caller.role, "supervise")) return fromSupervisor(desk, caller, ledger, sending, text);
   const lane = laneOfLead(ledger, caller.id);
   const task = findTask(ledger, to);
   if (!lane || !task || task.lane !== lane.id || !task.peer) return no(`${to} is not a task in your lane.`);

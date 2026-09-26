@@ -22,7 +22,7 @@ export const messageLetters = {
   /** The Supervisor may reach a Peer directly, never out of the Lead's sight: this sets the Lead's picture right. */
   reconciled(lane: Lane, task: Task, peer: string, text: string, sending: Sending): Letter {
     const letter = [
-      `RECONCILE ${lane.id}: the owner reached your Peer on ${task.id} directly.`,
+      `RECONCILE ${lane.id}: the Supervisor reached your Peer on ${task.id} directly.`,
       "",
       "What reached them:",
       clip(text, 1500),

@@ -1200,8 +1200,8 @@
     },
     {
       "name": "ask",
-      "title": "Ask the owner",
-      "description": "Ask the owner, and keep working on your default unless the next step cannot be undone. need: a resource or decision from above (a missing prerequisite becomes a detour lane). blocked: something outside the project stops you. question: user-visible behavior the directive leaves open.",
+      "title": "Ask the Supervisor",
+      "description": "Ask the Supervisor, and keep working on your default unless the next step cannot be undone. need: a resource or decision from above (a missing prerequisite becomes a detour lane). blocked: something outside the project stops you. question: user-visible behavior the directive leaves open.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1239,7 +1239,7 @@
     {
       "name": "report",
       "title": "Report the lane",
-      "description": "Report the lane to the owner: when it is ready to land, when it is cut, or when a decision above you changed.",
+      "description": "Report the lane to the Supervisor: when it is ready to land, when it is cut, or when a decision above you changed.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,

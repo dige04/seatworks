@@ -37,7 +37,6 @@ test("a lane touching a path the Human asked to be asked about first waits for t
     /LAND HELD L1 \(Cart\): the Human looks at it before it lands\. It changes src\/auth\/login\.ts, under src\/auth, which the Human asked to be asked about first\.[^]*Next: Nothing now; a merge into the lane before they decide restarts their look\./,
   );
   assert.doesNotMatch(h.agents.get(lane.lead!)!.sent.join("\n"), /LAND HELD/);
-  assert.doesNotMatch(toLead, /supervisor/i);
   assert.match(
     (await land()).text,
     /Lane L1 still waits for the Human's approval to land, since \d+ min ago\. It changes src\/auth\/login\.ts/,

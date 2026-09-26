@@ -73,7 +73,7 @@ export function directive(
   }: { gate: string; serial: string[]; beside?: Beside[]; concept?: string; issue?: Issue },
 ): string {
   return [
-    `OWNER DIRECTIVE ${lane.id}: ${lane.title}`,
+    `SUPERVISOR DIRECTIVE ${lane.id}: ${lane.title}`,
     "",
     `Outcome: ${lane.outcome}`,
     "",

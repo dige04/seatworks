@@ -43,7 +43,7 @@ export const askLetters = {
     const read = concept ? `${concept}, the brief and the code` : "the brief and the code";
     const next =
       reader === "lead"
-        ? `Answer ${ask.id} from ${read}; if only the owner can, ask up and tell the Peer to wait.`
+        ? `Answer ${ask.id} from ${read}; if only the Supervisor can, ask up and tell the Peer to wait.`
         : askNext(ask);
     return mail(
       "ask",
@@ -82,11 +82,11 @@ export const askLetters = {
   },
 
   /**
-   * The seat an ask was put to, told what its asker was told and by whom: the owner may answer a Lead's ask, never out
-   * of its sight. `waited` false: a Peer's ask put to the owner while its lane had no Lead, told to its Lead now.
+   * The seat an ask was put to, told what its asker was told and by whom: the Supervisor may answer a Lead's ask, never out
+   * of its sight. `waited` false: a Peer's ask put to the Supervisor while its lane had no Lead, told to its Lead now.
    */
   answeredFor(ask: Ask, by: string, leads = true, waited = true): Letter {
-    const put = waited ? "which was waiting on you" : "put to the owner while your lane had no Lead";
+    const put = waited ? "which was waiting on you" : "put to the Supervisor while your lane had no Lead";
     const text = [
       `ANSWERED FOR YOU: ${ask.id} (${ask.kind}) from ${ask.from}, ${put}, was answered by ${by}.`,
       "",
@@ -114,11 +114,11 @@ export const askLetters = {
       "pending",
       [question.id],
       `DECISION PENDING ${question.id}, the Human's to make: ${firstLine(question.question)}\n\nNothing it decides goes ahead until they answer; what it does not touch goes on.`,
-      "Keep the lane off what it decides, and carry on with the rest; you hear when it is settled, and the owner tells you how the lane goes on.",
+      "Keep the lane off what it decides, and carry on with the rest; you hear when it is settled, and the Supervisor tells you how the lane goes on.",
     );
   },
 
-  /** The Lead keeping its lane off a decision hears it is settled, not the Human's words: the owner brings those. */
+  /** The Lead keeping its lane off a decision hears it is settled, not the Human's words: the Supervisor brings those. */
   settled(question: Question): Letter {
     const how =
       question.status === "answered"
@@ -133,7 +133,7 @@ export const askLetters = {
         "settled",
         [question.id],
         `SETTLED ${question.id}, the decision your lane kept off: ${how}.`,
-        "Nothing now: the owner tells you how the lane goes on.",
+        "Nothing now: the Supervisor tells you how the lane goes on.",
       ),
     );
   },

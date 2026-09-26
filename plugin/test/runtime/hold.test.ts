@@ -28,7 +28,7 @@ test("a lane on hold stops its seats, keeps their mail, refuses every move, and 
   assert.match((await hold("L1", reason)).text, /^Lane L1 is on hold\. 2 of its seats were told to stop/);
   assert.match(
     h.agents.get(lead)!.interrupted.join("\n"),
-    /^HOLD L1 \(Build\): the owner has stopped this lane: the migration would drop a table the Human needs\.\n\nNext: Stop where you are/,
+    /^HOLD L1 \(Build\): the Supervisor has stopped this lane: the migration would drop a table the Human needs\.\n\nNext: Stop where you are/,
   );
   assert.match(h.agents.get(peer)!.interrupted.join("\n"), /^HOLD: the work on L1-T1 is stopped: the migration/);
   assert.match(
@@ -89,7 +89,7 @@ test("a lane on hold stops its seats, keeps their mail, refuses every move, and 
   assert.equal(resumed.ok, true, resumed.text);
   assert.match(
     h.agents.get(lead)!.sent.slice(told).join("\n"),
-    /Is the table backed up\?[^]*RESUMED L1 \(Build\): the owner lifted the hold\.\n\nThe Human backed it up; go on\.\n\nNext: Carry on from where you stopped\./,
+    /Is the table backed up\?[^]*RESUMED L1 \(Build\): the Supervisor lifted the hold\.\n\nThe Human backed it up; go on\.\n\nNext: Carry on from where you stopped\./,
   );
   assert.match(
     h.agents.get(peer)!.sent.join("\n"),

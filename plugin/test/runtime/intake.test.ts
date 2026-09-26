@@ -296,7 +296,6 @@ test("an amendment changes what a lane is asked and keeps what it was; its Lead 
     letter,
     /AMENDED L1 \(Cart\): the Human wants an upsert too\n\nacceptance, was:\n- a\nacceptance, now:\n- a\n- upserts an item\n\nA READY you reported before this no longer stands\.\n\nNext: Carry it into the tasks it touches \(amend_task/,
   );
-  assert.doesNotMatch(letter, /supervisor/i);
 
   assert.match(
     (await amend({ why: "again", acceptance: ["a", "upserts an item"] })).text,

@@ -65,7 +65,7 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
   assert.equal(h.ledger().lanes.L1!.onHold, undefined, "only what it decides waits, not the whole lane");
   assert.match(
     h.heard(lane.lead!).join("\n"),
-    /DECISION PENDING H1, the Human's to make: Delete old invoices, or keep them archived\?\n\nNothing it decides goes ahead until they answer; what it does not touch goes on\.\n\nNext: Keep the lane off what it decides, and carry on with the rest; you hear when it is settled, and the owner tells you how the lane goes on\./,
+    /DECISION PENDING H1, the Human's to make: Delete old invoices, or keep them archived\?\n\nNothing it decides goes ahead until they answer; what it does not touch goes on\.\n\nNext: Keep the lane off what it decides, and carry on with the rest; you hear when it is settled, and the Supervisor tells you how the lane goes on\./,
   );
   assert.match(
     (await h.call(sup, "supervisor", "status", {})).text,
@@ -111,7 +111,7 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
   );
   const settled = (id: string, how: string) =>
     new RegExp(
-      `SETTLED ${id}, the decision your lane kept off: ${how}\\.\\n\\nNext: Nothing now: the owner tells you how the lane goes on\\.`,
+      `SETTLED ${id}, the decision your lane kept off: ${how}\\.\\n\\nNext: Nothing now: the Supervisor tells you how the lane goes on\\.`,
     );
   assert.match(h.heard(lane.lead!).join("\n"), settled("H1", "the Human answered it"), "its word, never their words");
   assert.doesNotMatch(h.heard(lane.lead!).join("\n"), /keep a list/);

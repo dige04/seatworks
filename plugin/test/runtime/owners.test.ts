@@ -85,7 +85,7 @@ test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and wha
   await h.permission(peer, command);
   assert.match(
     heard(h, lead),
-    /WAITING FOR PERMISSION: L1-T1 · Peer · Clean build has stopped until this is answered\.\n\nBash: rm -rf build\n\nOnly the Human can answer this[^]*\n\nNext: If it holds the lane up, ask, so the owner can tell the Human\./,
+    /WAITING FOR PERMISSION: L1-T1 · Peer · Clean build has stopped until this is answered\.\n\nBash: rm -rf build\n\nOnly the Human can answer this[^]*\n\nNext: If it holds the lane up, ask, so the Supervisor can tell the Human\./,
   );
   const held = await h.call(lead, "lead", "message", { to: "L1-T1", text: "Go ahead." });
   assert.match(held.text, /stopped on a permission; it reads this once that is answered/);
@@ -176,7 +176,7 @@ test("with the Human out of the loop, a Peer's permission is the Supervisor's to
   assert.match((await permit("p-1", true)).text, /L1-T1 is not waiting on permission p-1: it was answered already/);
   assert.match(
     heard(h, lead),
-    /PERMISSION REFUSED for L1-T1 \(Clean build\) by the owner: Bash: rm -rf build-p-2\n\nWhy: it reaches past its copy/,
+    /PERMISSION REFUSED for L1-T1 \(Clean build\) by the Supervisor: Bash: rm -rf build-p-2\n\nWhy: it reaches past its copy/,
   );
   Object.assign(h.agents.get(sup)!, { archivedAt: new Date().toISOString(), status: "closed" });
   const unread: Pending = { id: "p-3", kind: "tool", name: "Bash", title: "npm install" };

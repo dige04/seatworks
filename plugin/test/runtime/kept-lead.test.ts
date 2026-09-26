@@ -108,11 +108,11 @@ test("a kept Lead keeps its lane's copy until the Supervisor releases it or the 
   assert.notEqual(h.git(h.root, "branch", "--list", part.branch).trim(), "");
   assert.match(
     h.heard(lead).join("\n"),
-    /LANE CLOSED L1 \(Part B\): landed[^]*you stay on with what you know of it until the owner releases you/,
+    /LANE CLOSED L1 \(Part B\): landed[^]*you stay on with what you know of it until the Supervisor or the Human releases you/,
   );
   assert.match(
     (await h.call(lead, "lead", "status", {})).text,
-    /^Lane L1 \(Part B\) is closed and landed\. You are kept on with what you know of it until the owner releases you: nothing of it is yours to do\.$/,
+    /^Lane L1 \(Part B\) is closed and landed\. You are kept on with what you know of it until the Supervisor or the Human releases you: nothing of it is yours to do\.$/,
   );
   assert.match(
     (await h.call(sup, "supervisor", "status", {})).text,
