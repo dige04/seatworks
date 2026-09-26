@@ -91,7 +91,7 @@ async function toPeer(
   const lead = onLane && (await roster.seated(onLane)) ? onLane : undefined;
   if (!lane || !lead)
     return no(
-      `${task.id} has no running Lead to tell. Reaching its Peer without one would leave nobody holding the room's state, which is the one thing this must not do. Reopen the lane's Lead, or say it to the lane.`,
+      `${task.id} has no running Lead to tell. Reaching its Peer without one would leave nobody holding the room's state, which is the one thing this must not do. replace_lead puts a new Lead on its lane where it stands; reach the Peer once it is there.`,
     );
   // What reaches the Peer reaches its Lead in the reconcile letter, so neither may be told of the watch.
   const refused =

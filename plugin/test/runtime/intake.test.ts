@@ -119,7 +119,7 @@ test("a waiting lane held at its turn is told why once, retried by each close an
   assert.equal(letters.length, 1);
   assert.match(
     letters[0]!,
-    /its Lead is still ending a turn in the project's own copy[^]*\n\nNext: It opens by itself once that clears; amend it, or close it to drop it\./,
+    /its Lead is still ending a turn in the project's own copy[^]*\n\nNext: It opens by itself once that clears; amend_lane it, or drop_lane it\./,
   );
   assert.equal(now().L4!.status, "open");
   assert.match(

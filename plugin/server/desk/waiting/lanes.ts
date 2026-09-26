@@ -29,7 +29,7 @@ export async function openWaiting(desk: DeskServices, project: Project, retryHel
   for (const waiting of due) {
     const pending = waitsFor(ledger, waiting.after ?? [], waiting.onBranch === true);
     if (Array.isArray(pending) && pending.length > 0) continue;
-    const next = "Close this lane to drop it, or close it and open the work again without waiting.";
+    const next = "drop_lane it, or drop_lane it and open the work again without waiting.";
     const held = typeof pending === "string" ? { why: pending, next } : await tryOpen(desk, project, waiting);
     if (held) await noteHeld(desk, project, waiting, held);
   }
@@ -53,14 +53,14 @@ async function tryOpen(desk: DeskServices, project: Project, lane: Lane): Promis
   if (!placed) return undefined;
   if (typeof placed === "string" || "why" in placed) {
     const why = typeof placed === "string" ? placed : placed.why;
-    return { why, next: "It opens by itself once that clears; amend it, or close it to drop it." };
+    return { why, next: "It opens by itself once that clears; amend_lane it, or drop_lane it." };
   }
   const { claimed, ownCopy } = placed;
   const issue = await issueOf(desk.kit.ecosystem.issues, claimed.issue, project.root);
   const how = { ownCopy, failed: "wait" as const, role: claimed.opening?.role, parent: claimed.opener, issue };
   const started = await startLead(desk, project, claimed, how);
   if (typeof started === "string")
-    return { why: started, next: "It is tried again when a lane closes; close it to drop it.", tried: true };
+    return { why: started, next: "It is tried again when a lane closes; drop_lane it to drop it.", tried: true };
   ledgers.setLane(project, lane.id, (entry) => {
     delete entry.held;
   });

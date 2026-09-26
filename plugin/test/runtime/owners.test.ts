@@ -226,7 +226,11 @@ test("reaching a Peer directly tells its Lead what reached it, and is refused wh
   Object.assign(h.agents.get(lane.lead!)!, { archivedAt: new Date().toISOString(), status: "closed" });
   const orphaned = await reach("One more thing.");
   assert.equal(orphaned.ok, false);
-  assert.match(orphaned.text, /no running Lead/);
+  assert.match(
+    orphaned.text,
+    /no running Lead[^]*replace_lead puts a new Lead on its lane where it stands; reach the Peer once it is there\./,
+    "the way on is named by the tool that takes it",
+  );
   // A task already cut has no Peer left to steer.
   await h.call(sup, "supervisor", "drop_lane", { lane: "L1", reason: "no longer wanted" });
   const cut = await reach("One more thing.");
