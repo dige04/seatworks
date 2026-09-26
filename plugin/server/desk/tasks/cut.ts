@@ -1,5 +1,5 @@
 import { letGo } from "../seats/gone.ts";
-import { laneTask } from "../access.ts";
+import { laneTask } from "../lane-task.ts";
 import { type Args, type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { loadLedger } from "../store/ledger.ts";
 import type { DeskServices } from "../services.ts";

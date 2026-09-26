@@ -1,6 +1,6 @@
 import { landedRef } from "../../core/git.ts";
 import { IN_QUEUE } from "../../domain/task.ts";
-import { laneTask } from "../access.ts";
+import { laneTask } from "../lane-task.ts";
 import { type Args, type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { letGo } from "./gone.ts";
 import { type AgentRef, type Ledger, findLane, tasksOf } from "../../domain/ledger.ts";

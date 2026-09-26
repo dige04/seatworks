@@ -1,6 +1,6 @@
 import { currentBranch, headSha, pristineState, uncommittedIn } from "../../core/git.ts";
 import { AT_WORK, IN_QUEUE, TASK } from "../../domain/task.ts";
-import { laneTask } from "../access.ts";
+import { laneTask } from "../lane-task.ts";
 import { type Args, type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { holdRefusal } from "../lanes/hold.ts";
 import type { Task } from "../../domain/task.ts";

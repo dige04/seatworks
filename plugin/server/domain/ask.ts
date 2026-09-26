@@ -4,9 +4,6 @@ type AskStatus = "open" | "answered";
 
 export const ASK = new Lifecycle<AskStatus, "answer">({ answer: { from: ["open"], to: "answered" } });
 
-/** Free-form: the ledger carries whatever it is told, because nothing routes on it. */
-type AskKind = string;
-
 /** A question one seat put to another, open until answered. */
 export type Ask = {
   id: string;
@@ -15,7 +12,7 @@ export type Ask = {
   to: string;
   lane?: string;
   task?: string;
-  kind: AskKind;
+  kind: string;
   text: string;
   default?: string;
   status: AskStatus;

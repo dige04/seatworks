@@ -1,5 +1,5 @@
 import { DECIDED } from "../../domain/task.ts";
-import { laneTask } from "../access.ts";
+import { laneTask } from "../lane-task.ts";
 import { type Args, type Caller, type ToolReply, given, no, ok, str } from "../context.ts";
 import { type Amendment, amend } from "../../domain/amendment.ts";
 import type { Ledger } from "../../domain/ledger.ts";

@@ -1,6 +1,6 @@
 import { pristineState, switchTo, uncommittedIn } from "../../core/git.ts";
 import { TASK } from "../../domain/task.ts";
-import { laneTask } from "../access.ts";
+import { laneTask } from "../lane-task.ts";
 import { type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { holdRefusal } from "../lanes/hold.ts";
 import { holderOf } from "../copies/holder.ts";
