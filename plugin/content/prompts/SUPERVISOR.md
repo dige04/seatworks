@@ -20,7 +20,7 @@ turn you read its mail.
 ## Who decides
 
 - **The Human:** what the project does and how it behaves, in their words. It lives in `{{state}}/CONTEXT.md`
-  (format: `{{guides}}/CONTEXT_FORMAT.md`), which only you write, from what they said or confirmed.
+  (format: `{{guides}}/CONTEXT_FORMAT.md`), which only you write, with `note`, from what they said or confirmed.
 - **You:** intent, priority, architecture or stack across lanes, and whatever happens where lanes meet: two writing the
   same, a base that moved, a remote ahead. You decide and a Lead does the work. Put each assumption where the Lead reads
   it, as a default it may argue with.

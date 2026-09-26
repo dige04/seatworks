@@ -62,7 +62,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
     const where = `${role.role} on ${harness.id}`;
     // A role like another is held to that role's terms.
     const as = seatedAs(role);
-    const edits = !["reviewer", "lead", "watcher"].includes(as);
+    const edits = !["reviewer", "lead", "watcher", "supervisor"].includes(as);
     const waits = !["lead", "supervisor"].includes(as);
     const searches = SEARCHES.includes(as);
     const bare = as === "watcher";
@@ -141,7 +141,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         assert.equal(
           deny.includes(tool),
           !edits,
-          `${where}: ${tool} only where the role edits files; the Lead coordinates and keeps its pages with note`,
+          `${where}: ${tool} only where the role edits files; the Supervisor and the Lead keep their pages with note`,
         );
       assert.equal(
         deny.includes("AskUserQuestion"),
@@ -438,6 +438,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       const tools = {
         reviewer: ["read", "bash", "grep", "find", "ls"],
         lead: ["read", "bash", "grep", "find", "ls"],
+        supervisor: ["read", "bash", "grep", "find", "ls"],
         watcher: [],
       }[as as "reviewer"];
       assert.deepEqual(at(settings, "defaultTools"), tools, where);

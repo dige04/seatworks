@@ -52,7 +52,8 @@ Each answer reshapes the tree: ask what can be asked now.
 
 Write each answer that settles a behavior or a term into `$SEATWORKS_STATE/CONTEXT.md` the moment it
 is settled, shaped by `$SEATWORKS_KIT/content/guides/CONTEXT_FORMAT.md`; one that changes an earlier
-answer replaces its line. Create the file with the first settled answer, not before.
+answer replaces its line. `note` keeps it, and takes the whole page each time, so read the page first.
+Create it with the first settled answer, not before.
 
 ## Read-back
 
@@ -67,7 +68,7 @@ they keep or drop each, and nothing waits for them unless they keep one. Name th
 reaches (the kit's put a question to every review of migrations, schemas and SQL; `set_project`
 `riskRules` replaces them), and ask for a command that rehearses one, such as a migration run twice on a
 copy, where they have one. A correction is a settled answer like any other; what they want to be woken
-for, in their words, goes in `$SEATWORKS_STATE/notebook.md`.
+for, in their words, goes in `$SEATWORKS_STATE/notebook.md`, kept with `note` as well.
 
 ## Ends in
 

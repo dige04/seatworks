@@ -51,6 +51,18 @@ test("a Lead reads its lane and its Peers' records and keeps its own pages, and 
     `Wrote ${page}. Name it by that path wherever you point to it.`,
     "the Supervisor keeps its pages as a Lead does, since neither writes in the repository",
   );
+  const concept = join(h.project.state, "CONTEXT.md");
+  assert.equal(
+    await say(sup, "supervisor", "note", { name: "CONTEXT.md", text: "# Cart\n\nA cart holds items." }),
+    `Wrote ${concept}. Name it by that path wherever you point to it.`,
+    "and its single pages, so no agent of it needs a file tool that could write in the repository",
+  );
+  assert.equal(readFileSync(concept, "utf-8"), "# Cart\n\nA cart holds items.\n");
+  assert.match(
+    await say(sup, "supervisor", "note", { name: "ledger.json", text: "{}" }),
+    /^ledger\.json is no page you keep: CONTEXT\.md, notebook\.md; a page in a folder names the folder in kind: pre-mortem, architecture-premise-audit\.$/,
+  );
+  assert.match(await note({ name: "CONTEXT.md", text: "# Mine" }), /^CONTEXT\.md is no page you keep/);
 
   h.timelineOf(lead).add({ type: "assistant_message", text: "Splitting the build into one task." });
   await h.call(sup, "supervisor", "open_lane", {

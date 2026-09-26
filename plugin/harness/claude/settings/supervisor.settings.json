@@ -1,6 +1,10 @@
 {
   "permissions": {
     "deny": [
+      "Edit",
+      "Write",
+      "MultiEdit",
+      "NotebookEdit",
       "Edit(./**)",
       "Bash(git commit *)",
       "Bash(git -C * commit *)",

@@ -806,7 +806,7 @@
     {
       "name": "note",
       "title": "Keep a note",
-      "description": "Keep a page you would otherwise write to a file, such as a pre-mortem or an audit report. It goes into one of the folders your role keeps pages in under the project's state, never into the repository; a page of the same name is replaced. The reply names its path, which is how you point to it.",
+      "description": "Keep a page you would otherwise write to a file: CONTEXT.md, notebook.md, a pre-mortem or an audit report. It goes under the project's state, never into the repository, and replaces a page of the same name: send the whole page. The reply names its path, which is how you point to it.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -818,7 +818,7 @@
         "properties": {
           "kind": {
             "type": "string",
-            "description": "The folder: one your role keeps pages in. Another is refused with the list."
+            "description": "The folder, one your role keeps pages in; leave it out for CONTEXT.md or notebook.md."
           },
           "name": {
             "type": "string",
@@ -830,7 +830,6 @@
           }
         },
         "required": [
-          "kind",
           "name",
           "text"
         ]
@@ -1373,7 +1372,6 @@
           }
         },
         "required": [
-          "kind",
           "name",
           "text"
         ]

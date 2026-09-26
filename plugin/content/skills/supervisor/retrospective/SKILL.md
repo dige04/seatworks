@@ -27,4 +27,4 @@ Judge the system, not the agent: "the task held one directory and the work neede
 
 ## Ends in
 
-Updated notebook rows, and the proposal as a diff for the Human in your reply, with its row naming the file under Fix lives in and what would show it worked under Check.
+Updated notebook rows, the whole page kept with `note`, and the proposal as a diff for the Human in your reply, with its row naming the file under Fix lives in and what would show it worked under Check.
