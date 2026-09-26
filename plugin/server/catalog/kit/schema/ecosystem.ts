@@ -31,6 +31,11 @@ export const EcosystemFile = z.strictObject({
   files: z.strictObject({ test: Pattern, docs: Pattern }),
   /** How a lane's issue is read: the first form whose `match` takes the reference runs, and prints title, url and body as JSON. */
   issues: z.array(z.strictObject({ match: Pattern, run: z.array(text).min(1) })),
+  /**
+   * How an agent's error reads when a turn failed: the first `match` names its kind, and `passes`, when it goes by itself,
+   * says when, since then a fresh seat meets the same.
+   */
+  turnFailures: z.array(z.strictObject({ kind: text, match: Pattern, passes: text.optional() })),
   watch: z.strictObject({
     skipped: Pattern,
     assertion: Pattern,

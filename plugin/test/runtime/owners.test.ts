@@ -40,12 +40,12 @@ test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and wha
   // A Watcher has no ask: told to use one, it was pointed at a tool it cannot call.
   const watcher = h.add("sw2-watcher-claude/claude-opus-5", h.root, "watcher");
   let turns = 0;
-  const fail = (id: string, title: string | null = h.agents.get(id)!.title) => {
+  const fail = (id: string, title: string | null = h.agents.get(id)!.title, message = "the agent's process exited") => {
     const seat = h.agents.get(id)!;
     return h.runtime.turnEnded({
       agent: { id, provider: seat.provider, cwd: seat.cwd, title },
       turnId: `t-${++turns}`,
-      outcome: { kind: "failed", error: { message: "the model is overloaded" } },
+      outcome: { kind: "failed", error: { message } },
       timeline: [],
     });
   };
@@ -96,12 +96,23 @@ test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and wha
   await fail(peer);
   assert.match(
     heard(h, lead),
-    /FAILED: L1-T1 · Peer · Clean build ended its turn with an error: the model is overloaded\n\nNext: Nothing restarts it: message it to continue, reseat the task for a fresh Peer on its branch and copy, or cut it\./,
+    /FAILED: L1-T1 · Peer · Clean build ended its turn with an error: the agent's process exited\n\nNext: Nothing restarts it: message it to continue, reseat the task for a fresh Peer on its branch and copy, or cut it\./,
   );
   await fail(lead);
   assert.match(
     heard(h, architecture),
-    /FAILED: L1 · Lead · Build ended its turn with an error: the model is overloaded\n\nNext: Nothing restarts it: read what it did, then message the lane to continue, or drop_lane it and open it again\./,
+    /FAILED: L1 · Lead · Build ended its turn with an error: the agent's process exited\n\nNext: Nothing restarts it: read what it did, then message the lane to continue, or drop_lane it and open it again\./,
+  );
+  await fail(peer, h.agents.get(peer)!.title, "529 Overloaded: the model is overloaded");
+  assert.match(
+    heard(h, lead),
+    /FAILED: L1-T1 · Peer · Clean build ended its turn with an error: 529 Overloaded: the model is overloaded\nIt reads as the model being overloaded, which passes in a few minutes\.\n\nNext: Nothing restarts it: message it to continue once that has passed; a fresh Peer, or cutting the task, meets the same\./,
+    "a failure that passes by itself is waited out, not met with a new seat",
+  );
+  await fail(lead, h.agents.get(lead)!.title, "You've hit your usage limit · resets 3am");
+  assert.match(
+    heard(h, architecture),
+    /FAILED: L1 · Lead · Build ended its turn with an error: You've hit your usage limit · resets 3am\nIt reads as a usage limit, which passes when the agent's limit resets, as its error may say\.\n\nNext: Nothing restarts it: message the lane to continue once that has passed; a new Lead meets the same\./,
   );
   await fail(lead, null);
   assert.match(heard(h, architecture), new RegExp(`FAILED: Lead ${lead} ended its turn`), "untitled, by role and id");
@@ -114,7 +125,7 @@ test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and wha
   await h.permission(peer, second);
   assert.match(
     heard(h, architecture),
-    /FAILED: L1-T1 · Peer · Clean build ended its turn with an error: the model is overloaded\n\nNext: Its Lead is gone: replace_lead puts a new Lead on the lane, which can message it to continue or cut its task\./,
+    /FAILED: L1-T1 · Peer · Clean build ended its turn with an error: the agent's process exited\n\nNext: Its Lead is gone: replace_lead puts a new Lead on the lane, which can message it to continue or cut its task\./,
   );
   assert.match(
     heard(h, architecture),

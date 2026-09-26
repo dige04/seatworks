@@ -1,3 +1,4 @@
+import { turnFailure } from "../catalog/kit/ecosystem-patterns.ts";
 import type { Attention } from "../../shared/views.ts";
 import type { Kit, RoleSpec } from "../catalog/kit/kit.ts";
 import { can, seatOf, toolsOf, worksTasks } from "../catalog/kit/roles.ts";
@@ -157,6 +158,7 @@ export class TurnRules {
           agent.title ?? `${role.label} ${agent.id}`,
           outcome.error.message,
           owner.reader,
+          turnFailure(this.deps.kit, outcome.error.message),
         ),
       );
       return;

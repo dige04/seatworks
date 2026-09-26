@@ -55,21 +55,30 @@ export const seatLetters = {
     );
   },
 
-  /** `reader` is a Peer's Lead, whoever supervises a Lead, or whoever supervises a Peer whose Lead is gone. */
+  /**
+   * `reader` is a Peer's Lead, whoever supervises a Lead, or whoever supervises a Peer whose Lead is gone; `failure` is
+   * what the error reads as, which, when it passes by itself, is waited out rather than met with a new seat.
+   */
   failed(
     agent: string,
     turn: string | number,
     who: string,
     message: string,
     reader: "lead" | "supervisor" | "leadGone",
+    failure?: { kind: string; passes?: string },
   ): Letter {
+    const passes = failure?.passes;
     const next = {
-      lead: "Nothing restarts it: message it to continue, reseat the task for a fresh Peer on its branch and copy, or cut it.",
-      supervisor:
-        "Nothing restarts it: read what it did, then message the lane to continue, or drop_lane it and open it again.",
+      lead: passes
+        ? "Nothing restarts it: message it to continue once that has passed; a fresh Peer, or cutting the task, meets the same."
+        : "Nothing restarts it: message it to continue, reseat the task for a fresh Peer on its branch and copy, or cut it.",
+      supervisor: passes
+        ? "Nothing restarts it: message the lane to continue once that has passed; a new Lead meets the same."
+        : "Nothing restarts it: read what it did, then message the lane to continue, or drop_lane it and open it again.",
       leadGone: LEAD_GONE,
     }[reader];
-    return mail("failed", [agent, turn], failedText(who, message), next);
+    const read = failure ? `\nIt reads as ${failure.kind}${passes ? `, which passes ${passes}` : ""}.` : "";
+    return mail("failed", [agent, turn], `${failedText(who, message)}${read}`, next);
   },
 
   /** `reader` is its Lead, or whoever supervises once that Lead is gone. */

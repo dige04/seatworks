@@ -49,3 +49,8 @@ export function recordPatterns(kit: Kit) {
 export function fileKinds(kit: Kit): FileKinds {
   return { test: new RegExp(kit.ecosystem.files.test, "i"), docs: new RegExp(kit.ecosystem.files.docs, "i") };
 }
+
+/** A failed turn's kind, read from its agent's error by the catalog's forms; none when no form takes it. */
+export function turnFailure(kit: Kit, error: string): { kind: string; passes?: string } | undefined {
+  return kit.ecosystem.turnFailures.find((form) => new RegExp(form.match, "i").test(error));
+}

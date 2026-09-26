@@ -178,5 +178,30 @@
       "then": "\\b(?:then|next|after that)\\b[^.]{0,30}\\b(?:create|add|write|edit|rename|move|delete|implement)\\b",
       "fileMember": "\\b[\\w-]+(?:\\/[\\w-]+)*\\.[a-z]{1,4}\\b[^.]{0,40}\\b(?:function|method|class|const|export|field|column|endpoint)\\b"
     }
-  }
+  },
+  "turnFailures": [
+    {
+      "kind": "a usage limit",
+      "match": "usage limit|limit reached|quota exceeded|credit balance is too low|out of credits",
+      "passes": "when the agent's limit resets, as its error may say"
+    },
+    {
+      "kind": "a rate limit",
+      "match": "rate.?limit|\\b429\\b|too many requests",
+      "passes": "in a minute or two"
+    },
+    {
+      "kind": "the model being overloaded",
+      "match": "overloaded|\\b529\\b|\\b503\\b|service unavailable|over capacity",
+      "passes": "in a few minutes"
+    },
+    {
+      "kind": "a login that failed",
+      "match": "\\b401\\b|unauthori[sz]ed|authentication (failed|error)|invalid api key|not logged in|log in again"
+    },
+    {
+      "kind": "a context that ran out",
+      "match": "context (window|length)|prompt is too long|maximum context|context_length_exceeded"
+    }
+  ]
 }
