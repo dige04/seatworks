@@ -10,23 +10,29 @@ import type { Project } from "../project/project.ts";
 
 const LANE_CAP = 50;
 
+/** The kit's roles as the Flow tab names seats: each role's label, and whether it supervises. */
+type FlowRoles = ReadonlyMap<string, { label: string; supervises: boolean }>;
+
+/** Each seat's role, as Paseo has it for a seat seated now and as the ledger recorded it for one gone. */
+type RoleOf = (id: string) => string | undefined;
+
 const minutes = (now: number, at: number | string | undefined): number =>
   at === undefined ? 0 : minutesSince(now, at);
 
 function seatOf(
   seats: Map<string, SeatView>,
   id: string | undefined,
-  role: string,
+  label: string | null,
   now: number,
   heard?: number,
 ): FlowSeat | null {
   if (!id) return null;
   const seat = seats.get(id);
   // Stamped zero, a seat gone for a week read as gone just now.
-  if (!seat) return { id, role, status: "gone", minutes: heard ? minutes(now, heard) : 0, waiting: [] };
+  if (!seat) return { id, label, status: "gone", minutes: heard ? minutes(now, heard) : 0, waiting: [] };
   return {
     id,
-    role,
+    label,
     status: seat.status,
     minutes: minutes(now, seat.updatedAt),
     waiting: (seat.pendingPermissions ?? []).map((request) => request.title ?? request.name ?? "a request"),
@@ -41,6 +47,7 @@ function tasksByLane(
   seats: Map<string, SeatView>,
   now: number,
   open: ReadonlySet<string>,
+  labelOf: (id: string | undefined) => string | null,
 ): { counts: Map<string, Counted>; held: Map<string, FlowTask[]> } {
   const counts = new Map<string, Counted>();
   const held = new Map<string, FlowTask[]>();
@@ -51,7 +58,7 @@ function tasksByLane(
     if (AT_WORK.includes(task.status)) count.running += 1;
     counts.set(task.lane, count);
     if (!open.has(task.lane)) continue;
-    const peer = seatOf(seats, task.peer, ledger.agents[task.peer ?? ""]?.role ?? task.kind, now);
+    const peer = seatOf(seats, task.peer, labelOf(task.peer), now);
     const built: FlowTask = {
       id: task.id,
       title: task.title,
@@ -78,6 +85,7 @@ function laneOf(
   count: Counted,
   tasks: FlowTask[],
   open: boolean,
+  labelOf: (id: string | undefined) => string | null,
 ): FlowLane {
   const land = lane.landApproval;
   const closed = lane.status === "closed";
@@ -89,8 +97,8 @@ function laneOf(
     branch: lane.branch,
     ...(lane.onBranch ? {} : { base: lane.base }),
     copy: (closed ? keptCopy(ledger, lane) : lane.slot) ?? null,
-    lead: seatOf(seats, lane.lead, ledger.agents[lane.lead ?? ""]?.role ?? "lead", now),
-    kept: idle.map((peer) => ({ ...seatOf(seats, peer.id, peer.role, now)!, task: peer.task! })),
+    lead: seatOf(seats, lane.lead, labelOf(lane.lead), now),
+    kept: idle.map((peer) => ({ ...seatOf(seats, peer.id, labelOf(peer.id), now)!, task: peer.task! })),
     ...(closed ? { landed: Boolean(lane.landed) } : {}),
     tasks,
     taskCount: count.total,
@@ -113,14 +121,14 @@ function laneOf(
   };
 }
 
-function asksOf(ledger: Ledger, now: number): FlowAsk[] {
+function asksOf(ledger: Ledger, now: number, roles: FlowRoles, labelOf: (id: string) => string | null): FlowAsk[] {
   return Object.values(ledger.asks)
     .filter((ask) => ask.status === "open")
     .map((ask) => ({
       id: ask.id,
       kind: ask.kind,
-      fromRole: ask.fromRole,
-      toRole: ledger.agents[ask.to]?.role ?? "owner",
+      from: roles.get(ask.fromRole)?.label ?? null,
+      to: labelOf(ask.to),
       minutes: minutes(now, ask.openedAt),
     }));
 }
@@ -151,38 +159,47 @@ function supervisorsOf(
   ledger: Ledger,
   seats: Map<string, SeatView>,
   now: number,
-  supervises: ReadonlyMap<string, string>,
+  roles: FlowRoles,
   seated: { id: string; role: string }[],
-): FlowView["supervisors"] {
+): FlowSeat[] {
+  const supervises = (role: string) => roles.get(role)?.supervises === true;
   // The Supervisor seated now: `ledger.agents` keeps each role's newest gone seat, so its first entry may be archived.
-  const recorded = Object.values(ledger.agents).filter((agent) => supervises.has(agent.role));
+  const recorded = Object.values(ledger.agents).filter((agent) => supervises(agent.role));
   const live = recorded
     .filter((agent) => seats.has(agent.id))
     .sort((a, b) => Date.parse(seats.get(b.id)!.updatedAt) - Date.parse(seats.get(a.id)!.updatedAt));
-  const shown = new Map<string, FlowSeat>();
+  const shown = new Map<string, { role: string; seat: FlowSeat }>();
   const heard = (id: string) => ledger.agents[id]?.recordedAt;
-  for (const entry of [...seated, ...live])
-    if (!shown.has(entry.id)) shown.set(entry.id, seatOf(seats, entry.id, entry.role, now, heard(entry.id))!);
-  const covered = new Set([...shown.values()].map((seat) => seat.role));
+  const show = (id: string, role: string) =>
+    shown.set(id, { role, seat: seatOf(seats, id, roles.get(role)!.label, now, heard(id))! });
+  for (const entry of [...seated.filter((each) => supervises(each.role)), ...live])
+    if (!shown.has(entry.id)) show(entry.id, entry.role);
+  const covered = new Set([...shown.values()].map((entry) => entry.role));
   for (const agent of [...recorded].reverse()) {
     if (covered.has(agent.role)) continue;
     covered.add(agent.role);
-    shown.set(agent.id, seatOf(seats, agent.id, agent.role, now, heard(agent.id))!);
+    show(agent.id, agent.role);
   }
-  return [...shown.values()].map((seat) => ({ ...seat, label: supervises.get(seat.role) ?? seat.role }));
+  return [...shown.values()].map((entry) => entry.seat);
 }
 
-/** `seated` comes from the roster: the ledger records a seat only after its first successful tool call. */
+/** `seated` is the project's seats Paseo has now, newest first, with their roles: the ledger records a seat only after its first successful tool call. */
 export function flowView(
   project: Project,
   ledger: Ledger,
   seats: Map<string, SeatView>,
   now: number,
   open: ReadonlySet<string> = new Set(),
-  supervises: ReadonlyMap<string, string> = new Map(),
+  roles: FlowRoles = new Map(),
   seated: { id: string; role: string }[] = [],
 ): Omit<FlowView, "watch"> {
-  const { counts, held } = tasksByLane(ledger, seats, now, open);
+  const live = new Map(seated.map((entry) => [entry.id, entry.role]));
+  const roleOf: RoleOf = (id) => live.get(id) ?? ledger.agents[id]?.role;
+  const labelOf = (id: string | undefined) => {
+    const role = id ? roleOf(id) : undefined;
+    return (role && roles.get(role)?.label) ?? null;
+  };
+  const { counts, held } = tasksByLane(ledger, seats, now, open, labelOf);
   // A closed lane stays live while its Lead is kept, until the Supervisor releases it or the Human archives it.
   const active = Object.values(ledger.lanes).filter(
     (lane) => lane.status !== "closed" || (lane.lead !== undefined && seats.has(lane.lead)),
@@ -198,14 +215,15 @@ export function flowView(
         counts.get(lane.id) ?? { total: 0, running: 0 },
         held.get(lane.id) ?? [],
         open.has(lane.id),
+        labelOf,
       ),
     );
   const body = {
     project: project.slug,
-    supervisors: supervisorsOf(ledger, seats, now, supervises, seated),
+    supervisors: supervisorsOf(ledger, seats, now, roles, seated),
     lanes,
     moreLanes: Math.max(0, active.length - LANE_CAP),
-    asks: asksOf(ledger, now),
+    asks: asksOf(ledger, now, roles, labelOf),
     questions: questionsOf(ledger, now),
   };
   const revision = createHash("sha1").update(JSON.stringify(body)).digest("hex").slice(0, 16);

@@ -224,7 +224,7 @@ export function ServersSection({ catalog, team, values, machine, layer, theme, d
             options={(entry
               ? entry.roles
               : catalog.roles.filter((role) => role.can.length > 0).map((role) => role.id)
-            ).map((role) => ({ id: role, label: role }))}
+            ).map((role) => ({ id: role, label: catalog.roles.find((each) => each.id === role)?.label ?? role }))}
             onToggle={(role, want) =>
               void save((current) =>
                 setMcp(current, active, {

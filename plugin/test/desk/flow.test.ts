@@ -53,7 +53,7 @@ test("whoever supervises is shown by the capability the kit gives, one per conce
       seats,
       now,
       new Set(),
-      new Map(supervises.map((role) => [role, labels[role]!])),
+      new Map(Object.entries(labels).map(([role, label]) => [role, { label, supervises: supervises.includes(role) }])),
     ).supervisors.map((entry) => [entry.label, entry.status]);
   assert.deepEqual(shown([]), []);
   assert.deepEqual(shown(["supervisor"]), [["Supervisor", "idle"]]);

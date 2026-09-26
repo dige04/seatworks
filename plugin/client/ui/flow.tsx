@@ -35,6 +35,9 @@ const ago = (minutes: number): string => (minutes < 1 ? "just now" : `${minutes}
 /** The whole phrase, because "just now" is not a duration and read as "handed back just now ago". */
 const since = (minutes: number): string => (minutes < 1 ? "just now" : `${minutes} min ago`);
 
+/** A seat by its role's label, as the kit names it; the desk may not know yet which role a seat has. */
+const seatName = (seat: FlowSeat | null): string => seat?.label ?? "Seat";
+
 const seatText = (seat: FlowSeat | null): string => {
   if (!seat) return "no seat";
   if (seat.waiting.length > 0) return `waiting on you · ${seat.waiting[0]}`;
@@ -177,7 +180,7 @@ function KeptLead({ lane, theme, navigation }: LaneProps) {
     <View style={styles.lane}>
       <Node
         theme={theme}
-        title={`Kept Lead · ${lane.id} ${lane.title}`}
+        title={`Kept ${seatName(lane.lead)} · ${lane.id} ${lane.title}`}
         hint={`${lane.landed ? "landed" : "dropped"}${lane.copy ? ` · keeps copy ${lane.copy}` : ""} · until released`}
         state={seatText(lane.lead)}
         alive={Boolean(lane.lead && lane.lead.status !== "gone")}
@@ -200,7 +203,7 @@ function Peers({ lane, theme, navigation }: LaneProps) {
             <View style={styles.link} />
             <Node
               theme={theme}
-              title={`${task.kind === "review" ? "Reviewer" : "Peer"} · ${task.id}${task.mode === "parallel" ? " · parallel" : ""}`}
+              title={`${task.peer ? seatName(task.peer) : task.kind} · ${task.id}${task.mode === "parallel" ? " · parallel" : ""}`}
               hint={task.copy ? `${task.copy} · ${task.title}` : task.title}
               state={taskState(task)}
               alive={task.status === "running" || task.status === "rework"}
@@ -213,7 +216,7 @@ function Peers({ lane, theme, navigation }: LaneProps) {
             <View style={styles.link} />
             <Node
               theme={theme}
-              title={`Peer · kept · ${seat.task}`}
+              title={`${seatName(seat)} · kept · ${seat.task}`}
               hint="stays until its Lead releases it"
               state={seatText(seat)}
               alive={false}
@@ -248,7 +251,7 @@ const Lane = memo(function Lane({ lane, theme, onOpen, navigation }: LaneProps &
       <View style={{ gap: 8 }}>
         <Node
           theme={theme}
-          title={`Lead · ${lane.id} ${lane.title}`}
+          title={`${seatName(lane.lead)} · ${lane.id} ${lane.title}`}
           hint={`${where(lane)} · ${lane.base ? `${lane.branch} off ${lane.base}` : `${lane.branch}, carried on in place`}`}
           state={leadState(lane)}
           alive={Boolean(lane.lead && lane.lead.status !== "gone" && !lane.onHold)}
@@ -280,7 +283,9 @@ function AsksCard({ asks, theme }: { asks: FlowAsk[]; theme: PluginTheme }) {
         <View key={ask.id} style={styles.row}>
           <View style={styles.labels}>
             <Text style={styles.title}>{`${ask.id} · ${ask.kind}`}</Text>
-            <Text style={styles.hint}>{`from the ${ask.fromRole} to the ${ask.toRole}`}</Text>
+            <Text
+              style={styles.hint}
+            >{`from ${ask.from ?? "a seat"} to ${ask.to ?? "a seat no longer on record"}`}</Text>
           </View>
           <Text style={styles.quiet}>{ago(ask.minutes)}</Text>
         </View>
@@ -349,7 +354,7 @@ export function FlowSection({ following, flow, error, live, theme, disabled, onL
                 <View key={seat.id} style={styles.lane}>
                   <Node
                     theme={theme}
-                    title={seat.label}
+                    title={seatName(seat)}
                     hint={seat.id}
                     state={seatText(seat)}
                     alive={seat.status !== "gone"}

@@ -273,7 +273,7 @@ test("the Flow tab draws the machine as the ledger and Paseo have it, and an unc
   const shut = await drawn(h);
   const cart = shut.lanes[0]!;
   assert.deepEqual([cart.tasks, cart.taskCount, cart.running, cart.open, cart.copy], [[], 4, 2, false, null]);
-  assert.deepEqual([cart.lead?.role, cart.lead?.waiting], ["lead", []]);
+  assert.deepEqual([cart.lead?.label, cart.lead?.waiting], ["Lead", []], "a seat named as the kit labels its role");
   assert.deepEqual(await flowOf(h, [], shut.revision), { unchanged: true, revision: shut.revision });
   h.agents.get(two!.peer!)!.archivedAt = new Date().toISOString();
   const opened = await drawn(h, ["L1"]);
@@ -304,7 +304,7 @@ test("the Flow tab draws the machine as the ledger and Paseo have it, and an unc
   });
   assert.deepEqual(
     (await drawn(h)).asks,
-    [{ id: "A1", kind: "question", fromRole: "lead", toRole: "supervisor", minutes: 0 }],
+    [{ id: "A1", kind: "question", from: "Lead", to: "Supervisor", minutes: 0 }],
     "who asked whom and when, never the seat's words",
   );
   const page = await h.rpc(contracts.status, { project: h.project.slug });

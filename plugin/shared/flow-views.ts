@@ -2,9 +2,10 @@
 import { z } from "zod";
 import { Refused } from "./views.ts";
 
+/** `label` is the seat's role as the kit labels it; none when neither Paseo nor the ledger says which role it has. */
 const FlowSeat = z.object({
   id: z.string(),
-  role: z.string(),
+  label: z.string().nullable(),
   status: z.string(),
   minutes: z.number(),
   waiting: z.array(z.string()),
@@ -56,8 +57,8 @@ export type FlowLane = z.infer<typeof FlowLane>;
 const FlowAsk = z.object({
   id: z.string(),
   kind: z.string(),
-  fromRole: z.string(),
-  toRole: z.string(),
+  from: z.string().nullable(),
+  to: z.string().nullable(),
   minutes: z.number(),
 });
 export type FlowAsk = z.infer<typeof FlowAsk>;
@@ -105,7 +106,7 @@ const FlowView = z.object({
   project: z.string(),
   at: z.number(),
   revision: z.string(),
-  supervisors: z.array(FlowSeat.extend({ label: z.string() })),
+  supervisors: z.array(FlowSeat),
   lanes: z.array(FlowLane),
   moreLanes: z.number(),
   asks: z.array(FlowAsk),

@@ -42,7 +42,8 @@ function keyRows(
     theme,
     disabled,
     save,
-  }: Omit<Props, "catalog" | "team" | "role" | "rows"> & { sensor: Sensor },
+    role,
+  }: Omit<Props, "catalog" | "team" | "rows"> & { sensor: Sensor },
   { typed, setDraft, field }: Draft,
 ): ReactElement[] {
   const kept = values.sensor?.[sensor.id]?.key === KEPT || machine.sensor?.[sensor.id]?.key === KEPT;
@@ -64,7 +65,7 @@ function keyRows(
       <SettingsRow
         key="key"
         label={sensor.key}
-        hint="Kept on this machine for every project. Add, replace or forget it under Machine defaults, on the Watcher."
+        hint={`Kept on this machine for every project. Add, replace or forget it under Machine defaults, on the ${role.label}.`}
       >
         <Text style={{ color: kept ? theme.colors.foreground : theme.colors.statusWarning, fontSize: 14 }}>
           {kept ? "set" : "not set"}

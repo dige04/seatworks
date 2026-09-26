@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, realpathSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { Kit } from "../../catalog/kit/kit.ts";
-import { can, rolesThatCan, seatOf } from "../../catalog/kit/roles.ts";
+import { can, seatOf } from "../../catalog/kit/roles.ts";
 import { errorText } from "../../core/errors.ts";
 import { daemonLog } from "../../core/logger.ts";
 import { gitCommonDir } from "../../core/git.ts";
@@ -158,23 +158,15 @@ export class ProjectsPanel implements ProjectsRpc {
     const project = this.deps.source.named(slug);
     if (!project) return { error: unknownProject(slug) };
     const seats = new Map((await this.deps.seats.open()).map((seat) => [seat.id, seat]));
-    const supervises = new Map(rolesThatCan(this.deps.kit, "supervise").map((role) => [role.role, role.label]));
+    const roles = new Map(
+      this.deps.kit.roles.map((role) => [role.role, { label: role.label, supervises: can(role, "supervise") }]),
+    );
     const seated = [...seats.values()]
       .map((seat) => ({ seat, role: seatOf(this.deps.kit, seat.provider)?.role }))
-      .filter(
-        ({ seat, role }) => can(role, "supervise") && Boolean(seat.cwd) && projectOf(seat.cwd).slug === project.slug,
-      )
+      .filter(({ seat, role }) => role && Boolean(seat.cwd) && projectOf(seat.cwd).slug === project.slug)
       .sort((a, b) => Date.parse(b.seat.updatedAt) - Date.parse(a.seat.updatedAt))
       .map(({ seat, role }) => ({ id: seat.id, role: role!.role }));
-    const view = flowView(
-      project,
-      readLedger(project.state),
-      seats,
-      Date.now(),
-      new Set(open ?? []),
-      supervises,
-      seated,
-    );
+    const view = flowView(project, readLedger(project.state), seats, Date.now(), new Set(open ?? []), roles, seated);
     // Live state, but part of the revision, or the card freezes whenever the ledger does not change.
     const watch = this.deps.watch(project, seats.values());
     const revision = createHash("sha1")
