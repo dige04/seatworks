@@ -70,6 +70,18 @@ test("a seat's shell, on the PATH the desk gives it, refuses what only the desk 
     ["nor one kept in the repository's config", ["-C", root, "sw", "-c", "elsewhere"]],
     ["nor an alias that opens with an option of git's own", ["-c", "alias.y=-p push", "-C", root, "y"]],
     [
+      "nor a chain of aliases deeper than the shim reads, which it refuses rather than runs",
+      [
+        ...Array.from({ length: 11 }, (_, at) => [
+          "-c",
+          `alias.a${at + 1}=${at === 10 ? "push" : `a${at + 2}`}`,
+        ]).flat(),
+        "-C",
+        root,
+        "a1",
+      ],
+    ],
+    [
       "nor a shell alias, whose git runs with git's own directory first on PATH",
       ["-c", "alias.s=!git push", "-C", root, "s"],
     ],
