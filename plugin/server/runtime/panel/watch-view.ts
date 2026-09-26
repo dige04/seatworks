@@ -14,15 +14,14 @@ const INCIDENTS_SHOWN = 200;
 
 export type Trouble = { kind: string; at: number; detail: string };
 
-/** Who answers for the project and how that stands, as the last thing its assessments kept says; a line by another is not its. */
+/** Which brains read for the project and how that stands, as the last thing its assessments kept says; a line by another is not theirs. */
 function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJudge {
-  const choice = team.judge;
-  if (!choice) return { label: "", state: "off", minutes: null, detail: null };
-  const label =
-    "role" in choice
-      ? `The ${kit.roles.find((role) => role.role === choice.role)?.label ?? choice.role}`
-      : choice.sensor.label;
-  if ("sensor" in choice && !choice.key) return { label, state: "nokey", minutes: null, detail: choice.sensor.key };
+  const { sensor, seat } = team.brains;
+  if (!sensor && !seat) return { label: "", state: "off", minutes: null, detail: null };
+  const seatLabel = seat && `the ${kit.roles.find((role) => role.role === seat.role)?.label ?? seat.role}`;
+  const named = [sensor?.sensor.label, seatLabel].filter(Boolean).join(" and ");
+  const label = named.charAt(0).toUpperCase() + named.slice(1);
+  if (sensor && !sensor.key && !seat) return { label, state: "nokey", minutes: null, detail: sensor.sensor.key };
   let last: { at?: string; by?: string; unasked?: string } | undefined;
   try {
     last = JSON.parse(
@@ -34,7 +33,8 @@ function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJu
   } catch {
     // No assessment yet, or a last line cut mid-write: nothing has answered.
   }
-  if (!last?.at || last.by !== choice.id) return { label, state: "waiting", minutes: null, detail: null };
+  if (!last?.at || (last.by !== sensor?.id && last.by !== seat?.id))
+    return { label, state: "waiting", minutes: null, detail: null };
   const minutes = minutesSince(now, last.at);
   return last.unasked
     ? { label, state: "failing", minutes, detail: last.unasked }

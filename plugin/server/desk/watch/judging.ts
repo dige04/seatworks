@@ -18,17 +18,19 @@ export type Case = {
   asked: Record<string, { check: string; fill?: Record<string, string> }>;
 };
 
-/** Who answers for `project` now, if anyone can: a sensor needs its key and the host a way to ask it; a seat is the project's Watcher. */
+/**
+ * Who answers for `project` now, if anyone can: the sensor first, as the cheaper, once it has its key and the host a way
+ * to ask it; else the project's Watcher seat.
+ */
 function judgeFor(
   { teamFor, sensorFor, watcher }: DeskServices,
   project: Project,
   subject: string,
 ): { id: string; judge: Judge } | undefined {
-  const choice = teamFor(project).judge;
-  if (!choice) return undefined;
-  if ("role" in choice) return { id: choice.id, judge: watcher.judge(project, choice.role, subject) };
-  const judge = choice.key ? sensorFor(choice.sensor, choice.key) : undefined;
-  return judge && { id: choice.id, judge };
+  const { sensor, seat } = teamFor(project).brains;
+  const asked = sensor?.key ? sensorFor(sensor.sensor, sensor.key) : undefined;
+  if (sensor && asked) return { id: sensor.id, judge: asked };
+  return seat && { id: seat.id, judge: watcher.judge(project, seat.role, subject) };
 }
 
 /** The check's wording with the fields the code fills; one left unfilled is the code's mistake, and nothing is asked. */

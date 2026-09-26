@@ -72,7 +72,8 @@ const Attention = z.object({
   suppressed: z.string(),
   longTurnMinutes: z.number(),
   incidentsPerLane: z.number(),
-  judge: z.string(),
+  brain: z.enum(["off", "sensor", "seat", "both"]),
+  sensor: z.string(),
 });
 export type Attention = z.infer<typeof Attention>;
 

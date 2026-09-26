@@ -9,11 +9,11 @@ import { hookAgent } from "./noticed.ts";
 
 type Harness = ReturnType<typeof harness>;
 
-/** The machine settings, with the watch judged by `judge`. */
-function judgedBy(judge: string): void {
+/** The machine settings, with the watch read by the Watcher seat alone, or by no brain. */
+function judgedBy(brain: "seat" | "off"): void {
   const file = join(stateRoot(), "settings.json");
   const settings = JSON.parse(readFileSync(file, "utf-8")) as Record<string, unknown>;
-  writeFileSync(file, JSON.stringify({ ...settings, attention: { judge } }));
+  writeFileSync(file, JSON.stringify({ ...settings, attention: { brain } }));
 }
 
 const kept = (state: string) => {
@@ -44,7 +44,7 @@ const caseIn = (text: string) => [...text.matchAll(/CASE (C\w+) about/g)].at(-1)
 /** A lane with a Peer that hands back complete, the watch judged by the Watcher: each hand-back is a case. */
 async function watched() {
   const h = harness();
-  judgedBy("watcher");
+  judgedBy("seat");
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   await h.call(sup, "supervisor", "open_lane", {
     title: "Rounding",
@@ -149,7 +149,7 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
   await h.tick();
   assert.ok(watcher!.archivedAt, "and is let go once none does");
 
-  judgedBy("watcher");
+  judgedBy("seat");
   await handBack("Rounded, fifth time.", true);
   await until(() => watchersOf(h).length === 1, "a Watcher is seated again");
   const [renewed] = watchersOf(h);
@@ -162,7 +162,7 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
 
 test("cases at once seat one Watcher, and a case is given up only when nobody can take it, never by a round that could not yet see its Watcher", async (t) => {
   const { h, sup, lane, peer, timeline } = await laneWithPeer();
-  judgedBy("watcher");
+  judgedBy("seat");
   h.agents.get(sup)!.archivedAt = new Date().toISOString();
   await h.call(peer, "peer", "done", { outcome: "complete", summary: "Rounded." });
   await until(() => kept(h.project.state).length === 1, "the case is kept");

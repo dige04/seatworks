@@ -320,3 +320,9 @@ test("a second reviewer seats as the Reviewer on the same agent, with another mo
     "the panel shows the code tools it is given",
   );
 });
+
+test("the preset reads what the watch sees with both brains: the kit's sensor sifts, and its Watcher seat judges", () => {
+  const { brains } = resolveTeam(loadKit(PLUGIN));
+  assert.deepEqual([brains.mode, brains.sensor?.id, brains.seat?.role], ["both", "jev", "watcher"]);
+  assert.equal(brains.sensor?.key, undefined, "a sensor with no key asks nothing until the owner gives one");
+});

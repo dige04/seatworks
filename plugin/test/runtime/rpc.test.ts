@@ -134,15 +134,12 @@ test("settings: machine and project layers saved by revision, checked before sav
   const judged = which(await call(contracts.settingsRead, {}), "values");
   const oracle = await call(contracts.settingsWrite, {
     revision: judged.revision,
-    values: { attention: { judge: "oracle" } },
+    values: { attention: { brain: "sensor", sensor: "oracle" } },
   });
-  assert.match(
-    which(oracle, "error").error,
-    /judged by oracle, which is neither off, a sensor the kit knows nor a role that can judge \(none\)/,
-  );
+  assert.match(which(oracle, "error").error, /The watch's sensor is oracle, which is no sensor the kit knows \(none\)/);
   const off = await call(contracts.settingsWrite, {
     revision: judged.revision,
-    values: { attention: { judge: "off" } },
+    values: { attention: { brain: "off" } },
   });
   assert.equal(off.status, "saved");
 

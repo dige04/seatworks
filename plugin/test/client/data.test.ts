@@ -179,8 +179,8 @@ const JUDGES: [WatchJudge, ReturnType<typeof judgeWords>][] = [
   [
     { ...judge, label: "", state: "off" },
     {
-      title: "Nobody answers the watch's questions",
-      hint: "Answered by is off: set it on Team, on the Watcher. The code's own facts go on.",
+      title: "No brain reads what the watch sees",
+      hint: "Brains is off: set it on Team, on the Watcher. The code's own facts go on.",
       tone: "muted",
     },
   ],

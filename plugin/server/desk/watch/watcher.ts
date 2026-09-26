@@ -158,7 +158,7 @@ export class Watcher {
         new Error(gone ? "the Watcher it was sent to is gone" : `no answer within ${ANSWER_WITHIN_MINUTES} minutes`),
       );
     }
-    const judged = "role" in (this.desk.teamFor(project).judge ?? {});
+    const judged = this.desk.teamFor(project).brains.seat !== undefined;
     if (judged && Object.values(loadLedger(project.state).lanes).some((lane) => lane.status === "open")) return;
     for (const seat of open.values()) {
       const idle = !midTurn(seat.status) && ![...this.waiting.values()].some((entry) => entry.sent?.seat === seat.id);

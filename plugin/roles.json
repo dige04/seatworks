@@ -5,7 +5,8 @@
     "leadIdleMinutes": 12,
     "askRemindMinutes": 15,
     "maxReminders": 2,
-    "judge": "jev"
+    "brain": "both",
+    "sensor": "jev"
   },
   "roles": [
     {

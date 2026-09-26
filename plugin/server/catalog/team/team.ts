@@ -7,8 +7,15 @@ import { type McpState, resolveMcp } from "./mcp-states.ts";
 import { type RoleSeat, presetOn, resolveRole } from "./role-seats.ts";
 import { can } from "../kit/roles.ts";
 
-/** Who answers the watch's questions, as the settings chose: a sensor, and its key where a settings layer keeps one, or a seat of a role that can judge. */
-type JudgeChoice = { id: string; sensor: SensorSpec; key?: string } | { id: string; role: string };
+/**
+ * The brains that read what the watch's eye sees, as the settings chose: the sensor, with its key where a settings layer
+ * keeps one, and the seat of a role that can judge; `mode` says which of them read.
+ */
+type Brains = {
+  mode: "off" | "sensor" | "seat" | "both";
+  sensor?: { id: string; sensor: SensorSpec; key?: string };
+  seat?: { id: string; role: string };
+};
 
 /** The kit as the machine's and the project's settings leave it: each role's seat, the MCP servers, attention and the judge. */
 export type Team = {
@@ -16,7 +23,7 @@ export type Team = {
   mcp: Record<string, McpState>;
   attention: Attention;
   hitl: Hitl;
-  judge?: JudgeChoice;
+  brains: Brains;
   rules: string;
   errors: string[];
 };
@@ -55,7 +62,7 @@ export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, 
     mcp,
     attention,
     hitl,
-    judge: judgeOf(kit, attention.judge, layers, errors),
+    brains: brainsOf(kit, attention, layers, errors),
     rules: [machine.rules, project.rules].filter((text) => text && text.trim()).join("\n\n"),
     errors,
   };
@@ -86,22 +93,28 @@ function resolveRoles(
   return roles;
 }
 
-function judgeOf(kit: Kit, id: string, layers: Layer[], errors: string[]): JudgeChoice | undefined {
-  if (id === "off") return undefined;
-  const sensor = kit.sensors[id];
+/** The brains the settings chose, each only where the kit has it: a sensor by its id, a seat by a role that can judge. */
+function brainsOf(kit: Kit, attention: Attention, layers: Layer[], errors: string[]): Brains {
+  const mode = attention.brain;
+  if (mode === "off") return { mode };
   const judges = kit.roles.filter((role) => can(role, "judge")).map((role) => role.role);
-  if (!sensor) {
-    if (judges.includes(id)) return { id, role: id };
+  const seat = judges[0];
+  if ((mode === "seat" || mode === "both") && !seat)
+    errors.push(`The watch's brain is ${mode}, but no role in this kit can judge`);
+  const found = kit.sensors[attention.sensor];
+  if ((mode === "sensor" || mode === "both") && !found)
     errors.push(
-      `The watch is set to be judged by ${id}, which is neither off, a sensor the kit knows nor a role that can judge (${[...Object.keys(kit.sensors), ...judges].join(", ") || "none"})`,
+      `The watch's sensor is ${attention.sensor || "not named"}, which is no sensor the kit knows (${Object.keys(kit.sensors).join(", ") || "none"})`,
     );
-    return undefined;
-  }
   const key = layers
-    .map((layer) => layer.sensor?.[id]?.key)
+    .map((layer) => layer.sensor?.[attention.sensor]?.key)
     .filter(Boolean)
     .at(-1);
-  return { id, sensor, ...(key ? { key } : {}) };
+  return {
+    mode,
+    ...(found && mode !== "seat" ? { sensor: { id: attention.sensor, sensor: found, ...(key ? { key } : {}) } } : {}),
+    ...(seat && mode !== "sensor" ? { seat: { id: seat, role: seat } } : {}),
+  };
 }
 
 function stripUndefined<T extends object>(value: T | undefined): Partial<T> {

@@ -43,12 +43,13 @@ function sensor(nouls: Record<string, number>, picks: Answer = { choice: "claims
   return { asked, make, of, fail, unmake };
 }
 
-/** The machine settings with the watch judged by `judge`, and its key where one is given. */
-function judgedBy(judge: string, key?: string): void {
+/** The machine settings with the watch read by `sensor` alone, by the Watcher seat, or by no brain, and its key where one is given. */
+function judgedBy(sensor: string, key?: string): void {
   const file = join(stateRoot(), "settings.json");
   const settings = JSON.parse(readFileSync(file, "utf-8")) as Record<string, unknown>;
-  const sensors = key ? { [judge]: { key } } : undefined;
-  writeFileSync(file, JSON.stringify({ ...settings, attention: { judge }, sensor: sensors }));
+  const attention = sensor === "off" || sensor === "seat" ? { brain: sensor } : { brain: "sensor", sensor };
+  const sensors = key && sensor !== "off" ? { [sensor]: { key } } : undefined;
+  writeFileSync(file, JSON.stringify({ ...settings, attention, sensor: sensors }));
 }
 
 type Kept = {
@@ -372,7 +373,7 @@ test("nothing is asked when it cannot be, and the Flow tab says who answers and 
   const events = h.events("watch.unasked").map(({ subject, by, error }) => [subject, by, error]);
   assert.deepEqual(events, [["L1-T1", "jev", "503: busy"]]);
   assert.deepEqual(await line(), { label: "Jev", state: "failing", minutes: 0, detail: "503: busy" });
-  judgedBy("watcher");
+  judgedBy("seat");
   const other = await line();
   assert.deepEqual(
     other,

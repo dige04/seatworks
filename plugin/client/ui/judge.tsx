@@ -66,24 +66,33 @@ function keyRows({ sensor, values, machine, layer, theme, disabled, save }: Omit
   ];
 }
 
-/** On the chip of a role that can judge: who answers the watch's questions, then that sensor's key or this seat's agent. */
+/** On the chip of a role that can judge: which brains read what the watch sees, then the sensor's key and this seat's agent. */
 export function JudgeCard(props: Props) {
   const { catalog, team, values, machine, layer, theme, disabled, role, rows, save } = props;
   const [draft, setDraft] = useState("");
   const field = useRef<SettingsInputHandle>(null);
-  const judge = team.attention.judge;
-  const sensor = catalog.sensors.find((entry) => entry.id === judge);
-  const options = [{ id: "off", label: "Off" }, ...catalog.sensors.map((entry) => ({ id: entry.id, label: entry.label })), ...catalog.roles.filter((entry) => entry.can.includes("judge")).map((entry) => ({ id: entry.id, label: `${entry.label} seat` }))];
-  const note = judge === role.id
-    ? `One ${role.label} per project, seated under the Supervisor when a case first needs it, and let go once no lane is open. It answers each case with judge, and nobody is sent what it says.`
-    : `No ${role.label} is seated while ${sensor ? sensor.label : "nobody"} answers. What is set for the ${role.label} seat is kept for when it answers again.`;
+  const { brain } = team.attention;
+  const sensor = catalog.sensors.find((entry) => entry.id === team.attention.sensor);
+  const named = sensor?.label ?? "The sensor";
+  const options = [
+    { id: "off", label: "Off" },
+    { id: "sensor", label: named },
+    { id: "seat", label: `${role.label} seat` },
+    { id: "both", label: "Both" },
+  ];
+  const reads = brain === "sensor" || brain === "both";
+  const judges = brain === "seat" || brain === "both";
+  const note = judges
+    ? `One ${role.label} per project, seated under the Supervisor when it first has something to judge, and let go once no lane is open.${brain === "both" ? ` It judges only what ${named} flags or leaves unsure.` : ""}`
+    : `No ${role.label} is seated. What is set for the ${role.label} seat is kept for when it judges again.`;
   return (
     <>
       <SettingsCard>
-        <SettingsRow label="Answered by" hint={`Who answers the watch's questions. They are all in shadow: each answer is kept in the project's assessments.log, and no seat is sent it. ${sourceLabel(sourceOf(values, machine, (entry) => entry.attention?.judge, layer), layer)}.`}>
-          <TabBar theme={theme} active={judge} disabled={disabled} onPick={(next) => void save((current) => setAttention(current, { judge: next }))} tabs={options} />
+        <SettingsRow label="Brains" hint={`Which brains read what the watch's eye sees. Both: ${named} sifts, the ${role.label} judges. A signal they raise is recorded in shadow until you turn it on for the Supervisor. ${sourceLabel(sourceOf(values, machine, (entry) => entry.attention?.brain, layer), layer)}.`}>
+          <TabBar theme={theme} active={brain} disabled={disabled} onPick={(next) => void save((current) => setAttention(current, { brain: next as typeof brain }))} tabs={options} />
         </SettingsRow>
-        {judge === role.id ? rows : sensor ? keyRows({ ...props, sensor }, { typed: draft.trim(), setDraft, field }) : null}
+        {reads && sensor ? keyRows({ ...props, sensor }, { typed: draft.trim(), setDraft, field }) : null}
+        {judges ? rows : null}
       </SettingsCard>
       <Text style={{ color: theme.colors.foregroundMuted, fontSize: 12 }}>{note}</Text>
     </>
