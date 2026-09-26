@@ -7,7 +7,7 @@ import { daemonLog } from "../../core/logger.ts";
 
 const RECORD_ROTATE_BYTES = 8 * 1024 * 1024;
 const RECORD_KEEP_BYTES = 24 * 1024 * 1024;
-export const GATE_LOGS_PER_OWNER = 5;
+const GATE_LOGS_PER_OWNER = 5;
 
 /**
  * The newest roll stays text, because the retrospective greps a period that may straddle it. A write that fails is

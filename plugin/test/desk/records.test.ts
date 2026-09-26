@@ -6,7 +6,7 @@ import { gunzipSync, gzipSync } from "node:zlib";
 import { appendRolling } from "../../server/core/rolling.ts";
 import { type Lane } from "../../server/domain/lane.ts";
 import { emptyLedger } from "../../server/domain/ledger.ts";
-import { GATE_LOGS_PER_OWNER, tidyRecords } from "../../server/desk/store/records.ts";
+import { tidyRecords } from "../../server/desk/store/records.ts";
 import { tempDir } from "../tempdir.ts";
 
 test("a record log rolls over, keeps its newest roll as text for a grep, and packs the older ones and drops what outgrows its bytes", async () => {
@@ -81,6 +81,8 @@ const lane = (id: string): Lane => ({
   tasks: 0,
 });
 
+const GATE_RUNS_KEPT = 5;
+
 test("a lane in the ledger keeps its records but the gate runs a newer run of the same owner replaced, rehearsals with their run", () => {
   const state = tempDir("sw2-tidy-");
   const gates = join(state, "gates");
@@ -88,7 +90,7 @@ test("a lane in the ledger keeps its records but the gate runs a newer run of th
   mkdirSync(gates);
   mkdirSync(handbacks);
   const touch = (dir: string, name: string) => writeFileSync(join(dir, name), "x");
-  const runs = Array.from({ length: GATE_LOGS_PER_OWNER + 2 }, (_, run) => 1000 - run);
+  const runs = Array.from({ length: GATE_RUNS_KEPT + 2 }, (_, run) => 1000 - run);
   for (const at of runs) for (const tail of ["", "-1", "-2"]) touch(gates, `L1-T1-${at}${tail}.log`);
   touch(gates, "L1-1.log");
   for (const at of runs) touch(gates, `L9-T1-${at}.log`);
@@ -103,7 +105,7 @@ test("a lane in the ledger keeps its records but the gate runs a newer run of th
   assert.deepEqual(
     kept.filter((name) => name.startsWith("L1-T1-")).sort(),
     runs
-      .slice(0, GATE_LOGS_PER_OWNER)
+      .slice(0, GATE_RUNS_KEPT)
       .flatMap((at) => ["", "-1", "-2"].map((tail) => `L1-T1-${at}${tail}.log`))
       .sort(),
     "the newest runs of each task, every rehearsal with its run, and the older runs gone whole",
@@ -111,9 +113,9 @@ test("a lane in the ledger keeps its records but the gate runs a newer run of th
   assert.ok(kept.includes("L1-1.log"), "the only run of its owner, however old");
   assert.equal(
     kept.filter((name) => name.startsWith("L9-")).length,
-    GATE_LOGS_PER_OWNER + 2,
+    GATE_RUNS_KEPT + 2,
     "a lane gone from the ledger is filed whole, not tidied",
   );
   assert.ok(kept.includes("notes.txt"), "a file the desk did not name is not its to drop");
-  assert.equal(readdirSync(handbacks).length, GATE_LOGS_PER_OWNER + 2, "hand-backs are never tidied");
+  assert.equal(readdirSync(handbacks).length, GATE_RUNS_KEPT + 2, "hand-backs are never tidied");
 });
