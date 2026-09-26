@@ -33,12 +33,13 @@ type Leftovers = { tasks: Task[]; cut: string[]; canceled: string[] };
 /** Closes a lane for `by`, the Supervisor that called or the one the Human's approval lands it for. */
 export async function closeLane(desk: DeskServices, project: Project, by: string, args: Closing): Promise<Closed> {
   const { closing, landings, merges } = desk;
-  const lane = findLane(loadLedger(project.state), str(args.lane));
+  const ledger = loadLedger(project.state);
+  const lane = findLane(ledger, str(args.lane));
   if (!lane) return no(`There is no lane ${str(args.lane)}.`);
   if (lane.status === "waiting") return dropWaiting(desk, project, lane, args);
   if (lane.status !== "open") return no(`Lane ${lane.id} is already closed.`);
   if (args.land && lane.onHold)
-    return no(`Lane ${lane.id} is on hold: ${lane.onHold.reason}. Resume it with resume_lane before landing it.`);
+    return no(`Lane ${lane.id} is on hold: ${lane.onHold.reason}. ${whenHeld(ledger, lane)}`);
   // One close of a lane at a time: a second landed it and retired it again, and both were told it closed.
   const key = workKey(project, lane.id);
   if (!closing.take(key))
@@ -60,6 +61,16 @@ export async function closeLane(desk: DeskServices, project: Project, by: string
   } finally {
     closing.release(key);
   }
+}
+
+/** How a held lane comes to land: a hold the desk put on for the Human's answer lifts only once that question is settled. */
+function whenHeld(ledger: Ledger, lane: Lane): string {
+  const waiting = Object.values(ledger.questions).find(
+    (question) => question.lane === lane.id && question.parked && question.status === "open",
+  );
+  return waiting
+    ? `It waits for the Human's answer to ${waiting.id}: once they answer, decline or cancel it, or you withdraw it with withdraw_question, resume_lane it, then land it.`
+    : "Resume it with resume_lane before landing it.";
 }
 
 function dropWaiting({ ledgers }: Pick<DeskServices, "ledgers">, project: Project, lane: Lane, args: Closing): Closed {

@@ -72,6 +72,10 @@ test("a question's class decides what waits on it: an irreversible one holds its
     /^Lane L1 waits for the Human's answer to H2, and resumes only once they answer, decline or cancel it\.$/,
   );
   assert.ok(h.ledger().lanes.L1!.onHold, "only their word lifts it");
+  assert.match(
+    (await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).text,
+    /^Lane L1 is on hold: [^]*\. It waits for the Human's answer to H2: once they answer, decline or cancel it, or you withdraw it with withdraw_question, resume_lane it, then land it\.$/,
+  );
 
   await h.call(sup, "supervisor", "set_project", { askFirst: ["src/auth"] });
   const scope = { outcome: "x", acceptance: ["a"], outOfScope: ["the rest"], isolate: true };
