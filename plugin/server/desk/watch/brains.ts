@@ -23,9 +23,6 @@ export type Look = {
 
 const WATCH: Assessments = { log: "assessments", unasked: "watch.unasked" };
 
-const ITEM = 1500;
-const QUOTE = 400;
-
 type Pattern = [string, PatternSpec];
 
 /**
@@ -36,13 +33,14 @@ type Pattern = [string, PatternSpec];
  */
 export async function readLook(services: DeskServices, project: Project, seat: Noticed, look: Look): Promise<void> {
   const { kit, teamFor } = services;
-  const { brains } = teamFor(project);
+  const { brains, attention } = teamFor(project);
+  const cut = { item: attention.lookItemChars, quote: attention.quoteChars };
   const role = seatOf(kit, seat.provider)?.role;
   if (brains.mode === "off" || !role) return;
   const place = placeOf(project, seat);
   const items = [...look.items, ...briefsSince(project, seat, place, look.since)].map((item) => ({
     ...item,
-    text: clip(item.text, ITEM),
+    text: clip(item.text, cut.item),
   }));
   if (items.length === 0) return;
   const signs = new Set([
@@ -63,7 +61,9 @@ export async function readLook(services: DeskServices, project: Project, seat: N
   const findings: Finding[] = [];
   const sensor = brains.sensor?.key ? services.sensorFor(brains.sensor.sensor, brains.sensor.key) : undefined;
   const sifted =
-    sensor && brains.sensor ? await sift(project, subject, brains.sensor, sensor, items, patterns, asked) : undefined;
+    sensor && brains.sensor
+      ? await sift(project, subject, brains.sensor, sensor, items, patterns, asked, cut.quote)
+      : undefined;
   if (sifted && brains.mode === "sensor") findings.push(...sifted.found);
   if (brains.seat && brains.mode !== "sensor") {
     // In both, the seat judges what the sensor flagged or left unsure; with no sensor to sift, it judges it all.
@@ -73,7 +73,7 @@ export async function readLook(services: DeskServices, project: Project, seat: N
         : patterns;
     if (judged.length > 0) {
       const judge = services.watcher.judge(project, brains.seat.role, subject);
-      findings.push(...(await weigh(project, subject, brains.seat.id, judge, place, items, judged, asked, look)));
+      findings.push(...(await weigh(project, subject, brains.seat.id, judge, place, items, judged, asked, look, cut)));
     }
   }
   if (findings.length > 0) await notice(services, project, seat, findings);
@@ -124,6 +124,7 @@ async function sift(
   items: Item[],
   patterns: Pattern[],
   asked: Record<string, unknown>,
+  quote: number,
 ): Promise<{ found: Finding[]; flagged: Set<string> }> {
   const found: Finding[] = [];
   const flagged = new Set<string>();
@@ -138,11 +139,12 @@ async function sift(
       const answer = judged.answers[id];
       const verdict = holds(pattern, answer);
       if (verdict !== "no") flagged.add(id);
-      if (verdict === "yes")
+      if (verdict === "yes" && pattern.level !== "note")
         found.push({
           ...finding(
             id,
             item.text,
+            quote,
             `seen by ${by.sensor.label}, ${(answer as { noul: number }).noul.toFixed(2)} sure, in its ${item.kind}`,
           ),
           theirs: true,
@@ -163,11 +165,12 @@ async function weigh(
   patterns: Pattern[],
   asked: Record<string, unknown>,
   look: Look,
+  cut: { item: number; quote: number },
 ): Promise<Finding[]> {
   const state = {
     seat: place.where,
     ...asked,
-    ...(look.instruction ? { instruction: clip(look.instruction.text, ITEM) } : {}),
+    ...(look.instruction ? { instruction: clip(look.instruction.text, cut.item) } : {}),
     items: items.map((item) => `[${item.kind}] ${item.text}`),
     ...(look.facts.length > 0 ? { facts: look.facts } : {}),
   };
@@ -175,15 +178,15 @@ async function weigh(
   const judged = await askKept(project, WATCH, { subject, episode: "look", by, state }, judge, questions);
   if (!judged) return [];
   return patterns.flatMap(([id, pattern]) =>
-    holds(pattern, judged.answers[id]) === "yes"
-      ? [finding(id, judged.why?.[id] ?? "", "judged by the Watcher seat")]
+    holds(pattern, judged.answers[id]) === "yes" && pattern.level !== "note"
+      ? [finding(id, judged.why?.[id] ?? "", cut.quote, "judged by the Watcher seat")]
       : [],
   );
 }
 
-const finding = (kind: string, quote: string, seen: string): Finding => ({
+const finding = (kind: string, quote: string, limit: number, seen: string): Finding => ({
   kind,
   level: "attend",
-  quote: clip(quote.replace(/\s+/g, " ").trim(), QUOTE),
+  quote: clip(quote.replace(/\s+/g, " ").trim(), limit),
   facts: [kind, seen],
 });

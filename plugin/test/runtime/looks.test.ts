@@ -205,3 +205,28 @@ test("after a restart the eye reads only what is new: neither a seat's past word
     "what the history replays was read before the restart, and the brief was laid out before it",
   );
 });
+
+test("what a look reads and an incident quotes is cut where the owner says, and a pattern the catalog calls a note is kept, never booked", async (t) => {
+  const sensed = brain({ "stand-in": 0.95, wrapper: 0.95 });
+  const { h, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  brains("sensor");
+  h.projectSettings({ attention: { lookItemChars: 40, quoteChars: 20 } });
+  const wrapper = h.runtime.kit.patterns.wrapper!;
+  t.after(() => void delete wrapper.level);
+  wrapper.level = "note";
+  const looked = looksOf(h, t);
+  timeline.beat("turn_started", "t1");
+  timeline.add({ type: "reasoning", text: "The parser is missing, so I will build a stub and wrap it later." }, "t1");
+  timeline.beat("turn_completed", "t1");
+  await looked();
+  assert.deepEqual(
+    sensed.asked.map((entry) => String(entry.state.text).split("\n")[0]),
+    ["The parser is missing, so I will build a"],
+    "the brains read each item cut to the owner's length",
+  );
+  assert.deepEqual(
+    Object.values(book(h)).map((item) => [item.kind, item.quote]),
+    [["stand-in", "The parser is missin\n[… 43 more characters]"]],
+    "a quote too, and a note is no incident",
+  );
+});

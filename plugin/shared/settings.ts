@@ -75,6 +75,9 @@ export const AttentionChoice = z.strictObject({
   stuckWithin: z.number().int().min(2).optional(),
   /** How often the watch's eye reads a running seat's new words; it also reads at every turn's end. */
   lookMinutes: z.number().int().min(1).optional(),
+  /** How much of each word, thought or brief the brains read, and of what a brain found an incident quotes. */
+  lookItemChars: z.number().int().min(1).optional(),
+  quoteChars: z.number().int().min(1).optional(),
   incidentsPerLane: z.number().int().min(0).optional(),
   /** A signal whose latest this many marks hold fewer useful ones than `probationUseful` of them is held on probation. */
   probationMarks: z.number().int().min(1).optional(),
