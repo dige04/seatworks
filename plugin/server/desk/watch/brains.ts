@@ -169,6 +169,7 @@ async function weigh(
     ...asked,
     ...(look.instruction ? { instruction: clip(look.instruction.text, ITEM) } : {}),
     items: items.map((item) => `[${item.kind}] ${item.text}`),
+    ...(look.facts.length > 0 ? { facts: look.facts } : {}),
   };
   const questions = Object.fromEntries(patterns.map(([id, pattern]) => [id, asQuestion(pattern, pattern.seat)]));
   const judged = await asking(project, subject, by, judge, state, questions);

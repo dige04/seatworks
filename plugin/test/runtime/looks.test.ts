@@ -129,12 +129,15 @@ test("with both brains the sensor sifts and the Watcher seat judges only what it
   t.mock.method(h.runtime.desk.watcher, "judge", () => seat.judge);
   const looked = looksOf(h, t);
   timeline.beat("turn_started", "t1");
+  const failing = { type: "shell", command: "node poll.js", exitCode: 1 };
+  timeline.add({ type: "tool_call", callId: "c1", name: "Bash", status: "completed", detail: failing }, "t1");
   timeline.add({ type: "reasoning", text: "Scrap the queue and poll instead." }, "t1");
   timeline.beat("turn_completed", "t1");
   await looked();
   assert.equal(seat.asked.length, 1);
   assert.deepEqual(Object.keys(seat.asked[0]!.questions), ["turning"], "the unsure one, not what the sensor cleared");
   assert.deepEqual(seat.asked[0]!.state.items, ["[thought] Scrap the queue and poll instead."]);
+  assert.deepEqual(seat.asked[0]!.state.facts, ["call-failed"], "beside what the code saw meanwhile");
   const found = Object.values(book(h)).find((item) => item.kind === "turning")!;
   assert.deepEqual(
     [found.seat, found.quote, found.facts[1]],
