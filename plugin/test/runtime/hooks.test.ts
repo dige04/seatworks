@@ -50,7 +50,6 @@ test("a seat as Paseo creates, opens and archives it: prompt, key, seat director
     /^[0-9a-f]{48}$/,
     "a harness reading servers from a file shared by its seats gets the key through the env alone",
   );
-  assert.equal(create("sw2-pager-claude").env[SEAT_KEY], undefined, "a seat with no tools has no server to give it to");
   const prompt = (provider: string) => create(provider).config.systemPrompt ?? "";
   const onClaude = prompt("sw2-peer-claude");
   assert.match(onClaude, /^# Peer\n/, "created with its role's prompt");

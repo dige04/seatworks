@@ -23,8 +23,8 @@ the evidence between them, and brings you in for what only you can decide.
    sends it back or cuts it. A Lead with a question asks the Supervisor and carries on with its
    default meanwhile; a Peer asks its Lead, with its best guess. A decision only you can make goes
    on your question queue, with the Supervisor's recommendation and what goes ahead while you are
-   silent. A command that cannot be undone is paged to your phone, and the Supervisor is told, to
-   hold the lane if it must.
+   silent. A command that cannot be undone reaches the Supervisor at once, to hold the lane if it
+   must.
 3. **Lanes land on your base.** When a Lead reports its lane ready, the plugin runs your test
    command (the gate), and the rehearsal of each risk rule the lane's change reaches, where the rule
    has one. The Supervisor lands the lane: the plugin merges in your base if it moved, runs the gate
@@ -58,7 +58,6 @@ yours.
 | Peer | One task, and the engineering judgement inside it | Started with its task; stays after the task is accepted until its Lead releases it or the lane closes, and never takes another | Claude Code · `claude-opus-5` · medium |
 | Reviewer | A read-only review of one change | Started with its review; ends when its Lead cuts the review or the lane closes | Claude Code · `claude-opus-5` · medium |
 | Watcher | The watch's questions, one case at a time, when you choose a seat to answer them | Started when a case first needs it; let go once no lane is open | The Peer's, until you set its own |
-| Pager | One page, said back word for word so Paseo pushes it to your phone | Started for its page | Claude Code · `claude-opus-5` · low |
 
 Roles are data in `plugin/roles.json`, not code, and each has the tools listed in
 [the reference](docs/REFERENCE.md#desk-verbs).
@@ -155,9 +154,8 @@ current. Three of them are where you meet the work:
 
 You can also answer a question in the Supervisor's chat, and it records your answer in your own words.
 You may type into any seat's chat: what you write to a Lead or a Peer is passed on to the Supervisor.
-A page reaches your phone as two lines from a Pager seat, and the Supervisor can stop a lane at once
-with a hold, until it resumes the lane. The Supervisor asks you at most three questions a day
-across all projects (`questionsPerDay`).
+The Supervisor can stop a lane at once with a hold, until it resumes the lane, and asks you at most
+three questions a day across all projects (`questionsPerDay`).
 
 ## The watch
 
@@ -168,8 +166,8 @@ one about a Lead, an urgent one (a *page*), or one whose Lead is gone goes to th
 it is about never hears of it. Whoever gets it marks it `useful`, `noise` or `unknown`.
 
 Out of the box, ordinary incidents are recorded and listed but not mailed, while a page still goes to
-the Supervisor and to your phone. To mail the rest, turn on **Mail incidents** on the Supervisor's chip
-in the **Team** tab.
+the Supervisor. To mail the rest, turn on **Mail incidents** on the Supervisor's chip in the **Team**
+tab.
 
 What code cannot read, the watch asks a model, one question at a time, at the moment it matters: was
 this destructive command asked for, does a complete hand-back's summary admit a gap, did a review that

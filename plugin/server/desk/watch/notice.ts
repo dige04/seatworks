@@ -20,7 +20,6 @@ import { laneOfLead, taskOfPeer } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { errorText } from "../../core/errors.ts";
 import { watchLetters } from "../letters/watch-letters.ts";
-import { pageIncident } from "./pager.ts";
 import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 
@@ -74,9 +73,6 @@ export async function notice(
   }
   const { opened, sending } = openIncidents(services, project, seat, place, findings, now);
   const sent = sending.length > 0 ? await deliver(services, project, seat, place, sending, now) : [];
-  // Once, as it opens: a page is irreversible and often done already, so the Human hears of it whoever else does.
-  for (const incident of opened.filter((item) => item.level === "page"))
-    await pageIncident(services, project, incident, place.where, place.lane, sent.includes(incident.id));
   return { opened, sent, place };
 }
 

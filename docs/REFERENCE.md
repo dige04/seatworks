@@ -24,8 +24,8 @@ Otherwise it refuses the call and says what is wrong. A field that takes one of 
 and their skills, roles that review or lead, a role's page folders) shows that set as its choices. Each verb carries a
 title and hints (reads only, may destroy, safe to repeat, reaches outside the desk), each field a description, and
 `mcp/instructions.json` says per tool set what the server is for, shown where a harness keeps tools behind a search. A
-verb acts on the caller's capabilities (`supervise`, `lead`, `work`, `write`, `review`, `watched`, `judge`, `page`),
-never on its role's name.
+verb acts on the caller's capabilities (`supervise`, `lead`, `work`, `write`, `review`, `watched`, `judge`), never on
+its role's name.
 
 <!-- drawn from the code: verbs -->
 | Role | Tools |
@@ -218,9 +218,8 @@ The desk writes every letter, in `desk/letters/`: `envelope.ts` holds what every
 `seat-letters.ts`, `message-letters.ts` and `watch-letters.ts` hold a task's and a lane's course, what the desk sees of
 a seat, messages and answers by mail, and the watch's; and for asks and questions, merges, landings, the Watcher's
 cases and a kept Lead, `ask-letters.ts`, `merge-letters.ts`, `land-letters.ts`, `case-letters.ts` and `kept-letters.ts`.
-First prompts come from `briefs.ts` (Peer, Reviewer) and `directive.ts` (Lead) beside them, and `desk/watch/pager.ts`
-(a Pager's two lines); a
-Watcher starts from its first case. A letter mailed carries a key made of its kind and the ids that make it
+First prompts come from `briefs.ts` (Peer, Reviewer) and `directive.ts` (Lead) beside them; a Watcher starts from its
+first case. A letter mailed carries a key made of its kind and the ids that make it
 that letter, never written by hand where it is posted, and ends with one `Next:` line: what it asks of its reader,
 picked from what the desk knows (a red gate, the kind of an ask, whether the reader is the Lead or whoever supervises
 because the Lead is gone, whether the task merged was the lane's last). OWNER DIRECTIVE, TASK and REVIEW are a seat's
@@ -294,14 +293,13 @@ when its turn ends, and each round. The first row that fits decides:
 | Lead | A letter to whoever supervises; with none seated, only Paseo |
 | Peer or Reviewer on a task | A letter to its Lead, or to whoever supervises once the Lead is gone; with neither, only Paseo |
 | Supervisor | `attention.log`, and `status.md` under "Waiting on the Human". The Human answers it in Paseo |
-| Peer or Reviewer with no task, the Watcher, the Pager | Only Paseo |
+| Peer or Reviewer with no task, the Watcher | Only Paseo |
 
 While a seat's lane is on hold, its requests are refused with the hold's reason. A question that would stop a turn (such
 as AskUserQuestion or `request_user_input`) from a seat with desk tools is refused, with where to ask instead by the
 tools it holds: `ask_human`, or its reply at the end of its turn, for the Supervisor; `ask` for a Lead, Peer or
-Reviewer; and for the Watcher, which holds neither, to settle it from what it has. On Claude, the Lead, the Watcher and
-the Pager are denied AskUserQuestion outright, so theirs never reaches the desk. Only the Human can answer any other
-permission.
+Reviewer; and for the Watcher, which holds neither, to settle it from what it has. On Claude, the Lead and the Watcher
+are denied AskUserQuestion outright, so theirs never reaches the desk. Only the Human can answer any other permission.
 
 ## Gate detection
 
@@ -440,10 +438,7 @@ other to whoever supervises, never to the seat it is about. Until then it may be
 | budget | `incidentsPerLane` attention-level incidents about this lane (2 by default) went out in the last 24 h. Those about no lane share one budget |
 | nobody | Nobody to tell, or the only one is the seat it is about. Each round tries again: a page always, an attention-level incident while `attention.watch` is on |
 
-- A page is held only while nobody is there to tell, and it also reaches the Human's phone. As it opens, the desk starts
-  a Pager for it: a role with no tools but, on Codex, a read-only shell. Its one reply is two lines the desk writes: the
-  repository, the seat and the command, whether its Supervisor was told, and whether the lane is on hold. Paseo pushes
-  an agent's first finished turn, and pushes an agent once until someone opens it, so each page has a Pager of its own.
+- A page is held only while nobody is there to tell.
 - An attention-level sighting in words already marked `noise` for that seat and kind opens nothing; a page always does.
 - A seat's incidents close when it is archived, when its task merges, and when the lane it leads closes; closed, they
   still wait to be marked. `incidents.json` keeps the open ones and the newest 500 closed.
@@ -540,7 +535,6 @@ and says that duty.
 | Peer | `<task> · <role> · <task title>`, as `L1-T3 · Peer · Cart total` |
 | Reviewer | `<review> · Review <task or lane>`, as `L1-R1 · Review L1-T3` |
 | Watcher | `Watcher` |
-| Pager | `Page: <the start of the page>` |
 
 A name is cut at 60 characters. Labels carry `seatworks.project`, `seatworks.role`, `seatworks.concern` for a role that
 names one, and `seatworks.lane` and `seatworks.task` for the work a seat does. Letters name a seat by its work (the Lead
@@ -567,13 +561,13 @@ rules, each enabled MCP server's and the Human's, and is written only when there
   It still reads the project's `CLAUDE.md`, since the working directory is passed as an additional directory; Claude
   never reads an added directory's `AGENTS.md`, hence the import, as Claude Code reads it outside a seat.
 - **Codex**, under `~/.codex/seats/`: `config.toml` (`model_provider` and `model_providers` from the Human's own
-  `~/.codex/config.toml`; `workspace-write`, or `read-only` for the Reviewer, the Watcher and the Pager;
+  `~/.codex/config.toml`; `workspace-write`, or `read-only` for the Reviewer and the Watcher;
   `approval_policy = "never"`; subagents off), `model-catalog.json`, `rules/seatworks.rules`, `skills/`, an `auth.json`
   link and `AGENTS.md`. Paseo's Codex provider launches it. Building a seat needs the `codex` CLI, which lists its
   models.
 - **Pi**, under `~/.pi/seats/`: `settings.json` (`pi-mcp-adapter`, project trust off, tool lists for the Lead and the
-  Reviewer and none for the Watcher and the Pager), `mcp.json`, `AGENTS.md`, `skills/`, and links to its login, models
-  and npm. Paseo's Pi provider launches it.
+  Reviewer and none for the Watcher), `mcp.json`, `AGENTS.md`, `skills/`, and links to its login, models and npm.
+  Paseo's Pi provider launches it.
 - **Oh My Pi**, under `~/.omp/seats/`: `config.yml` (command denials in `bash.patterns`, tool denials, and code eval,
   subagents, questions, memory and other agents' config off), `mcp.json`, `AGENTS.md`, `skills/`, and links to its login
   and models. The plugin writes `config.yml` as JSON, which YAML reads too. The session also names it in
@@ -748,7 +742,6 @@ field that changes meaning takes a kind of its own. The watch writes these kinds
 |---|---|
 | Watch | `watch.fact`, `watch.finding`, `watch.unbriefed`, `watch.unasked`, `watch.offline`, `watcher.seated` |
 | Incidents | `incident.open`, `incident.held`, `incident.told`, `incident.read`, `incident.ack`, `incident.lookup-failed`, `incident.post-failed` |
-| Pages | `page.sent`, `page.failed` |
 
 `call.malformed` is written at a turn's end when a seat's own harness rejected a tool call whose input was not JSON, so
 it never reached the desk; only Claude marks such calls.

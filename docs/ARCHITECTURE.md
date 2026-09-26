@@ -66,10 +66,9 @@ The Human may be away. Each row is a verb a seat calls, or something the desk re
 | The watch | a fact in a turn or in a lane's record | an incident in `incidents.json` | INCIDENT to the Lead or the Supervisor, once it is told |
 | Turn ends, the patrol | a silent, failed or gone seat; an idle Lead | a task `stalled` | the nudge, SILENT, FAILED, STRUGGLING, LANE IDLE, LEAD GONE |
 
-The Human meets the run four ways, all under [The Human in the loop](#the-human-in-the-loop): a question the
-Supervisor queues with `ask_human`; a page to their phone, sent with no hold first as a Lead's or Peer's
-command that cannot be undone opens an incident; words they type into a Lead's or Peer's chat (HUMAN WROTE to
-the Supervisor); and a permission prompt (WAITING FOR PERMISSION to the seat's owner).
+The Human meets the run three ways, all under [The Human in the loop](#the-human-in-the-loop): a question the
+Supervisor queues with `ask_human`; words they type into a Lead's or Peer's chat (HUMAN WROTE to the
+Supervisor); and a permission prompt (WAITING FOR PERMISSION to the seat's owner).
 
 ### Land
 
@@ -99,8 +98,8 @@ These are mostly absences, so the code will not show them to you.
   gate, overridden by `overGate` with a reason: a task's by its Lead at `accept`, a lane's by the Supervisor
   at `land_lane`. A landing held for `askFirst` is the Human's standing order, not a verdict.
 - **Capabilities, not names.** No code under `server/` compares a role to a name; what a role can do
-  (`supervise`, `lead`, `work`, `write`, `review`, `watched`, `judge`, `page`) decides who is mailed, seated,
-  watched, asked to judge or sent to page.
+  (`supervise`, `lead`, `work`, `write`, `review`, `watched`, `judge`) decides who is mailed, seated, watched
+  or asked to judge.
 - **One door to Paseo.** In `server/`, only `adapters/paseo/` imports Paseo's SDK: it registers the hooks,
   binds the daemon's API from each hook and panel call, and serves it behind `core/ports.ts`, so tests use
   fakes; beyond it, only `index.server.ts`, `shared/rpc.ts` and the panel use the SDK.
@@ -111,8 +110,7 @@ These are mostly absences, so the code will not show them to you.
   `server/domain/`, inside the transaction on `ledger.json`; an incident's delivery, likewise.
 - **One place writes letters**: `desk/letters/`, the envelope every letter goes out in and the `*-letters.ts`
   beside it, each letter keyed by kind and ids and ending in one `Next:` line. First prompts come from
-  `desk/letters/briefs.ts`, `desk/letters/directive.ts` and `desk/watch/pager.ts`, and a Watcher's from its first
-  CASE.
+  `desk/letters/briefs.ts` and `desk/letters/directive.ts`, and a Watcher's from its first CASE.
 - **One writer per working copy.** The project's checkout holds one lane at a time; a lane-mode task holds the
   lane's copy on its own branch from its start until it is merged or cut, a failed merge included.
 - **No hidden command chain.** A Peer the Supervisor messages has its Lead told first; when one seat answers
@@ -181,8 +179,8 @@ shrink.
 
 The desk starts every seat but the Supervisor, in a Paseo workspace, labelled with its project, role, lane and
 task, under a parent: a Lead under the Supervisor that opened its lane or replaced its Lead, a Peer or
-Reviewer under its Lead, the Watcher under the Supervisor, a Pager under nobody, as Paseo pushes the first
-reply of an agent with no parent to the Human's phone.
+Reviewer under its Lead, the Watcher under the Supervisor, as Paseo pushes the first reply of an agent with no
+parent to the Human's phone.
 
 The build runs the content lint: a prompt, working rule, skill or tool set showing a word from the role's
 `hidesWords` fails (a Peer may not read "seat"), as does a placeholder other than `{{guides}}` and
@@ -407,9 +405,7 @@ The Human is asked what only they can decide and told what they cannot take back
   as it was, and LAND SENT BACK brings the note to the Lead. No verb lets a seat approve. A hold calls off a
   landing still waiting for the Human; one they approved stands.
 - **Pages.** Only `destructive` opens one. As its incident opens, INCIDENT goes to the Supervisor whatever the
-  watch's switch, budget or marks say, and the desk starts a Pager in the project's workspace, with no tools
-  and no parent, whose one reply is the page the desk wrote, cut at 220 characters: the repository, the seat
-  and its command, whether a Supervisor is told, what is held. No verb sends a page.
+  watch's switch, budget or marks say. No verb sends a page.
 - **The Report tab** (`desk/views/report.ts`, read once as the tab opens): Needs you (questions holding a lane or
   irreversible, landings held), Went ahead on its recommendation (every other open question), Landed in 24 h,
   Beyond a lane (page-level incidents of 24 h), and counts, among them the questions of the last 24 h across
@@ -421,7 +417,7 @@ The Human is asked what only they can decide and told what they cannot take back
 ## The watch
 
 **What is watched.** Every live seat whose role can be `watched`: Leads and Peers in the preset, never a
-Reviewer, the Watcher or a Pager. `core/stream.ts` joins Paseo's live timeline with its paged history, reading
+Reviewer or the Watcher. `core/stream.ts` joins Paseo's live timeline with its paged history, reading
 back what a join, gap or reconnect missed, into a window of at most 80 entries per seat (calls, words,
 thoughts, instructions, errors); a seat whose subscription fails is followed again the next round.
 

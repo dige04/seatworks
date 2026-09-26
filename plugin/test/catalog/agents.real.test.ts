@@ -55,10 +55,10 @@ test("every role builds on every agent the kit ships, each in that agent's own t
   const agents = Object.values(kit.harnesses).flatMap((harness) => harness.provider.env?.SEATWORKS_AGENT_BIN ?? []);
   for (const { role, harness } of seatPairs(kit)) {
     const where = `${role.role} on ${harness.id}`;
-    const edits = !["reviewer", "lead", "pager", "watcher"].includes(role.role);
+    const edits = !["reviewer", "lead", "watcher"].includes(role.role);
     const waits = !["lead", "supervisor"].includes(role.role);
     const searches = SEARCHES.includes(role.role);
-    const bare = ["watcher", "pager"].includes(role.role);
+    const bare = role.role === "watcher";
     assert.deepEqual(
       at(paseo, `agents.providers.${providerId(kit, role.role, harness.id)}.paseoTools`),
       { enabled: false },
@@ -125,7 +125,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       assert.equal(
         deny.includes("WebSearch"),
         !searches,
-        `${where}: a Reviewer judges what is in front of it, and the Watcher and the Pager touch nothing`,
+        `${where}: a Reviewer judges what is in front of it, and the Watcher touches nothing`,
       );
       if (bare)
         for (const tool of BUILT_INS.claude!)
@@ -150,7 +150,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       );
       assert.equal(
         at(settings, "sandbox_mode"),
-        ["reviewer", "pager", "watcher"].includes(role.role) ? "read-only" : "workspace-write",
+        ["reviewer", "watcher"].includes(role.role) ? "read-only" : "workspace-write",
         where,
       );
       assert.equal(
@@ -342,7 +342,6 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       const tools = {
         reviewer: ["read", "bash", "grep", "find", "ls"],
         lead: ["read", "bash", "grep", "find", "ls"],
-        pager: [],
         watcher: [],
       }[role.role as "reviewer"];
       assert.deepEqual(at(settings, "defaultTools"), tools, where);

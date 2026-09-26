@@ -95,16 +95,10 @@ test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
     [],
     "nor reaches it when its turn ends",
   );
-  const pagers = () => [...h.agents.values()].filter((agent) => agent.provider.startsWith("sw2-pager-"));
-  const [pager] = pagers();
-  assert.equal(pagers().length, 1, "a page reaches the Human's phone through a pager of its own");
-  assert.match(
-    pager!.prompt ?? "",
-    /^[^:\n]+: the Peer on L1-T1 \(Clean build\) ran rm -rf build\.\nIts Supervisor is told; nothing is held yet\.$/,
+  assert.ok(
+    watched.labels["paseo.parent-agent-id"],
+    "a seat the desk starts under another has a parent, so Paseo never pushes its reply to the Human's phone",
   );
-  assert.ok((pager!.prompt ?? "").length <= 220, "Paseo shows 220 characters of a push");
-  assert.equal(pager!.labels["paseo.parent-agent-id"], undefined, "an agent with a parent is never pushed");
-  assert.ok(watched.labels["paseo.parent-agent-id"], "while every seat the desk starts under another has one");
 
   call("c3", "Bash", "running", { type: "shell", command: "rm -rf dist" });
   const edit = {
@@ -116,11 +110,6 @@ test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
   call("c4", "Edit", "completed", edit);
   await settle();
   await noticed();
-  assert.equal(
-    pagers().length,
-    1,
-    "the same incident seen again pages nobody again, and one that is not a page pages nobody",
-  );
 
   await h.tick(Date.now() + 31 * 60_000);
   await noticed();

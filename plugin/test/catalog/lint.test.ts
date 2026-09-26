@@ -15,7 +15,6 @@ const PROMPT_BUDGET: Record<string, [number, number]> = {
   peer: [400, 12],
   reviewer: [300, 8],
   watcher: [300, 8],
-  pager: [60, 0],
 };
 const SKILL_BUDGET: Record<string, number> = {
   grilling: 600,

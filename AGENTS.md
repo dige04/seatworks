@@ -1,9 +1,9 @@
 # AGENTS.md
 
 Seatworks is a Paseo plugin that runs a team of coding agents the **SLP** way: a Supervisor works
-with the Human, a Lead owns each lane of work, and Peers each do one task, with a Reviewer, a Watcher
-and a Pager beside them. This file holds what the code will not tell you before you change it. How
-the parts fit is in `docs/ARCHITECTURE.md`; every name and value is in `docs/REFERENCE.md`.
+with the Human, a Lead owns each lane of work, and Peers each do one task, with a Reviewer and a
+Watcher beside them. This file holds what the code will not tell you before you change it. How the
+parts fit is in `docs/ARCHITECTURE.md`; every name and value is in `docs/REFERENCE.md`.
 
 **Nothing has shipped.** No users, no releases, nothing to stay compatible with.
 
@@ -243,9 +243,9 @@ its own, however short.
 ## SLP is the preset, not the plugin
 
 - **Roles are data** in `roles.json`: `can` (capabilities: `supervise`, `lead`, `work`, `write`,
-  `review`, `watched`, `judge`, `page`), `tools` (a set in `mcp/tools.json`), prompt, skills,
-  defaults, `writes`, `follows`. Nothing in `server/` compares a role to a name; capabilities decide
-  routing, acceptance, watching, judging and paging.
+  `review`, `watched`, `judge`), `tools` (a set in `mcp/tools.json`), prompt, skills, defaults,
+  `writes`, `follows`. Nothing in `server/` compares a role to a name; capabilities decide routing,
+  acceptance, watching and judging.
 - **A `roles.json` in the state root replaces the shipped one**, and may point at its own prompts and
   skills, so another arrangement needs no fork. Going your own way inherits the machinery, not the
   wording.
