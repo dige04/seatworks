@@ -165,9 +165,14 @@ export function serialOnlyOf(project: Project, kit: Kit): string[] {
   return loadConfig(project.state).serialOnly ?? kit.ecosystem.serialOnly;
 }
 
-/** The paths of `cwd` that one writer at a time may write, as git tracks them now: read before a placement is decided. */
+/**
+ * The paths of `cwd` that one writer at a time may write, as git tracks them now: read before a placement is decided.
+ * Where git cannot list the copy, every rule counts as if it matched, so the protection holds rather than lapses.
+ */
 export async function serialIn(kit: Kit, project: Project, cwd: string): Promise<string[]> {
-  return serialPaths(await trackedFiles(cwd), serialOnlyOf(project, kit));
+  const rules = serialOnlyOf(project, kit);
+  const tracked = await trackedFiles(cwd);
+  return tracked ? serialPaths(tracked, rules) : rules;
 }
 
 export function riskRulesOf(project: Project, kit: Kit): RiskRule[] {
