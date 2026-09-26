@@ -11,11 +11,11 @@ export type Moment = "ARCHITECTURE" | "STRUGGLING" | "TURNING";
 
 const MOMENT_NEXT: Record<Moment, string> = {
   ARCHITECTURE:
-    "A reach past what a task was given is structure settling: if the directive did not foresee it, ask its Lead why. The call is the Lead's.",
+    "A reach past what a task was given is structure settling. Nothing, if the directive foresaw it; else ask its Lead why. The call is the Lead's.",
   STRUGGLING:
-    "Read where it stuck with record on the task, then send its Lead one open question carrying what you saw. The fix is the Lead's.",
+    "Nothing, if its record shows it climbing out; else send its Lead one open question carrying where it stuck (record on the task). The fix is the Lead's.",
   TURNING:
-    "A turn this sharp often has a reason nobody wrote down: ask its Lead whether the lane's outcome still holds.",
+    "A turn this sharp often has a reason nobody wrote down. Nothing, if its record gives one; else ask its Lead whether the lane's outcome still holds.",
 };
 
 /** What the watch raises with whoever supervises: an incident, or a moment SLP wakes them for. */

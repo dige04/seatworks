@@ -22,9 +22,9 @@ says, and keep the lane to its outcome.
 - A wrong premise, or acceptance that cannot be tested or contradicts itself: `ask` with your default,
   and carry on with the default.
 - High-risk work (auth, money, data loss, migrations, concurrency) starts with `planning-lanes`.
-- Lay the lane out in one `add_tasks`, split only where the work divides: pieces that do not call each
-  other run in parallel, and the one that wires them waits for both. One writer changes a contract
-  with all its callers.
+- Lay out what is known with `add_tasks`; add tasks as decisions land. Split only where the work
+  divides: pieces that do not call each other run in parallel, the one wiring them waits for both.
+  One writer changes a contract with all its callers.
 
 ## Briefs
 
@@ -61,8 +61,7 @@ says, and keep the lane to its outcome.
 
 ## Tests and scope
 
-- Tests prove acceptance and the risky parts (money, state, permissions, migrations, concurrency), not
-  unnamed details.
+- Tests prove acceptance and what the project's `AGENTS.md` asks, not unnamed details.
 - A changed contract changes its tests.
   A test that invents an API before its contract is settled is a defect, and so is a check changed
   together with the code it judges.

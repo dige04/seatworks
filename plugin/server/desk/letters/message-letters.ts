@@ -48,7 +48,7 @@ export const messageLetters = {
       "message",
       sendingIds(sending, text),
       [`MESSAGE from ${from}`, "", text].join("\n"),
-      "Carry it into your work from now on.",
+      "Weigh it against your task or lane: answer what it asks, act on what holds, and say with evidence where it does not.",
     );
   },
 

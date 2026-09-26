@@ -254,6 +254,15 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     next(workLetters.handback(task, "/h.md", "Outcome: complete", "agent-7", "lead")),
     /^Judge it by what the work did/,
   );
+  // An open question or a correction is weighed by whoever it reaches, never taken as an order.
+  assert.match(next(messageLetters.message("the owner", "why X?", sending)), /^Weigh it against your task or lane/);
+  assert.match(next(workLetters.rework(task, "fix it")), /or say with evidence why not/);
+  assert.match(
+    next(askLetters.escalated({ ...ask, status: "open" }, 30, "L1")),
+    /^Answer only what is not an engineering call/,
+  );
+  for (const moment of ["ARCHITECTURE", "STRUGGLING", "TURNING"] as const)
+    assert.match(next(watchLetters.moment(moment, task, "x")), /Nothing, if /, `${moment} offers nothing first`);
   assert.match(
     next(workLetters.handback({ ...task, kind: "review" }, "/h.md", "Verdict: accept", "agent-7", "lead")),
     /^Weigh its findings, then cut it/,

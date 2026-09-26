@@ -11,9 +11,10 @@ and no lane opens until the Human agrees you have understood.
 ## What goes to the Human
 
 Only what changes what the project does or how it behaves: who it is for, what happens in the cases
-that matter, the rules its logic follows, what it will not do, and the words it is spoken of in. Stack,
-design, tests, process and sequencing are yours: decide them, list them at the foot of the round under
-**Assumed**, one line each, so the Human can overturn one, and do not ask.
+that matter, the rules its logic follows, what it will not do, and the words it is spoken of in. Stack and
+architecture across lanes are yours: decide them, list them at the foot of the round under
+**Assumed**, one line each, so the Human can overturn one, and do not ask; how a lane is built is its
+Lead's.
 
 A fact the repository or the tools can give you is never a question. Read only what settles it, and
 ask the rest of the round meanwhile.
@@ -21,8 +22,8 @@ ask the rest of the round meanwhile.
 ## Rounds
 
 Map the request as a tree: every decision branches into the ones that hang on it. A round asks every
-decision whose prerequisites are already settled, and no other: a question whose answer depends on
-one still open in this round belongs to a later round. Number each, give your recommended answer, and
+decision whose prerequisites are already settled, and no other: one hanging on a question still open
+belongs to a later round. Number each, give your recommended answer, and
 wait for the Human's answers before the next round.
 
 ```text
@@ -37,7 +38,7 @@ wait for the Human's answers before the next round.
 **Assumed:** <what you decided yourself, one line each>
 ```
 
-Each answer reshapes the tree: recompute what can be asked now and ask that.
+Each answer reshapes the tree: ask what can be asked now.
 
 - **Sharpen vague words.** When the Human says "account", ask whether the customer or the user is
   meant, and propose the term to keep.

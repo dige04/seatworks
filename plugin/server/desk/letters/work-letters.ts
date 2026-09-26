@@ -35,7 +35,7 @@ export const workLetters = {
       "rework",
       [task.id, task.reworks ?? 0],
       ["REWORK requested by your lead", "", text].join("\n"),
-      "Change what it names, commit on your branch, then call done again.",
+      "Change what it names, or say with evidence why not; commit on your branch, then call done again.",
     );
   },
 

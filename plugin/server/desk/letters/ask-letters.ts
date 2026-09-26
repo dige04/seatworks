@@ -109,7 +109,7 @@ export const askLetters = {
       "escalate",
       [ask.id],
       text,
-      "Take the smallest step that unblocks the Peer, often answering it yourself (its Lead is told); if the Lead looks stuck, read its record first.",
+      "Answer only what is not an engineering call (its Lead is told); else give its Lead one open question. If the Lead looks stuck, read its record first.",
     );
   },
 };
