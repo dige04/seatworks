@@ -68,6 +68,11 @@ test("a seat's shell, on the PATH the desk gives it, refuses what only the desk 
     ["-C does not hide a push", ["-C", root, "push", "origin", "main"]],
     ["nor does an alias given inline", ["-c", "alias.p=push", "-C", root, "p"]],
     ["nor one kept in the repository's config", ["-C", root, "sw", "-c", "elsewhere"]],
+    ["nor an alias that opens with an option of git's own", ["-c", "alias.y=-p push", "-C", root, "y"]],
+    [
+      "nor a shell alias, whose git runs with git's own directory first on PATH",
+      ["-c", "alias.s=!git push", "-C", root, "s"],
+    ],
     [
       "nor naming the repository by its parts",
       ["--no-pager", `--git-dir=${join(root, ".git")}`, `--work-tree=${root}`, "checkout", "-b", "x"],
