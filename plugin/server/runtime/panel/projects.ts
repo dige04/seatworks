@@ -28,6 +28,7 @@ type ProjectsDeps = {
   held: () => { to: string; text: string; at: number; until: number }[];
   watch: (project: Project, seats: Iterable<SeatView>) => WatchView;
   changed: () => void;
+  reconcile: () => void;
 };
 
 /** The projects on this machine as the panel attaches and detaches them, and each one's status page and Flow tab. */
@@ -52,6 +53,7 @@ export class ProjectsPanel implements ProjectsRpc {
     if (!this.deps.source.named(project.slug))
       return { error: `${project.root} could not be put on record; see the daemon log.` };
     writeProjectBlock(this.deps.kit, project.root);
+    this.deps.reconcile();
     return { slug: project.slug, root: project.root };
   }
 
@@ -125,6 +127,7 @@ export class ProjectsPanel implements ProjectsRpc {
     }
     this.deps.source.forget(slug);
     this.deps.changed();
+    this.deps.reconcile();
     return { removed: slug };
   }
 

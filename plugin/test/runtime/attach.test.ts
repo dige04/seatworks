@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import { chmodSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { stateRoot } from "../../server/core/paths.ts";
+import { paseoConfigPath, stateRoot } from "../../server/core/paths.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { tempDir } from "../tempdir.ts";
 import { served, which } from "./served.ts";
@@ -136,5 +136,54 @@ test("a project attached by path, set up, detached only when idle and attached a
     which(refused, "error").error,
     /could not be read/,
     "a folder that cannot be read is a refusal, not a rejection",
+  );
+});
+
+test("Paseo holds a provider for each role and agent an attached project's team seats: none at load with no project attached, set up on attach, following each settings save, and taken off on detach", async () => {
+  const { call, runtime, providers } = served();
+  writeFileSync(
+    paseoConfigPath(),
+    JSON.stringify({
+      agents: { providers: { claude: { env: { TOKEN: "keep" } }, "sw2-peer-codex": { extends: "codex", label: "x" } } },
+      daemon: { agentProfiles: [{ id: "sw2-lead-claude", provider: "sw2-lead-claude" }] },
+    }),
+  );
+  runtime.prepare();
+  assert.deepEqual(providers(), {}, "a load with no project attached leaves no provider of the kit's");
+  const root = realpathSync(tempDir("sw2-rpc-providers-"));
+  git(root, "init", "-q");
+  const added = which(await call(contracts.projectsAdd, { root }), "slug");
+  assert.deepEqual(
+    Object.keys(providers()).sort(),
+    ["sw2-lead-claude", "sw2-peer-omp", "sw2-scribe-omp", "sw2-supervisor-claude"],
+    "attaching sets up exactly what the project's team seats, so its Supervisor can be started at once",
+  );
+  const own = which(await call(contracts.settingsRead, { project: added.slug }), "values");
+  const values = { roles: { lead: { harness: "omp" } } };
+  const ownSaved = await call(contracts.settingsWrite, { project: added.slug, revision: own.revision, values });
+  assert.equal(ownSaved.status, "saved", JSON.stringify(ownSaved));
+  assert.deepEqual(
+    Object.keys(providers()).sort(),
+    ["sw2-lead-omp", "sw2-peer-omp", "sw2-scribe-omp", "sw2-supervisor-claude"],
+    "a project's own save moves its seats",
+  );
+  const machine = which(await call(contracts.settingsRead, {}), "values");
+  const haiku = { roles: { supervisor: { model: "haiku" } } };
+  assert.equal((await call(contracts.settingsWrite, { revision: machine.revision, values: haiku })).status, "saved");
+  assert.deepEqual(
+    providers()["sw2-supervisor-claude"]?.additionalModels?.map((model) => model.id),
+    ["haiku"],
+    "and so does the machine's",
+  );
+  assert.deepEqual(await call(contracts.projectsRemove, { project: added.slug }), { removed: added.slug });
+  assert.deepEqual(providers(), {}, "detached, its seats' providers go with it");
+  const config = JSON.parse(readFileSync(paseoConfigPath(), "utf-8")) as {
+    agents: { providers: Record<string, unknown> };
+    daemon: { agentProfiles: unknown[] };
+  };
+  assert.deepEqual(
+    [config.agents.providers.claude, config.daemon.agentProfiles],
+    [{ env: { TOKEN: "keep" } }, []],
+    "the owner's own stay",
   );
 });

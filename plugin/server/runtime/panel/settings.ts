@@ -71,7 +71,7 @@ export class SettingsPanel implements SettingsRpc {
     const result = writeLayer(target.file, revision, withKeys(values, layerValues(target.file)), check);
     if (result.status === "saved") {
       changed();
-      if (!target.project) reconcile();
+      reconcile();
     }
     return result.status === "saved" ? { ...result, values: withoutKeys(result.values) } : result;
   }

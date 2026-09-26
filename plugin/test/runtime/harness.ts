@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { PaseoHost } from "../../server/adapters/paseo/host.ts";
 import { type SensorSpec, loadKit } from "../../server/catalog/kit/kit.ts";
 import { applyModels } from "../../server/catalog/paseo/models.ts";
-import { stateRoot } from "../../server/core/paths.ts";
+import { paseoConfigPath, stateRoot } from "../../server/core/paths.ts";
 import type { HookAgent, Judge, TimelineItem } from "../../server/core/ports.ts";
 import type { DeskEvent } from "../../server/desk/store/events.ts";
 import { loadLedger } from "../../server/desk/store/ledger.ts";
@@ -80,6 +80,9 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
   const { root, git } = repo();
   const state = stateRoot();
   mkdirSync(state, { recursive: true });
+  // Paseo's config is always there where a plugin runs, and the plugin writes its seats' providers into it.
+  mkdirSync(dirname(paseoConfigPath()), { recursive: true });
+  writeFileSync(paseoConfigPath(), "{}\n");
   const machine = {
     mcp: { "intellij-index": { enabled: true }, "code-search": { enabled: true }, context7: { enabled: true } },
   };
