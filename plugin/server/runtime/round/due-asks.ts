@@ -86,7 +86,7 @@ async function lapse({ desk }: AskDeps, project: Project, ask: Ask, now: number)
 
 /** An ask whose reader has gone goes to whoever supervises now, a Lead's own ask included. */
 async function moveAsk(
-  { desk }: AskDeps,
+  { desk, kit }: AskDeps,
   project: Project,
   ask: Ask,
   lane: Lane | undefined,
@@ -101,8 +101,9 @@ async function moveAsk(
     entry.remindedAt = now;
     return { ...entry };
   });
+  const asker = roleNamed(kit, ask.fromRole)?.label ?? ask.fromRole;
   const from = ask.task
-    ? `the Peer on ${ask.task}, whose reader is gone`
-    : `the Lead of ${ask.lane ?? "a lane"}, whose reader is gone`;
+    ? `the ${asker} on ${ask.task}, whose reader is gone`
+    : `the ${asker} of ${ask.lane ?? "a lane"}, whose reader is gone`;
   if (moved) await desk.post(to, askLetters.askTo(moved, from, "supervisor"));
 }

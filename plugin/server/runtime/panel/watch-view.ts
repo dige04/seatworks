@@ -8,7 +8,8 @@ import { loadIncidents } from "../../desk/store/incidents.ts";
 import { type Ledger, laneOfLead, taskOfPeer } from "../../domain/ledger.ts";
 import { loadLedger } from "../../desk/store/ledger.ts";
 import type { Project } from "../../desk/project/project.ts";
-import { factTitle } from "../../domain/incident.ts";
+import { type Incident, factTitle } from "../../domain/incident.ts";
+import { seatOf } from "../../catalog/kit/roles.ts";
 
 const INCIDENTS_SHOWN = 200;
 
@@ -54,11 +55,12 @@ export function watchView(project: Project, troubles: Trouble[], team: Team, kit
   } catch {
     // A ledger that cannot be read leaves each seat named by what Paseo calls it.
   }
-  const nameOf = (id: string, fallback: string) => {
-    const task = ledger ? taskOfPeer(ledger, id) : undefined;
-    if (task) return `${task.kind === "review" ? "Reviewer" : "Peer"} · ${task.id} ${task.title}`;
-    const lane = ledger ? laneOfLead(ledger, id) : undefined;
-    return lane ? `Lead · ${lane.id} ${lane.title}` : fallback;
+  const nameOf = (item: Incident) => {
+    const role = seatOf(kit, item.provider)?.role.label;
+    const task = ledger ? taskOfPeer(ledger, item.seat) : undefined;
+    const lane = task || !ledger ? undefined : laneOfLead(ledger, item.seat);
+    const work = task ? `${task.id} ${task.title}` : lane && `${lane.id} ${lane.title}`;
+    return role && work ? `${role} · ${work}` : item.where;
   };
   const incidents = Object.values(loadIncidents(project.state).items)
     .filter((item) => item.open)
@@ -68,7 +70,7 @@ export function watchView(project: Project, troubles: Trouble[], team: Team, kit
       id: item.id,
       title: factTitle(item.kind) ?? item.kind.replace(/[-_]/g, " "),
       level: item.level,
-      name: nameOf(item.seat, item.where),
+      name: nameOf(item),
       minutes: ago(item.last),
       quote: item.quote.replace(/\s+/g, " ").slice(0, 300),
       told: item.told !== undefined,

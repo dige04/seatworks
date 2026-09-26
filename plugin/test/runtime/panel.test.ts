@@ -9,8 +9,12 @@ import type { Layer } from "../../shared/settings.ts";
 import { settle } from "./fake-timeline.ts";
 import { harness, laneWithPeer } from "./harness.ts";
 
-test("what the watch sees reaches whoever supervises, the Flow tab shows what waits for somebody to be seated, and a call its harness refused is recorded though it never reached the desk", async () => {
+test("what the watch sees reaches whoever supervises, the Flow tab shows what waits for somebody to be seated, and a call its harness refused is recorded though it never reached the desk", async (t) => {
   const { h, sup, timeline } = await laneWithPeer();
+  const working = h.runtime.kit.roles.find((role) => role.role === "peer")!;
+  const label = working.label;
+  t.after(() => void (working.label = label));
+  working.label = "Coder";
   timeline.beat("turn_started", "t1");
   const edit = {
     type: "edit",
@@ -33,8 +37,8 @@ test("what the watch sees reaches whoever supervises, the Flow tab shows what wa
   assert.ok("watch" in held);
   assert.deepEqual(
     held.watch.incidents.filter((item) => item.held).map((item) => [item.name, item.quote, item.held]),
-    [["Peer · L1-T1 Clean build", "src/a.test.ts: 3 assertions become 1", "nobody"]],
-    "the card names the seat by its task, and shows the step and why it waits",
+    [["Coder · L1-T1 Clean build", "src/a.test.ts: 3 assertions become 1", "nobody"]],
+    "the card names the seat by its role as the kit calls it and its task, and shows the step and why it waits",
   );
   Object.assign(h.agents.get(sup)!, { archivedAt: null });
 

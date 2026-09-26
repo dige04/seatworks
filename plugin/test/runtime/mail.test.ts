@@ -44,7 +44,7 @@ async function within(ms: number, check: () => boolean): Promise<boolean> {
   return true;
 }
 
-test("an ask reaches whoever can answer it, the answer comes back once, and whoever it was put to is told of it", async () => {
+test("an ask reaches whoever can answer it, the answer comes back once, and whoever it was put to is told of it", async (t) => {
   const h = harness();
   const sup = h.add(SUPERVISOR, h.root, "sup");
   const { lead } = await lane(h, sup, "Asks");
@@ -116,11 +116,15 @@ test("an ask reaches whoever can answer it, the answer comes back once, and whoe
   const endpoint = Object.values(h.ledger().asks).at(-1)!.id;
   archive(h, sup);
   const next = h.add(SUPERVISOR, h.root, "sup-3");
+  const leading = h.runtime.kit.roles.find((role) => role.role === "lead")!;
+  const label = leading.label;
+  t.after(() => void (leading.label = label));
+  leading.label = "Captain";
   await h.tick(start + 80 * 60_000);
   assert.match(
     heard(h, next),
-    /Keep the old endpoint\?/,
-    "an ask to a reader since gone goes to whoever supervises now",
+    /ASK A\d+ \(question\) from the Captain of L1, whose reader is gone[^]*Keep the old endpoint\?/,
+    "an ask to a reader since gone goes to whoever supervises now, its asker named as the kit names its role",
   );
   assert.equal(h.ledger().asks[endpoint]!.to, next);
 });
