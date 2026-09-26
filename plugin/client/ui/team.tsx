@@ -4,20 +4,21 @@ import {
   SettingsAction,
   SettingsCard,
   SettingsInput,
+  type SettingsInputHandle,
   SettingsRow,
   SettingsSection,
   SettingsSelect,
   SettingsSwitch,
 } from "@getpaseo/plugin/client/ui";
-import { type ReactElement, useState } from "react";
+import { type ReactElement, useRef, useState } from "react";
 import { modelsRpc } from "../../shared/rpc.ts";
 import { Text } from "react-native";
 import { sourceLabel } from "./bits.tsx";
 import type { Layer, RoleChoice } from "../../shared/settings.ts";
 import type { CatalogView, ModelsRefreshed, TeamView } from "../../shared/views.ts";
 import { message } from "../format/error.ts";
-import { modelRow, setHitl, setRole, sourceOf } from "../model/layer.ts";
-import { JudgeCard } from "./judge.tsx";
+import { modelRow, setHitl, setLanguage, setReviewSensor, setRole, sourceOf } from "../model/layer.ts";
+import { JudgeCard, keyRows } from "./judge.tsx";
 import { ModelPicker } from "./model-picker.tsx";
 import { TabBar } from "./tabs.tsx";
 
@@ -150,8 +151,44 @@ function roleRows({
   return rows;
 }
 
+/** The Human is the same in every project, so their language is the machine's; a seated Supervisor keeps the one it started with. */
+function languageRows(
+  { values, disabled, save }: Props,
+  typed: string | null,
+  setTyped: (text: string | null) => void,
+) {
+  const changed = typed !== null && typed.trim() !== (values.language ?? "");
+  return [
+    <SettingsInput
+      key="language"
+      label="Your language"
+      hint="The Supervisor speaks to you in it, on every agent; the rest of the team writes English, which the watch reads. Empty, it speaks as its prompt does. A Supervisor seated now keeps the one it started with."
+      initialValue={values.language ?? ""}
+      onChangeText={setTyped}
+      disabled={disabled}
+    />,
+    ...(changed
+      ? [
+          <SettingsAction
+            key="language-save"
+            label="Unsaved change"
+            actionLabel="Save"
+            disabled={disabled}
+            onPress={() =>
+              void save((current) => setLanguage(current, typed)).then((kept) => {
+                if (kept) setTyped(null);
+              })
+            }
+          />,
+        ]
+      : []),
+  ];
+}
+
 /** On the Supervisor's chip, since it is who decides for the Human when they are out of the loop; the daily limit is the machine's. */
-function HitlCard({ team, values, machine, layer, disabled, save }: Props) {
+function HitlCard(props: Props) {
+  const { team, values, machine, layer, disabled, save } = props;
+  const [language, setLanguageTyped] = useState<string | null>(null);
   const [typed, setTyped] = useState<string | null>(null);
   const count = Number(typed?.trim());
   const changed = typed !== null && typed.trim() !== String(team.hitl.questionsPerDay);
@@ -180,6 +217,7 @@ function HitlCard({ team, values, machine, layer, disabled, save }: Props) {
           disabled={disabled}
         />
       ) : null}
+      {layer === "machine" ? languageRows(props, language, setLanguageTyped) : null}
       {layer === "machine" && changed ? (
         <SettingsAction
           label={wrong ? "That needs a whole number" : "Unsaved change"}
@@ -193,6 +231,36 @@ function HitlCard({ team, values, machine, layer, disabled, save }: Props) {
           }
         />
       ) : null}
+    </SettingsCard>
+  );
+}
+
+/** On the chip of a role that reviews: which sensor asks review's one-condition checks, its own setting apart from the watch's brains. */
+function ReviewCard(props: Props & { role: Role }) {
+  const { catalog, values, machine, layer, disabled, save } = props;
+  const [draft, setDraft] = useState("");
+  const field = useRef<SettingsInputHandle>(null);
+  const chosen = values.review?.sensor ?? (layer === "project" ? machine.review?.sensor : undefined);
+  const sensor = catalog.sensors.find((entry) => entry.id === chosen);
+  return (
+    <SettingsCard>
+      <SettingsSelect
+        label="Review's checks"
+        hint={`The sensor that asks the one-condition checks a Lead reads as evidence at a hand-back and a review; with no key they are recorded as not asked. ${sourceLabel(
+          sourceOf(values, machine, (entry) => entry.review?.sensor, layer),
+          layer,
+        )}.`}
+        value={chosen ?? ""}
+        options={[
+          { label: "The kit's sensor", value: "" },
+          ...catalog.sensors.map((entry) => ({ label: entry.label, value: entry.id })),
+        ]}
+        onValueChange={(next) => void save((current) => setReviewSensor(current, next || undefined))}
+        disabled={disabled}
+      />
+      {sensor
+        ? keyRows({ ...props, sensor }, { typed: draft.trim(), setDraft, field }, "one for each check review asks")
+        : null}
     </SettingsCard>
   );
 }
@@ -216,6 +284,7 @@ export function TeamSection(props: Props) {
         <SettingsCard>{roleRows({ ...props, role })}</SettingsCard>
       )}
       {role.can.includes("supervise") ? <HitlCard {...props} /> : null}
+      {role.can.includes("review") ? <ReviewCard {...props} role={role} /> : null}
       <ModelsCard catalog={props.catalog} disabled={props.disabled} reload={props.reload} />
     </SettingsSection>
   );

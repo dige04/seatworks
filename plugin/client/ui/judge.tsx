@@ -31,8 +31,8 @@ type Sensor = CatalogView["sensors"][number];
 
 type Draft = { typed: string; setDraft: (text: string) => void; field: RefObject<SettingsInputHandle | null> };
 
-/** Rows, not a component, since the card borders each child it gets. */
-function keyRows(
+/** Rows, not a component, since the card borders each child it gets; `asks` says what a paid call is spent on. */
+export function keyRows(
   {
     sensor,
     values,
@@ -42,8 +42,9 @@ function keyRows(
     disabled,
     save,
     role,
-  }: Omit<Props, "catalog" | "team" | "rows"> & { sensor: Sensor },
+  }: Pick<Props, "values" | "machine" | "layer" | "theme" | "disabled" | "save" | "role"> & { sensor: Sensor },
   { typed, setDraft, field }: Draft,
+  asks: string,
 ): ReactElement[] {
   const kept = values.sensor?.[sensor.id]?.key === KEPT || machine.sensor?.[sensor.id]?.key === KEPT;
   const write = (key: string | null) => {
@@ -90,7 +91,7 @@ function keyRows(
     <SettingsAction
       key="save"
       label={kept ? "Replace the key" : "Save the key"}
-      hint="A key starts paid calls, one at each moment the watch asks about."
+      hint={`A key starts paid calls, ${asks}.`}
       actionLabel="Save key"
       onPress={() => write(typed)}
       disabled={disabled || typed.length === 0}
@@ -148,7 +149,13 @@ export function JudgeCard(props: Props) {
             tabs={options}
           />
         </SettingsRow>
-        {reads && sensor ? keyRows({ ...props, sensor }, { typed: draft.trim(), setDraft, field }) : null}
+        {reads && sensor
+          ? keyRows(
+              { ...props, sensor },
+              { typed: draft.trim(), setDraft, field },
+              "one at each moment the watch asks about",
+            )
+          : null}
         {judges ? rows : null}
       </SettingsCard>
       <Text style={{ color: theme.colors.foregroundMuted, fontSize: 12 }}>{note}</Text>

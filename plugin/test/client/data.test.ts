@@ -3,7 +3,15 @@ import { test } from "node:test";
 import { KEPT, type Layer } from "../../shared/settings.ts";
 import { countsInstead, leadState, seatText } from "../../client/format/flow.ts";
 import { incidentState, judgeWords } from "../../client/format/watch.ts";
-import { dropMcp, keptRoles, modelRow, setRole, withKey } from "../../client/model/layer.ts";
+import {
+  dropMcp,
+  keptRoles,
+  modelRow,
+  setLanguage,
+  setReviewSensor,
+  setRole,
+  withKey,
+} from "../../client/model/layer.ts";
 import type { FlowLane, WatchIncident, WatchJudge } from "../../shared/flow-views.ts";
 
 const docs = {
@@ -51,6 +59,26 @@ const EDITS: [string, (layer: Layer) => Layer, Layer][] = [
     "the last key forgotten leaves no sensor block",
     (layer) => withKey(layer, "other", null),
     { ...held, sensor: undefined },
+  ],
+  [
+    "review's sensor is chosen apart from the watch's",
+    (layer) => setReviewSensor(layer, "jev"),
+    { ...held, review: { sensor: "jev" } },
+  ],
+  [
+    "going back to the kit's sensor for review leaves no review block",
+    (layer) => setReviewSensor({ ...layer, review: { sensor: "jev" } }, undefined),
+    held,
+  ],
+  [
+    "the Human's language is kept as they typed it, trimmed",
+    (layer) => setLanguage(layer, " Vietnamese "),
+    { ...held, language: "Vietnamese" },
+  ],
+  [
+    "emptied, the language is left to the prompts",
+    (layer) => setLanguage({ ...layer, language: "Vietnamese" }, " "),
+    held,
   ],
 ];
 

@@ -77,3 +77,15 @@ export function withKey(values: Layer, id: string, key: string | null): Layer {
   const sensor = key ? { ...others, [id]: { key } } : others;
   return { ...values, sensor: Object.keys(sensor).length > 0 ? sensor : undefined };
 }
+
+/** None goes back to the kit's sensor for review, which the watch's brains never switch off. */
+export function setReviewSensor(values: Layer, sensor: string | undefined): Layer {
+  const { review: _was, ...rest } = values;
+  return sensor ? { ...rest, review: { sensor } } : rest;
+}
+
+/** Emptied, no language is set and the Supervisor answers as its prompt has it. */
+export function setLanguage(values: Layer, language: string): Layer {
+  const { language: _was, ...rest } = values;
+  return language.trim() ? { ...rest, language: language.trim() } : rest;
+}
