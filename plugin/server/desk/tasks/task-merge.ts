@@ -177,7 +177,7 @@ export class TaskMerge {
     const now = loadLedger(project.state);
     // The gate ran before the merge, on the tree it made: the verdict on record, or its Lead's word over it, stands.
     const gate = gateNote(project, now.tasks[task.id] ?? task);
-    const reach = reachNotes(now, task, lane, counts?.files ?? [], serial);
+    const reach = reachNotes(now, task, lane, counts?.files ?? [], serial, true);
     const letter = mergeLetters.merged(task, counts, reach, gate, othersLeft(now, task).length === 0);
     await this.finish(project, task, lane, "merged", letter);
   }

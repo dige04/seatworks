@@ -139,7 +139,11 @@ test("a Peer writing past where it was pointed is noted, not stopped: at hand-ba
   await h.call(lead, "lead", "accept", { task: "L1-T1" });
   await h.runtime.desk.settled(h.project);
   await h.idle(lead);
-  assert.ok(notes(h, lead, "MERGED L1-T1").includes("Note: in what L1-T2 holds (c.txt, **/*.md): notes.md."));
+  assert.ok(
+    notes(h, lead, "MERGED L1-T1").includes(
+      "Note: in what L1-T2 holds (c.txt, **/*.md): notes.md; its Peer works from the lane as it was until its hand-back brings this in, so tell it if its work depends on it.",
+    ),
+  );
 
   await handBack(h, "L1-T2", ["c.txt", "package-lock.json"]);
   await h.idle(lead);
