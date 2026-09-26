@@ -4,7 +4,6 @@ import { type Kit, type RoleSpec, SEAT_KEY } from "../../catalog/kit/kit.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import { applyRole, seatEnv } from "../../catalog/seat/launch.ts";
 import { seatBin } from "../../catalog/seat/seat-bin.ts";
-import { writeProjectBlock } from "../../catalog/seat/project-block.ts";
 import { seedRecords } from "../../catalog/seat/seat-files.ts";
 import { seatDir } from "../../catalog/seat/seats.ts";
 import { daemonLog } from "../../core/logger.ts";
@@ -57,11 +56,6 @@ export class SeatLaunch {
       seedRecords(this.kit, project.state);
     } catch (error) {
       daemonLog.error("could not seed project records:", error);
-    }
-    try {
-      writeProjectBlock(this.kit, project.root);
-    } catch (error) {
-      daemonLog.error(`could not write the Seatworks block into ${project.root}/AGENTS.md:`, error);
     }
     this.seating.ensure(seat.role.role, seat.harness, project);
     const dir = seatDir(this.kit, seat.role, seat.harness, home(), project);

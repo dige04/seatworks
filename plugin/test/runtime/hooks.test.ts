@@ -95,10 +95,10 @@ test("a seat as Paseo creates, opens and archives it: prompt, key, seat director
   const file = join(seatDir(kit, lead, claude, home(), projectOf(root)), "CLAUDE.md");
   const rules = () => (existsSync(file) ? readFileSync(file, "utf-8") : "");
   open("agent-7", "create", {}, root);
-  assert.match(
+  assert.equal(
     readFileSync(join(root, "AGENTS.md"), "utf-8"),
-    /^Use pnpm\.\n\n<!-- seatworks:begin: Seatworks writes this block[^\n]*-->\n## Seatworks\n[^]*<!-- seatworks:end -->\n\nUse Node 26\.\n$/,
-    "a seat opening in a project brings its Seatworks block up to date, where it stands, and leaves the rest alone",
+    "Use pnpm.\n\n<!-- seatworks:begin: an older kit -->\nOld rules.\n<!-- seatworks:end -->\n\nUse Node 26.\n",
+    "a seat opening never writes the Human's checkout: the block is written when a project is attached, and each seat has it from its own instructions",
   );
   assert.match(
     rules(),
