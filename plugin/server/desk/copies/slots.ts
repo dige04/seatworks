@@ -17,7 +17,7 @@ import { closeIndexes, openIndexes } from "./indexes.ts";
 import { sweepCopies } from "./sweep.ts";
 import { type Slot, nextSlotId } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
-import type { Project } from "../project/project.ts";
+import { type Project, loadConfig } from "../project/project.ts";
 import { errorText } from "../../core/errors.ts";
 import { firstUnder } from "../../core/fs.ts";
 
@@ -122,7 +122,8 @@ export class Slots {
       return true;
     }
     mkdirSync(dirname(slot.path), { recursive: true });
-    const added = await addWorktree(project.root, slot.path, branch, base);
+    const timeout = loadConfig(project.state).gateTimeoutMinutes * 60_000;
+    const added = await addWorktree(project.root, slot.path, branch, base, timeout);
     if (!added.ok) throw new Error(added.message);
     return false;
   }

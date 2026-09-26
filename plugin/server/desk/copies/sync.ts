@@ -75,7 +75,7 @@ export async function bringLaneIn(task: Task & { worktree: string; branch: strin
   const copy = await pristineState(cwd);
   if (copy !== "clean")
     return { not: copy === "dirty" ? "its copy has work uncommitted" : "git could not read its copy" };
-  const merged = await mergeBranch(cwd, tip, `Bring ${lane.branch} into ${task.branch}`, true);
+  const merged = await mergeBranch(cwd, tip, `Bring ${lane.branch} into ${task.branch}`, { leave: true });
   if (merged.ok) return { at: tip };
   if (merged.conflicts.length === 0) return { not: merged.message.split("\n")[0] || "git merge failed" };
   // HEAD is still the task's own tip while the merge waits on its conflicts.

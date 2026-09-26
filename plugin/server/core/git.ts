@@ -123,15 +123,17 @@ export async function contains(cwd: string, into: string, branch: string): Promi
   return run.code === 0 && Number.isInteger(count) ? count === 0 : undefined;
 }
 
+/** `timeout` is the project's to set: checking out a large repository takes what it takes. */
 export async function addWorktree(
   root: string,
   path: string,
   branch: string,
   base: string,
+  timeout: number,
 ): Promise<{ ok: boolean; message: string }> {
   if (!(await branchExists(root, base))) return { ok: false, message: `the base branch ${base} does not exist` };
   if (await branchExists(root, branch)) return { ok: false, message: `the branch ${branch} already exists` };
-  const run = await git(root, ["worktree", "add", "-b", branch, path, base], 120_000);
+  const run = await git(root, ["worktree", "add", "-b", branch, path, base], timeout);
   // git can fail with no output at all (timeout, missing binary); never report an empty reason.
   return {
     ok: run.code === 0,
@@ -152,7 +154,12 @@ type MergeResult = { ok: true; before: string; after: string } | { ok: false; co
  * stops it is undone. The Human's rerere would settle conflicts unseen, their signer can wait on them, and their
  * commit hooks judge their people's commits, not the desk's merges: none of them applies.
  */
-export async function mergeBranch(cwd: string, branch: string, message: string, leave = false): Promise<MergeResult> {
+export async function mergeBranch(
+  cwd: string,
+  branch: string,
+  message: string,
+  { leave = false, timeout = 120_000 }: { leave?: boolean; timeout?: number } = {},
+): Promise<MergeResult> {
   const before = await headSha(cwd);
   if (!before) return { ok: false, conflicts: [], message: "the lane working copy has no HEAD" };
   const own = [
@@ -165,7 +172,7 @@ export async function mergeBranch(cwd: string, branch: string, message: string, 
     "-c",
     "commit.gpgSign=false",
   ];
-  const run = await git(cwd, [...own, "merge", "--no-ff", "--no-verify", "-m", message, branch], 120_000);
+  const run = await git(cwd, [...own, "merge", "--no-ff", "--no-verify", "-m", message, branch], timeout);
   if (run.code === 0) return { ok: true, before, after: (await headSha(cwd)) ?? before };
   const unmerged = await git(cwd, ["diff", "--name-only", "--diff-filter=U"]);
   const conflicts = unmerged.stdout

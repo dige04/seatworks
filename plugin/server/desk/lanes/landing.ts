@@ -99,7 +99,8 @@ async function bringBaseIn(
   const blocked = await baseMergeBlocked(roster, ledger, lane, copy);
   if (blocked) return blocked === "current" ? undefined : blocked;
   // Nothing is left half merged in the lane's copy: taking the base in is a task's, on its own branch.
-  const merged = await mergeBranch(copy, lane.base, `Bring ${lane.base} into ${lane.branch}`);
+  const timeout = loadConfig(project.state).gateTimeoutMinutes * 60_000;
+  const merged = await mergeBranch(copy, lane.base, `Bring ${lane.base} into ${lane.branch}`, { timeout });
   if (merged.ok) return undefined;
   if (merged.conflicts.length === 0)
     return {
