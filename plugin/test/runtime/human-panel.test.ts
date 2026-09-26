@@ -37,7 +37,7 @@ async function drawn(h: Harness, open: string[] = []) {
 }
 
 test("a question waits in the Human's queue, and their answer, on the panel or in the Supervisor's chat, goes on record and to whoever asked", async () => {
-  const { h, sup } = await laneWithPeer();
+  const { h, sup } = await laneWithPeer({ hitl: { on: true } });
   const ask = (extra: Record<string, unknown>) => h.call(sup, "supervisor", "ask_human", packet(extra));
   const record = (question: string, choice: string, quote: string) =>
     h.call(sup, "supervisor", "record_human_answer", { question, choice, quote });
@@ -149,7 +149,7 @@ test("Orders reads back the Human's standing orders and the project's concept, a
 });
 
 test("the Report tells the last day from the record: what needs the Human, what went ahead, what landed, and what could not be undone", async () => {
-  const { h, sup, timeline } = await laneWithPeer();
+  const { h, sup, timeline } = await laneWithPeer({ hitl: { on: true } });
   await h.call(sup, "supervisor", "ask_human", packet({ lane: "L1", class: "irreversible" }));
   await h.call(sup, "supervisor", "ask_human", packet({ question: "Dates as ISO?" }));
   await h.call(sup, "supervisor", "ask_human", packet({ question: "Rename the product?", class: "irreversible" }));

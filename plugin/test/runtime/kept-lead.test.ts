@@ -144,7 +144,10 @@ test("a kept Lead keeps its lane's copy until the Supervisor releases it or the 
 });
 
 test("closing a lane settles what it leaves: its asks answered, its questions canceled, its unfinished tasks cut, and its kept Lead never reminded", async () => {
-  const { h, sup, lane, peer } = await laneWithPeer(undefined, undefined, { holds: ["a.txt"], parallel: true });
+  const { h, sup, lane, peer } = await laneWithPeer({ hitl: { on: true } }, undefined, {
+    holds: ["a.txt"],
+    parallel: true,
+  });
   assert.equal((await h.call(peer, "peer", "ask", { question: "Round half up?", bestGuess: "half up" })).ok, true);
   const ask = Object.values(h.ledger().asks)[0]!;
   await h.call(sup, "supervisor", "ask_human", {

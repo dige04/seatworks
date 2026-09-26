@@ -39,6 +39,10 @@ const WHILE_SILENT: Record<QuestionClass, string> = {
 /** Puts a decision only the Human can make on their question queue, with what happens while they are silent. */
 export async function askHuman(desk: DeskServices, caller: Caller, args: AskHumanCall): Promise<ToolReply> {
   const { project } = caller;
+  if (!desk.teamFor(project).hitl.on)
+    return no(
+      "The Human is out of the loop on this project, so nothing queues for them: decide it yourself. If it is what the project does or how it behaves, ask them directly with your own question tool and write the answer into CONTEXT.md.",
+    );
   const invalid = optionsProblem(args) ?? overBudget(desk, project);
   if (invalid) return no(invalid);
   const named = args.lane ? findLane(loadLedger(project.state), args.lane) : undefined;

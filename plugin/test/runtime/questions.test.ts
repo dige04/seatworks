@@ -77,6 +77,7 @@ test("a question's class decides what waits on it: an irreversible one holds its
 
 test("the Human's daily allowance of questions counts every project, on the Report and when a question is asked", async () => {
   const h = harness();
+  h.machineSettings({ hitl: { on: true } });
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   const elsewhere = repo().root;
   const theirs = h.add("sw2-supervisor-claude/claude-opus-5", elsewhere, "sup-b");
@@ -90,4 +91,13 @@ test("the Human's daily allowance of questions counts every project, on the Repo
     (await h.call(sup, "supervisor", "ask_human", packet())).text,
     /The Human has had 3 questions in the last day \([^)]*\), and 3 is what they allow/,
   );
+});
+
+test("with the Human out of the loop nothing queues for them: the Supervisor decides, or asks them directly about the concept", async () => {
+  const { h, sup } = await laneWithPeer();
+  const asked = await h.call(sup, "supervisor", "ask_human", packet());
+  assert.equal(asked.ok, false);
+  assert.match(asked.text, /out of the loop on this project, so nothing queues for them: decide it yourself/);
+  assert.match(asked.text, /ask them directly with your own question tool and write the answer into CONTEXT\.md/);
+  assert.deepEqual(h.ledger().questions, {});
 });
