@@ -138,12 +138,14 @@ export const askLetters = {
     );
   },
 
-  lapsed(ask: Ask, minutes: number): Letter {
+  /** `concept` is where the project's CONTEXT.md is, when there is one: the Human's word comes first. */
+  lapsed(ask: Ask, minutes: number, concept?: string): Letter {
+    const from = concept ? `${concept}, your directive and the code` : "your directive and the code";
     return mail(
       "lapsed",
       [ask.id],
       `NO ANSWER to your ask ${ask.id} in ${minutes} minutes: ${firstLine(ask.text)}`,
-      "Settle it yourself from CONTEXT.md, your directive and the code, or go on with your default; say which in your report.",
+      `Settle it yourself from ${from}, or go on with your default; say which in your report.`,
     );
   },
 

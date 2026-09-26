@@ -387,7 +387,7 @@ test("with the Human out of the loop, a Lead's ask nobody answers in time goes b
   assert.match(
     heard(h, lead),
     new RegExp(
-      `NO ANSWER to your ask ${id} in 21 minutes: Keep the old endpoint\\?\\n\\nNext: Settle it yourself from CONTEXT\\.md`,
+      `NO ANSWER to your ask ${id} in 21 minutes: Keep the old endpoint\\?\\n\\nNext: Settle it yourself from [^\\n]*your directive and the code`,
     ),
   );
   assert.match(heard(h, sup), new RegExp(`LAPSED ${id} from the Lead of L1: unanswered for 21 minutes`));
