@@ -26,9 +26,9 @@ export async function askOwner(
   const { project } = caller;
   const lane = laneOfLead(loadLedger(project.state), caller.id);
   if (!lane) return no("You have no open lane.");
-  const to = await roster.supervisorFor(project, lane.opener);
-  if (!to)
-    return no("Nobody above you is running to answer; keep working on your default and report when the lane is ready.");
+  const reader = await roster.supervisorFor(project, lane.opener);
+  // With nobody supervising seated it waits on the lane's opener, and the round hands it to whoever sits down first.
+  const to = reader ?? lane.opener;
   // Opened on the lane the caller still leads: it may have closed while whoever answers was looked up.
   const entry = ledgers.transact(project, (ledger) => {
     if (laneOfLead(ledger, caller.id)?.id !== lane.id) return undefined;
@@ -38,8 +38,12 @@ export async function askOwner(
     return { ...created };
   });
   if (!entry) return no("You have no open lane.");
-  await mail.post(to, askLetters.askTo(entry, `the Lead of ${lane.id} (${lane.title})`, "supervisor"));
+  if (reader) await mail.post(reader, askLetters.askTo(entry, `the Lead of ${lane.id} (${lane.title})`, "supervisor"));
   recordEvent(project, { kind: "ask.opened", ask: entry.id, from: caller.id, to });
+  if (!reader)
+    return ok(
+      `Asked as ${entry.id}, but nobody supervising is seated: it goes to whoever sits down first. Keep working on your default and report when the lane is ready.`,
+    );
   return ok(`Asked as ${entry.id}. Keep working on your default where you can; the answer arrives as mail.`);
 }
 
@@ -55,11 +59,9 @@ export async function askUp(
   const lane = task ? ledger.lanes[task.lane] : undefined;
   if (!task || !lane?.lead) return no("Nobody is assigned to answer you; end your turn with the question.");
   // A gone Lead would never answer; it goes up a level instead, and the Peer is told so.
-  const to = (await roster.seated(lane.lead)) ? lane.lead : await roster.supervisorFor(project, lane.opener);
-  if (!to)
-    return no(
-      "Your lead is not there and nobody above it is either, so nobody can answer now. Carry on with your default where you can, and end your turn with the question.",
-    );
+  const reader = (await roster.seated(lane.lead)) ? lane.lead : await roster.supervisorFor(project, lane.opener);
+  // With nobody above seated it waits on the gone Lead, and the round hands it to whoever supervises once one sits down.
+  const to = reader ?? lane.lead;
   const text = asked.tried ? `${asked.question}\n\nTried: ${asked.tried}` : asked.question;
   // Opened for the task the caller still works: it may have been cut while whoever answers was looked up.
   const entry = ledgers.transact(project, (current) => {
@@ -72,10 +74,14 @@ export async function askUp(
   });
   if (!entry)
     return no(`${task.id} was accepted or cut while you asked, so there is nothing to ask about; end your turn.`);
-  const reader = to === lane.lead ? "lead" : "supervisor";
-  await mail.post(to, askLetters.askTo(entry, `the Peer on ${task.id} (${task.title})`, reader));
   recordEvent(project, { kind: "ask.opened", ask: entry.id, from: caller.id, to });
-  const owner = to === lane.lead ? "" : ", of the owner, because your lead is not there";
+  if (!reader)
+    return ok(
+      `Asked as ${entry.id}, but your lead is not there and nobody above it is either, so nobody can answer now; it goes to whoever supervises once one sits down. Carry on with your default where you can, and end your turn.`,
+    );
+  const as = reader === lane.lead ? "lead" : "supervisor";
+  await mail.post(reader, askLetters.askTo(entry, `the Peer on ${task.id} (${task.title})`, as));
+  const owner = reader === lane.lead ? "" : ", of the owner, because your lead is not there";
   return ok(`Asked as ${entry.id}${owner}. End your turn; the answer arrives as a message.`);
 }
 
