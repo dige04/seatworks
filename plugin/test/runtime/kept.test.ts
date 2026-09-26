@@ -285,4 +285,9 @@ test("a Lead reseats a task: its Peer goes, a fresh one takes the same branch an
   );
   assert.doesNotMatch(brief, /\bseat\b|incident/i);
   assert.match(done.text, new RegExp(`^L1-T1 has a fresh Peer, ${fresh}, on ${task.branch}`));
+
+  Object.assign(h.agents.get(fresh)!, { archivedAt: new Date().toISOString(), status: "closed" });
+  const again = await reseat({ task: "L1-T1", why: "Its Peer is gone." });
+  assert.equal(again.ok, true, `a Peer gone is replaced the same way: ${again.text}`);
+  assert.notEqual(h.ledger().tasks["L1-T1"]!.peer, fresh);
 });

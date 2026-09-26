@@ -64,7 +64,7 @@ export const seatLetters = {
     reader: "lead" | "supervisor" | "leadGone",
   ): Letter {
     const next = {
-      lead: "Nothing restarts it: message it to continue, or cut the task and start it again.",
+      lead: "Nothing restarts it: message it to continue, reseat the task for a fresh Peer on its branch and copy, or cut it.",
       supervisor:
         "Nothing restarts it: read what it did, then message the lane to continue, or drop_lane it and open it again.",
       leadGone: LEAD_GONE,
@@ -79,7 +79,7 @@ export const seatLetters = {
       [task.id],
       failedText(`the Peer on ${task.id} (${task.title})`, "its agent was closed or archived"),
       reader === "lead"
-        ? "Nothing restarts it, and without a hand-back it cannot be accepted: cut it and start it again, naming its branch in the new brief if what it committed is worth carrying on."
+        ? "Nothing restarts it, and without a hand-back it cannot be accepted: reseat it for a fresh Peer on its branch and copy, which keeps what it committed, or cut it."
         : LEAD_GONE,
     );
   },
