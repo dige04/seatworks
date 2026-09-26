@@ -68,6 +68,8 @@ test("an ask reaches whoever can answer it, the answer comes back once, and whoe
 
   await h.call(lead, "lead", "add_tasks", { tasks: [task("Drop it")] });
   const peer = h.ledger().tasks["L1-T1"]!.peer!;
+  const concept = join(h.project.state, "CONTEXT.md");
+  writeFileSync(concept, "# Orders\n\nAn order is never deleted.\n");
   const columns = await h.call(peer, "peer", "ask", {
     question: "Drop the column or keep it nullable?",
     tried: "read the migration",
@@ -76,6 +78,10 @@ test("an ask reaches whoever can answer it, the answer comes back once, and whoe
   assert.equal(columns.ok, true, columns.text);
   const ask = Object.values(h.ledger().asks).at(-1)!;
   assert.equal(ask.to, lead, "an ask goes upward, to the Lead");
+  assert.ok(
+    heard(h, lead).includes(`Next: Answer ${ask.id} from ${concept}, the brief and the code;`),
+    "the Lead answers from the concept the Human settled, found where it is kept",
+  );
   // The Supervisor may answer any ask, and its Lead is told.
   assert.equal((await h.call(sup, "supervisor", "answer", { ask: ask.id, text: "Drop it and migrate." })).ok, true);
   assert.match(heard(h, peer), /Drop it and migrate/, "the Peer gets its answer");

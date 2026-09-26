@@ -38,10 +38,12 @@ function answeredNext(question: Question): string {
 
 /** The letters an ask sends: to whoever it is put to, the answer back, and what becomes of one left unanswered. */
 export const askLetters = {
-  askTo(ask: Ask, from: string, reader: "lead" | "supervisor"): Letter {
+  /** `concept` is where the project's CONTEXT.md is, when there is one: a Lead answers its Peers from it first. */
+  askTo(ask: Ask, from: string, reader: "lead" | "supervisor", concept?: string): Letter {
+    const read = concept ? `${concept}, the brief and the code` : "the brief and the code";
     const next =
       reader === "lead"
-        ? `Answer ${ask.id} from the brief and the code; if only the owner can, ask up and tell the Peer to wait.`
+        ? `Answer ${ask.id} from ${read}; if only the owner can, ask up and tell the Peer to wait.`
         : askNext(ask);
     return mail(
       "ask",

@@ -7,6 +7,7 @@ import { repeatsIncident } from "../store/incidents.ts";
 import type { Ask } from "../../domain/ask.ts";
 import { type Ledger, laneOfLead, nextAskId, taskOfPeer } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
+import { conceptFile } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 
@@ -80,7 +81,8 @@ export async function askUp(
       `Asked as ${entry.id}, but your lead is not there and nobody above it is either, so nobody can answer now; it goes to whoever supervises once one sits down. Carry on with your default where you can, and end your turn.`,
     );
   const as = reader === lane.lead ? "lead" : "supervisor";
-  await mail.post(reader, askLetters.askTo(entry, `the Peer on ${task.id} (${task.title})`, as));
+  const concept = conceptFile(project.state);
+  await mail.post(reader, askLetters.askTo(entry, `the Peer on ${task.id} (${task.title})`, as, concept));
   const owner = reader === lane.lead ? "" : ", of the owner, because your lead is not there";
   return ok(`Asked as ${entry.id}${owner}. End your turn; the answer arrives as a message.`);
 }
