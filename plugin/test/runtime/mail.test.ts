@@ -368,7 +368,7 @@ test("mail reaches a running seat inside its turn where its harness can take it 
   assert.deepEqual(h.agents.get(peer)!.sent, [], "the Peer's harness cannot, and sending would replace its turn");
 });
 
-test("with the Human out of the loop, a Lead's ask nobody answers in time goes back to the Lead to settle, and its owner hears so", async () => {
+test("with the Human out of the loop, a Lead's ask nobody answers in time goes back to the Lead to settle, and whoever supervises hears so", async () => {
   const h = harness();
   const sup = h.add(SUPERVISOR, h.root, "sup");
   const { lead } = await lane(h, sup, "Endpoint");
@@ -377,6 +377,7 @@ test("with the Human out of the loop, a Lead's ask nobody answers in time goes b
   const id = Object.values(h.ledger().asks).at(-1)!.id;
   h.agents.get(sup)!.status = "running";
   h.projectSettings({ attention: { askLapseMinutes: 20 } });
+  writeFileSync(join(h.project.state, "CONTEXT.md"), "# Endpoint\n");
   await h.tick(start + 19 * 60_000);
   assert.equal(h.ledger().asks[id]!.status, "open", "whoever supervises has the owner's time to answer first");
   await h.tick(start + 21 * 60_000);
@@ -389,7 +390,7 @@ test("with the Human out of the loop, a Lead's ask nobody answers in time goes b
   assert.match(
     heard(h, lead),
     new RegExp(
-      `NO ANSWER to your ask ${id} in 21 minutes: Keep the old endpoint\\?\\n\\nNext: Settle it yourself from [^\\n]*your directive and the code`,
+      `NO ANSWER to your ask ${id} in 21 minutes: Keep the old endpoint\\?\\n\\nNext: Settle it yourself from ${join(h.project.state, "CONTEXT.md")}, your directive and the code`,
     ),
   );
   assert.match(heard(h, sup), new RegExp(`LAPSED ${id} from the Lead of L1: unanswered for 21 minutes`));

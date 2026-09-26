@@ -4,7 +4,7 @@ import type { SeatView } from "../../core/ports.ts";
 import { oneLine } from "../../core/text.ts";
 import type { Desk } from "../../desk/desk.ts";
 import { askLetters } from "../../desk/letters/ask-letters.ts";
-import type { Project } from "../../desk/project/project.ts";
+import { type Project, conceptFile } from "../../desk/project/project.ts";
 import { loadIncidents, openFor, saidBefore } from "../../desk/store/incidents.ts";
 import { ASK, type Ask } from "../../domain/ask.ts";
 import type { Lane } from "../../domain/lane.ts";
@@ -114,7 +114,7 @@ async function lapse({ desk }: AskDeps, project: Project, ask: Ask, now: number)
     return { ...entry };
   });
   if (!lapsed) return;
-  await desk.post(lapsed.from, askLetters.lapsed(lapsed, minutes));
+  await desk.post(lapsed.from, askLetters.lapsed(lapsed, minutes, conceptFile(project.state)));
   await desk.post(lapsed.to, askLetters.lapsedFor(lapsed, minutes));
 }
 
