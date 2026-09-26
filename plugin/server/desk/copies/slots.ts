@@ -111,7 +111,7 @@ export class Slots {
         }
       }
     }
-    this.drop(project, slotId);
+    this.drop(project, slotId, slot && unsaved ? { path: slot.path, why: unsaved } : undefined);
     recordEvent(project, { kind: "slot.released", slot: slotId, removed: Boolean(slot) && !unsaved, kept });
     return kept;
   }
@@ -213,6 +213,12 @@ export class Slots {
   }
 
   sweep(project: Project, busy = false): Promise<void> {
+    const gone = Object.keys(this.desk.ledgers.read(project).left ?? {}).filter((path) => !existsSync(path));
+    if (gone.length > 0)
+      this.desk.ledgers.transact(project, (ledger) => {
+        for (const path of gone) delete ledger.left?.[path];
+        if (ledger.left && Object.keys(ledger.left).length === 0) delete ledger.left;
+      });
     return sweepCopies(this.desk, this.workspaces, project, busy);
   }
 
@@ -239,9 +245,11 @@ export class Slots {
     });
   }
 
-  private drop(project: Project, slotId: string): void {
+  /** `left` is where the copy stays with work in it, which status names until it is gone. */
+  private drop(project: Project, slotId: string, left?: { path: string; why: string }): void {
     return this.desk.ledgers.transact(project, (ledger) => {
       delete ledger.slots[slotId];
+      if (left) ledger.left = { ...ledger.left, [left.path]: { slot: slotId, why: left.why, at: Date.now() } };
     });
   }
 }

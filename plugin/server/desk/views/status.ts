@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { can, seatOf } from "../../catalog/kit/roles.ts";
 import type { SeatView } from "../../core/paseo.ts";
@@ -90,7 +91,7 @@ export function statusText(
       ? ["No open lanes.", ""]
       : open.flatMap((lane) => openLaneLines(ledger, lane, seats, now, copy !== undefined))),
     ...waitingLaneLines(ledger, pending, copy !== undefined),
-    ...(laneId ? [] : [...keptLines(ledger, seats, now), ...copyLines(ledger)]),
+    ...(laneId ? [] : [...keptLines(ledger, seats, now), ...copyLines(ledger), ...leftLines(ledger, now)]),
     ...askLines(ledger, now, laneId, quoting),
     ...(laneId ? [] : [...questionLines(ledger, now), ...closedLines(lanes)]),
   ];
@@ -207,6 +208,21 @@ function copyLines(ledger: Ledger): string[] {
   const holder = (slot: (typeof slots)[number]) =>
     slot.lane ? `lane ${slot.lane}` : slot.task ? `task ${slot.task}` : "free";
   return ["## Working copies", "", ...slots.map((slot) => `- ${slot.id} ${slot.path}: ${holder(slot)}`), ""];
+}
+
+/** Copies let go of with work nobody committed, which the desk never removes: whoever's work it is commits or clears it. */
+function leftLines(ledger: Ledger, now: number): string[] {
+  const left = Object.entries(ledger.left ?? {}).filter(([path]) => existsSync(path));
+  if (left.length === 0) return [];
+  return [
+    "## Copies left for their uncommitted work",
+    "",
+    ...left.map(
+      ([path, copy]) =>
+        `- ${path}, once ${copy.slot}, left ${minutesSince(now, copy.at)} min ago: it ${copy.why}. The desk never removes it; whoever's work it is commits or clears it.`,
+    ),
+    "",
+  ];
 }
 
 /** The asks still open; their words only for a seat reading, since a page for the Human holds no agent's words. */

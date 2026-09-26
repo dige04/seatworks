@@ -124,6 +124,12 @@ test("work nobody committed in a lane's copy never lands, over the gate or not, 
   );
   await h.tick();
   assert.equal(readFileSync(join(copy, "notes.txt"), "utf-8"), "half a thought\n", "the desk never deletes work");
+  const left = `## Copies left for their uncommitted work\n\n- ${copy}, once S`;
+  assert.ok((await h.call(sup, "supervisor", "status", {})).text.includes(left), "and status keeps naming it");
+  rmSync(copy, { recursive: true, force: true });
+  await h.tick();
+  assert.ok(!(await h.call(sup, "supervisor", "status", {})).text.includes(left), "until it is gone");
+  assert.deepEqual(h.ledger().left ?? {}, {});
 });
 
 test("in the Human's own checkout, files git does not track are theirs: a fact for whoever lands, never a stop, while changes to tracked files still stop READY and landing", async () => {

@@ -39,7 +39,11 @@ export type Ledger = {
   questions: Record<string, Question>;
   agents: Record<string, AgentRef>;
   slots: Record<string, Slot>;
+  left?: Record<string, LeftCopy>;
 };
+
+/** A copy the desk let go of that held work nobody committed: it stays where it is, off the slots, until someone clears it. */
+type LeftCopy = { slot: string; why: string; at: number };
 
 export function emptyLedger(): Ledger {
   return { seq: { lane: 0, ask: 0 }, lanes: {}, tasks: {}, asks: {}, questions: {}, agents: {}, slots: {} };
