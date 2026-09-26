@@ -31,14 +31,13 @@ function brain(says: Record<string, number>, why: Record<string, string> = {}, a
   return { asked, judge };
 }
 
-/** The machine settings read by `mode`'s brains, the sensor with its key, and each signal named turned on. */
-function brains(mode: "sensor" | "seat" | "both", on: string[] = []): void {
+/** The machine settings read by `mode`'s brains, the sensor with its key. */
+function brains(mode: "sensor" | "seat" | "both"): void {
   const file = join(stateRoot(), "settings.json");
   const settings = JSON.parse(readFileSync(file, "utf-8")) as Record<string, unknown>;
-  const signals = Object.fromEntries(on.map((kind) => [kind, "on"]));
   writeFileSync(
     file,
-    JSON.stringify({ ...settings, attention: { brain: mode, sensor: "jev", signals }, sensor: { jev: { key: KEY } } }),
+    JSON.stringify({ ...settings, attention: { brain: mode, sensor: "jev" }, sensor: { jev: { key: KEY } } }),
   );
 }
 
@@ -51,7 +50,7 @@ function looksOf(h: Harness, t: TestContext): () => Promise<void> {
   };
 }
 
-test("the watch's eye reads a seat's new words at its turn's end and while it runs, the sensor asks each its patterns, and a yes opens an incident in shadow until its signal is on", async (t) => {
+test("the watch's eye reads a seat's new words at its turn's end and while it runs, the sensor asks each its patterns, and a yes opens an incident told to whoever supervises", async (t) => {
   const sensed = brain({ "stand-in": 0.95 }, {}, /stub|placeholder/);
   const { h, sup, peer, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
   brains("sensor");
@@ -69,17 +68,21 @@ test("the watch's eye reads a seat's new words at its turn's end and while it ru
   assert.ok("stand-in" in thought.questions && !("big-decision" in thought.questions), "only what watches a Peer");
   const found = Object.values(book(h)).find((item) => item.kind === "stand-in")!;
   assert.deepEqual(
-    [found.held, found.quote, found.facts],
+    [found.told !== undefined, found.quote, found.facts],
     [
-      "shadow",
+      true,
       "The parser is missing, so I'll build a stub for it.",
       ["stand-in", "seen by Jev, 0.95 sure, in its thought"],
     ],
   );
-  assert.doesNotMatch(h.heard(sup).join("\n"), /INCIDENT/, "shadow bothers no one");
+  await h.idle(sup);
+  assert.match(
+    h.heard(sup).join("\n"),
+    /INCIDENT I1 \(stand-in, attend\) on the Peer on L1-T1[^]*What was seen: The parser is missing, so I'll build a stub for it\./,
+    "it reaches whoever supervises at once",
+  );
   const asked = sensed.asked.length;
 
-  brains("sensor", ["stand-in"]);
   timeline.beat("turn_started", "t2");
   timeline.add({ type: "reasoning", text: "A placeholder will do for the refund path." }, "t2");
   // Still being written, the last words wait for the next look; what came before them does not.
@@ -93,16 +96,15 @@ test("the watch's eye reads a seat's new words at its turn's end and while it ru
     ["A placeholder will do for the refund path."],
     "a turn still running is looked at every few minutes",
   );
-  await h.idle(sup);
-  assert.match(
-    h.heard(sup).join("\n"),
-    /INCIDENT I1 \(stand-in, attend\) on the Peer on L1-T1[^]*What was seen: A placeholder will do for the refund path\./,
-    "once its signal is on, it reaches whoever supervises",
+  assert.equal(
+    book(h).I1!.later,
+    "A placeholder will do for the refund path.",
+    "seen again, it is kept beside what was told",
   );
   assert.doesNotMatch(h.heard(peer).join("\n"), /INCIDENT/);
   const asking = await h.call(sup, "supervisor", "message", {
     to: "L1-T1",
-    text: 'You thought "A placeholder will do for the refund path." What does the refund path need?',
+    text: 'You thought "The parser is missing, so I\'ll build a stub for it." What does the parser need?',
   });
   assert.equal(asking.ok, true, `the seat's own words are the Supervisor's to quote back: ${asking.text}`);
 
@@ -164,7 +166,7 @@ test("a Lead's look reads the briefs it wrote since, against what watches a Lead
   assert.ok(read, "the brief as its Peer reads it");
   assert.match(String(read.state.text), /Edit src\/cart\.ts, add a sum\(\)\.\nHints: src\/cart\.ts/);
   assert.ok("pre-solves" in read.questions && !("stand-in" in read.questions), "what watches a Lead, not a Peer");
-  assert.equal(Object.values(book(h)).find((item) => item.kind === "pre-solves")?.held, "shadow");
+  assert.ok(Object.values(book(h)).find((item) => item.kind === "pre-solves")?.told);
 
   const before = sensed.asked.length;
   h.machineSettings({ attention: { brain: "off" } });

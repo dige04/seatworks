@@ -1,14 +1,13 @@
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { flowRpc } from "../../shared/rpc.ts";
-import { saveIncidents } from "../../server/desk/store/incidents.ts";
 import { laneWithPeer } from "./harness.ts";
-import { allSignals, book, hookAgent, notice } from "./noticed.ts";
+import { book, hookAgent, notice } from "./noticed.ts";
 
 test("an incident's life: seen, routed, listed, marked, closed", async () => {
-  const { h, sup, lane, peer } = await laneWithPeer({ attention: { incidentsPerLane: 20 } });
+  const { h, sup, lane, peer } = await laneWithPeer();
   const lead = lane.lead!;
   await h.call(lead, "lead", "add_tasks", {
     tasks: [
@@ -37,18 +36,14 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   ]);
   assert.equal(results.flatMap((result) => result.opened).length, 1, "only the first sighting opens anything");
   assert.deepEqual(
-    [book(h).I1!.count, book(h).I1!.quote],
-    [3, "again"],
-    "counted, and the latest words kept until told",
+    [book(h).I1!.count, book(h).I1!.quote, book(h).I1!.later],
+    [3, "the same action failing 3 times", "again"],
+    "counted, and what was seen after it was told kept beside what was told",
   );
   await notice(h, beside, "stuck", "attend", "the same action failing 3 times: npm run build");
   await notice(h, peer, "destructive", "page", "rm -rf /");
   assert.deepEqual(Object.keys(book(h)), ["I1", "I2", "I3"], "another seat, or another kind, is another incident");
 
-  writeFileSync(
-    join(h.project.state, "settings.json"),
-    JSON.stringify({ attention: { signals: allSignals, incidentsPerLane: 20 } }),
-  );
   await notice(h, peer, "test-weakened");
   await notice(h, lead, "long-turn");
   assert.match(
@@ -76,7 +71,7 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   assert.equal((await mark(sup, "I9", "useful")).ok, false, "an incident that is not there is refused");
 
   await notice(h, beside, "stuck", "attend", "the same action failing 3 times: npm run build");
-  assert.equal(letters(sup, "I2"), 1, "a condition held while the switch was off is told once it is on");
+  assert.equal(letters(sup, "I2"), 1, "a standing condition is told once, however often it is seen");
   const noted = await mark(
     sup,
     "I2",
@@ -165,91 +160,21 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   );
 });
 
-test("a kind most of whose last ten marks were noise is held on probation, and a page never is", async () => {
-  const { h, sup } = await laneWithPeer({ attention: { signals: allSignals } });
-  const seat = (n: number) => ({ id: `peer-${n}`, title: "Peer", provider: "sw2-peer-claude/claude-opus-5" });
-  const marks = (useful: number, count = 10, unknown = 0) => {
-    const marked = (kind: string, level: "attend" | "page", n: number) => ({
-      id: `I${kind}${n}`,
-      seat: `old-${n}`,
-      where: "old",
-      kind,
-      level,
-      quote: `q${n}`,
-      facts: [kind],
-      opened: n,
-      last: n,
-      count: 1,
-      open: false,
-      told: n,
-      label: n >= count ? ("unknown" as const) : n < useful ? ("useful" as const) : ("noise" as const),
-      closed: 1000 + n,
-    });
-    const items = Array.from({ length: count + unknown }, (_, n) => [
-      marked("stuck", "attend", n),
-      marked("destructive", "page", n),
-    ]);
-    mkdirSync(h.project.state, { recursive: true });
-    saveIncidents(h.project.state, {
-      next: 100,
-      items: Object.fromEntries(items.flat().map((item) => [item.id, item])),
-    });
-  };
-  const told = (n: number) => Object.values(book(h)).find((item) => item.seat === `peer-${n}`)!.told !== undefined;
-
-  marks(4);
-  await notice(h, seat(1), "stuck");
-  await notice(h, seat(2), "destructive", "page", "rm -rf /");
-  assert.deepEqual(
-    Object.values(book(h))
-      .filter((item) => item.open)
-      .map((item) => [item.kind, item.held ?? null, item.told !== undefined]),
-    [
-      ["stuck", "probation", false],
-      ["destructive", null, true],
-    ],
-  );
-  const listed = (await h.call(sup, "supervisor", "incidents", {})).text;
-  assert.match(listed, /\[page, told [^\]]*\] Peer \(peer-2\)/);
-  assert.doesNotMatch(
-    listed,
-    /peer-1/,
-    "what the book held back is the owner's to label, not the Supervisor's to read",
-  );
-  const held = Object.values(book(h)).find((item) => item.held === "probation")!;
-  assert.equal(
-    (await h.call(sup, "supervisor", "mark_incident", { id: held.id, verdict: "noise" })).ok,
-    false,
-    "nor to mark",
-  );
-  marks(5, 10, 3);
-  await notice(h, seat(3), "stuck");
-  assert.ok(told(3), "half of the last ten useful is not probation, and a mark of unknown says nothing either way");
-  marks(0, 9);
-  await notice(h, seat(4), "stuck");
-  assert.ok(told(4), "nine marks judge nothing");
-  h.projectSettings({ attention: { signals: allSignals, probationMarks: 9, probationUseful: 0.2 } });
-  marks(1, 9);
-  await notice(h, seat(5), "stuck");
-  assert.ok(!told(5), "how many marks judge, and how few useful ones hold it back, are the owner's to set");
-  marks(2, 9);
-  await notice(h, seat(6), "stuck");
-  assert.ok(told(6));
-});
-
-test("each signal is told to whoever supervises only once it is turned on; the rest are recorded in shadow, and a page always goes", async () => {
-  const { h, sup, peer } = await laneWithPeer({ attention: { signals: { stuck: "on" } } });
+test("every signal the watch raises is told to whoever supervises, with no switch for any of them, and a page always goes", async () => {
+  const { h, sup, peer } = await laneWithPeer();
   await notice(h, peer, "stuck", "attend", "the same action failing 3 times");
   await notice(h, peer, "suppressed", "attend", "adds @ts-ignore");
+  await notice(h, peer, "stand-in", "attend", "I'll build a stub for the parser.");
   await notice(h, peer, "destructive", "page", "rm -rf build");
   assert.deepEqual(
     Object.values(book(h)).map((item) => [item.kind, item.told !== undefined, item.held ?? null]),
     [
       ["stuck", true, null],
-      ["suppressed", false, "shadow"],
+      ["suppressed", true, null],
+      ["stand-in", true, null],
       ["destructive", true, null],
     ],
   );
   await h.idle(sup);
-  assert.doesNotMatch(h.heard(sup).join("\n"), /\(suppressed, attend\)/);
+  assert.match(h.heard(sup).join("\n"), /\(suppressed, attend\)[^]*\(stand-in, attend\)/);
 });

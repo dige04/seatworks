@@ -48,10 +48,7 @@ function briefs(state: string, shown: Incident[]): string[] {
   return out.length > 0 ? ["", "What they were asked:", ...out] : [];
 }
 
-/**
- * The incidents told to whoever supervises and not yet marked, newest first, with what the seats they are about were asked.
- * What the book held back, in shadow or past a budget, is the owner's to label, and stays out of the Supervisor's context.
- */
+/** The incidents told to whoever supervises and not yet marked, newest first, with what the seats they are about were asked. */
 export function listIncidents(caller: Caller, withClosed: boolean): ToolReply {
   const read = readIncidentsFile(caller.project.state);
   if ("fault" in read) return no(`${read.fault}. Only the Human can repair it or move it aside.`);
@@ -96,10 +93,7 @@ export function markIncident(
     close(item, now);
     return { ...item };
   });
-  if (!done)
-    return no(
-      `There is no incident ${id} told to you to mark: incidents lists those; what was held back is the owner's to label.`,
-    );
+  if (!done) return no(`There is no incident ${id} told to you to mark: incidents lists those.`);
   recordEvent(caller.project, {
     kind: "incident.ack",
     id,

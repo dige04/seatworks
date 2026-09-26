@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { reported } from "../console.ts";
 import { settle } from "./fake-timeline.ts";
 import { laneWithPeer } from "./harness.ts";
-import { allSignals, book, hookAgent, noticesOf } from "./noticed.ts";
+import { book, hookAgent, noticesOf } from "./noticed.ts";
 
 test("a seat is followed once while it is seated and watched, let go when it goes, and followed again after a failed join or a lost stream", async (t) => {
   const said = reported(t);
@@ -51,9 +51,7 @@ test("a seat is followed once while it is seated and watched, let go when it goe
 });
 
 test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
-  const { h, sup, lane, peer, timeline } = await laneWithPeer({
-    attention: { signals: allSignals, incidentsPerLane: 3 },
-  });
+  const { h, sup, lane, peer, timeline } = await laneWithPeer();
   const lead = lane.lead!;
   await h.call(sup, "supervisor", "set_project", { gate: "npm test", gateOn: "lane" });
   const noticed = noticesOf(h, t);
@@ -139,17 +137,11 @@ test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
     Number(stuck!.id.slice(1)) < Number(unchecked!.id.slice(1)),
     "the loop is ranked above the unchecked claim, so it opens first",
   );
-  assert.ok(stuck!.told !== undefined, "and takes the lane's last slot for the day");
-  assert.equal(unchecked!.held, "budget");
-  assert.doesNotMatch(
-    (await h.call(sup, "supervisor", "incidents", {})).text,
-    /unverified/,
-    "held back, it is not listed",
-  );
+  assert.deepEqual([stuck!.told !== undefined, unchecked!.told !== undefined], [true, true], "and both are told");
 });
 
 test("a failure goes unrecovered after as many steps as the settings say", async (t) => {
-  const { h, timeline } = await laneWithPeer({ attention: { signals: allSignals, recoverWithin: 2 } });
+  const { h, timeline } = await laneWithPeer({ attention: { recoverWithin: 2 } });
   const noticed = noticesOf(h, t);
   const run = (callId: string, command: string, status: string) =>
     timeline.add(

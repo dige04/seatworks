@@ -4,12 +4,6 @@ import { type Incident, loadIncidents } from "../../server/desk/store/incidents.
 import type { Noticed } from "../../server/desk/watch/notice.ts";
 import type { Project } from "../../server/desk/project/project.ts";
 import type { harness } from "./harness.ts";
-import { SIGNALS } from "../../server/runtime/watch/fact-kinds.ts";
-
-/** Every signal the watch raises turned on, as a project that wants all of them told sets it. */
-export const allSignals: Record<string, "on"> = Object.fromEntries(
-  SIGNALS.map((signal) => [signal.kind, "on" as const]),
-);
 
 type Harness = ReturnType<typeof harness>;
 

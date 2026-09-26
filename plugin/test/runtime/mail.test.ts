@@ -97,9 +97,9 @@ test("an ask reaches whoever can answer it, the answer comes back once, and whoe
   for (const minutes of [16, 32, 48]) await h.tick(start + minutes * 60_000);
   const [fact] = waitedOn();
   assert.deepEqual(
-    [waitedOn().length, fact!.seat, fact!.held],
-    [1, lead, "shadow"],
-    "an ask left waiting is a fact about its reader for the watch, in shadow",
+    [waitedOn().length, fact!.seat, fact!.told !== undefined],
+    [1, lead, true],
+    "an ask left waiting is a fact about its reader the watch tells whoever supervises, once",
   );
   assert.match(fact!.quote, new RegExp(`${waiting} \\(question\\) from L1-T1: Round half up or down\\?`));
   assert.doesNotMatch(
@@ -107,6 +107,7 @@ test("an ask reaches whoever can answer it, the answer comes back once, and whoe
     /STILL OPEN|UNANSWERED/,
     "no clock nags the reader or goes over its head: when to look is the watch's to say",
   );
+  assert.match(heard(h, sup), new RegExp(`INCIDENT ${fact!.id} \\(ask-waiting, attend\\) on the Lead of L1`));
 
   assert.equal(
     (await h.call(lead, "lead", "ask", { kind: "question", text: "Keep the old endpoint?", default: "keep it" })).ok,

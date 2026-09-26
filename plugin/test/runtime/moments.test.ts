@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { setTimeout as sleep } from "node:timers/promises";
 import { test } from "node:test";
 import { laneWithPeer } from "./harness.ts";
-import { allSignals, book } from "./noticed.ts";
+import { book } from "./noticed.ts";
 
 const parser = {
   key: "s",
@@ -14,10 +14,8 @@ const parser = {
   parallel: true,
 };
 
-const watching = { attention: { signals: allSignals, incidentsPerLane: 10 } };
-
 test("a Lead widening what a task beside others holds, or turning a task to another goal, is W's to tell whoever supervises; less than that is not", async () => {
-  const { h, sup, lane } = await laneWithPeer(watching);
+  const { h, sup, lane } = await laneWithPeer();
   await h.call(lane.lead!, "lead", "add_tasks", { tasks: [parser] });
   const amend = (args: Record<string, unknown>) =>
     h.call(lane.lead!, "lead", "amend_task", { task: "L1-T2", why: "the parser lives there", ...args });
@@ -48,7 +46,7 @@ test("a Lead widening what a task beside others holds, or turning a task to anot
 });
 
 test("a task sent back a second time, gone quiet until it stalls, or stopped on a refused call is one struggle W tells whoever supervises once", async () => {
-  const { h, sup, lane, peer } = await laneWithPeer(watching);
+  const { h, sup, lane, peer } = await laneWithPeer();
   for (const round of [1, 2, 3]) {
     await h.call(peer, "peer", "done", { outcome: "complete", summary: `round ${round}` });
     await h.call(lane.lead!, "lead", "rework", { task: "L1-T1", text: `not yet, round ${round}` });

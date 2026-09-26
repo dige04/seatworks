@@ -1,4 +1,3 @@
-import { DAY_MS } from "../../core/time.ts";
 import { join } from "node:path";
 import { isRecord } from "../../core/json.ts";
 import { readJsonFile, readKept, writeJson } from "../../core/store.ts";
@@ -106,26 +105,6 @@ export function sight(incidents: Incidents, sighting: Sighting, now: number): { 
   incidents.next += 1;
   incidents.items[incident.id] = incident;
   return { incident, opened: true };
-}
-
-/** Attention-level incidents about `lane` told in the last day: each lane has a budget of its own, and those about no lane share one. */
-export function spentToday(incidents: Incidents, lane: string | undefined, now: number): number {
-  return Object.values(incidents.items).filter(
-    (item) => item.level === "attend" && item.lane === lane && item.told !== undefined && now - item.told < DAY_MS,
-  ).length;
-}
-
-/** A kind whose latest `marks` marks, noise and useful, held fewer useful than `useful` of them; fewer marks judge nothing. */
-export function onProbation(
-  incidents: Incidents,
-  kind: string,
-  { marks, useful }: { marks: number; useful: number },
-): boolean {
-  const marked = Object.values(incidents.items)
-    .filter((item) => item.kind === kind && (item.label === "useful" || item.label === "noise"))
-    .sort((a, b) => (b.closed ?? b.last) - (a.closed ?? a.last))
-    .slice(0, marks);
-  return marked.length === marks && marked.filter((item) => item.label === "useful").length / marks < useful;
 }
 
 export function closeSeat(incidents: Incidents, seat: string, now: number): string[] {

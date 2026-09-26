@@ -28,8 +28,8 @@ type Pattern = [string, PatternSpec];
 /**
  * The brains read what one look saw of a seat against the patterns that watch it. The sensor asks each item its patterns'
  * one-condition questions; the seat judges the whole look. In `both` the seat hears only what the sensor flagged or left
- * unsure, and what only it can judge. What they find goes to the incident book, which keeps each in shadow until its
- * signal is on; every answer is kept for labels.
+ * unsure, and what only it can judge. What they find goes to the incident book, which tells whoever supervises; every
+ * answer is kept for labels.
  */
 export async function readLook(services: DeskServices, project: Project, seat: Noticed, look: Look): Promise<void> {
   const { kit, teamFor } = services;

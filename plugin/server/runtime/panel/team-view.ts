@@ -1,6 +1,5 @@
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { providerId, seatedAs } from "../../catalog/kit/roles.ts";
-import { SIGNALS } from "../watch/fact-kinds.ts";
 import { type Team, rulesFor, skillDirsFor } from "../../catalog/team/team.ts";
 import { transportOf } from "../../catalog/team/mcp-states.ts";
 import type { Project } from "../../desk/project/project.ts";
@@ -12,7 +11,7 @@ export function describeTeam(kit: Kit, team: Team, project?: Project): TeamView 
     project: project?.slug ?? null,
     errors: team.errors,
     attention: team.attention,
-    signals: [...SIGNALS, ...Object.entries(kit.patterns).map(([kind, pattern]) => ({ kind, title: pattern.title }))],
+    signals: [],
     hitl: team.hitl,
     rules: team.rules,
     mcp: Object.fromEntries(

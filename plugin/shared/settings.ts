@@ -56,7 +56,6 @@ export const AttentionChoice = z.strictObject({
   askWaitingMinutes: z.number().int().min(1).optional(),
   /** With the Human out of the loop, how long a Lead's ask waits on whoever supervises before it goes back to the Lead. */
   askLapseMinutes: z.number().int().min(1).optional(),
-  /** Each attention signal the watch raises, told to whoever supervises (on) or only recorded (shadow, the default). */
   signals: z.record(z.string(), z.enum(["shadow", "on"])).optional(),
   destructive: Pattern.optional(),
   testPath: Pattern.optional(),
@@ -78,10 +77,6 @@ export const AttentionChoice = z.strictObject({
   /** How much of each word, thought or brief the brains read, and of what a brain found an incident quotes. */
   lookItemChars: z.number().int().min(1).optional(),
   quoteChars: z.number().int().min(1).optional(),
-  incidentsPerLane: z.number().int().min(0).optional(),
-  /** A signal whose latest this many marks hold fewer useful ones than `probationUseful` of them is held on probation. */
-  probationMarks: z.number().int().min(1).optional(),
-  probationUseful: z.number().min(0).max(1).optional(),
   incidentsKept: z.number().int().min(1).optional(),
   /** How long a case waits on the Watcher seat's answer before it is given up. */
   watcherAnswerMinutes: z.number().int().min(1).optional(),

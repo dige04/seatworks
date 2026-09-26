@@ -236,14 +236,9 @@ test("each seat is told and given what its servers, its role and the Human say, 
   assert.deepEqual([...skillDirsFor(plain, "lead").keys()], ["ide-guide"], "its skills follow it");
   assert.equal(rulesFor(plain, "supervisor"), "", "a seat with nothing to be told has no rules");
   assert.deepEqual(
-    [
-      plain.attention.leadIdleMinutes,
-      plain.attention.signals,
-      plain.attention.recoverWithin,
-      plain.attention.lookMinutes,
-    ],
-    [15, {}, 10, 5],
-    "the kit's attention, every signal in shadow until labels turn it on",
+    [plain.attention.leadIdleMinutes, plain.attention.recoverWithin, plain.attention.lookMinutes],
+    [15, 10, 5],
+    "the kit's attention",
   );
   assert.deepEqual(
     [...skillDirsFor(resolveTeam(kit, { mcp: { ide: { enabled: false } } }), "lead").keys()],
@@ -254,13 +249,13 @@ test("each seat is told and given what its servers, its role and the Human say, 
   const machine: Layer = {
     mcp: { docs: { enabled: true }, ide: { settings: { port: 1234 }, roles: ["lead", "peer"] } },
     rules: "Keep diffs small.",
-    attention: { longTurnMinutes: 45, incidentsPerLane: 8, signals: { stuck: "on", "long-turn": "on" } },
+    attention: { longTurnMinutes: 45, lookMinutes: 8 },
   };
   const project: Layer = {
     roles: { lead: { harness: "omp" }, peer: { rules: "Never touch the generated client." } },
     mcp: { ide: { roles: ["peer"] } },
     rules: "Use pnpm.",
-    attention: { incidentsPerLane: 2, signals: { "long-turn": "shadow", suppressed: "on" } },
+    attention: { lookMinutes: 2 },
   };
   const team = resolveTeam(kit, machine, project);
   assert.deepEqual(team.errors, []);
@@ -271,9 +266,9 @@ test("each seat is told and given what its servers, its role and the Human say, 
   );
   assert.equal(team.rules, "Keep diffs small.\n\nUse pnpm.");
   assert.deepEqual(
-    [team.attention.longTurnMinutes, team.attention.incidentsPerLane, team.attention.signals],
-    [45, 2, { stuck: "on", "long-turn": "shadow", suppressed: "on" }],
-    "what the project leaves alone comes from the machine, signal by signal",
+    [team.attention.longTurnMinutes, team.attention.lookMinutes],
+    [45, 2],
+    "what the project leaves alone comes from the machine",
   );
   const lead = served(team, "lead");
   assert.deepEqual(

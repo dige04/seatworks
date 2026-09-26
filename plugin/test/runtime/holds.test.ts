@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { allSignals } from "./noticed.ts";
 import { settle } from "./fake-timeline.ts";
 import { harness } from "./harness.ts";
 
@@ -104,9 +103,7 @@ test("a task beside others holds its paths: refused when it cannot hold them, br
 });
 
 test("a Peer writing past where it was pointed is noted, not stopped: at hand-back, at merge and by the watch", async () => {
-  const { h, sup, lead } = await laneWriting(["a.txt", "c.txt", "package-lock.json", "src/**"], {
-    attention: { signals: allSignals },
-  });
+  const { h, sup, lead } = await laneWriting(["a.txt", "c.txt", "package-lock.json", "src/**"]);
   await h.call(lead, "lead", "add_tasks", {
     tasks: [
       planned("t", "T", { hints: ["a.txt"] }),

@@ -1,17 +1,7 @@
 import { recordEvent } from "../store/event-log.ts";
-import type { Attention } from "../../../shared/views.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
-import { type Finding, type Held, deliveryOf, hold, tell, unheard } from "../../domain/incident.ts";
-import {
-  type Incident,
-  type Incidents,
-  closeSeat,
-  forget,
-  onProbation,
-  settledAsNoise,
-  sight,
-  spentToday,
-} from "../store/incidents.ts";
+import { type Finding, deliveryOf, tell, unheard } from "../../domain/incident.ts";
+import { type Incident, closeSeat, forget, settledAsNoise, sight } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { laneOfLead, taskOfPeer } from "../../domain/ledger.ts";
@@ -24,19 +14,6 @@ import type { DeskServices } from "../services.ts";
 export type Noticed = { id: string; provider: string; title?: string | null };
 
 export type Placed = { where: string; lane?: Lane; task?: Task };
-
-/**
- * A page is irreversible and often done already, so it reaches whoever supervises whatever the marks or the budget say. A
- * signal worth attention is recorded only, in shadow, until its labels have it turned on.
- */
-function holdFor(incident: Incident, incidents: Incidents, attention: Attention, now: number): Held | undefined {
-  if (incident.level === "page") return undefined;
-  if (attention.signals[incident.kind] !== "on") return "shadow";
-  if (onProbation(incidents, incident.kind, { marks: attention.probationMarks, useful: attention.probationUseful }))
-    return "probation";
-  if (spentToday(incidents, incident.lane, now) >= attention.incidentsPerLane) return "budget";
-  return undefined;
-}
 
 /** Where a seat works, as a letter names it: the Peer on a task, the Lead of a lane, or the seat by its title. */
 export function placeOf(project: Project, seat: Noticed): Placed {
@@ -101,7 +78,7 @@ async function pageUnbooked(
   for (const page of pages) await mail.post(to, watchLetters.unbooked(page, place, seat.id, fault, { human }));
 }
 
-/** Opens or sights an incident for each finding not settled as noise, and holds it where attention says so, else tells it. */
+/** Opens or sights an incident for each finding not settled as noise, and tells what is not told yet. */
 function openIncidents(
   { kit, incidents, teamFor }: Pick<DeskServices, "kit" | "incidents" | "teamFor">,
   project: Project,
@@ -110,7 +87,7 @@ function openIncidents(
   findings: Finding[],
   now: number,
 ): { opened: Incident[]; sending: Incident[] } {
-  const attention = teamFor(project).attention;
+  const kept = teamFor(project).attention.incidentsKept;
   return incidents.transact(project, (book) => {
     const opened: Incident[] = [];
     const sending: Incident[] = [];
@@ -129,10 +106,7 @@ function openIncidents(
       };
       if (settledAsNoise(book, sighting, now, Object.hasOwn(kit.patterns, finding.kind))) continue;
       const { incident, opened: isNew } = sight(book, sighting, now);
-      if (deliveryOf(incident) === "told") continue;
-      const held = holdFor(incident, book, attention, now);
-      if (held) hold(incident, held);
-      else if (tell(incident, now)) sending.push({ ...incident });
+      if (deliveryOf(incident) !== "told" && tell(incident, now)) sending.push({ ...incident });
       if (isNew) {
         recordEvent(project, {
           kind: "incident.open",
@@ -145,7 +119,7 @@ function openIncidents(
         opened.push({ ...incident });
       }
     }
-    forget(book, attention.incidentsKept);
+    forget(book, kept);
     return { opened, sending };
   });
 }
@@ -209,18 +183,11 @@ function unheardAll(incidents: DeskServices["incidents"], project: Project, ids:
 }
 
 export async function retell(services: DeskServices, project: Project, now = Date.now()): Promise<string[]> {
-  const { incidents, teamFor } = services;
-  const { signals } = teamFor(project).attention;
+  const { incidents } = services;
   const told: string[] = [];
   const nobody = incidents.transact(project, (incidents) =>
     Object.values(incidents.items)
-      .filter(
-        (item) =>
-          item.open &&
-          item.held === "nobody" &&
-          item.told === undefined &&
-          (item.level === "page" || signals[item.kind] === "on"),
-      )
+      .filter((item) => item.open && item.held === "nobody" && item.told === undefined)
       .map((item) => ({ ...item })),
   );
   for (const seat of [...new Set(nobody.map((item) => item.seat))]) {

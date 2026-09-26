@@ -1,6 +1,6 @@
 import { Lifecycle } from "./lifecycle.ts";
 
-export type Held = "shadow" | "budget" | "probation" | "nobody";
+export type Held = "nobody";
 
 /** How much a fact asks of whoever watches: a page now, attention soon, or only a note on the record. */
 export type Level = "page" | "attend" | "note";
@@ -12,8 +12,7 @@ type Delivery = "unsent" | "held" | "told";
 
 type Delivered = { told?: number; held?: Held };
 
-const DELIVERY = new Lifecycle<Delivery, "hold" | "tell" | "unheard">({
-  hold: { from: ["unsent", "held"], to: "held" },
+const DELIVERY = new Lifecycle<Delivery, "tell" | "unheard">({
   tell: { from: ["unsent", "held"], to: "told" },
   unheard: { from: ["told"], to: "held" },
 });
@@ -21,12 +20,6 @@ const DELIVERY = new Lifecycle<Delivery, "hold" | "tell" | "unheard">({
 /** Where an incident stands on being told, read from what it keeps: when it was told, and why it was not. */
 export const deliveryOf = (incident: Delivered): Delivery =>
   incident.told !== undefined ? "told" : incident.held ? "held" : "unsent";
-
-export function hold(incident: Delivered, why: Held): boolean {
-  if (!DELIVERY.may(deliveryOf(incident), "hold")) return false;
-  incident.held = why;
-  return true;
-}
 
 export function tell(incident: Delivered, at: number): boolean {
   if (!DELIVERY.may(deliveryOf(incident), "tell")) return false;

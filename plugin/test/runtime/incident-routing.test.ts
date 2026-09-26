@@ -1,20 +1,16 @@
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { test } from "node:test";
 import { saveIncidents } from "../../server/desk/store/incidents.ts";
 import { projectOf } from "../../server/desk/project/project.ts";
 import { laneWithPeer, repo } from "./harness.ts";
-import { allSignals, book, notice } from "./noticed.ts";
+import { book, notice } from "./noticed.ts";
 
 test("what was held because nobody could read it is told once somebody can, and never to the seat it is about", async (t) => {
-  const { h, sup, lane, peer } = await laneWithPeer({ attention: { signals: allSignals } });
+  const { h, sup, lane, peer } = await laneWithPeer();
   const seated = (yes: boolean) => void (h.agents.get(sup)!.archivedAt = yes ? null : new Date().toISOString());
   const told = (id: string) => h.heard(sup).filter((text) => text.includes(`INCIDENT ${id} `));
   const second = repo();
   const other = projectOf(second.root);
-  mkdirSync(other.state, { recursive: true });
-  writeFileSync(join(other.state, "settings.json"), JSON.stringify({ attention: { signals: allSignals } }));
   const supB = h.add("sw2-supervisor-claude/claude-opus-5", second.root, "sup-b");
 
   seated(false);
@@ -56,14 +52,13 @@ test("what was held because nobody could read it is told once somebody can, and 
 
   seated(false);
   await notice(h, lane.lead!, "stuck");
-  writeFileSync(join(h.project.state, "settings.json"), JSON.stringify({ attention: {} }));
   await notice(h, peer, "destructive", "page", "rm -rf lib");
   seated(true);
   await h.tick();
   assert.deepEqual(
     [told("I3").length, told("I4").length],
-    [0, 1],
-    "with mail off, only the page held for nobody is told",
+    [1, 1],
+    "once somebody sits down, all that was held for nobody is told",
   );
 
   const self = await notice(h, sup, "destructive", "page", "rm -rf build");
@@ -105,21 +100,13 @@ test("a lane's own record raises an incident about its Lead once, held while the
   for (const round of [1, 2, 3]) await rework(round);
   assert.equal(h.ledger().tasks["L1-T1"]!.reworks, 3, "three sendings-back are on the record");
   await h.tick();
-  assert.deepEqual(
-    loops().map((item) => item.held),
-    ["shadow"],
-    "a lane's record is gone through for what no turn shows, held while the watch is off",
-  );
-  assert.doesNotMatch(h.heard(sup).join("\n"), /INCIDENT/);
-
-  writeFileSync(join(h.project.state, "settings.json"), JSON.stringify({ attention: { signals: allSignals } }));
   await h.tick();
   const told = h.heard(sup).join("\n");
   const [first] = loops();
   assert.match(
     told,
     new RegExp(`INCIDENT ${first!.id} \\(rework-loop, attend\\) on the Lead of L1 \\(Build\\)`),
-    "told once turned on, about the seat that decides to send it back",
+    "a lane's record is gone through for what no turn shows, and told about the seat that decides to send it back",
   );
   assert.match(told, /What was seen: L1-T1 \(Clean build\) has been sent back 3 times/);
   assert.equal(loops().length, 1, "the incident already on the book, not a second one");
@@ -130,7 +117,7 @@ test("a lane's own record raises an incident about its Lead once, held while the
     verdict: "noise",
     note: "expected: the brief changed under it",
   });
-  assert.equal(marked.ok, true, marked.text);
+  assert.equal(marked.ok, true, marked.text + JSON.stringify(book(h)));
   await h.tick();
   await h.tick();
   assert.equal(loops().length, 1, "the same three sendings-back are not raised again once marked");
