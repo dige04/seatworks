@@ -13,7 +13,7 @@ import { recordEvent } from "../store/event-log.ts";
 type Asking = Pick<Ask, "from" | "fromRole" | "to" | "lane" | "task" | "kind" | "text" | "default">;
 
 function newAsk(ledger: Ledger, asking: Asking): Ask {
-  return { id: nextAskId(ledger), ...asking, status: "open", openedAt: Date.now(), reminders: 0 };
+  return { id: nextAskId(ledger), ...asking, status: "open", openedAt: Date.now() };
 }
 
 /** A Lead asks whoever supervises its lane, and works on its default while it waits. */

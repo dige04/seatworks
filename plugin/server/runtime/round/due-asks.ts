@@ -34,7 +34,7 @@ export async function dueAsks(
     const lane = ask.lane ? ledger.lanes[ask.lane] : undefined;
     if (missing.has(ask.to)) await moveAsk(deps, project, ask, lane, now);
     else if (lapses(ask)) await lapse(deps, project, ask, now);
-    else if (now - (ask.remindedAt ?? ask.openedAt) >= askWaitingMinutes * 60_000)
+    else if (now - (ask.movedAt ?? ask.openedAt) >= askWaitingMinutes * 60_000)
       waiting.set(ask.to, [...(waiting.get(ask.to) ?? []), ask]);
   }
   await waitedOn(deps, project, seats, waiting);
@@ -92,7 +92,7 @@ async function moveAsk(
     const entry = current.asks[ask.id];
     if (!entry || entry.status !== "open" || entry.to !== ask.to) return undefined;
     entry.to = to;
-    entry.remindedAt = now;
+    entry.movedAt = now;
     return { ...entry };
   });
   const asker = roleNamed(kit, ask.fromRole)?.label ?? ask.fromRole;

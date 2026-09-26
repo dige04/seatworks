@@ -17,8 +17,6 @@ export type Ask = {
   default?: string;
   status: AskStatus;
   openedAt: number;
-  remindedAt?: number;
-  reminders: number;
-  escalated?: boolean;
+  movedAt?: number;
   answer?: string;
 };

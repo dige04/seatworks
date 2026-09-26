@@ -84,7 +84,6 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     default: "half up",
     status: "answered",
     openedAt: 0,
-    reminders: 0,
     answer: "half even",
   };
   const amendment = { at: 0, by: "agent-1", why: "the Human wants an upsert", was: { goal: "insert" } };
