@@ -5,7 +5,7 @@ import { delimiter, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
-import { seatBin } from "../../server/catalog/seat/launch.ts";
+import { seatBin } from "../../server/catalog/seat/seat-bin.ts";
 import { tempDir } from "../tempdir.ts";
 
 const PLUGIN = fileURLToPath(new URL("../..", import.meta.url));
