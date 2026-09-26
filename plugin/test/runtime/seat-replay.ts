@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
-import { watchPatterns } from "../../server/catalog/kit/patterns.ts";
+import { watchPatterns } from "../../server/catalog/kit/ecosystem-patterns.ts";
 import type { Quirks } from "../../server/catalog/kit/timeline.ts";
 import type { Seen } from "../../server/core/ports.ts";
 import type { StreamMessage } from "../../server/adapters/paseo/stream.ts";

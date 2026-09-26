@@ -1,5 +1,5 @@
 import { isAbsolute, relative } from "node:path";
-import { weakened } from "../../catalog/kit/patterns.ts";
+import { weakened } from "../../catalog/kit/ecosystem-patterns.ts";
 import { covers, normalize } from "../../core/scope.ts";
 import { oneLine } from "../../core/text.ts";
 import { type Fact, fact } from "../../domain/incident.ts";

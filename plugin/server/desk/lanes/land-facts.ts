@@ -3,7 +3,7 @@ import { commitsAhead, git, mergeBase } from "../../core/git.ts";
 import { coverOf, globToRegex, uncovered } from "../../core/scope.ts";
 import { capped, plural } from "../../core/text.ts";
 import type { Kit } from "../../catalog/kit/kit.ts";
-import { fileKinds, testMarkers, weakened } from "../../catalog/kit/patterns.ts";
+import { fileKinds, testMarkers, weakened } from "../../catalog/kit/ecosystem-patterns.ts";
 import { SETTLED } from "../../domain/task.ts";
 import { loadIncidents } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";

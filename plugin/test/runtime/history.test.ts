@@ -7,7 +7,7 @@ import type { Task } from "../../server/domain/task.ts";
 import type { FactKind } from "../../server/domain/incident.ts";
 import { deskFacts } from "../../server/runtime/watch/history.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
-import { recordPatterns } from "../../server/catalog/kit/patterns.ts";
+import { recordPatterns } from "../../server/catalog/kit/ecosystem-patterns.ts";
 
 // The shipped catalog's detectors, as a lane's record is read with them.
 const READING = {

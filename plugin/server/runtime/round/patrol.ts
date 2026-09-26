@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Kit } from "../../catalog/kit/kit.ts";
-import { recordPatterns } from "../../catalog/kit/patterns.ts";
+import { recordPatterns } from "../../catalog/kit/ecosystem-patterns.ts";
 import { daemonLog } from "../../core/logger.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import type { SeatView, Seats } from "../../core/ports.ts";

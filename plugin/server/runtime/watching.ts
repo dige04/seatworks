@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import type { Kit } from "../catalog/kit/kit.ts";
-import { watchPatterns } from "../catalog/kit/patterns.ts";
+import { watchPatterns } from "../catalog/kit/ecosystem-patterns.ts";
 import { TEAM_SERVER } from "../catalog/kit/kit.ts";
 import { seatOf } from "../catalog/kit/roles.ts";
 import { errorText } from "../core/errors.ts";
