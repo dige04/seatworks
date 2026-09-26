@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { setTimeout as sleep } from "node:timers/promises";
 import { test } from "node:test";
 import { laneWithPeer } from "./harness.ts";
-import { book } from "./noticed.ts";
 
 const parser = {
   key: "s",
@@ -45,12 +44,18 @@ test("a Lead widening what a task beside others holds, or turning a task to anot
   );
 });
 
-test("a task sent back a second time, gone quiet until it stalls, or stopped on a refused call is one struggle W tells whoever supervises once", async () => {
+test("a task gone quiet until it stalls, or stopped on a refused call, is a struggle W tells whoever supervises once", async () => {
   const { h, sup, lane, peer } = await laneWithPeer();
+  const said = () => h.heard(sup).join("\n");
   for (const round of [1, 2, 3]) {
     await h.call(peer, "peer", "done", { outcome: "complete", summary: `round ${round}` });
     await h.call(lane.lead!, "lead", "rework", { task: "L1-T1", text: `not yet, round ${round}` });
   }
+  assert.doesNotMatch(
+    said(),
+    /\(struggling, attend\)/,
+    "sent back again is what W's rework count reads, not a struggle",
+  );
   // A turn counts the Peer as heard from when its last record is no older than the turn: this one starts after it.
   const heard = h.ledger().agents[peer]!;
   while (Date.now() <= Math.max(heard.recordedAt ?? 0, heard.spokeAt ?? 0)) await sleep(1);
@@ -59,21 +64,14 @@ test("a task sent back a second time, gone quiet until it stalls, or stopped on 
     await h.endTurn(peer, words);
   }
   assert.equal(h.ledger().tasks["L1-T1"]!.status, "stalled");
-  const said = () => h.heard(sup).join("\n");
   assert.match(
     said(),
-    /INCIDENT I1 \(struggling, attend\) on the Peer on L1-T1 \(Clean build\)[^]*What was seen: sent back a second time: not yet, round 2/,
+    /INCIDENT I\d+ \(struggling, attend\) on the Peer on L1-T1 \(Clean build\)[^]*What was seen: its Peer ended 2 turns without a hand-back or an ask/,
   );
   assert.equal(
     said().match(/\(struggling, attend\) on the Peer on L1-T1/g)!.length,
     1,
-    "going quiet after is the same struggle",
-  );
-  const struggle = Object.values(book(h)).find((item) => item.kind === "struggling")!;
-  assert.deepEqual(
-    [struggle.count, struggle.later],
-    [2, "its Peer ended 2 turns without a hand-back or an ask"],
-    "counted, and kept beside what was told",
+    "a turn quiet after it stalled is the same struggle",
   );
 
   await h.call(lane.lead!, "lead", "add_tasks", { tasks: [parser] });

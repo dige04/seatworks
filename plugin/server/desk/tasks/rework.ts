@@ -1,5 +1,4 @@
 import { pristineState, switchTo, uncommittedIn } from "../../core/git.ts";
-import { oneLine } from "../../core/text.ts";
 import { TASK } from "../../domain/task.ts";
 import { laneTask } from "../access.ts";
 import { type Caller, type ToolReply, no, ok, str } from "../context.ts";
@@ -10,7 +9,6 @@ import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { workLetters } from "../letters/work-letters.ts";
-import { tellMoment } from "../watch/moments.ts";
 import type { DeskServices } from "../services.ts";
 import { bringLaneIn } from "../copies/sync.ts";
 
@@ -45,8 +43,6 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
   }
   // Keyed by the rework's count, each letter is its own: none is dropped as a repeat.
   await desk.mail.post(result.peer, workLetters.rework(result, text));
-  if (result.reworks === 2 && result.peer)
-    await tellMoment(desk, caller.project, result.peer, "struggling", `sent back a second time: ${oneLine(text)}`);
   return ok(`Rework sent to the Peer on ${result.id}; its next hand-back arrives as mail.`);
 }
 
