@@ -28,17 +28,22 @@ export async function reportLane(desk: DeskServices, caller: Caller, args: Repor
     const blocked = await readyBlocked(desk, project, lane);
     if (blocked) return no(blocked);
   }
+  const amendments = lane.amended?.length ?? 0;
   const gate = ready ? await laneGate(desk, project, lane) : undefined;
-  // Recorded on the lane the caller still leads: it may have closed, or had its Lead replaced, while the gate ran.
-  const still = desk.ledgers.transact(project, (current) => {
+  // Recorded on the lane as it stands now: it may have closed, had its Lead replaced, been amended or held while the gate ran.
+  const refused = desk.ledgers.transact(project, (current): string | undefined => {
     const entry = laneOfLead(current, caller.id);
-    if (entry?.id !== lane.id) return false;
+    if (entry?.id !== lane.id)
+      return `Lane ${lane.id} is no longer yours to report on: it closed, or has another Lead, while this was asked.`;
+    if (ready && (entry.amended?.length ?? 0) !== amendments)
+      return `Lane ${lane.id} was amended while its gate ran, so what READY would claim has changed: carry the amendment in, then report ready again.`;
+    const held = ready ? holdRefusal(entry) : undefined;
+    if (held) return held;
     if (ready) entry.ready = { at: Date.now() };
     else delete entry.ready;
-    return true;
+    return undefined;
   });
-  if (!still)
-    return no(`Lane ${lane.id} is no longer yours to report on: it closed, or has another Lead, while this was asked.`);
+  if (refused) return no(refused);
   return tell(desk, project, lane, args, gate);
 }
 

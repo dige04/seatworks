@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
-import { writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { tempDir } from "../tempdir.ts";
 import { laneWithPeer } from "./harness.ts";
+
+/** Whether `check` comes true within `ms`, looked at every 20 ms. */
+async function within(ms: number, check: () => boolean): Promise<boolean> {
+  for (const end = Date.now() + ms; !check(); await new Promise((resolve) => setTimeout(resolve, 20)))
+    if (Date.now() > end) return false;
+  return true;
+}
 
 test("a READY is what the lane's copy holds with nobody writing there, and whatever changes the lane takes it away", async () => {
   const { h, sup, lane, peer } = await laneWithPeer();
@@ -74,4 +82,22 @@ test("a READY is what the lane's copy holds with nobody writing there, and whate
   assert.equal((await report()).ok, true);
   assert.equal(h.ledger().tasks[late.id]!.status, "merged");
   assert.match(h.heard(sup).join("\n"), /test -f c\.txt passed on the lane branch/);
+
+  // Amended while its gate runs, the lane is not ready: what READY would claim changed under it.
+  const dir = tempDir("sw2-amend-");
+  const [started, go] = [join(dir, "started"), join(dir, "go")];
+  await h.call(sup, "supervisor", "set_project", { gate: `touch ${started}; until [ -f ${go} ]; do sleep 0.05; done` });
+  const reporting = report();
+  assert.ok(await within(5000, () => existsSync(started)), "the gate runs");
+  const amended = await h.call(sup, "supervisor", "amend_lane", {
+    lane: "L1",
+    why: "the Human wants one more case",
+    acceptance: ["c", "d"],
+  });
+  assert.equal(amended.ok, true, amended.text);
+  writeFileSync(go, "");
+  const answer = await reporting;
+  assert.equal(answer.ok, false, answer.text);
+  assert.match(answer.text, /amended while its gate ran/);
+  assert.equal(ready(), undefined);
 });
