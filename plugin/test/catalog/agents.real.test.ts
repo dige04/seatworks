@@ -152,10 +152,16 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         );
     }
     if (harness.id === "codex") {
+      const features = (at(settings, "features") ?? {}) as Record<string, unknown>;
       assert.deepEqual(
-        at(settings, "features"),
-        { multi_agent: false, multi_agent_v2: false },
+        [features.multi_agent, features.multi_agent_v2],
+        [false, false],
         `${where}: Paseo is the only control plane`,
+      );
+      assert.deepEqual(
+        [features.shell_tool, features.view_image, features.sleep_tool],
+        bare ? [false, false, false] : [undefined, undefined, undefined],
+        `${where}: a seat that touches nothing has no shell, image viewer or sleep`,
       );
       assert.equal(at(settings, "approval_policy"), "never", `${where}: nobody is there to approve`);
       assert.equal(
@@ -198,7 +204,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         `${where}: writes into the state only where its content says`,
       );
       const rules = readFileSync(join(dir, "rules", "seatworks.rules"), "utf-8");
-      for (const command of refusedGit)
+      for (const command of bare ? [] : refusedGit)
         assert.match(
           rules,
           new RegExp(`\\["git", (\\[[^\\]]*)?"${command}"`),

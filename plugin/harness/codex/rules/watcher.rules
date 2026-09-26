@@ -1,2 +1,1 @@
-prefix_rule(pattern = ["git"], decision = "forbidden", justification = "The Watcher answers from its case and never touches the work.")
-prefix_rule(pattern = ["git", ["merge", "reset", "rebase", "cherry-pick"]], decision = "forbidden", justification = "Only a Peer moves a branch, and only its own task branch.")
+# The Watcher has no shell to run a command in.
