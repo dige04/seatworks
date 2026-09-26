@@ -155,13 +155,13 @@ const ERRORS: [typeof kit, Layer, Layer, RegExp[]][] = [
   [
     kit,
     { roles: { scout: {}, lead: { model: "gpt" } }, mcp: { nope: {}, ide: { settings: { port: "x", host: "h" } } } },
-    { roles: { supervisor: { harness: "omp" }, peer: { thinking: "high" } }, mcp: { docs: { roles: ["scribe"] } } },
+    { roles: { supervisor: { harness: "omp" }, peer: { thinking: "high" } }, mcp: { ide: { roles: ["scribe"] } } },
     [
       /^The machine settings name an unknown role scout$/,
       /^The MCP server nope has nothing to connect to/,
       /^IDE setting port must be a number$/,
       /^IDE has no setting named host$/,
-      /^Docs can't be given to the scribe role/,
+      /^IDE can't be given to the scribe role/,
       /^Oh My Pi has no supervisor settings/,
     ],
   ],
@@ -295,6 +295,13 @@ test("each seat is told and given what its servers, its role and the Human say, 
     rulesFor(team, "scribe"),
     "# Working rules\n\n## Rules from the Human\n\nKeep diffs small.\n\nUse pnpm.\n",
     "what every seat is told reaches a seat with no server, and nothing meant for another",
+  );
+
+  const widened = resolveTeam(kit, {}, { mcp: { docs: { enabled: true, roles: ["peer", "scribe"] } } });
+  assert.deepEqual(
+    [widened.errors, widened.roles.scribe!.mcp, widened.roles.lead!.mcp],
+    [[], ["docs"], ["ide"]],
+    "a plain server offers every role the same, so the settings give it to a role its catalog entry does not name",
   );
 
   const retooled = resolveTeam(kit, { mcp: { ide: { tools: { lead: ["ide_refactor_rename"] } } } });

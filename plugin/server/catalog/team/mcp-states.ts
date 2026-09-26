@@ -96,23 +96,32 @@ function applyChoice(state: McpState, choice: McpChoice, errors: string[]): void
   }
 }
 
-/** No roles named means every role working with tools. */
+/** A proxy serves the roles its tools are listed for; a plain server offers every role the same. */
 function eligibleRoles(state: McpState, kit: Kit): string[] {
   const entry = state.entry;
   if (entry?.kind === "proxy") return Object.keys(state.tools ?? entry.tools ?? {});
-  return entry?.roles ?? kit.roles.filter((role) => role.tools).map((role) => role.role);
+  return kit.roles.map((role) => role.role);
 }
 
-/** The roles a server goes to: those named, where it can serve them, or else each it can serve but a judge, which answers from its case and the record. */
+/**
+ * The roles a server goes to: those named, where it can serve them; else those its catalog entry names, or each role
+ * working with tools, but a judge, which answers from its case and the record.
+ */
 function rolesOf(state: McpState, kit: Kit, named: string[] | undefined, errors: string[]): string[] {
   const eligible = eligibleRoles(state, kit);
   for (const role of named ?? [])
     if (!eligible.includes(role))
       errors.push(`${state.label} can't be given to the ${role} role: it has nothing for that role`);
+  if (named) return named.filter((role) => eligible.includes(role));
+  const entry = state.entry;
+  const preset =
+    entry?.kind === "proxy"
+      ? eligible
+      : (entry?.roles ?? kit.roles.filter((role) => role.tools).map((role) => role.role));
   const judges = (role: string) =>
     can(
-      kit.roles.find((entry) => entry.role === role),
+      kit.roles.find((each) => each.role === role),
       "judge",
     );
-  return (named ?? eligible.filter((role) => !judges(role))).filter((role) => eligible.includes(role));
+  return preset.filter((role) => eligible.includes(role) && !judges(role));
 }
