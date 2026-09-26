@@ -163,7 +163,7 @@ async function launchLead(
     parent: how.parent,
     title: seatTitle.of(lane, leadRole),
     prompt: directed.text,
-    labels: { "seatworks.lane": lane.id, "seatworks.role": leadRole.role },
+    labels: { "seatworks.lane": lane.id },
   });
   ledgers.transact(project, (ledger) => {
     const entry = ledger.lanes[lane.id];

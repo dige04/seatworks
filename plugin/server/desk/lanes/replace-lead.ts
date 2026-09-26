@@ -96,7 +96,7 @@ async function takeOver(
         parent: caller.id,
         title: seatTitle.of(lane, leadRole),
         prompt: await takeoverFor({ kit }, caller.project, lane, lane.worktree),
-        labels: { "seatworks.lane": lane.id, "seatworks.role": leadRole.role },
+        labels: { "seatworks.lane": lane.id },
       },
     );
     return { lead, role: leadRole.role };
