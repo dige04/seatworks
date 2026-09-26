@@ -147,6 +147,13 @@ test("a hand-back is asked about by review's own sensor, whatever reads for the 
   const summary = { summary: "Rounds half up; the refund path is stubbed for now.", out_of_scope: ["the CSV export"] };
   const question = { type: "condition", instructions: gap.instructions, criteria: gap.criteria };
   assert.deepEqual(asked, [{ key: KEY, state: summary, questions: { summary_admits_gap: question } }]);
+  const shown = await h.rpc(contracts.team, { project: h.project.slug });
+  assert.ok("review" in shown);
+  assert.deepEqual(
+    shown.review,
+    { sensor: "jev" },
+    "the panel names the sensor that asks, with the watch's brains off",
+  );
   const { at, episode, ...first } = kept(h.project.state)[0]!;
   assert.ok(Date.parse(at) > 0);
   assert.match(episode, /^L1-T1-\d+\.md$/, "the hand-back it is about");

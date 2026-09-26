@@ -72,6 +72,7 @@ export const TeamView = z.object({
   project: z.string().nullable(),
   errors: z.array(z.string()),
   attention: z.object({ brain: Attention.shape.brain, sensor: z.string() }),
+  review: z.object({ sensor: z.string().nullable() }),
   hitl: Hitl,
   rules: z.string(),
   mcp: z.record(

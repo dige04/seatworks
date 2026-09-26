@@ -237,11 +237,12 @@ function HitlCard(props: Props) {
 
 /** On the chip of a role that reviews: which sensor asks review's one-condition checks, its own setting apart from the watch's brains. */
 function ReviewCard(props: Props & { role: Role }) {
-  const { catalog, values, machine, layer, disabled, save } = props;
+  const { catalog, team, values, machine, layer, disabled, save } = props;
   const [draft, setDraft] = useState("");
   const field = useRef<SettingsInputHandle>(null);
   const chosen = values.review?.sensor ?? (layer === "project" ? machine.review?.sensor : undefined);
-  const sensor = catalog.sensors.find((entry) => entry.id === chosen);
+  // The kit's sensor asks when none is chosen, and its key is the one that counts then.
+  const sensor = catalog.sensors.find((entry) => entry.id === (chosen ?? team.review.sensor));
   return (
     <SettingsCard>
       <SettingsSelect

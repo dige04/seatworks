@@ -1,7 +1,6 @@
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { providerId, seatedAs } from "../../catalog/kit/roles.ts";
-import { type Team, rulesFor, skillDirsFor } from "../../catalog/team/team.ts";
-import { transportOf } from "../../catalog/team/mcp-states.ts";
+import { type Team, rulesFor } from "../../catalog/team/team.ts";
 import type { Project } from "../../desk/project/project.ts";
 import type { TeamView } from "../../../shared/views.ts";
 
@@ -9,7 +8,8 @@ export function describeTeam(kit: Kit, team: Team, project?: Project): TeamView 
   return {
     project: project?.slug ?? null,
     errors: team.errors,
-    attention: team.attention,
+    attention: { brain: team.attention.brain, sensor: team.attention.sensor },
+    review: { sensor: team.review.sensor?.id ?? null },
     hitl: team.hitl,
     rules: team.rules,
     mcp: Object.fromEntries(
@@ -20,10 +20,8 @@ export function describeTeam(kit: Kit, team: Team, project?: Project): TeamView 
           enabled: state.enabled,
           roles: state.roles,
           settings: state.settings,
-          transport: transportOf(state),
           template: Boolean(state.entry),
           connect: state.connect ?? null,
-          rule: state.rule ?? null,
         },
       ]),
     ),
@@ -42,7 +40,6 @@ export function describeTeam(kit: Kit, team: Team, project?: Project): TeamView 
               (team.mcp[id]!.tools ?? team.mcp[id]!.entry?.tools)?.[seatedAs(seat.role)] ?? [],
             ]),
           ),
-          skills: [...skillDirsFor(team, name).keys()],
           rules: rulesFor(team, name),
         },
       ]),
