@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
-import { servedBy } from "../../server/desk/services.ts";
+import { servedBy } from "../../server/desk/calls/tool-calls.ts";
 import { TOOLS } from "../../server/desk/tools/registry.ts";
 
 const kit = loadKit(join(dirname(fileURLToPath(import.meta.url)), "..", ".."));

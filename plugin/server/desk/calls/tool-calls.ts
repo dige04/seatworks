@@ -1,3 +1,5 @@
+import { z } from "zod";
+import type { ArgSchema } from "../../catalog/kit/kit.ts";
 import { schemaOf, seatOf } from "../../catalog/kit/roles.ts";
 import { errorText } from "../../core/errors.ts";
 import { sortKeys } from "../../core/json.ts";
@@ -7,7 +9,7 @@ import { type Args, type Caller, type ToolReply, type ToolRequest, no } from "..
 import { inTime } from "./in-time.ts";
 import { messageLetters } from "../letters/message-letters.ts";
 import { projectOf } from "../project/project.ts";
-import { type DeskServices, type ToolDef, servedBy } from "../services.ts";
+import type { DeskServices, ToolDef } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 
 /** How long a harness waits on one call before it gives up; the desk answers first. */
@@ -123,4 +125,39 @@ export class ToolCalls {
     const project = projectOf(seat.cwd ?? request.cwd);
     return { id: request.agent, role, title: seat.title ?? request.agent, project };
   }
+}
+
+/** A schema as a shape to compare: what each field is and must hold, not how it is described to a seat. */
+function structure(schema: Record<string, unknown>): Record<string, unknown> {
+  const kept: Record<string, unknown> = {};
+  for (const key of Object.keys(schema).sort()) {
+    const value = schema[key];
+    if (key === "description" || key === "$schema" || key === "additionalProperties") continue;
+    if (key === "properties")
+      kept[key] = Object.fromEntries(
+        Object.entries(value as Record<string, Record<string, unknown>>)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([name, field]) => [name, structure(field)]),
+      );
+    else if (key === "items") kept[key] = structure(value as Record<string, unknown>);
+    else if (key === "required") kept[key] = [...(value as string[])].sort();
+    else kept[key] = value;
+  }
+  return kept;
+}
+
+const shapes = new WeakMap<object, string>();
+
+function shapeKey(owner: object, schema: () => unknown): string {
+  let shape = shapes.get(owner);
+  if (shape === undefined) shapes.set(owner, (shape = JSON.stringify(structure(schema() as Record<string, unknown>))));
+  return shape;
+}
+
+/** The tool that serves `name` as `shown` describes it: tools of one name differ by what they take, and a role's tool set picks which it is shown. */
+export function servedBy(tools: ToolDef[], name: string, shown: ArgSchema): ToolDef | undefined {
+  const wanted = shapeKey(shown, () => shown);
+  return tools.find(
+    (tool) => tool.name === name && shapeKey(tool, () => z.toJSONSchema(tool.input, { io: "input" })) === wanted,
+  );
 }
