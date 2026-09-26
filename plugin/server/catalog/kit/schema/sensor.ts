@@ -58,3 +58,26 @@ export const ChecksFile = z.record(
   z.string().regex(/^[a-z][a-z_]*$/, { error: "is not a lowercase name" }),
   z.discriminatedUnion("type", [Noul, Choice]),
 );
+
+/**
+ * One thing the watch's brains read a seat's own words for: the capabilities of the seats it watches, which of their items
+ * it reads, the sensor's one-condition question on an item's `text` (none when only the seat can judge it), the seat's
+ * question on the whole look, what each answer means, the signs the look must hold for a yes to count, and its thresholds.
+ */
+const Pattern = z
+  .strictObject({
+    title: text,
+    source: text,
+    watches: z.array(text).min(1),
+    reads: z.array(z.enum(["thought", "said", "brief"])).min(1),
+    instructions: text.includes("`text`").optional(),
+    seat: text,
+    criteria: z.strictObject({ true: text, false: text }),
+    gate: z.array(z.enum(["stuck", "reworked", "handed-back", "edit-before-look"])).optional(),
+    yes: unit,
+    no: unit,
+  })
+  .refine((pattern) => pattern.no < pattern.yes, { error: "has no that is not below yes" });
+
+/** `catalog/patterns.json`: the patterns the watch's brains read for, each by its id, which is also its signal's. */
+export const PatternsFile = z.record(z.string().regex(/^[a-z][a-z-]*$/), Pattern);

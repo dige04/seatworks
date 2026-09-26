@@ -168,6 +168,8 @@ export function makeKit(): Kit {
   // The shipped ecosystem, Paseo's tools, the watch's questions and what a seat's PATH refuses are the world's, not this fixture's to make up.
   for (const name of ["ecosystem.json", "paseo.json", "checks.json", "refused.json"])
     put(dir, `catalog/${name}`, readFileSync(new URL(`../catalog/${name}`, import.meta.url), "utf-8"));
+  // No role of the fixture's is watched, so no pattern could read one.
+  put(dir, "catalog/patterns.json", {});
   put(dir, "mcp/tools.json", {
     supervisor: [{ name: "open_lane" }, { name: "answer" }, { name: "status" }],
     lead: [{ name: "add_tasks" }, { name: "report" }, { name: "ask" }, { name: "status" }],

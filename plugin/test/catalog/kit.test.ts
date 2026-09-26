@@ -15,12 +15,13 @@ function put(dir: string, path: string, value: unknown): void {
   writeFileSync(join(dir, path), JSON.stringify(value));
 }
 
-/** A kit of the test's own over the shipped ecosystem, Paseo's tools, the watch's questions and refused commands. */
+/** A kit of the test's own over the shipped ecosystem, Paseo's tools, the watch's questions and refused commands, and no patterns. */
 function kitDir(files: Record<string, unknown>): string {
   const dir = tempDir("sw2-kit-");
   mkdirSync(join(dir, "catalog"), { recursive: true });
   for (const name of ["ecosystem.json", "paseo.json", "checks.json", "refused.json"])
     copyFileSync(new URL(`../../catalog/${name}`, import.meta.url), join(dir, "catalog", name));
+  put(dir, "catalog/patterns.json", {});
   for (const [path, value] of Object.entries(files)) put(dir, path, value);
   return dir;
 }
@@ -64,6 +65,7 @@ const sensor = {
   retries: 1,
 };
 const checks = shipped("checks.json") as Record<string, Record<string, unknown>>;
+const struggling = (shipped("patterns.json") as Record<string, Record<string, unknown>>).struggling!;
 const good = {
   "harness/acme/harness.json": harness,
   "roles.json": { roles: [peer, archivist] },
@@ -191,6 +193,21 @@ const REFUSED: [string, unknown, RegExp][] = [
     "catalog/checks.json",
     { ...checks, asked_for: { ...checks.asked_for, acts: { destructive: "run a command" } } },
     /^checks\.json is not as the kit reads it:\n✖ .*\{quote\}.*\n {2}→ at asked_for\.acts\.destructive$/,
+  ],
+  [
+    "catalog/patterns.json",
+    { drift: { ...struggling, no: 0.9 } },
+    /^patterns\.json is not as the kit reads it:\n✖ has no that is not below yes\n {2}→ at drift$/,
+  ],
+  [
+    "catalog/patterns.json",
+    { drift: { ...struggling, instructions: "Does the agent drift?" } },
+    /^patterns\.json is not as the kit reads it:\n✖ .*`text`.*\n {2}→ at drift\.instructions$/,
+  ],
+  [
+    "catalog/patterns.json",
+    { drift: { ...struggling, watches: ["lead"] } },
+    /^pattern drift watches what can lead, and no watched role can$/,
   ],
 ];
 

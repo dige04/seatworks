@@ -8,7 +8,7 @@ import { EcosystemFile } from "./schema/ecosystem.ts";
 import { HarnessFile } from "./schema/harness.ts";
 import { McpFile } from "./schema/mcp.ts";
 import { PaseoFile, RefusedFile, RolesFile } from "./schema/roles.ts";
-import { ChecksFile, SensorFile } from "./schema/sensor.ts";
+import { ChecksFile, PatternsFile, SensorFile } from "./schema/sensor.ts";
 
 type ThinkingSpec = { id: string; label: string; isDefault?: boolean };
 export type ModelSpec = { id: string; label: string; isDefault?: boolean; thinkingOptions?: ThinkingSpec[] };
@@ -29,6 +29,7 @@ export type Ecosystem = z.infer<typeof EcosystemFile>;
 export type ProxySpec = NonNullable<McpEntry["proxy"]>;
 export type SensorSpec = z.infer<typeof SensorFile>;
 export type CheckSpec = z.infer<typeof ChecksFile>[string];
+type PatternSpec = z.infer<typeof PatternsFile>[string];
 
 export type Kit = {
   dir: string;
@@ -44,6 +45,7 @@ export type Kit = {
   refused: Record<string, string>;
   sensors: Record<string, SensorSpec>;
   checks: Record<string, CheckSpec>;
+  patterns: Record<string, PatternSpec>;
 };
 
 function subdirs(root: string): string[] {
@@ -131,6 +133,8 @@ export function loadKit(dir: string, stateDir?: string): Kit {
   const roles = loadRoles(raw.roles, harnesses);
   const refused = parsed(RefusedFile, chosen(join(dir, "catalog", "refused.json"), stateDir), "refused.json");
   checkRefused(refused, harnesses);
+  const patterns = parsed(PatternsFile, join(dir, "catalog", "patterns.json"), "patterns.json");
+  checkPatterns(patterns, roles);
   const { watch } = ecosystem;
   return {
     dir,
@@ -152,7 +156,17 @@ export function loadKit(dir: string, stateDir?: string): Kit {
     refused,
     sensors: loadSensors(dir),
     checks: parsed(ChecksFile, join(dir, "catalog", "checks.json"), "checks.json"),
+    patterns,
   };
+}
+
+/** A pattern watches seats by what they can do: one naming what no watched role can is a pattern that never reads anything. */
+function checkPatterns(patterns: Record<string, PatternSpec>, roles: RoleSpec[]): void {
+  const watched = roles.filter((role) => role.can?.includes("watched"));
+  for (const [id, pattern] of Object.entries(patterns))
+    for (const capability of pattern.watches)
+      if (!watched.some((role) => role.can?.includes(capability)))
+        throw new Error(`pattern ${id} watches what can ${capability}, and no watched role can`);
 }
 
 function loadHarnesses(dir: string): Record<string, HarnessSpec> {

@@ -12,7 +12,7 @@ export function describeTeam(kit: Kit, team: Team, project?: Project): TeamView 
     project: project?.slug ?? null,
     errors: team.errors,
     attention: team.attention,
-    signals: SIGNALS,
+    signals: [...SIGNALS, ...Object.entries(kit.patterns).map(([kind, pattern]) => ({ kind, title: pattern.title }))],
     hitl: team.hitl,
     rules: team.rules,
     mcp: Object.fromEntries(

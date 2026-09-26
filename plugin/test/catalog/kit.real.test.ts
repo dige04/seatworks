@@ -325,4 +325,10 @@ test("the preset reads what the watch sees with both brains: the kit's sensor si
   const { brains } = resolveTeam(loadKit(PLUGIN));
   assert.deepEqual([brains.mode, brains.sensor?.id, brains.seat?.role], ["both", "jev", "watcher"]);
   assert.equal(brains.sensor?.key, undefined, "a sensor with no key asks nothing until the owner gives one");
+  const kit = loadKit(PLUGIN);
+  const kinds = describeTeam(kit, resolveTeam(kit)).signals.map((signal) => signal.kind);
+  assert.ok(
+    ["stuck", "struggling", "big-decision", "patch-not-handoff"].every((kind) => kinds.includes(kind)),
+    "the Supervisor's chip lists what the code notices and every pattern the brains read for, each to turn on",
+  );
 });
