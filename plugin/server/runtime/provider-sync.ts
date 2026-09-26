@@ -17,7 +17,6 @@ type SyncOptions = {
 
 /** Keeps Paseo's providers, and the agents' model lists, in step with the kit and the attached projects' teams. */
 export class ProviderSync {
-  private asked = false;
   private readonly options: SyncOptions;
   private running: Promise<void> = Promise.resolve();
   private waiting: Promise<void> | undefined;
@@ -26,14 +25,7 @@ export class ProviderSync {
     this.options = options;
   }
 
-  /** A panel call is the first sign someone looks at the models, so the first one of a load asks the agents for them. */
-  firstLook(): void {
-    if (this.asked) return;
-    this.asked = true;
-    this.refreshModels().catch((error) => daemonLog.error("could not list the agents' models:", error));
-  }
-
-  /** Asked once per load and on demand: Paseo keeps a catalog until told to refresh it. */
+  /** Only when the panel asks, since each ask sends Paseo to probe the agents; it keeps a catalog until told to refresh it. */
   async refreshModels(): Promise<ModelCache> {
     const { kit, models } = this.options;
     // Scoped to one directory: unscoped, Paseo probes the agent for every workspace it has ever opened.

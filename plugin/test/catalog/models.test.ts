@@ -23,14 +23,14 @@ test("the models are what Paseo lists for each agent, not what the plugin marked
     kit,
     async (provider) => {
       asked.push(provider);
-      return provider.endsWith("-claude")
+      return provider === "claude"
         ? { models: [opus, { id: "old", label: "Old", isSelectable: false }] }
         : { models: [{ id: "glm-5", label: "GLM 5" }] };
     },
     state,
     Date.parse("2026-09-01T00:00:00Z"),
   );
-  assert.deepEqual(asked, ["sw2-supervisor-claude", "sw2-lead-omp"], "one seat's provider is asked per agent");
+  assert.deepEqual(asked, ["claude", "omp"], "each agent is asked through its built-in provider, once");
   assert.equal(first.changed, true);
   assert.deepEqual(
     first.cache.claude!.models,
@@ -53,7 +53,7 @@ test("the models are what Paseo lists for each agent, not what the plugin marked
   const failed = await fetchModels(
     kit,
     async (provider) => {
-      if (provider.endsWith("-omp")) throw new Error("omp is not on PATH");
+      if (provider === "omp") throw new Error("omp is not on PATH");
       return { models: [opus, { id: "old", label: "Old", isSelectable: false }] };
     },
     state,

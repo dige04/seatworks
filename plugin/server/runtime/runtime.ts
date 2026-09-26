@@ -202,11 +202,6 @@ export class Runtime implements HostHooks {
     return this.sync.reconcile();
   }
 
-  /** A panel call is the first sign someone looks at the models, so the first one of a load asks the agents for them. */
-  panelCalled(): void {
-    this.sync.firstLook();
-  }
-
   create(config: AgentConfig, env: Record<string, string> = {}): { config: AgentConfig; env: Record<string, string> } {
     return this.launch.create(config, env);
   }

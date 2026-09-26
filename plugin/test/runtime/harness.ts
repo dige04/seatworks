@@ -179,7 +179,6 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
     registerRpc(
       (served, handler) => void (served.name === contract.name && (answer = handler as (input: unknown) => unknown)),
       runtime.panel,
-      () => {},
     );
     const raw = await answer(contract.input.parse(input));
     const sent = JSON.parse(JSON.stringify(raw)) as unknown;

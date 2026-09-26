@@ -4,7 +4,6 @@ import { readJson, writeJson } from "../../core/store.ts";
 import { errorText } from "../../core/errors.ts";
 import type { ModelList } from "../../core/ports.ts";
 import type { Kit, ModelSpec } from "../kit/kit.ts";
-import { providerId } from "../kit/roles.ts";
 import { seatPairs } from "./providers.ts";
 
 export type ModelCache = Record<string, { at: string; models: ModelSpec[]; error: string | null }>;
@@ -35,11 +34,9 @@ function specOf(model: NonNullable<ModelList["models"]>[number]): ModelSpec {
   return spec;
 }
 
+/** Each agent a role can sit on, by the built-in provider Paseo lists its models under, so listing needs none of the kit's. */
 export function listingProviders(kit: Kit): Map<string, string> {
-  const providers = new Map<string, string>();
-  for (const { role, harness } of seatPairs(kit))
-    if (!providers.has(harness.id)) providers.set(harness.id, providerId(kit, role.role, harness.id));
-  return providers;
+  return new Map(seatPairs(kit).map(({ harness }) => [harness.id, harness.baseProvider]));
 }
 
 export async function fetchModels(

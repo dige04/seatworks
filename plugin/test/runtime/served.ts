@@ -10,16 +10,36 @@ type Contract = { name: string; input: z.ZodType; output: z.ZodType };
 type Handler = (input: unknown, context: { paseo: unknown }) => unknown;
 type Provider = { additionalModels?: { id: string }[] };
 
-/** A daemon with nobody seated, `live` aside, and its config as `config` holds it. */
-export const daemon = (config = fakeConfig(), live: { provider: string }[] = []) => ({
-  agents: {
-    list: async () => ({
-      entries: live.map((agent, index) => ({ agent: { id: `live-${index}`, archivedAt: null, ...agent } })),
-      pageInfo: { hasMore: false, nextCursor: null, prevCursor: null },
-    }),
-  },
-  config: config.api,
-});
+type Listed = { models?: { id: string; label: string }[]; error?: string };
+
+/** A daemon with nobody seated, `live` aside, its config as `config` holds it, and each agent's models as `models` lists them. */
+export function daemon(
+  config = fakeConfig(),
+  live: { provider: string }[] = [],
+  models: (provider: string) => Listed = () => ({ error: "not listed" }),
+) {
+  const asked: { kind: "refresh" | "list"; provider: string; cwd?: string }[] = [];
+  return {
+    asked,
+    providers: {
+      async refresh(options: { cwd?: string; providers?: string[] }) {
+        for (const provider of options.providers ?? []) asked.push({ kind: "refresh", provider, cwd: options.cwd });
+        return { acknowledged: true };
+      },
+      async listModels(provider: string, options?: { cwd?: string }) {
+        asked.push({ kind: "list", provider, cwd: options?.cwd });
+        return models(provider);
+      },
+    },
+    agents: {
+      list: async () => ({
+        entries: live.map((agent, index) => ({ agent: { id: `live-${index}`, archivedAt: null, ...agent } })),
+        pageInfo: { hasMore: false, nextCursor: null, prevCursor: null },
+      }),
+    },
+    config: config.api,
+  };
+}
 
 /**
  * The plugin's panel side as Paseo serves it, on the test kit: each contract's handler called with the daemon handle,
@@ -30,7 +50,7 @@ export function served(paseo: unknown = daemon()) {
   const runtime = new Runtime(makeKit(), host);
   const handlers = new Map<string, Handler>();
   const server = { handle: (contract: Contract, handler: Handler) => void handlers.set(contract.name, handler) };
-  registerRpc(host.answering(server as never), runtime.panel, () => {});
+  registerRpc(host.answering(server as never), runtime.panel);
   /** The providers of the kit's that Paseo's config holds, by id. */
   const providers = async () => {
     const { config } = await (paseo as ReturnType<typeof daemon>).config.get();

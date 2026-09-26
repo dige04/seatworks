@@ -48,13 +48,7 @@ export type Panel = { settings: SettingsRpc; projects: ProjectsRpc; upkeep: Upke
 /** Serves one contract: the handler takes what its input schema reads and gives what its output schema holds. */
 type Serve = <C extends Contract>(contract: C, answer: (input: z.output<C["input"]>) => Out<C>) => void;
 
-/** `called` runs before every answer, since a panel call is how the runtime learns someone is looking. */
-export function registerRpc(serve: Serve, panel: Panel, called: () => void): void {
-  const handle: Serve = (contract, answer) =>
-    serve(contract, (input) => {
-      called();
-      return answer(input);
-    });
+export function registerRpc(handle: Serve, panel: Panel): void {
   const { settings, projects, upkeep, human } = panel;
   handle(contracts.catalog, () => settings.catalog());
   handle(contracts.settingsRead, (input) => settings.readSettings(input.project));

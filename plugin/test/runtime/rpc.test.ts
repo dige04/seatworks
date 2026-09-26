@@ -1,13 +1,15 @@
 // First, so this file has a HOME of its own even run alone: what it writes under HOME would otherwise land in the owner's.
 import "../setup.ts";
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { stateRoot } from "../../server/core/paths.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { KEPT } from "../../shared/settings.ts";
-import { served, which } from "./served.ts";
+import { tempDir } from "../tempdir.ts";
+import { fakeConfig } from "./fake-paseo.ts";
+import { daemon, served, which } from "./served.ts";
 
 /** A project on record as the desk keeps one, so its own settings layer can be read and saved. */
 function onRecord(slug: string, root: string): void {
@@ -190,6 +192,35 @@ test("settings: machine and project layers saved by revision, checked before sav
     "a file nobody could read is not a team its owner wrote: none of its rules are in force",
   );
   assert.equal(checks.find((check) => check.id === "settings")!.ok, false, "the doctor reports an unreadable layer");
+});
+
+test("the panel's Refresh lists each agent's models through its built-in provider, in the state root alone, no other panel call asks Paseo for any, and a changed list reaches the providers", async () => {
+  const listed = (provider: string) =>
+    provider === "claude" ? { models: [{ id: "opus", label: "Opus 5" }] } : { models: [{ id: "glm", label: "GLM" }] };
+  const paseo = daemon(fakeConfig(), [], listed);
+  const { call, providers } = served(paseo);
+  const root = realpathSync(tempDir("sw2-rpc-models-"));
+  which(await call(contracts.projectsAdd, { root }), "slug");
+  await call(contracts.catalog, {});
+  assert.equal(paseo.asked.length, 0, "only the Human's Refresh sends Paseo to its agents: each ask probes them");
+  const refreshed = await call(contracts.models, {});
+  assert.deepEqual(
+    Object.entries(refreshed).map(([id, entry]) => [id, entry.count, entry.error]),
+    [
+      ["claude", 1, null],
+      ["omp", 1, null],
+    ],
+  );
+  assert.deepEqual(
+    [...new Set(paseo.asked.map((ask) => `${ask.kind} ${ask.provider} ${ask.cwd}`))].sort(),
+    ["list", "refresh"].flatMap((kind) => [`${kind} claude ${stateRoot()}`, `${kind} omp ${stateRoot()}`]),
+    "an agent's own provider answers for it, so listing needs no provider of the kit's",
+  );
+  assert.deepEqual(
+    (await providers())["sw2-lead-claude"]?.additionalModels,
+    [{ id: "opus", label: "Opus 5", isDefault: true }],
+    "a changed list reaches the providers of the attached projects' seats",
+  );
 });
 
 test("a pasted server is understood whatever dialect it is written in", async () => {
