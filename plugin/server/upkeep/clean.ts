@@ -8,7 +8,6 @@ import { contentRoot, expandHome, guidesDir, stateRoot, worktreeRoot } from "../
 import { errorText } from "../core/errors.ts";
 import { readLedger } from "../desk/store/ledger.ts";
 import type { Project } from "../desk/project/project.ts";
-import { BACKUP } from "./migrate.ts";
 import { firstUnder } from "../core/fs.ts";
 
 type CleanContext = {
@@ -166,27 +165,8 @@ function snapshots(ctx: CleanContext): CleanItem[] {
     .map((name) => item(join(root, name), "snapshot", "no seat links to it"));
 }
 
-/** What Migrate put aside before changing a settings file. They can hold a pasted server's token. */
-function backups(ctx: CleanContext): CleanItem[] {
-  const root = stateRoot(ctx.home);
-  const dirs = [root, ...entries(join(root, "projects")).map((slug) => join(root, "projects", slug))];
-  return dirs.flatMap((dir) =>
-    entries(dir).flatMap((name) =>
-      BACKUP.test(name)
-        ? [
-            item(
-              join(dir, name),
-              "backup",
-              "a copy Migrate kept of settings it repaired; it can hold a pasted server's token",
-            ),
-          ]
-        : [],
-    ),
-  );
-}
-
 export async function scanGarbage(ctx: CleanContext): Promise<CleanItem[]> {
-  return [...seats(ctx), ...(await copies(ctx)), ...records(ctx), ...snapshots(ctx), ...backups(ctx)];
+  return [...seats(ctx), ...(await copies(ctx)), ...records(ctx), ...snapshots(ctx)];
 }
 
 /** The repository a linked working copy belongs to, read before the copy is gone. */

@@ -11,7 +11,6 @@ import { resolveTeam } from "../../server/catalog/team/team.ts";
 import { readConfig } from "../../server/core/config-file.ts";
 import { DESK_OWNED, stateRoot } from "../../server/core/paths.ts";
 import type { AgentConfig } from "../../server/core/ports.ts";
-import { BACKUP } from "../../server/upkeep/migrate.ts";
 import type { Layer } from "../../shared/settings.ts";
 import { makeKit } from "../kit.ts";
 import { tempDir } from "../tempdir.ts";
@@ -200,7 +199,6 @@ test("a Claude seat's file tools are kept off what the desk owns and what sets u
   const project = `${machine}/projects/shop-1a2b`;
   const home = (path: string) => path.replace(/^HOME/, "~");
   const backup = "settings.json.bak-20260925-120000";
-  assert.ok(BACKUP.test(backup), "named as Migrate names a backup");
 
   const kept: [string, "Edit" | "Read", string[]][] = [
     [
@@ -217,7 +215,7 @@ test("a Claude seat's file tools are kept off what the desk owns and what sets u
       ),
     ],
     [
-      "which can hold a sensor's key, as a save's staged copy and Migrate's backups do",
+      "which can hold a sensor's key, as a save's staged copy or a copy the owner keeps beside it does",
       "Read",
       [machine, project].flatMap((dir) =>
         ["settings.json", backup, "settings.json.4242.tmp"].map((name) => `${dir}/${name}`),

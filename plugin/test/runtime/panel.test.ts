@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { test } from "node:test";
 import { notice } from "./noticed.ts";
-import { paseoConfigPath, stateRoot } from "../../server/core/paths.ts";
+import { stateRoot } from "../../server/core/paths.ts";
 import { contracts } from "../../shared/rpc.ts";
 import type { Layer } from "../../shared/settings.ts";
 import { settle } from "./fake-timeline.ts";
@@ -86,17 +86,17 @@ test("Migrate shows what you took in of the kit, when that cannot be read, as a 
   const taken = join(stateRoot(), "content.json");
   mkdirSync(stateRoot(), { recursive: true });
   writeFileSync(taken, "{not json");
-  const plan = await h.rpc(contracts.migrate, { apply: false });
+  const plan = await h.rpc(contracts.migrate, {});
   const steps = plan.steps.filter((step) => step.kind === "content");
   assert.deepEqual(
-    steps.map((step) => [step.auto, step.where]),
-    [[false, "machine"]],
+    steps.map((step) => step.where),
+    ["machine"],
   );
   assert.match(steps[0]!.what, /content\.json is there but could not be read/);
   assert.equal(readFileSync(taken, "utf-8"), "{not json");
 });
 
-test("a save is refused only for what it adds, and Migrate offers to drop a role the kit no longer has", async () => {
+test("a save is refused only for what it adds", async () => {
   const h = harness();
   h.machineSettings({ roles: { pager: { harness: "claude" } } });
   const save = async (values: Layer) => {
@@ -113,14 +113,4 @@ test("a save is refused only for what it adds, and Migrate offers to drop a role
     [refused.status, refused.status === "invalid" && refused.error],
     ["invalid", "The project settings name an unknown role ghost"],
   );
-
-  const plan = await h.rpc(contracts.migrate, { apply: false });
-  const step = plan.steps.find((each) => each.kind === "settings" && each.where === "machine");
-  assert.deepEqual(step?.detail, ["roles.pager"]);
-  // Paseo's config is always there where a plugin runs, and applying reconciles the seats' providers into it.
-  mkdirSync(dirname(paseoConfigPath()), { recursive: true });
-  writeFileSync(paseoConfigPath(), "{}\n");
-  await h.rpc(contracts.migrate, { apply: true });
-  const machine = JSON.parse(readFileSync(join(stateRoot(), "settings.json"), "utf-8")) as { roles?: object };
-  assert.deepEqual(machine.roles, {});
 });

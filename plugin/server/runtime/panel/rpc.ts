@@ -30,7 +30,7 @@ export interface ProjectsRpc {
 export interface UpkeepRpc {
   clean(remove?: string[]): Out<typeof contracts.clean>;
   update(apply: boolean, fetch?: boolean): Out<typeof contracts.update>;
-  migrate(apply: boolean): Out<typeof contracts.migrate>;
+  migrate(): Out<typeof contracts.migrate>;
   decide(unit: string, choice: "new" | "mine" | "seen"): Out<typeof contracts.decide>;
 }
 
@@ -74,7 +74,7 @@ export function registerRpc(handle: Serve, panel: Panel): void {
   handle(contracts.flow, (input) => projects.flow(input.project, input.since, input.open));
   handle(contracts.clean, (input) => upkeep.clean(input.remove));
   handle(contracts.update, (input) => upkeep.update(input.apply, input.fetch));
-  handle(contracts.migrate, (input) => upkeep.migrate(input.apply));
+  handle(contracts.migrate, () => upkeep.migrate());
   handle(contracts.decide, (input) => upkeep.decide(input.unit, input.choice));
   handle(contracts.landDecide, (input) => human.decideLand(input.project, input.lane, input.approve, input.note));
   handle(contracts.questionAnswer, (input) => human.answer(input.project, input.question, input.choice, input.note));

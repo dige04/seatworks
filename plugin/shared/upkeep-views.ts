@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const CleanItem = z.object({
   path: z.string(),
-  kind: z.enum(["seat", "copy", "records", "snapshot", "backup"]),
+  kind: z.enum(["seat", "copy", "records", "snapshot"]),
   why: z.string(),
   bytes: z.number(),
   careful: z.boolean(),
@@ -38,11 +38,10 @@ export const UpdateView = z.object({
 export type UpdateView = z.infer<typeof UpdateView>;
 
 const MigrateStep = z.object({
-  kind: z.enum(["settings", "seat", "content"]),
+  kind: z.enum(["seat", "content"]),
   where: z.string(),
   what: z.string(),
   detail: z.array(z.string()),
-  auto: z.boolean(),
 });
 export type MigrateStep = z.infer<typeof MigrateStep>;
 /** Guides and records are only told about, never replaced. */
@@ -58,7 +57,6 @@ export const MigrateView = z.object({
   stamp: z.string(),
   since: z.string(),
   steps: z.array(MigrateStep),
-  done: z.array(z.string()),
   content: z.array(ContentChange),
 });
 export type MigrateView = z.infer<typeof MigrateView>;

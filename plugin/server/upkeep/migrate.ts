@@ -1,28 +1,20 @@
-import { copyFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { MigrateStep, MigrateView } from "../../shared/upkeep-views.ts";
 import type { Kit } from "../catalog/kit/kit.ts";
 import { digest } from "../core/fs.ts";
-import { type Layer, LayerSchema } from "../../shared/settings.ts";
 import { stateRoot } from "../core/paths.ts";
 import { readJson, writeJson } from "../core/store.ts";
-import type { Project } from "../desk/project/project.ts";
-
-export const BACKUP = /^settings\.json\.bak-\d{8}-\d{6}$/;
 
 export type LiveSeat = { provider: string; slug: string; createdAt?: string; name: string };
 
 export type MigrateContext = {
   kit: Kit;
   home: string;
-  known: Project[];
-  settings: { where: string; file: string }[];
   live: LiveSeat[];
   now: number;
 };
 
 type Stamp = { stamp: string; since: string };
-type Step = MigrateStep & { apply?: () => void };
 
 const stampFile = (homeDir: string) => join(stateRoot(homeDir), "kit.json");
 
@@ -34,123 +26,6 @@ export function stampKit(kit: Kit, homeDir: string, now = Date.now()): Stamp {
   const next = { stamp, since: new Date(now).toISOString() };
   writeJson(stampFile(homeDir), next);
   return next;
-}
-
-type Path = (string | number)[];
-
-function at(root: unknown, path: Path): unknown {
-  let node = root;
-  for (const key of path)
-    node = node && typeof node === "object" ? (node as Record<string | number, unknown>)[key] : undefined;
-  return node;
-}
-
-/** Drops the value at `path`, or the nearest parent that holds it when the value is not there. */
-function drop(root: unknown, path: Path): Path | undefined {
-  for (let end = path.length; end > 0; end--) {
-    const parent = at(root, path.slice(0, end - 1));
-    const key = path[end - 1]!;
-    if (!parent || typeof parent !== "object") continue;
-    if (Array.isArray(parent) && typeof key === "number" && key < parent.length) {
-      parent.splice(key, 1);
-      return path.slice(0, end);
-    }
-    if (!Array.isArray(parent) && key in parent) {
-      delete (parent as Record<string, unknown>)[String(key)];
-      return path.slice(0, end);
-    }
-  }
-  return undefined;
-}
-
-/** Drops the roles `known` does not hold, as a layer names them for a seat and for an MCP server; names what it dropped. */
-function dropRoles(values: Layer, known: Set<string>): string[] {
-  const dropped: string[] = [];
-  for (const role of Object.keys(values.roles ?? {}))
-    if (!known.has(role)) {
-      delete values.roles![role];
-      dropped.push(`roles.${role}`);
-    }
-  for (const [server, choice] of Object.entries(values.mcp ?? {})) {
-    const gone = (choice.roles ?? []).filter((role) => !known.has(role));
-    if (gone.length === 0) continue;
-    choice.roles = choice.roles!.filter((role) => known.has(role));
-    dropped.push(...gone.map((role) => `mcp.${server}.roles: ${role}`));
-  }
-  return dropped;
-}
-
-/** The layer as this version reads it: what its schema refuses dropped, then every role the kit no longer has. */
-function repairLayer(raw: unknown, kit: Kit): { values: unknown; dropped: string[] } | undefined {
-  const values = structuredClone(raw);
-  const dropped: string[] = [];
-  for (let round = 0; round < 50; round++) {
-    const parsed = LayerSchema.safeParse(values);
-    if (parsed.success)
-      return {
-        values,
-        dropped: [...dropped, ...dropRoles(values as Layer, new Set(kit.roles.map((role) => role.role)))],
-      };
-    // One issue a round: dropping an array element moves every index an issue after it names.
-    const issue = parsed.error.issues[0]!;
-    const path = issue.path.map((key) => (typeof key === "symbol" ? String(key) : key));
-    const taken = issue.code === "unrecognized_keys" ? drop(values, [...path, issue.keys[0]!]) : drop(values, path);
-    if (!taken) return undefined;
-    dropped.push(taken.join(".") || "(whole file)");
-  }
-  return undefined;
-}
-
-const unreadable = (file: string) => {
-  try {
-    const held = JSON.parse(readFileSync(file, "utf-8")) as unknown;
-    return !held || typeof held !== "object" || Array.isArray(held);
-  } catch {
-    return true;
-  }
-};
-
-function settingsSteps(ctx: MigrateContext): Step[] {
-  return ctx.settings.flatMap<Step>(({ where, file }) => {
-    if (!existsSync(file)) return [];
-    if (unreadable(file))
-      return [
-        {
-          kind: "settings",
-          where,
-          what: `${file} is not a settings object`,
-          detail: ["Repair it by hand; Migrate does not guess at what it held."],
-          auto: false,
-        },
-      ];
-    const repaired = repairLayer(readJson<unknown>(file, {}), ctx.kit);
-    if (repaired?.dropped.length === 0) return [];
-    if (!repaired)
-      return [
-        {
-          kind: "settings",
-          where,
-          what: `${file} does not fit this version`,
-          detail: ["Repair it by hand."],
-          auto: false,
-        },
-      ];
-    const stamp = new Date(ctx.now).toISOString().replace(/\D/g, "").slice(0, 14);
-    const backup = `${file}.bak-${stamp.slice(0, 8)}-${stamp.slice(8)}`;
-    return [
-      {
-        kind: "settings",
-        where,
-        what: `Drop the settings this version does not read, keeping a copy as ${backup}`,
-        detail: repaired.dropped,
-        auto: true,
-        apply: () => {
-          copyFileSync(file, backup);
-          writeJson(file, repaired.values);
-        },
-      },
-    ];
-  });
 }
 
 function seatSteps(ctx: MigrateContext, since: string): MigrateStep[] {
@@ -167,34 +42,10 @@ function seatSteps(ctx: MigrateContext, since: string): MigrateStep[] {
       ...seats.map((seat) => seat.name),
       "They keep the old prompts and tools until they are started again. Let each finish its work; the next seat started runs this version.",
     ],
-    auto: false,
   }));
 }
 
-function plan(ctx: MigrateContext): { stamp: Stamp; steps: Step[] } {
-  const stamp = stampKit(ctx.kit, ctx.home, ctx.now);
-  return { stamp, steps: [...settingsSteps(ctx), ...seatSteps(ctx, stamp.since)] };
-}
-
-const view = (stamp: Stamp, steps: MigrateStep[], done: string[]): MigrateView => ({
-  ...stamp,
-  steps: steps.map(({ kind, where, what, detail, auto }) => ({ kind, where, what, detail, auto })),
-  done,
-  content: [],
-});
-
 export function migrationPlan(ctx: MigrateContext): MigrateView {
-  const { stamp, steps } = plan(ctx);
-  return view(stamp, steps, []);
-}
-
-export function migrate(ctx: MigrateContext): MigrateView {
-  const done: string[] = [];
-  for (const step of plan(ctx).steps) {
-    if (!step.apply) continue;
-    step.apply();
-    done.push(`${step.where}: ${step.what}`);
-  }
-  const { stamp, steps } = plan(ctx);
-  return view(stamp, steps, done);
+  const stamp = stampKit(ctx.kit, ctx.home, ctx.now);
+  return { ...stamp, steps: seatSteps(ctx, stamp.since), content: [] };
 }

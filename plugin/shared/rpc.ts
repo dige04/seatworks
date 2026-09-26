@@ -118,7 +118,7 @@ export const updateRpc = defineRpc({
 });
 export const migrateRpc = defineRpc({
   name: "seatworks.upkeep.migrate",
-  input: z.object({ apply: z.boolean() }),
+  input: z.object({}),
   output: MigrateView,
 });
 export const pathsRpc = defineRpc({

@@ -32,7 +32,6 @@ const KIND: Record<CleanItem["kind"], string> = {
   copy: "Working copy",
   records: "Project records",
   snapshot: "Copy of guides or skills",
-  backup: "Settings backup",
 };
 
 /** Picked unless it holds something of the owner's, or cannot go at all. */
@@ -121,7 +120,7 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
 
   useEffect(() => {
     void update({ apply: false, fetch: false }).then(setUpdated, (problem: unknown) => setError(message(problem)));
-    void run("migrate", async () => setMigrated(await migrate({ apply: false })));
+    void run("migrate", async () => setMigrated(await migrate({})));
     // Once per mount: an update reloads the plugin, and this is what the owner needs next.
   }, []);
 
@@ -203,25 +202,8 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
       />,
     );
   }
-  const fixes = migrated?.steps.filter((step) => step.auto) ?? [];
-  if (fixes.length > 0) {
-    row(
-      "fixes",
-      true,
-      fixes.map((step) => step.what).join(" · "),
-      fixes.map((step) => step.where).join(", "),
-      <Button
-        label="Fix"
-        tone="accent"
-        theme={theme}
-        disabled={busy !== null}
-        onPress={() => void run("migrate", async () => setMigrated(await migrate({ apply: true })))}
-      />,
-    );
-  }
-  for (const step of migrated?.steps.filter((entry) => !entry.auto) ?? [])
+  for (const step of migrated?.steps ?? [])
     row(`${step.where}:${step.what}`, true, `${step.where}: ${step.what}`, step.detail.join(" "), null);
-  for (const done of migrated?.done ?? []) row(`done:${done}`, false, done, null, null);
 
   const items = cleaned?.items ?? [];
   const picks = items.filter((item) => chosen.has(item.path));

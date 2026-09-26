@@ -48,7 +48,7 @@ const found = async (ctx: Parameters<typeof scanGarbage>[0]) =>
     .map((item) => [item.kind, item.path, item.why, item.held, item.careful] as const)
     .sort((a, b) => a[1].localeCompare(b[1]));
 
-test("clean up lists only what nothing will use again: seats nothing will sit in, copies no slot holds, detached records, unlinked copies of the guides and Migrate's backups", async () => {
+test("clean up lists only what nothing will use again: seats nothing will sit in, copies no slot holds, detached records and unlinked copies of the guides", async () => {
   const { home, shop, seat, copy, live, ctx, moveLead } = world();
   assert.deepEqual(await found(ctx), [], "a machine with nothing left over lists nothing");
   const current = seat("sw2-lead-claude-shop-abc123");
@@ -72,17 +72,9 @@ test("clean up lists only what nothing will use again: seats nothing will sit in
   mkdirSync(used, { recursive: true });
   mkdirSync(stale, { recursive: true });
   symlinkSync(used, join(stateRoot(home), "guides"));
-  const backups = [
-    join(stateRoot(home), "settings.json.bak-20260922-071230"),
-    join(shop.state, "settings.json.bak-20260922-071230"),
-  ];
-  for (const backup of backups) writeFileSync(backup, "{}");
-
-  const tokens = "a copy Migrate kept of settings it repaired; it can hold a pasted server's token";
   assert.deepEqual(
     await found(ctx),
     [
-      ["backup", backups[0], tokens, null, false],
       ["seat", detached, "gone-def456 is not attached", null, false],
       ["seat", removedRole, "this version has no scout role", null, false],
       ["copy", free, "the desk holds no slot for it", null, false],
@@ -95,7 +87,6 @@ test("clean up lists only what nothing will use again: seats nothing will sit in
         null,
         true,
       ],
-      ["backup", backups[1], tokens, null, false],
     ].sort((a, b) => String(a[1]).localeCompare(String(b[1]))),
     "never a seat a seat is running in, a copy a slot holds, a copy of the guides in use, or a name that is no seat's",
   );

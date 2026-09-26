@@ -8,12 +8,12 @@ import { type Project, projectOf } from "../../desk/project/project.ts";
 import type { CleanView, ContentChange, MigrateStep, MigrateView, UpdateView } from "../../../shared/upkeep-views.ts";
 import { removeGarbage, scanGarbage } from "../../upkeep/clean.ts";
 import { contentChanges, decide } from "../../upkeep/content.ts";
-import { type LiveSeat, migrate, migrationPlan } from "../../upkeep/migrate.ts";
+import { type LiveSeat, migrationPlan } from "../../upkeep/migrate.ts";
 import { applyUpdate, checkUpdate, npmInstall, reloadSoon } from "../../upkeep/update.ts";
 import type { TeamSource } from "../team-source.ts";
 import type { UpkeepRpc } from "./rpc.ts";
 
-type UpkeepDeps = { kit: Kit; source: TeamSource; seats: Seats; reconcile: () => Promise<void>; changed: () => void };
+type UpkeepDeps = { kit: Kit; source: TeamSource; seats: Seats; changed: () => void };
 
 /** The plugin's own upkeep on the panel: what it left behind, its updates, and the kit files the owner changed. */
 export class UpkeepPanel implements UpkeepRpc {
@@ -52,28 +52,11 @@ export class UpkeepPanel implements UpkeepRpc {
     return apply ? applyUpdate(ctx) : checkUpdate(ctx, fetch);
   }
 
-  async migrate(apply: boolean): Promise<MigrateView> {
-    const { kit, source } = this.deps;
-    const known = source.known();
-    const ctx = {
-      kit,
-      home: home(),
-      known,
-      settings: [
-        { where: "machine", file: source.machineFile() },
-        ...known.map((project) => ({ where: project.slug, file: source.projectFile(project) })),
-      ],
-      live: await this.live(),
-      now: Date.now(),
-    };
+  async migrate(): Promise<MigrateView> {
+    const ctx = { kit: this.deps.kit, home: home(), live: await this.live(), now: Date.now() };
     const { content, unread } = await this.content();
-    if (!apply) {
-      const plan = migrationPlan(ctx);
-      return { ...plan, steps: [...plan.steps, ...unread], content };
-    }
-    const done = migrate(ctx);
-    await this.deps.reconcile();
-    return { ...done, steps: [...done.steps, ...unread], content };
+    const plan = migrationPlan(ctx);
+    return { ...plan, steps: [...plan.steps, ...unread], content };
   }
 
   /** What the kit ships differently from what the owner took in; a record that cannot be read is a step for the owner, not the whole view failing. */
@@ -82,7 +65,7 @@ export class UpkeepPanel implements UpkeepRpc {
       return { content: await contentChanges(this.deps.kit, stateRoot()), unread: [] };
     } catch (error) {
       const what = errorText(error);
-      return { content: [], unread: [{ kind: "content", where: "machine", what, detail: [], auto: false }] };
+      return { content: [], unread: [{ kind: "content", where: "machine", what, detail: [] }] };
     }
   }
 
@@ -90,7 +73,7 @@ export class UpkeepPanel implements UpkeepRpc {
     await decide(this.deps.kit, stateRoot(), unit, choice);
     // A seat's skills are read when it is built: the next one follows the answer.
     this.deps.changed();
-    return this.migrate(false);
+    return this.migrate();
   }
 
   private async live(): Promise<LiveSeat[]> {
