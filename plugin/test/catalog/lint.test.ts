@@ -5,38 +5,14 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { skillSources } from "../../server/catalog/kit/content.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
-import { seatedAs } from "../../server/catalog/kit/roles.ts";
 import { hiddenWordsIn } from "../../server/catalog/kit/hidden-words.ts";
 
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const kit = loadKit(PLUGIN);
 
-const PROMPT_BUDGET: Record<string, [number, number]> = {
-  supervisor: [700, 25],
-  lead: [750, 28],
-  peer: [400, 12],
-  reviewer: [300, 8],
-  watcher: [300, 8],
-};
-const SKILL_BUDGET: Record<string, number> = {
-  grilling: 600,
-  "pre-mortem": 700,
-  "architecture-premise-audit": 800,
-  retrospective: 650,
-  council: 900,
-  "ultra-review": 800,
-  "repo-refresh": 650,
-  "planning-lanes": 700,
-  "test-first": 800,
-  "diagnosing-bugs": 650,
-  "security-check": 600,
-  "test-proof-debt-audit": 450,
-};
-
 const ACRONYMS = new Set(["API", "CLI", "JSON", "SQL", "URL", "HTTP"]);
 
 const words = (text: string) => text.split(/\s+/).filter(Boolean).length;
-const ruleLines = (text: string) => text.split("\n").filter((line) => /^(- |\d+\. )/.test(line)).length;
 const files = (dir: string, ending: string): string[] =>
   existsSync(dir)
     ? readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
@@ -66,39 +42,20 @@ const params = (schema: Schema | undefined, prefix = ""): [string, string][] =>
   ]);
 const deskTools = new Set(Object.values(tools).flatMap((set) => set.map((tool) => tool.name)));
 
-test("what a seat reads keeps within its budgets: prompts, deltas, skills and their descriptions, tools and their parameters", () => {
-  for (const role of kit.roles) {
-    const budget = PROMPT_BUDGET[seatedAs(role)];
-    assert.ok(budget, `${role.role} has no budget here: give it one`);
-    const text = readFileSync(join(PLUGIN, "content", role.prompt), "utf-8");
-    assert.ok(
-      words(text) <= budget[0] && ruleLines(text) <= budget[1],
-      `${role.role}: ${words(text)} words and ${ruleLines(text)} rule lines, over the prompt research's ${budget[0]} and ${budget[1]}`,
-    );
-  }
+test("every agent reads the Seatworks block without a word hidden from it, each skill says when it is for and when not, and tools keep within what harnesses take", () => {
   const block = readFileSync(join(PLUGIN, "content", "project", "AGENTS.md"), "utf-8");
-  assert.ok(words(block) <= 300, `the project's Seatworks block: ${words(block)} words, over 300`);
   for (const role of kit.roles)
     assert.deepEqual(
       hiddenWordsIn(block, role.hidesWords ?? []),
       [],
       `every agent in the project reads its Seatworks block, the ${role.role} included`,
     );
-  for (const file of deltas)
-    assert.ok(
-      words(readFileSync(file, "utf-8")) <= 80,
-      `${file} says more than 80 words against its agent's own instructions`,
-    );
   for (const { name, dir } of skills) {
-    const [, head = "", body = ""] =
-      readFileSync(join(dir, "SKILL.md"), "utf-8").match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/) ?? [];
+    const [, head = ""] = readFileSync(join(dir, "SKILL.md"), "utf-8").match(/^---\n([\s\S]*?)\n---\n/) ?? [];
     const description = head.match(/^description:\s*"?(.*?)"?$/m)?.[1] ?? "";
-    const budget = SKILL_BUDGET[name];
-    assert.ok(budget, `skill ${name} has no budget here: give it one`);
-    assert.ok(words(body) <= budget, `skill ${name}: ${words(body)} words, over the prompt research's ${budget}`);
     assert.ok(
-      description.length <= 450 && /Use when/.test(description) && /not for/i.test(description),
-      `skill ${name}'s description: ${description.length} characters, and it needs "Use when" and "not for"`,
+      description.length <= 1024 && /Use when/.test(description) && /not for/i.test(description),
+      `skill ${name}'s description: ${description.length} characters, over the 1,024 agents list, or it lacks "Use when" and "not for"`,
     );
   }
   assert.deepEqual(

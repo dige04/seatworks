@@ -300,8 +300,8 @@ its own, however short.
 ## Where things live that you would not guess
 
 - `plugin/content/**` is runtime content, not docs: prompts, skills and guides. An edit there changes
-  what agents do. Keep prompts short and complete: one line per rule, an example only where a rule is
-  subtle.
+  what agents do. Write prompts and skills to work, not to a word count: every idea the agent needs, each once,
+  with its reason, and nothing a tool description or a letter already says.
 - `roles.json` `hidesWords` is a lint that throws: a Peer's prompt may not say "seat". Rephrase the
   text; never remove the lint.
 - `plugin/harness/<agent>/settings/<role>.*` holds each role's sandbox and approval policy, and
