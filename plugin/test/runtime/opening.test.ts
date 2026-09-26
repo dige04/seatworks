@@ -13,7 +13,7 @@ const lane = (title: string, extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
-test("where a lane works is the Human's call: asked when their copy is off its base or dirty, carried by open_lane or laneHome, and shown on status", async () => {
+test("where a lane works is carried by open_lane or laneHome; with neither, a copy off its base or dirty leaves the lane in a copy of its own, decided for them and said so", async () => {
   const h = harness();
   h.projectSettings({ hitl: { on: true } });
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
@@ -41,13 +41,17 @@ test("where a lane works is the Human's call: asked when their copy is off its b
     offBase,
     /carry on fix\/login here \(onBranch\), a new branch off main here \(isolate false\), or a copy of its own \(isolate\)\./,
   );
+  const decided =
+    /\n\nNothing on record chose where it works, so it opened in a copy of its own, which leaves the project's own copy as it is: decided for you\. The choices were to carry on fix\/login here \(onBranch\), /;
+  const first = await open("First");
+  assert.equal(first.ok, true, first.text);
   assert.match(
-    (await open("First")).text,
-    /^The Human decides where this lane works, and has not said: carry on fix\/login here \(onBranch\), a new branch off main here \(isolate false\), or a copy of its own \(isolate\)\. Ask them/,
+    first.text,
+    new RegExp(
+      `${decided.source}a new branch off main here \\(isolate false\\), or a copy of its own \\(isolate\\); set_project laneHome keeps a choice for every lane\\.$`,
+    ),
   );
-  assert.deepEqual([branch(), Object.keys(h.ledger().lanes)], ["fix/login", []]);
-
-  assert.equal((await open("First", { isolate: true })).ok, true);
+  assert.deepEqual([branch(), Boolean(h.ledger().lanes.L1!.slot)], ["fix/login", true]);
   h.commit(h.ledger().lanes.L1!.worktree!, "a.txt", "first\n");
   assert.match((await open("Then", { after: ["L1"] })).text, /Lane L2 waits for L1/);
   for (let n = 1; n <= 12; n++) writeFileSync(join(h.root, `wip-${String(n).padStart(2, "0")}.txt`), "half done\n");
@@ -63,12 +67,11 @@ test("where a lane works is the Human's call: asked when their copy is off its b
   assert.equal(branch(), "fix/login");
   assert.equal(readFileSync(join(h.root, "a.txt"), "utf-8"), "edited\n");
   assert.equal(h.git(h.root, "status", "--porcelain").trim().split("\n").length, 13);
-  assert.match(
-    (await open("Now", { after: ["L1"] })).text,
-    /^The Human decides where this lane works, and has not said: carry on fix\/login here/,
-  );
-  assert.equal(branch(), "fix/login");
-  assert.equal((await h.call(sup, "supervisor", "drop_lane", { lane: "L2", reason: "not now" })).ok, true);
+  const now = await open("Now", { after: ["L1"] });
+  assert.match(now.text, new RegExp(`${decided.source}a new branch that takes the uncommitted work along`));
+  assert.deepEqual([branch(), Boolean(h.ledger().lanes.L3!.slot)], ["fix/login", true]);
+  for (const id of ["L2", "L3"])
+    assert.equal((await h.call(sup, "supervisor", "drop_lane", { lane: id, reason: "not now" })).ok, true);
   const dirty = await status();
   assert.match(dirty, /with 13 uncommitted files: a\.txt, wip-01\.txt, [^\n]*wip-09\.txt, and 3 more\./);
   assert.match(dirty, /takes the uncommitted work along/);
@@ -81,14 +84,14 @@ test("where a lane works is the Human's call: asked when their copy is off its b
     isolate: false,
   });
   assert.equal(here.ok, true, here.text);
-  const numbers = h.ledger().lanes.L3!;
+  const numbers = h.ledger().lanes.L4!;
   assert.equal(branch(), numbers.branch);
   const taken = await status();
-  assert.match(taken, /Lane L3 is working in it\./);
+  assert.match(taken, /Lane L4 is working in it\./);
   assert.doesNotMatch(taken, choice);
   assert.match(taken, /Outcome: a\.txt gains words\nWrites: a\.txt\nDepends on: b\.txt/);
   assert.doesNotMatch((await h.call(numbers.lead!, "lead", "status", {})).text, /The project's own copy|Outcome:/);
-  await h.call(sup, "supervisor", "drop_lane", { lane: "L3", reason: "done" });
+  await h.call(sup, "supervisor", "drop_lane", { lane: "L4", reason: "done" });
   h.agents.get(numbers.lead!)!.status = "idle";
   await h.endTurn(numbers.lead!, "done");
   h.git(h.root, "switch", "-q", "fix/login");
@@ -99,7 +102,7 @@ test("where a lane works is the Human's call: asked when their copy is off its b
   writeFileSync(join(h.root, "a.txt"), "the Human's own edit\n");
   assert.match(
     (await open("Here", { writeSet: ["b.txt"] })).text,
-    /has not said: carry on fix\/login here \(onBranch\), a new branch that takes the uncommitted work along/,
+    /^Where this lane works cannot be a new branch in the project's own copy while that copy has uncommitted work: carry on fix\/login here \(onBranch\), a new branch that takes the uncommitted work along/,
   );
   h.git(h.root, "checkout", "--", "a.txt");
   assert.match(
@@ -117,22 +120,22 @@ test("where a lane works is the Human's call: asked when their copy is off its b
   assert.equal((await h.call(sup, "supervisor", "set_project", { riskRules: [rule], humanSaid: said })).ok, true);
   assert.match(await status(), /Lanes open in a copy of their own, as chosen for every lane \(laneHome\)\./);
   assert.equal((await open("Standing")).ok, true);
-  assert.ok(h.ledger().lanes.L4!.slot);
+  assert.ok(h.ledger().lanes.L5!.slot);
   assert.equal(branch(), "fix/login");
   const offMain = await open("Off main", { base: "main" });
   assert.equal(offMain.ok, true, offMain.text);
   assert.deepEqual(
-    [h.ledger().lanes.L5!.base, Boolean(h.ledger().lanes.L5!.slot), branch()],
+    [h.ledger().lanes.L6!.base, Boolean(h.ledger().lanes.L6!.slot), branch()],
     ["main", true, "fix/login"],
   );
-  assert.equal((await open("After it", { after: ["L4"] })).ok, true);
-  assert.equal(h.ledger().lanes.L6!.opening?.isolate, true);
+  assert.equal((await open("After it", { after: ["L5"] })).ok, true);
+  assert.equal(h.ledger().lanes.L7!.opening?.isolate, true);
   await h.call(sup, "supervisor", "set_project", { laneHome: "onBranch", humanSaid: said });
   assert.equal((await open("Carry on")).ok, true);
-  assert.deepEqual([h.ledger().lanes.L7!.onBranch, h.ledger().lanes.L7!.branch], [true, "fix/login"]);
+  assert.deepEqual([h.ledger().lanes.L8!.onBranch, h.ledger().lanes.L8!.branch], [true, "fix/login"]);
 });
 
-test("with the Human out of the loop, where a lane works is the Supervisor's to choose, and status says so", async () => {
+test("with the Human out of the loop, where a lane works is the Supervisor's to choose, status says so, and a lane nothing chose for opens in a copy of its own", async () => {
   const h = harness();
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   await h.call(sup, "supervisor", "set_project", { base: "main", gate: "true" });
@@ -140,12 +143,17 @@ test("with the Human out of the loop, where a lane works is the Supervisor's to 
   const status = (await h.call(sup, "supervisor", "status", {})).text;
   assert.match(status, /You choose where the next lane works, before it opens: carry on fix\/login here \(onBranch\)/);
   assert.match(status, /The Human is out of the loop: only the concept is theirs, so no landing waits for them/);
-  const refused = await h.call(sup, "supervisor", "open_lane", lane("First"));
+  const opened = await h.call(sup, "supervisor", "open_lane", lane("First"));
+  assert.equal(opened.ok, true, opened.text);
   assert.match(
-    refused.text,
-    /^Where this lane works is yours to choose, and nothing on record chose it: carry on fix\/login here \(onBranch\)[^]*\. Pass one; set_project laneHome keeps the choice for every lane\.$/,
+    opened.text,
+    /Nothing on record chose where it works, so it opened in a copy of its own[^]*: decided for you\. The choices were to carry on fix\/login here \(onBranch\)[^]*; set_project laneHome keeps a choice for every lane\.$/,
   );
-  assert.doesNotMatch(refused.text, /Human/);
+  assert.doesNotMatch(opened.text, /Human/);
+  assert.deepEqual(
+    [h.git(h.root, "branch", "--show-current").trim(), Boolean(h.ledger().lanes.L1!.slot)],
+    ["fix/login", true],
+  );
 });
 
 test("a lane takes the project's own copy while it is free; one that finds it taken, or still being given back, is told both ways out, and a copy of its own is filed under the project", async () => {

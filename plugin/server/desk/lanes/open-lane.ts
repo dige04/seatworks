@@ -46,27 +46,30 @@ type OpenLaneCall = {
 
 type Place = { base: string; onBranch: boolean; branch?: string };
 
-/** What the call comes to once checked: where the lane works, and the lanes it still waits for. */
-type Plan = { args: OpenLaneCall; place: Place; after: string[]; pending: Lane[]; newBranch: string; here?: string };
+/** What the call comes to once checked: where the lane works, the lanes it still waits for, and a home decided for it. */
+type Plan = {
+  args: OpenLaneCall;
+  place: Place;
+  after: string[];
+  pending: Lane[];
+  newBranch: string;
+  here?: string;
+  decided?: string;
+};
 
 /** Opens a lane now, or records it waiting for the lanes it names; a Lead is started for one that opens. */
 export async function openLane(desk: DeskServices, caller: Caller, asked: OpenLaneCall): Promise<ToolReply> {
   const { project } = caller;
   const read = readProjectConfig(project.state);
   if ("fault" in read) return no(keptFault(read.fault).message);
-  const plan = await planOpen(project, read.config, asked, desk.teamFor(project).hitl.on);
+  const plan = await planOpen(project, read.config, asked);
   if (typeof plan === "string") return no(plan);
   seedConfig(desk.kit, project, read.config, plan);
   return plan.pending.length > 0 ? waitToOpen(desk, caller, plan) : openNow(desk, caller, plan);
 }
 
-/** Checks the call and works out where the lane works: carrying a branch on, or off which base; `human` when they are in the loop. */
-async function planOpen(
-  project: Project,
-  config: ProjectConfig,
-  asked: OpenLaneCall,
-  human: boolean,
-): Promise<Plan | string> {
+/** Checks the call and works out where the lane works: carrying a branch on, or off which base. */
+async function planOpen(project: Project, config: ProjectConfig, asked: OpenLaneCall): Promise<Plan | string> {
   const after = [...new Set(strs(asked.after).map((id) => id.trim().toUpperCase()))];
   const here = await currentBranch(project.root);
   const newBranch = str(asked.newBranch).trim();
@@ -76,8 +79,9 @@ async function planOpen(
     return "onBranch carries on the branch the project's own copy is on, in that copy, so it takes no base and no isolate.";
   // A lane whose `after` has all landed opens now, in whatever the copy is now: it is asked about like any other.
   const waits = after.length > 0 ? waitsFor(loadLedger(project.state), after, true) : [];
-  const home = await homeOf(project, config, asked, Array.isArray(waits) && waits.length === 0, here, human);
-  if (typeof home === "object") return home.refused;
+  const chosen = await homeOf(project, config, asked, Array.isArray(waits) && waits.length === 0, here);
+  if ("refused" in chosen) return chosen.refused;
+  const { home, decided } = chosen;
   const args = { ...asked, onBranch: home === "onBranch" || undefined, isolate: home === "isolate" || undefined };
   const onBranch = args.onBranch === true;
   if (onBranch && !here)
@@ -91,18 +95,28 @@ async function planOpen(
   const carried = pending.find((lane) => lane.onBranch)?.branch;
   const base = onBranch ? (carried ?? (newBranch || here!)) : str(args.base) || config.base || here || "main";
   if (!newBranch && !(await branchExists(project.root, base))) return `The base branch ${base} does not exist.`;
-  return { args, place: { base, onBranch, branch: onBranch ? base : undefined }, after, pending, newBranch, here };
+  return {
+    args,
+    place: { base, onBranch, branch: onBranch ? base : undefined },
+    after,
+    pending,
+    newBranch,
+    here,
+    decided,
+  };
 }
 
-/** Where this lane works, as its call or the standing choice says, or why it must be chosen first: by the Human in the loop. */
+/**
+ * Where this lane works, as its call or the standing choice says. With neither, where the project's copy makes it a question
+ * the lane takes a copy of its own, which leaves that copy as it is; a choice that cannot hold there is refused.
+ */
 async function homeOf(
   project: Project,
   config: ProjectConfig,
   asked: OpenLaneCall,
   opensNow: boolean,
   here: string | undefined,
-  human: boolean,
-): Promise<LaneHome | undefined | { refused: string }> {
+): Promise<{ home?: LaneHome; decided?: string } | { refused: string }> {
   const said: LaneHome | undefined =
     asked.onBranch === true
       ? "onBranch"
@@ -112,14 +126,17 @@ async function homeOf(
           ? "newBranch"
           : undefined;
   // A waiting lane opens into whatever the copy is by then, and one the copy is taken from takes a copy of its own or waits.
-  if (!opensNow || ownCopyHolder(Object.values(loadLedger(project.state).lanes))) return said ?? config.laneHome;
+  if (!opensNow || ownCopyHolder(Object.values(loadLedger(project.state).lanes)))
+    return { home: said ?? config.laneHome };
   const home = laneHomeFor(said, config, here, await uncommittedPaths(project.root));
-  if (typeof home !== "object") return home;
-  const keep = "set_project laneHome keeps the choice for every lane";
+  if (typeof home !== "object") return { home };
+  if (said ?? config.laneHome)
+    return {
+      refused: `Where this lane works cannot be a new branch in the project's own copy while that copy has uncommitted work: ${home.question}. Pass one of those.`,
+    };
   return {
-    refused: human
-      ? `The Human decides where this lane works, and has not said: ${home.question}. Ask them; ${keep} if they give one.`
-      : `Where this lane works is yours to choose, and nothing on record chose it: ${home.question}. Pass one; ${keep}.`,
+    home: "isolate",
+    decided: `\n\nNothing on record chose where it works, so it opened in a copy of its own, which leaves the project's own copy as it is: decided for you. The choices were to ${home.question}; set_project laneHome keeps a choice for every lane.`,
   };
 }
 
@@ -170,7 +187,9 @@ async function openNow(desk: DeskServices, caller: Caller, plan: Plan): Promise<
   const note = unread
     ? `\n\nThe issue was not read into the lane: ${clip(unread, 300)}. The Lead has it as given, with the outcome and the checks; give it the issue yourself if it cannot read it.`
     : "";
-  return ok(`${openedReply(project, lane, started.slot, started.lead, issue, started.beside)}${note}`);
+  return ok(
+    `${openedReply(project, lane, started.slot, started.lead, issue, started.beside)}${plan.decided ?? ""}${note}`,
+  );
 }
 
 /** Placed where it is recorded: two lanes opened at once would otherwise both find the project's own copy free. */
