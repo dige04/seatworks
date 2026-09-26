@@ -5,10 +5,11 @@ import { execFileSync } from "node:child_process";
 import { chmodSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { paseoConfigPath, stateRoot } from "../../server/core/paths.ts";
+import { stateRoot } from "../../server/core/paths.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { tempDir } from "../tempdir.ts";
-import { served, which } from "./served.ts";
+import { fakeConfig } from "./fake-paseo.ts";
+import { daemon, served, which } from "./served.ts";
 
 const git = (cwd: string, ...args: string[]) =>
   execFileSync("git", ["-c", "user.email=t@t", "-c", "user.name=t", ...args], { cwd, encoding: "utf-8" });
@@ -139,22 +140,26 @@ test("a project attached by path, set up, detached only when idle and attached a
   );
 });
 
-test("Paseo holds a provider for each role and agent an attached project's team seats: none at load with no project attached, set up on attach, following each settings save, and taken off on detach", async () => {
-  const { call, runtime, providers } = served();
-  writeFileSync(
-    paseoConfigPath(),
-    JSON.stringify({
-      agents: { providers: { claude: { env: { TOKEN: "keep" } }, "sw2-peer-codex": { extends: "codex", label: "x" } } },
-      daemon: { agentProfiles: [{ id: "sw2-lead-claude", provider: "sw2-lead-claude" }] },
-    }),
+test("Paseo holds a provider for each role and agent an attached project's team seats: none at load with no project attached, set up on attach, following each settings save, and taken off on detach, though never from under a live seat", async () => {
+  const config = fakeConfig({
+    providers: { claude: { env: { TOKEN: "keep" } }, "sw2-peer-codex": { extends: "codex", label: "x" } },
+    agentProfiles: [{ id: "sw2-lead-claude", provider: "sw2-lead-claude" }],
+  });
+  const live: { provider: string }[] = [];
+  const { call, runtime, providers } = served(daemon(config, live));
+  const loaded = runtime.prepare();
+  await call(contracts.projects, {});
+  await loaded;
+  assert.deepEqual(
+    await providers(),
+    {},
+    "a load with no project attached leaves no provider of the kit's, once a panel call brings Paseo's API",
   );
-  runtime.prepare();
-  assert.deepEqual(providers(), {}, "a load with no project attached leaves no provider of the kit's");
   const root = realpathSync(tempDir("sw2-rpc-providers-"));
   git(root, "init", "-q");
   const added = which(await call(contracts.projectsAdd, { root }), "slug");
   assert.deepEqual(
-    Object.keys(providers()).sort(),
+    Object.keys(await providers()).sort(),
     ["sw2-lead-claude", "sw2-peer-omp", "sw2-scribe-omp", "sw2-supervisor-claude"],
     "attaching sets up exactly what the project's team seats, so its Supervisor can be started at once",
   );
@@ -163,27 +168,36 @@ test("Paseo holds a provider for each role and agent an attached project's team 
   const ownSaved = await call(contracts.settingsWrite, { project: added.slug, revision: own.revision, values });
   assert.equal(ownSaved.status, "saved", JSON.stringify(ownSaved));
   assert.deepEqual(
-    Object.keys(providers()).sort(),
+    Object.keys(await providers()).sort(),
     ["sw2-lead-omp", "sw2-peer-omp", "sw2-scribe-omp", "sw2-supervisor-claude"],
     "a project's own save moves its seats",
   );
   const machine = which(await call(contracts.settingsRead, {}), "values");
+  live.push({ provider: "sw2-lead-omp/glm" });
   const haiku = { roles: { supervisor: { model: "haiku" } } };
   assert.equal((await call(contracts.settingsWrite, { revision: machine.revision, values: haiku })).status, "saved");
   assert.deepEqual(
-    providers()["sw2-supervisor-claude"]?.additionalModels?.map((model) => model.id),
+    (await providers())["sw2-supervisor-claude"]?.additionalModels?.map((model) => model.id),
     ["haiku"],
     "and so does the machine's",
   );
+  const back = which(await call(contracts.settingsRead, { project: added.slug }), "values");
+  await call(contracts.settingsWrite, { project: added.slug, revision: back.revision, values: {} });
+  assert.ok("sw2-lead-omp" in (await providers()), "a Lead still working on its agent keeps its provider");
+  live.splice(0);
   assert.deepEqual(await call(contracts.projectsRemove, { project: added.slug }), { removed: added.slug });
-  assert.deepEqual(providers(), {}, "detached, its seats' providers go with it");
-  const config = JSON.parse(readFileSync(paseoConfigPath(), "utf-8")) as {
-    agents: { providers: Record<string, unknown> };
-    daemon: { agentProfiles: unknown[] };
-  };
+  assert.deepEqual(await providers(), {}, "detached, its seats' providers go with it, and one no seat runs on");
+  const { config: held } = await config.api.get();
   assert.deepEqual(
-    [config.agents.providers.claude, config.daemon.agentProfiles],
+    [held.providers.claude, held.agentProfiles],
     [{ env: { TOKEN: "keep" } }, []],
     "the owner's own stay",
+  );
+  assert.equal(
+    config.patches.some(
+      (patch) => "providers" in patch && Object.keys(patch.providers!).some((id) => !id.startsWith("sw2-")),
+    ),
+    false,
+    "and no patch touches them",
   );
 });

@@ -276,6 +276,10 @@ its own, however short.
 - The plugin's own client reconnects by itself, and its socket holds no lease. A plugin gets that
   client only with a hook or a panel call: after a reload, a seat's desk call waits for one, and its
   answer window starts then.
+- `paseo.config.patch()` checks, saves and applies a change at once, with no daemon reload, and a
+  plugin's API may call it. It merges a provider into the one Paseo holds (at every depth in memory, one
+  level on disk), so a key goes only by removing the provider and adding it again, in two patches: one
+  patch doing both leaves it removed in memory.
 - SDK settings are host-scoped only (a runtime throw), hence the plugin's own revision-checked store.
 - Only `before` hooks (`agent.create`, `agent.session_open`, `workspace.create`) can refuse, by
   throwing. Every hook call times out at 30 s, and on those three the timeout fails the user's action:

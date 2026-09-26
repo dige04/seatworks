@@ -1,5 +1,5 @@
 import type { PluginLifecycleEvents, PluginServerContext } from "@getpaseo/plugin/server";
-import type { Host, HostHooks, Models } from "../../core/ports.ts";
+import type { Host, HostHooks, Models, PaseoConfig } from "../../core/ports.ts";
 import { type PaseoApi, seatsOn, workspacesOn } from "./agents.ts";
 import { daemonLog } from "../../core/logger.ts";
 
@@ -12,6 +12,7 @@ export class PaseoHost implements Host {
   readonly seats;
   readonly workspaces;
   readonly models: Models;
+  readonly config: PaseoConfig;
   private api: PaseoApi | undefined;
   private arrived = () => {};
   private readonly arrival = new Promise<void>((resolve) => (this.arrived = resolve));
@@ -25,6 +26,16 @@ export class PaseoHost implements Host {
         await this.reach().providers.refresh({ cwd, providers: [provider] });
       },
       list: (provider, cwd) => this.reach().providers.listModels(provider, { cwd }),
+    };
+    this.config = {
+      read: async () => {
+        await this.arrival;
+        return (await this.reach().config.get()).config;
+      },
+      patch: async (change) => {
+        await this.arrival;
+        await this.reach().config.patch(change as Parameters<PaseoApi["config"]["patch"]>[0]);
+      },
     };
   }
 
@@ -86,7 +97,7 @@ export class PaseoHost implements Host {
   }
 
   private reach(): PaseoApi {
-    if (!this.api) throw new Error("Paseo is not connected, so it cannot list the agents' models");
+    if (!this.api) throw new Error("Paseo has not handed this plugin its API yet");
     return this.api;
   }
 }

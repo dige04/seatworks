@@ -24,7 +24,7 @@ export default function contribute(server: PluginServerContext) {
     daemonLog.error(`the kit in ${dir} failed to load:`, error);
     return () => {};
   }
-  runtime.prepare();
+  void runtime.prepare();
   registerRpc(host.answering(server), runtime.panel, () => runtime.panelCalled());
   host.connect(server, runtime);
   runtime.start();

@@ -1,9 +1,6 @@
-import { execFile } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
-import { writeConfigAtomic } from "../../core/config-file.ts";
 import { type Json, isRecord, sameJson } from "../../core/json.ts";
-import { daemonLog } from "../../core/logger.ts";
-import { nodeBin, paseoConfigPath } from "../../core/paths.ts";
+import { nodeBin } from "../../core/paths.ts";
+import type { ConfigPatch, DaemonConfig } from "../../core/ports.ts";
 import { paseoToolsPolicy, supportsRole } from "../kit/harness-files.ts";
 import type { HarnessSpec, Kit, RoleSpec } from "../kit/kit.ts";
 import { providerId } from "../kit/roles.ts";
@@ -70,84 +67,63 @@ function managedEnvKeys(kit: Kit): Set<string> {
 }
 
 /**
- * Paseo's config with the providers the attached projects' teams seat on, as those teams want them now, and no profile
- * of the kit's: nothing reads one, since the Human starts a Supervisor by its provider.
+ * The provider as the kit wants it over the one Paseo holds: env the owner added stays, and the env keys the kit
+ * manages follow the kit.
  */
-function reconcile(config: Json, kit: Kit, teams: Team[]): { config: Json; changed: string[] } {
-  const next = structuredClone(config);
-  const providers = child(child(next, "agents"), "providers") as Record<string, Json>;
-  const changed: string[] = [];
-  const wanted = wantedProviders(kit, teams);
-  if (kit.prefix) {
-    dropStale(providers, kit.prefix, new Set(wanted.keys()), changed);
-    dropProfiles(next, kit.prefix, changed);
-  }
-  const managed = managedEnvKeys(kit);
-  for (const [id, want] of wanted) reconcileProvider(providers, id, want, managed, changed);
-  return { config: next, changed };
-}
-
-/** The record at `key`, made where it is missing. */
-function child(parent: Json, key: string): Json {
-  parent[key] ??= {};
-  return parent[key] as Json;
-}
-
-/** Takes off the providers under the kit's prefix that no seat needs any more. */
-function dropStale(providers: Record<string, Json>, prefix: string, wanted: Set<string>, changed: string[]): void {
-  for (const id of Object.keys(providers)) {
-    if (id.startsWith(prefix) && !wanted.has(id)) {
-      delete providers[id];
-      changed.push(`provider ${id} removed`);
-    }
-  }
-}
-
-function dropProfiles(config: Json, prefix: string, changed: string[]): void {
-  const daemon = config.daemon;
-  if (!isRecord(daemon) || !Array.isArray(daemon.agentProfiles)) return;
-  daemon.agentProfiles = (daemon.agentProfiles as unknown[]).filter((entry) => {
-    const id = isRecord(entry) ? entry.id : undefined;
-    const ours = typeof id === "string" && id.startsWith(prefix);
-    if (ours) changed.push(`profile ${id} removed`);
-    return !ours;
-  });
-}
-
-/** One provider as the kit wants it, keeping env the owner added; the env keys the kit manages follow the kit. */
-function reconcileProvider(
-  providers: Record<string, Json>,
-  id: string,
-  want: Json,
-  managed: Set<string>,
-  changed: string[],
-): void {
-  const have = providers[id] ?? {};
+function merged(have: Json, want: Json, managed: Set<string>): Json {
   const env = Object.entries(isRecord(have.env) ? have.env : {});
   const kept = Object.fromEntries(env.filter(([key]) => !key.startsWith("SEATWORKS_") && !managed.has(key)));
-  const merged: Json = { ...have, ...want, env: { ...kept, ...(want.env as Json) } };
-  for (const key of PROVIDER_OPTIONAL) if (!(key in want)) delete merged[key];
-  if (sameJson(merged, have)) return;
-  providers[id] = merged;
-  changed.push(`provider ${id}`);
+  const next: Json = { ...have, ...want, env: { ...kept, ...(want.env as Json) } };
+  for (const key of PROVIDER_OPTIONAL) if (!(key in want)) delete next[key];
+  return next;
 }
 
-/** `teams` holds each attached project's team: with none attached, nothing of the kit's is wanted. */
-export function applyReconcile(kit: Kit, teams: Team[]): string[] {
-  const configPath = paseoConfigPath();
-  const config = JSON.parse(readFileSync(configPath, "utf-8")) as Json;
-  const { config: next, changed } = reconcile(config, kit, teams);
-  // Staged and renamed: a daemon killed mid-write could not parse its own config. The mode is kept so a private config is not widened.
-  if (changed.length > 0)
-    writeConfigAtomic(configPath, `${JSON.stringify(next, null, 2)}\n`, statSync(configPath).mode & 0o777);
-  return changed;
+/** Whether `next` holds every key `have` does, at every depth, as a patch must for Paseo's merge to leave `next`. */
+function covers(next: Json, have: Json): boolean {
+  return Object.entries(have).every(
+    ([key, value]) => key in next && (!isRecord(value) || !isRecord(next[key]) || covers(next[key], value)),
+  );
 }
 
-export function reloadDaemon(): Promise<boolean> {
-  return new Promise((resolve) => {
-    execFile("paseo", ["daemon", "reload"], { timeout: 30_000 }, (error, _stdout, stderr) => {
-      if (error) daemonLog.error("paseo daemon reload failed:", stderr || error.message);
-      resolve(!error);
+/**
+ * The patches, in order, that give Paseo the providers the attached projects' teams seat on, and no profile of the
+ * kit's. `keep` names providers a live seat still runs on, left as they are; `stale` is what would go without it.
+ */
+export function providerPatches(
+  config: DaemonConfig,
+  kit: Kit,
+  teams: Team[],
+  keep: Set<string> = new Set(),
+): { patches: ConfigPatch[]; changed: string[]; stale: string[] } {
+  const wanted = wantedProviders(kit, teams);
+  const held = config.providers ?? {};
+  const changed: string[] = [];
+  const ours = (id: unknown): id is string =>
+    Boolean(kit.prefix) && typeof id === "string" && id.startsWith(kit.prefix);
+  const stale = Object.keys(held).filter((id) => ours(id) && !wanted.has(id));
+  const removed = stale.filter((id) => !keep.has(id));
+  for (const id of removed) changed.push(`provider ${id} removed`);
+  const managed = managedEnvKeys(kit);
+  const providers: Record<string, Json> = {};
+  for (const [id, want] of wanted) {
+    const have = held[id];
+    const next = merged(have ?? {}, want, managed);
+    if (have && sameJson(next, have)) continue;
+    // A key the kit no longer wants cannot be patched away, so the provider is removed and added again whole.
+    if (have && !covers(next, have)) removed.push(id);
+    providers[id] = next;
+    changed.push(`provider ${id}`);
+  }
+  const profiles = config.agentProfiles ?? [];
+  const kept = profiles.filter((profile) => !ours(profile.id));
+  for (const profile of profiles) if (ours(profile.id)) changed.push(`profile ${profile.id} removed`);
+  const patches: ConfigPatch[] = [];
+  const dropping = kept.length < profiles.length;
+  if (removed.length > 0 || dropping)
+    patches.push({
+      ...(removed.length > 0 ? { removeProviders: removed } : {}),
+      ...(dropping ? { agentProfiles: kept } : {}),
     });
-  });
+  if (Object.keys(providers).length > 0) patches.push({ providers });
+  return { patches, changed, stale };
 }

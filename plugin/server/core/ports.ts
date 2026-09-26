@@ -141,6 +141,25 @@ export type Models = {
   list(provider: string, cwd: string): Promise<ModelList>;
 };
 
+/** Paseo's own config as its API reads it, so far as the plugin touches it. */
+export type DaemonConfig = {
+  providers?: Record<string, Record<string, unknown>>;
+  agentProfiles?: ({ id?: unknown } & Record<string, unknown>)[];
+};
+
+/** A change to Paseo's config: providers merged into those it holds, ids removed, the profile list replaced whole. */
+export type ConfigPatch = {
+  providers?: Record<string, Record<string, unknown>>;
+  removeProviders?: string[];
+  agentProfiles?: Record<string, unknown>[];
+};
+
+/** Paseo checks, saves and applies a patch at once, with no reload; both wait for Paseo's API to reach the plugin. */
+export type PaseoConfig = {
+  read(): Promise<DaemonConfig>;
+  patch(change: ConfigPatch): Promise<void>;
+};
+
 /** Paseo as the plugin reaches it; `connected` is false, and `reached` unsettled, until a hook or a panel call has handed over its API. */
 export type Host = {
   connected(): boolean;
@@ -148,6 +167,7 @@ export type Host = {
   seats: Seats;
   workspaces: Workspaces;
   models: Models;
+  config: PaseoConfig;
 };
 
 /** A question as the watch's catalog words it, the fields the code fills filled: a noul is one condition, a choice picks one of its criteria. */

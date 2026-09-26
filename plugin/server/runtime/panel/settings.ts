@@ -28,7 +28,7 @@ type SettingsDeps = {
   kit: Kit;
   source: TeamSource;
   changed: () => void;
-  reconcile: () => void;
+  reconcile: () => Promise<void>;
   models: () => Promise<Record<string, { at: string; error: string | null; models: unknown[] }>>;
 };
 
@@ -51,7 +51,7 @@ export class SettingsPanel implements SettingsRpc {
     return { ...readShown(target.file), machine };
   }
 
-  writeSettings(slug: string | undefined, revision: string, values: unknown): WriteResult {
+  async writeSettings(slug: string | undefined, revision: string, values: unknown): Promise<WriteResult> {
     const { kit, source, changed, reconcile } = this.deps;
     const target = this.target(slug);
     if (typeof target === "string") return { status: "invalid", error: target };
@@ -71,7 +71,7 @@ export class SettingsPanel implements SettingsRpc {
     const result = writeLayer(target.file, revision, withKeys(values, layerValues(target.file)), check);
     if (result.status === "saved") {
       changed();
-      reconcile();
+      await reconcile();
     }
     return result.status === "saved" ? { ...result, values: withoutKeys(result.values) } : result;
   }

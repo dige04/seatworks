@@ -13,7 +13,7 @@ import { applyUpdate, checkUpdate, npmInstall, reloadSoon } from "../../upkeep/u
 import type { TeamSource } from "../team-source.ts";
 import type { UpkeepRpc } from "./rpc.ts";
 
-type UpkeepDeps = { kit: Kit; source: TeamSource; seats: Seats; reconcile: () => void; changed: () => void };
+type UpkeepDeps = { kit: Kit; source: TeamSource; seats: Seats; reconcile: () => Promise<void>; changed: () => void };
 
 /** The plugin's own upkeep on the panel: what it left behind, its updates, and the kit files the owner changed. */
 export class UpkeepPanel implements UpkeepRpc {
@@ -72,7 +72,7 @@ export class UpkeepPanel implements UpkeepRpc {
       return { ...plan, steps: [...plan.steps, ...unread], content };
     }
     const done = migrate(ctx);
-    this.deps.reconcile();
+    await this.deps.reconcile();
     return { ...done, steps: [...done.steps, ...unread], content };
   }
 

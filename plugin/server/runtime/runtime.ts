@@ -1,7 +1,6 @@
 import { mkdirSync } from "node:fs";
 import type { Kit, SensorSpec } from "../catalog/kit/kit.ts";
 import type { ModelCache } from "../catalog/paseo/models.ts";
-import { reloadDaemon } from "../catalog/paseo/providers.ts";
 import { type IndexedProxy, choicesFor, indexedProxies } from "../catalog/seat/servers.ts";
 import { placeGuides, sweepSnapshots } from "../catalog/seat/snapshots.ts";
 import { errorText } from "../core/errors.ts";
@@ -16,6 +15,7 @@ import type {
   PermissionRequested,
   SessionOpen,
   TurnEnded,
+  Workspaces,
 } from "../core/ports.ts";
 import type { CodeIndex } from "../desk/context.ts";
 import { Desk } from "../desk/desk.ts";
@@ -47,7 +47,6 @@ import { Watching } from "./watching.ts";
 type RuntimeOptions = {
   outboxFile?: string;
   codeIndex?: (proxy: IndexedProxy) => CodeIndex;
-  reloadDaemon?: () => Promise<boolean>;
   sensor?: (spec: SensorSpec, key: string) => Judge;
 };
 
@@ -86,7 +85,7 @@ export class Runtime implements HostHooks {
       tools: TOOLS,
       outbox: this.outbox,
       seats: host.seats,
-      workspaces: host.workspaces,
+      workspaces: this.providing(host.workspaces),
       log,
       teamFor: (project) => this.source.teamFor(project),
       indexesFor: (project) => this.indexesFor(project),
@@ -114,12 +113,12 @@ export class Runtime implements HostHooks {
       remember,
     });
     this.clock = new PatrolClock({ host, patrol: this.patrol, source: this.source, desk: this.desk });
-    const reload = options.reloadDaemon ?? reloadDaemon;
     this.sync = new ProviderSync({
       kit,
       models: host.models,
+      config: host.config,
+      seats: host.seats,
       source: this.source,
-      reload,
       modelsChanged: () => this.seating.forget(),
     });
     this.launch = new SeatLaunch(kit, this.seating, this.keys, remember);
@@ -172,13 +171,25 @@ export class Runtime implements HostHooks {
     });
   }
 
+  /** Paseo refuses a seat on a provider it lacks, and a team may have moved since the last pass. */
+  private providing(workspaces: Workspaces): Workspaces {
+    return {
+      ...workspaces,
+      seat: async (workspace, spec) => {
+        await this.sync.reconcile();
+        return workspaces.seat(workspace, spec);
+      },
+    };
+  }
+
   /** The team or its skills changed: seats are built again, and shown the choices their fields take now. */
   private teamChanged(): void {
     this.seating.forget();
     this.socket.refresh();
   }
 
-  prepare(): void {
+  /** Resolves once Paseo's providers are in step with the attached projects, which waits for Paseo's API to arrive. */
+  prepare(): Promise<void> {
     try {
       mkdirSync(stateRoot(), { recursive: true });
       placeGuides(this.kit);
@@ -188,7 +199,7 @@ export class Runtime implements HostHooks {
       daemonLog.error("could not prepare the state directory:", error);
     }
     for (const problem of this.source.teamFor().errors) daemonLog.error(`settings: ${problem}`);
-    this.sync.reconcile();
+    return this.sync.reconcile();
   }
 
   /** A panel call is the first sign someone looks at the models, so the first one of a load asks the agents for them. */

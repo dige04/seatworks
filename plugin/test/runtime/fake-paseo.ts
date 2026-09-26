@@ -1,3 +1,4 @@
+import type { ConfigPatch, DaemonConfig } from "../../server/core/ports.ts";
 import { FakeTimeline } from "./fake-timeline.ts";
 
 export type Pending = { id: string; kind: string; name: string; title?: string; input?: Record<string, unknown> };
@@ -24,8 +25,53 @@ type Fake = {
   workspaceId?: string;
 };
 
+type Held = { providers: Record<string, Record<string, unknown>>; agentProfiles?: Record<string, unknown>[] };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+function deepMerge(held: Record<string, unknown>, change: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...held };
+  for (const [key, value] of Object.entries(change)) {
+    if (value === undefined) continue;
+    const current = next[key];
+    next[key] = isRecord(current) && isRecord(value) ? deepMerge(current, value) : value;
+  }
+  return next;
+}
+
+/**
+ * Paseo's config API as the daemon keeps the config in memory (daemon-config-store.js, provider-registry.js): a patch
+ * merges in at every depth, the providers it removes go after that merge, the profile list is replaced whole, and a
+ * provider of no built-in agent that names none to extend refuses the whole patch.
+ */
+export function fakeConfig(initial: DaemonConfig = {}) {
+  let held: Held = structuredClone({ providers: {}, ...initial });
+  const builtIn = new Set(["claude", "codex", "copilot", "opencode", "pi", "omp"]);
+  const patches: ConfigPatch[] = [];
+  const api = {
+    async get() {
+      return { requestId: "get", config: structuredClone(held) };
+    },
+    async patch(change: ConfigPatch) {
+      patches.push(structuredClone(change));
+      const { removeProviders = [], ...rest } = change;
+      const next = structuredClone(deepMerge(held, rest)) as Held;
+      for (const id of removeProviders) delete next.providers[id];
+      for (const [id, provider] of Object.entries(next.providers))
+        if (!builtIn.has(id) && !provider.extends) throw new Error(`Custom provider '${id}' requires an extends value`);
+      held = next;
+      return { requestId: "patch", config: structuredClone(held) };
+    },
+  };
+  /** Whether an agent can be made on `provider`, which Paseo refuses for one its config does not hold. */
+  const configured = (provider: string) => builtIn.has(provider) || provider in held.providers;
+  return { api, held: () => held, patches, configured };
+}
+
 /** Paseo as the harness runs it: its agents, workspaces and timelines in memory, answering as the daemon would. */
 export function fakePaseo() {
+  const config = fakeConfig();
   const agents = new Map<string, Fake>();
   const workspaces = new Map<string, string>();
   const workspaceNames = new Map<string, string>();
@@ -128,6 +174,8 @@ export function fakePaseo() {
         clientMessageId?: string;
         labels?: Record<string, string>;
       }) {
+        const provider = options.config.provider.split("/")[0]!;
+        if (!config.configured(provider)) throw new Error(`Provider ${provider} is not configured`);
         // Paseo keeps an agent's parent as this label, and never pushes an agent that has one.
         const labels = { ...options.labels, ...(options.parent ? { "paseo.parent-agent-id": options.parent } : {}) };
         const made = add(
@@ -191,9 +239,11 @@ export function fakePaseo() {
       },
       ref: workspace,
     },
+    config: config.api,
   };
   return {
     paseo: paseo as never,
+    config,
     agents,
     add,
     workspaces,

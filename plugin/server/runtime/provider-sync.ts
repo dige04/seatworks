@@ -1,23 +1,26 @@
 import type { Kit } from "../catalog/kit/kit.ts";
 import { type ModelCache, applyModels, fetchModels, listingProviders } from "../catalog/paseo/models.ts";
-import { applyReconcile } from "../catalog/paseo/providers.ts";
+import { providerPatches } from "../catalog/paseo/providers.ts";
 import { daemonLog } from "../core/logger.ts";
 import { stateRoot } from "../core/paths.ts";
-import type { Models } from "../core/ports.ts";
+import type { Models, PaseoConfig, Seats } from "../core/ports.ts";
 import type { TeamSource } from "./team-source.ts";
 
 type SyncOptions = {
   kit: Kit;
   models: Models;
+  config: PaseoConfig;
+  seats: Seats;
   source: TeamSource;
-  reload: () => Promise<boolean>;
   modelsChanged: () => void;
 };
 
-/** Keeps Paseo's providers and profiles, and the agents' model lists, in step with the kit and the team. */
+/** Keeps Paseo's providers, and the agents' model lists, in step with the kit and the attached projects' teams. */
 export class ProviderSync {
   private asked = false;
   private readonly options: SyncOptions;
+  private running: Promise<void> = Promise.resolve();
+  private waiting: Promise<void> | undefined;
 
   constructor(options: SyncOptions) {
     this.options = options;
@@ -40,23 +43,43 @@ export class ProviderSync {
     applyModels(kit, cache);
     if (changed) {
       this.options.modelsChanged();
-      this.reconcile();
+      await this.reconcile();
     }
     return cache;
   }
 
-  reconcile(): void {
+  /** One pass at a time, each reading the teams as they are when it starts, so calls made meanwhile share the next. */
+  reconcile(): Promise<void> {
+    if (this.waiting) return this.waiting;
+    const next = this.running.then(() => {
+      this.waiting = undefined;
+      return this.apply();
+    });
+    this.waiting = next;
+    this.running = next;
+    return next;
+  }
+
+  private async apply(): Promise<void> {
     try {
-      const { kit, source } = this.options;
-      const changed = applyReconcile(
-        kit,
-        source.known().map((project) => source.teamFor(project)),
-      );
-      if (changed.length === 0) return;
-      daemonLog.info(`config updated (${changed.join(", ")}); reloading the daemon`);
-      void this.options.reload();
+      const { kit, source, config } = this.options;
+      const held = await config.read();
+      const teams = source.known().map((project) => source.teamFor(project));
+      let plan = providerPatches(held, kit, teams);
+      if (plan.stale.length > 0) plan = providerPatches(held, kit, teams, await this.inUse(plan.stale));
+      for (const patch of plan.patches) await config.patch(patch);
+      if (plan.changed.length > 0) daemonLog.info(`Paseo's providers updated: ${plan.changed.join(", ")}`);
     } catch (error) {
-      daemonLog.error("could not reconcile role providers:", error);
+      daemonLog.error("could not bring Paseo's providers in step with the teams:", error);
+    }
+  }
+
+  /** The providers a live seat still runs on; when Paseo cannot say, every one asked about stays. */
+  private async inUse(stale: string[]): Promise<Set<string>> {
+    try {
+      return new Set((await this.options.seats.open()).map((seat) => seat.provider.split("/")[0]!));
+    } catch {
+      return new Set(stale);
     }
   }
 }

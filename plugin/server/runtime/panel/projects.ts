@@ -28,7 +28,7 @@ type ProjectsDeps = {
   held: () => { to: string; text: string; at: number; until: number }[];
   watch: (project: Project, seats: Iterable<SeatView>) => WatchView;
   changed: () => void;
-  reconcile: () => void;
+  reconcile: () => Promise<void>;
 };
 
 /** The projects on this machine as the panel attaches and detaches them, and each one's status page and Flow tab. */
@@ -43,7 +43,7 @@ export class ProjectsPanel implements ProjectsRpc {
     return this.deps.source.known().map((project) => ({ slug: project.slug, root: project.root }));
   }
 
-  addProject(root: string): Added {
+  async addProject(root: string): Promise<Added> {
     const path = root.trim();
     if (!path || !existsSync(path) || !statSync(path).isDirectory())
       return { error: `${path || "That path"} is not a directory on this machine.` };
@@ -53,7 +53,7 @@ export class ProjectsPanel implements ProjectsRpc {
     if (!this.deps.source.named(project.slug))
       return { error: `${project.root} could not be put on record; see the daemon log.` };
     writeProjectBlock(this.deps.kit, project.root);
-    this.deps.reconcile();
+    await this.deps.reconcile();
     return { slug: project.slug, root: project.root };
   }
 
@@ -127,7 +127,7 @@ export class ProjectsPanel implements ProjectsRpc {
     }
     this.deps.source.forget(slug);
     this.deps.changed();
-    this.deps.reconcile();
+    await this.deps.reconcile();
     return { removed: slug };
   }
 

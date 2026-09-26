@@ -1,42 +1,43 @@
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
 import type { z } from "zod";
 import { PaseoHost } from "../../server/adapters/paseo/host.ts";
-import { paseoConfigPath } from "../../server/core/paths.ts";
 import { registerRpc } from "../../server/runtime/panel/rpc.ts";
 import { Runtime } from "../../server/runtime/runtime.ts";
 import { makeKit } from "../kit.ts";
+import { fakeConfig } from "./fake-paseo.ts";
 
 type Contract = { name: string; input: z.ZodType; output: z.ZodType };
 type Handler = (input: unknown, context: { paseo: unknown }) => unknown;
 type Provider = { additionalModels?: { id: string }[] };
 
-const nobodySeated = {
-  agents: { list: async () => ({ entries: [], pageInfo: { hasMore: false, nextCursor: null, prevCursor: null } }) },
-};
+/** A daemon with nobody seated, `live` aside, and its config as `config` holds it. */
+export const daemon = (config = fakeConfig(), live: { provider: string }[] = []) => ({
+  agents: {
+    list: async () => ({
+      entries: live.map((agent, index) => ({ agent: { id: `live-${index}`, archivedAt: null, ...agent } })),
+      pageInfo: { hasMore: false, nextCursor: null, prevCursor: null },
+    }),
+  },
+  config: config.api,
+});
 
 /**
  * The plugin's panel side as Paseo serves it, on the test kit: each contract's handler called with the daemon handle,
  * the input read by its schema, and the answer as sent read back by the schema the panel checks it with.
  */
-export function served(paseo: unknown = nobodySeated) {
-  // Paseo's config is always there where a plugin runs, and the plugin writes its seats' providers into it.
-  mkdirSync(dirname(paseoConfigPath()), { recursive: true });
-  writeFileSync(paseoConfigPath(), "{}\n");
+export function served(paseo: unknown = daemon()) {
   const host = new PaseoHost();
-  const runtime = new Runtime(makeKit(), host, { reloadDaemon: async () => true });
+  const runtime = new Runtime(makeKit(), host);
   const handlers = new Map<string, Handler>();
   const server = { handle: (contract: Contract, handler: Handler) => void handlers.set(contract.name, handler) };
   registerRpc(host.answering(server as never), runtime.panel, () => {});
   /** The providers of the kit's that Paseo's config holds, by id. */
-  const providers = () =>
-    Object.fromEntries(
-      Object.entries(
-        (JSON.parse(readFileSync(paseoConfigPath(), "utf-8")) as { agents?: { providers?: Record<string, Provider> } })
-          .agents?.providers ?? {},
-      ).filter(([id]) => id.startsWith("sw2-")),
+  const providers = async () => {
+    const { config } = await (paseo as ReturnType<typeof daemon>).config.get();
+    return Object.fromEntries(
+      Object.entries(config.providers as Record<string, Provider>).filter(([id]) => id.startsWith("sw2-")),
     );
+  };
   const call = async <C extends Contract>(contract: C, input: z.input<C["input"]>): Promise<z.output<C["output"]>> => {
     const handler = handlers.get(contract.name);
     assert.ok(handler, `nothing serves ${contract.name}`);
