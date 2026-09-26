@@ -1,6 +1,6 @@
 import { recordEvent } from "../store/event-log.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
-import { type Finding, type Incident, deliveryOf, factNext, tell, unheard } from "../../domain/incident.ts";
+import { type Finding, type Incident, deliveryOf, factNext, factTitle, tell, unheard } from "../../domain/incident.ts";
 import { closeSeat, forget, settledAsNoise, sight } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
@@ -166,8 +166,11 @@ async function deliver(
   const failed: string[] = [];
   for (const incident of pagesFirst) {
     try {
-      const next = kit.patterns[incident.kind]?.next ?? factNext(incident.kind);
-      await mail.post(to, watchLetters.incident(incident, place, { steers, human, ...(next ? { next } : {}) }));
+      const pattern = kit.patterns[incident.kind];
+      const title = pattern?.title ?? factTitle(incident.kind);
+      const next = pattern?.next ?? factNext(incident.kind);
+      const words = { steers, human, ...(title ? { title } : {}), ...(next ? { next } : {}) };
+      await mail.post(to, watchLetters.incident(incident, place, words));
       told.push(incident.id);
     } catch (error) {
       failed.push(incident.id);

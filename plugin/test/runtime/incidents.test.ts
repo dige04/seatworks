@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { flowRpc } from "../../shared/rpc.ts";
 import { laneWithPeer } from "./harness.ts";
 import { book, hookAgent, notice } from "./noticed.ts";
 
@@ -109,6 +108,11 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
     ["I7"],
     "a page is never settled away",
   );
+  assert.match(
+    h.heard(sup).join("\n"),
+    /INCIDENT I7 \(destructive, page\) on [^\n]*\nRan a command that cannot be undone\.\n/,
+    "the letter names what kind of thing was seen in words, as does one of a pattern's",
+  );
 
   h.agents.get(lead)!.archivedAt = new Date().toISOString();
   await notice(h, peer, "suppressed");
@@ -139,10 +143,6 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   assert.match(closedWithSeat, /- L1-T2 Receipt: goal g; acceptance a; holds src\/receipt\/; out of scope the rest/);
   assert.equal((await mark(sup, "I6", "useful")).ok, true);
   assert.doesNotMatch(await listing(sup), /I6 \[/, "and once marked it waits no more");
-
-  const flow = await h.rpc(flowRpc, { project: h.project.slug });
-  assert.ok("watch" in flow, JSON.stringify(flow));
-  assert.equal(flow.watch.incidents.find((card) => card.id === "I7")?.title, "Ran a command that cannot be undone");
 
   const decided = await notice(h, peer, "big-decision", "attend", "We keep every total in one table.");
   assert.match(

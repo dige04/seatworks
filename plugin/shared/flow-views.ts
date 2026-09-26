@@ -74,18 +74,9 @@ const FlowQuestion = z.object({
   minutes: z.number(),
 });
 export type FlowQuestion = z.infer<typeof FlowQuestion>;
-const WatchIncident = z.object({
-  id: z.string(),
-  title: z.string(),
-  level: z.enum(["page", "attend"]),
-  name: z.string(),
-  minutes: z.number(),
-  quote: z.string(),
-  told: z.boolean(),
-  lane: z.string().nullable(),
-  held: z.string().nullable(),
-});
-export type WatchIncident = z.infer<typeof WatchIncident>;
+/** How many open incidents stand where: told whoever supervises, held while nobody is seated to tell, or only recorded. */
+const WatchCounts = z.object({ told: z.number(), held: z.number(), recorded: z.number() });
+export type WatchCounts = z.infer<typeof WatchCounts>;
 /** Who answers the watch's questions, and how that stands: off, a sensor with no key, nothing asked yet, its last answer, or its last failure. */
 const WatchJudge = z.object({
   label: z.string(),
@@ -96,7 +87,7 @@ const WatchJudge = z.object({
 export type WatchJudge = z.infer<typeof WatchJudge>;
 /** What the code noticed about the seats and nobody has marked yet, the trouble nobody is mailed about, and who answers the watch's questions. */
 const WatchView = z.object({
-  incidents: z.array(WatchIncident),
+  incidents: WatchCounts,
   trouble: z.array(z.object({ kind: z.string(), minutes: z.number(), detail: z.string() })),
   judge: WatchJudge,
 });

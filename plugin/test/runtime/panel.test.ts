@@ -36,9 +36,9 @@ test("what the watch sees reaches whoever supervises, the Flow tab shows what wa
   const held = await h.rpc(contracts.flow, { project: h.project.slug });
   assert.ok("watch" in held);
   assert.deepEqual(
-    held.watch.incidents.filter((item) => item.held).map((item) => [item.name, item.quote, item.held]),
-    [["Coder · L1-T1 Clean build", "src/a.test.ts: 3 assertions become 1", "nobody"]],
-    "the card names the seat by its role as the kit calls it and its task, and shows the step and why it waits",
+    held.watch.incidents,
+    { told: 2, held: 1, recorded: 0 },
+    "the Human sees how many incidents stand where, not the cases, which are W's for whoever supervises",
   );
   Object.assign(h.agents.get(sup)!, { archivedAt: null });
 

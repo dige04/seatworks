@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { KEPT, type Layer } from "../../shared/settings.ts";
 import { countsInstead, leadState, seatText } from "../../client/format/flow.ts";
-import { incidentState, judgeWords } from "../../client/format/watch.ts";
+import { incidentLines, judgeWords } from "../../client/format/watch.ts";
 import {
   dropMcp,
   keptRoles,
@@ -12,7 +12,7 @@ import {
   setRole,
   withKey,
 } from "../../client/model/layer.ts";
-import type { FlowLane, WatchIncident, WatchJudge } from "../../shared/flow-views.ts";
+import type { FlowLane, WatchJudge } from "../../shared/flow-views.ts";
 
 const docs = {
   enabled: true,
@@ -179,23 +179,6 @@ test("a seat waiting on a permission names who answers it, and a landing held be
   assert.equal(leadState(held, "the Chief", false), "landing held from while you were in the loop");
 });
 
-const incident = (over: Partial<WatchIncident>): WatchIncident => ({
-  id: "I1",
-  title: "Built a stand-in for something that does not exist",
-  level: "attend",
-  name: "Peer · L1-T1 Pointer",
-  minutes: 6,
-  quote: "S9 said: patch.js is missing",
-  told: false,
-  lane: "L1",
-  held: null,
-  ...over,
-});
-const INCIDENTS: [Partial<WatchIncident>, string][] = [
-  [{ told: true }, "told the Chief"],
-  [{ held: "nobody" }, "held · nobody is seated to tell"],
-  [{}, "recorded"],
-];
 const judge = { label: "Jev", minutes: null, detail: null };
 const kept = "Its answers are kept in assessments.log; no seat is sent them.";
 const JUDGES: [WatchJudge, ReturnType<typeof judgeWords>][] = [
@@ -234,6 +217,9 @@ const JUDGES: [WatchJudge, ReturnType<typeof judgeWords>][] = [
 ];
 
 test("the watch card says in words where an incident has got to and who answers the watch's questions, and how that stands, naming roles as the kit labels them", () => {
-  for (const [over, words] of INCIDENTS) assert.equal(incidentState(incident(over), "Chief"), words);
+  assert.deepEqual(incidentLines({ told: 2, held: 1, recorded: 0 }, "Chief"), [
+    "2 told the Chief",
+    "1 held · nobody is seated to tell",
+  ]);
   for (const [state, words] of JUDGES) assert.deepEqual(judgeWords(state, "Judge"), words, state.state);
 });

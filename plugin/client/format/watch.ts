@@ -1,13 +1,13 @@
-import type { WatchIncident, WatchJudge } from "../../shared/flow-views.ts";
+import type { WatchCounts, WatchJudge } from "../../shared/flow-views.ts";
 
-const HELD: Record<string, string> = {
-  nobody: "held · nobody is seated to tell",
-};
-
-/** Where an incident has got to, as the card counts it; `supervisor` is the kit's label for the role told. */
-export function incidentState(item: WatchIncident, supervisor: string): string {
-  if (item.told) return `told the ${supervisor}`;
-  return (item.held ? HELD[item.held] : undefined) ?? "recorded";
+/** How many incidents stand where, one line each that has any; `supervisor` is the kit's label for the role told. */
+export function incidentLines(counts: WatchCounts, supervisor: string): string[] {
+  const lines: [number, string][] = [
+    [counts.told, `told the ${supervisor}`],
+    [counts.held, "held · nobody is seated to tell"],
+    [counts.recorded, "recorded"],
+  ];
+  return lines.flatMap(([count, state]) => (count > 0 ? [`${count} ${state}`] : []));
 }
 
 /** Who answers the watch's questions and how that stands, in words and a tone; `judgeRole` is the Team chip it is set on. */

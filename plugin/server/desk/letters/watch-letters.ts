@@ -8,15 +8,17 @@ import { type Letter, mail } from "./envelope.ts";
 export const watchLetters = {
   /**
    * Read by whoever supervises, W's only reader. `steers` when a message reaches the seat mid-turn; `human` when the Human
-   * is in the loop, else a page is the Supervisor's to hold and decide; `next` what the catalog asks for this kind.
+   * is in the loop, else a page is the Supervisor's to hold and decide; `title` and `next` what the catalog says of
+   * this kind: what it is in words, and what it asks.
    */
   incident(
     incident: Incident,
     place: { lane?: Lane; task?: Task },
-    { steers, human, next: asked }: { steers: boolean; human: boolean; next?: string },
+    { steers, human, title, next: asked }: { steers: boolean; human: boolean; title?: string; next?: string },
   ): Letter {
     const lines = [
       `INCIDENT ${incident.id} (${oneLine(incident.kind, 40)}, ${incident.level}) on ${oneLine(incident.where, 160)}, agent ${incident.seat}.`,
+      ...(title ? [`${oneLine(title, 160)}.`] : []),
       "",
     ];
     lines.push(`What was seen: ${oneLine(incident.quote, 400)}`);

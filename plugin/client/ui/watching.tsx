@@ -5,7 +5,7 @@ import { Text, View } from "react-native";
 import { Dot, Heading, Rule } from "./bits.tsx";
 import type { WatchJudge, WatchView } from "../../shared/flow-views.ts";
 import { ago } from "../format/time.ts";
-import { incidentState, judgeWords } from "../format/watch.ts";
+import { incidentLines, judgeWords } from "../format/watch.ts";
 
 function useStyles(theme: PluginTheme) {
   return useMemo(
@@ -93,21 +93,18 @@ type WatchProps = { watch: WatchView; supervisor: string; judgeRole: string; the
 /** Who answers the watch, then how many incidents stand where: what W found is its own, so the Human sees counts, not the cases. */
 export function WatchCard({ watch, supervisor, judgeRole, theme }: WatchProps) {
   const styles = useStyles(theme);
-  const counts = new Map<string, number>();
-  for (const item of watch.incidents) {
-    const state = incidentState(item, supervisor);
-    counts.set(state, (counts.get(state) ?? 0) + 1);
-  }
+  const lines = incidentLines(watch.incidents, supervisor);
+  const { told, held, recorded } = watch.incidents;
   return (
     <View style={{ gap: 10 }}>
       <JudgeLine judge={watch.judge} judgeRole={judgeRole} theme={theme} />
-      {counts.size > 0 ? (
-        <Section title={`Incidents · ${watch.incidents.length} not yet marked`} theme={theme}>
-          {[...counts].map(([state, count], index) => (
-            <View key={state}>
+      {lines.length > 0 ? (
+        <Section title={`Incidents · ${told + held + recorded} not yet marked`} theme={theme}>
+          {lines.map((line, index) => (
+            <View key={line}>
               {index > 0 ? <Rule theme={theme} /> : null}
               <View style={[styles.row, { alignItems: "center" }]}>
-                <Text style={styles.title}>{`${count} ${state}`}</Text>
+                <Text style={styles.title}>{line}</Text>
               </View>
             </View>
           ))}
