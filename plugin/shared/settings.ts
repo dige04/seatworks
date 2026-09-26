@@ -77,6 +77,8 @@ export const AttentionChoice = z.strictObject({
   silentTurns: z.number().int().min(1).optional(),
   /** How much a seat may write after a refused or unanswered call and still count as stopped on it. */
   quietChars: z.number().int().min(0).optional(),
+  /** How full a seat's context may get, as its agent reports it, before the watch says so. */
+  contextShare: z.number().gt(0).max(1).optional(),
   /** How many of a seat's latest steps are read for going round in circles. */
   stuckWithin: z.number().int().min(2).optional(),
   /** How often the watch's eye reads a running seat's new words; it also reads at every turn's end. */

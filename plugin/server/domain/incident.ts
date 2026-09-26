@@ -59,6 +59,7 @@ const FACTS = {
   unverified: { level: "attend", title: "Handed back without running the gate" },
   "claim-contradicted": { level: "attend", title: "Handed back as complete while its last check failed" },
   "long-turn": { level: "attend", title: "A turn running far longer than usual" },
+  "context-pressure": { level: "attend", title: "A context nearly full" },
   "rework-loop": { level: "attend", title: "Sent back again and again" },
   "patched-not-fixed": { level: "attend", title: "Several tasks patched, none fixed" },
   "accepted-unfinished": { level: "attend", title: "Work taken in unfinished" },

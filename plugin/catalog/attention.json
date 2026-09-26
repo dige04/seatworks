@@ -20,6 +20,7 @@
   "longTurnTimes": 3,
   "longTurnAfterTurns": 5,
   "longTurnMedianOf": 20,
+  "contextShare": 0.8,
   "reworksAt": 3,
   "reviewsAt": 3,
   "incidentsKept": 500,

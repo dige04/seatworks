@@ -25,6 +25,9 @@ import type { Watches } from "../watch/watches.ts";
 
 type SeatMap = Map<string, SeatView>;
 
+/** How full a seat's context is, where its agent reports it: Paseo lists it though the port does not name it. */
+type Usage = { lastUsage?: { contextWindowUsedTokens?: number; contextWindowMaxTokens?: number } };
+
 type PatrolDeps = {
   kit: Kit;
   source: TeamSource;
@@ -42,6 +45,7 @@ export class Patrol {
   private readonly idleFlag = new Map<string, string>();
   private readonly lostTold = new Set<string>();
   private readonly leadGoneTold = new Set<string>();
+  private readonly pressed = new Set<string>();
   private resumed = false;
   private round: Promise<void> | undefined;
 
@@ -98,6 +102,7 @@ export class Patrol {
         () => dueAsks(this.deps, project, ledger(), seats, now, (ids) => this.missing(ids)),
       ],
       ["what a lane's history shows could not be read", () => this.history(project, ledger(), seats)],
+      ["how full a seat's context is could not be told", () => this.pressure(project, seats)],
       ["sweeping failed", () => this.sweep(project, ledger(), seats)],
       ["waiting lanes could not be opened", () => desk.openWaiting(project)],
       ["finished lanes could not be archived", () => desk.archiveFinished(project, gone)],
@@ -179,6 +184,25 @@ export class Patrol {
         { id: seen.seat, provider: seat.provider, title: seat.title },
         findingsOf([seen.fact]),
       );
+    }
+  }
+
+  /** A watched seat whose context nears full, told once while it stays so; nothing acts on it. */
+  private async pressure(project: Project, seats: SeatMap): Promise<void> {
+    const { contextShare } = this.deps.source.teamFor(project).attention;
+    for (const id of this.pressed) if (!seats.has(id)) this.pressed.delete(id);
+    for (const seat of seats.values()) {
+      if (projectOf(seat.cwd).slug !== project.slug || !this.deps.watches.watched(seat.provider)) continue;
+      const { contextWindowUsedTokens: used, contextWindowMaxTokens: max } = (seat as SeatView & Usage).lastUsage ?? {};
+      const full = used !== undefined && max ? used / max : 0;
+      if (full < contextShare) {
+        this.pressed.delete(seat.id);
+        continue;
+      }
+      if (this.pressed.has(seat.id)) continue;
+      this.pressed.add(seat.id);
+      const quote = `its context is ${Math.round(full * 100)}% full: ${used} of ${max} tokens`;
+      await this.deps.desk.notice(project, seat, findingsOf([fact("context-pressure", quote)]));
     }
   }
 

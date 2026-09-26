@@ -135,3 +135,28 @@ test("how many quiet turns stall a task, and how much a seat may say after a ref
     "a few sentences past a refusal is still stopped on it",
   );
 });
+
+test("a seat whose context nears full, as its agent reports it, is told once while it stays so, and nothing acts on it", async () => {
+  const { h, sup, peer } = await laneWithPeer();
+  const used = (tokens: number) =>
+    Object.assign(h.agents.get(peer)!, {
+      lastUsage: { contextWindowUsedTokens: tokens, contextWindowMaxTokens: 200_000 },
+    });
+  const told = () =>
+    h
+      .heard(sup)
+      .join("\n")
+      .match(/\(context-pressure, attend\)/g)?.length ?? 0;
+  used(120_000);
+  await h.tick();
+  assert.equal(told(), 0, "60% is room enough");
+  used(170_000);
+  await h.tick();
+  await h.tick();
+  assert.match(
+    h.heard(sup).join("\n"),
+    /INCIDENT I\d+ \(context-pressure, attend\) on the Peer on L1-T1[^]*What was seen: its context is 85% full: 170000 of 200000 tokens/,
+  );
+  assert.equal(told(), 1, "once while it stays full");
+  assert.equal(h.ledger().tasks["L1-T1"]!.status, "running", "nothing acts on it");
+});
