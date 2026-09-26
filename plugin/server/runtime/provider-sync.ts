@@ -47,7 +47,11 @@ export class ProviderSync {
 
   reconcile(): void {
     try {
-      const changed = applyReconcile(this.options.kit, this.options.source.teamFor());
+      const { kit, source } = this.options;
+      const changed = applyReconcile(
+        kit,
+        source.known().map((project) => source.teamFor(project)),
+      );
       if (changed.length === 0) return;
       daemonLog.info(`config updated (${changed.join(", ")}); reloading the daemon`);
       void this.options.reload();

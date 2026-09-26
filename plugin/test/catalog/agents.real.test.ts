@@ -1,7 +1,7 @@
 // First, so this file has a HOME of its own even run alone: what it writes under HOME would otherwise land in the owner's.
 import "../setup.ts";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -10,12 +10,12 @@ import { can, providerId, seatedAs } from "../../server/catalog/kit/roles.ts";
 import { harnessFileSources } from "../../server/catalog/kit/harness-files.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { seatEnv, stateWrites } from "../../server/catalog/seat/launch.ts";
-import { applyReconcile, seatPairs } from "../../server/catalog/paseo/providers.ts";
+import { desiredProvider, seatPairs } from "../../server/catalog/paseo/providers.ts";
 import { materialize, seatDir } from "../../server/catalog/seat/seats.ts";
 import { serversFor } from "../../server/catalog/seat/servers.ts";
 import { resolveTeam, withHarness } from "../../server/catalog/team/team.ts";
 import { readConfig } from "../../server/core/config-file.ts";
-import { paseoConfigPath, stateRoot } from "../../server/core/paths.ts";
+import { stateRoot } from "../../server/core/paths.ts";
 import { ANSWER_WITHIN_MS } from "../../server/desk/calls/tool-calls.ts";
 import { realProbes } from "../../server/runtime/panel/doctor.ts";
 import { tempDir } from "../tempdir.ts";
@@ -50,10 +50,6 @@ const startsOf = (agent: string) => [agent, `${agent} *`, `npx ${agent} *`, `bun
 test("every role builds on every agent the kit ships, each in that agent's own terms", (t) => {
   const kit = loadKit(PLUGIN);
   const base = resolveTeam(kit, { mcp: Object.fromEntries(Object.keys(kit.mcp).map((id) => [id, { enabled: true }])) });
-  mkdirSync(dirname(paseoConfigPath()), { recursive: true });
-  writeFileSync(paseoConfigPath(), "{}\n");
-  applyReconcile(kit, base);
-  const paseo = readConfig<unknown>(paseoConfigPath(), {});
   const home = tempDir("sw2-every-home-");
   const project = { root: "/work/demo", slug: "demo-000000", state: "/state/demo" };
   const agents = Object.values(kit.harnesses).flatMap((harness) => harness.provider.env?.SEATWORKS_AGENT_BIN ?? []);
@@ -68,8 +64,9 @@ test("every role builds on every agent the kit ships, each in that agent's own t
     // A seat that writes may move its own task branch, the only one it stands on; one that does not is refused outright.
     const refusedGit = can(role, "write") ? DESK_GIT : [...DESK_GIT, ...MOVES];
     const freedGit = can(role, "write") ? MOVES : [];
+    const team = withHarness(base, role.role, harness);
     assert.deepEqual(
-      at(paseo, `agents.providers.${providerId(kit, role.role, harness.id)}.paseoTools`),
+      desiredProvider(kit, team.roles[role.role]!).paseoTools,
       { enabled: false },
       `${where}: no shipped seat acts on another behind the desk or wakes on a clock through Paseo's own tools`,
     );
@@ -97,7 +94,6 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       t.diagnostic(`${harness.id} is not installed here, so its ${role.role} seat was not built`);
       continue;
     }
-    const team = withHarness(base, role.role, harness);
     materialize(
       kit,
       team,

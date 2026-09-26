@@ -5,9 +5,9 @@ import { type Json, isRecord, sameJson } from "../../core/json.ts";
 import { daemonLog } from "../../core/logger.ts";
 import { nodeBin, paseoConfigPath } from "../../core/paths.ts";
 import { paseoToolsPolicy, supportsRole } from "../kit/harness-files.ts";
-import type { HarnessSpec, Kit, ModelSpec, RoleSpec } from "../kit/kit.ts";
+import type { HarnessSpec, Kit, RoleSpec } from "../kit/kit.ts";
 import { providerId } from "../kit/roles.ts";
-import { presetOn } from "../team/role-seats.ts";
+import type { RoleSeat } from "../team/role-seats.ts";
 import type { Team } from "../team/team.ts";
 
 /** Keys the kit sets on a provider only when it wants them, so one it stops wanting is taken off. */
@@ -28,24 +28,9 @@ export function seatPairs(kit: Kit): { role: RoleSpec; harness: HarnessSpec }[] 
   return pairs;
 }
 
-function choiceFor(team: Team, role: RoleSpec, harness: HarnessSpec): { model?: string; thinking?: string } {
-  const seat = team.roles[role.role];
-  if (seat && seat.harness.id === harness.id) return { model: seat.model?.id, thinking: seat.thinking };
-  const { model, thinking } = presetOn(
-    role,
-    harness,
-    Object.values(team.roles).map((entry) => entry.role),
-  );
-  return { model: model?.id, thinking };
-}
-
-function defaultModel(harness: HarnessSpec, choice: { model?: string }): ModelSpec[] {
-  if (!choice.model) return [];
-  const label = harness.models?.find((entry) => entry.id === choice.model)?.label ?? choice.model;
-  return [{ id: choice.model, label, isDefault: true }];
-}
-
-function desiredProvider(kit: Kit, team: Team, role: RoleSpec, harness: HarnessSpec): Json {
+/** A seat's provider as the kit wants it, starting on the model its team chose. */
+export function desiredProvider(kit: Kit, seat: RoleSeat): Json {
+  const { role, harness, model } = seat;
   const entry: Json = {
     extends: harness.baseProvider,
     label: labelFor(kit, role, harness),
@@ -57,11 +42,22 @@ function desiredProvider(kit: Kit, team: Team, role: RoleSpec, harness: HarnessS
     part === "NODE" ? nodeBin() : part.replaceAll("KIT", kit.dir),
   );
   if (command.length > 0) entry.command = command;
-  const models = defaultModel(harness, choiceFor(team, role, harness));
-  if (models.length > 0) entry.additionalModels = models;
+  if (model) entry.additionalModels = [{ id: model.id, label: model.label, isDefault: true }];
   const tools = paseoToolsPolicy(kit, role);
   if (tools) entry.paseoTools = tools;
   return entry;
+}
+
+/** One provider per role and the agent it has in each team, as the first team to seat it wants it. */
+function wantedProviders(kit: Kit, teams: Team[]): Map<string, Json> {
+  const wanted = new Map<string, Json>();
+  for (const team of teams)
+    for (const role of kit.roles) {
+      const seat = team.roles[role.role];
+      const id = seat && providerId(kit, role.role, seat.harness.id);
+      if (seat && id && !wanted.has(id)) wanted.set(id, desiredProvider(kit, seat));
+    }
+  return wanted;
 }
 
 function managedEnvKeys(kit: Kit): Set<string> {
@@ -74,24 +70,20 @@ function managedEnvKeys(kit: Kit): Set<string> {
 }
 
 /**
- * Paseo's config with every provider the kit's seats need, as the kit and team want them now, and no profile of the
- * kit's: nothing reads one, since the Human starts a Supervisor by its provider.
+ * Paseo's config with the providers the attached projects' teams seat on, as those teams want them now, and no profile
+ * of the kit's: nothing reads one, since the Human starts a Supervisor by its provider.
  */
-function reconcile(config: Json, kit: Kit, team: Team): { config: Json; changed: string[] } {
+function reconcile(config: Json, kit: Kit, teams: Team[]): { config: Json; changed: string[] } {
   const next = structuredClone(config);
   const providers = child(child(next, "agents"), "providers") as Record<string, Json>;
   const changed: string[] = [];
-  const pairs = seatPairs(kit);
-  const wanted = new Set(pairs.map((pair) => providerId(kit, pair.role.role, pair.harness.id)));
+  const wanted = wantedProviders(kit, teams);
   if (kit.prefix) {
-    dropStale(providers, kit.prefix, wanted, changed);
+    dropStale(providers, kit.prefix, new Set(wanted.keys()), changed);
     dropProfiles(next, kit.prefix, changed);
   }
   const managed = managedEnvKeys(kit);
-  for (const { role, harness } of pairs) {
-    const id = providerId(kit, role.role, harness.id);
-    reconcileProvider(providers, id, desiredProvider(kit, team, role, harness), managed, changed);
-  }
+  for (const [id, want] of wanted) reconcileProvider(providers, id, want, managed, changed);
   return { config: next, changed };
 }
 
@@ -140,10 +132,11 @@ function reconcileProvider(
   changed.push(`provider ${id}`);
 }
 
-export function applyReconcile(kit: Kit, team: Team): string[] {
+/** `teams` holds each attached project's team: with none attached, nothing of the kit's is wanted. */
+export function applyReconcile(kit: Kit, teams: Team[]): string[] {
   const configPath = paseoConfigPath();
   const config = JSON.parse(readFileSync(configPath, "utf-8")) as Json;
-  const { config: next, changed } = reconcile(config, kit, team);
+  const { config: next, changed } = reconcile(config, kit, teams);
   // Staged and renamed: a daemon killed mid-write could not parse its own config. The mode is kept so a private config is not widened.
   if (changed.length > 0)
     writeConfigAtomic(configPath, `${JSON.stringify(next, null, 2)}\n`, statSync(configPath).mode & 0o777);

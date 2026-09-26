@@ -9,7 +9,7 @@ import { renderPrompt, renderText, skillProblems, skillSources } from "../../ser
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { providerId, toolsOf } from "../../server/catalog/kit/roles.ts";
 import { applyRole } from "../../server/catalog/seat/launch.ts";
-import { applyReconcile, seatPairs } from "../../server/catalog/paseo/providers.ts";
+import { desiredProvider, seatPairs } from "../../server/catalog/paseo/providers.ts";
 import { seedRecords } from "../../server/catalog/seat/seat-files.ts";
 import { materialize, seatDir } from "../../server/catalog/seat/seats.ts";
 import { placeGuides } from "../../server/catalog/seat/snapshots.ts";
@@ -18,7 +18,7 @@ import { resolveTeam, rulesFor, withHarness } from "../../server/catalog/team/te
 import { describeTeam } from "../../server/runtime/panel/team-view.ts";
 import { readConfig } from "../../server/core/config-file.ts";
 import { git } from "../../server/core/git.ts";
-import { guidesDir, paseoConfigPath } from "../../server/core/paths.ts";
+import { guidesDir } from "../../server/core/paths.ts";
 import type { AgentConfig } from "../../server/core/ports.ts";
 import { realProbes } from "../../server/runtime/panel/doctor.ts";
 import { tempDir } from "../tempdir.ts";
@@ -228,17 +228,13 @@ test("each shipped role writes under the project's state only what its prompt, d
 test("a Claude seat reads the project's own CLAUDE.md and takes in its AGENTS.md, though its settings come from its seat alone", () => {
   const kit = loadKit(PLUGIN);
   const team = resolveTeam(kit);
-  mkdirSync(dirname(paseoConfigPath()), { recursive: true });
-  writeFileSync(paseoConfigPath(), "{}\n");
-  applyReconcile(kit, team);
-  type Written = { agents?: { providers?: Record<string, { env?: Record<string, string> }> } };
-  const providers = readConfig<Written>(paseoConfigPath(), {}).agents?.providers ?? {};
   const pairs = seatPairs(kit).filter((pair) => pair.harness.id === "claude");
   assert.equal(pairs.length, kit.roles.length);
-  for (const { role } of pairs) {
+  for (const { role, harness } of pairs) {
     const id = providerId(kit, role.role, "claude");
+    const provider = desiredProvider(kit, withHarness(team, role.role, harness).roles[role.role]!);
     assert.equal(
-      providers[id]?.env?.CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD,
+      (provider.env as Record<string, string>).CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD,
       "1",
       `${role.role}: Claude reads CLAUDE.md from an added directory only with this set`,
     );
