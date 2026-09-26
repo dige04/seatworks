@@ -15,7 +15,7 @@ import { type Ledger, findLane } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { closeIncidentsOf } from "../watch/notice.ts";
-import type { Project } from "../project/project.ts";
+import { type Project, readProjectConfig } from "../project/project.ts";
 import type { Roster } from "../seats/roster.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
@@ -114,9 +114,12 @@ async function retire(
   recordEvent(project, { kind: "lane.closed", lane: lane.id, land: args.land, landing: landed.how, reason, writers });
   const moved = args.land && !lane.onBranch ? await tellBaseMoved(desk, project, lane) : "";
   // With the Human out of the loop, what landed goes out when the Supervisor says: the desk only reminds it.
+  const read = readProjectConfig(project.state);
+  const base = "config" in read ? read.config.base : undefined;
+  const sends = base ? `push sends ${base}` : "push sends the project's base, once set_project names it,";
   const out =
     args.land && !lane.onBranch && !desk.teamFor(project).hitl.on
-      ? `\n\nGetting it out is yours while the Human is out of the loop: push sends ${lane.base} to its remote, with a tag when it is a release.`
+      ? `\n\nGetting it out is yours while the Human is out of the loop: ${sends} to its remote, with a tag when it is a release.`
       : "";
   const reply = `${closedReply(lane, landed, left, kept, [...branches, ...stowed.kept], stowed.note)}${moved}${out}`;
   await openWaiting(desk, project, true);

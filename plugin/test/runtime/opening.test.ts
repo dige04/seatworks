@@ -163,6 +163,11 @@ test("a lane takes the project's own copy while it is free; one that finds it ta
     h.call(sup, "supervisor", "open_lane", lane(title, extra));
   assert.equal((await open("Authorization", { outcome: "roles gate the api" })).ok, true);
   const first = h.ledger().lanes.L1!;
+  assert.match(
+    (await h.call(sup, "supervisor", "set_project", {})).text,
+    /^Base unset;/,
+    "the branch a lane starts from is not the project's base until set_project names one",
+  );
   const auth = { outcome: "sessions exist", writeSet: ["src/auth/**"] };
   assert.match(
     (await open("Authentication", auth)).text,
