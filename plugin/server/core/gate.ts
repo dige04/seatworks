@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { closeSync, mkdirSync, openSync, readSync, statSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 
@@ -12,6 +12,7 @@ type GateResult = {
   tail: string;
 };
 
+const WINDOWS = process.platform === "win32";
 const TAIL_LINES = 40;
 const TAIL_CHARS = 3000;
 
@@ -20,11 +21,15 @@ function tailOf(text: string): string {
   return kept.length > TAIL_CHARS ? kept.slice(-TAIL_CHARS) : kept;
 }
 
-/** Kills the gate's whole process group: a leftover watcher, dev server or `&` job would keep writing into the lane's copy and the log. */
+/**
+ * Kills the gate's whole process group, or on Windows its process tree: a leftover watcher, dev server or `&` job would keep
+ * writing into the lane's copy and the log.
+ */
 function killGroup(pid: number | undefined): void {
   if (pid === undefined) return;
   try {
-    process.kill(-pid, "SIGKILL");
+    if (WINDOWS) spawnSync("taskkill", ["/pid", String(pid), "/t", "/f"], { stdio: "ignore", windowsHide: true });
+    else process.kill(-pid, "SIGKILL");
   } catch {
     // Nothing of the group was left to kill.
   }
@@ -63,10 +68,12 @@ export function runGate(
   writeSync(fd, `$ ${command}\n`);
   return new Promise((resolve) => {
     // Straight to the log fd: a pipe would be inherited by leftover processes and hold "close" open indefinitely.
-    const child = spawn("/bin/sh", ["-c", command], {
+    const child = spawn(command, {
       cwd,
       env: { ...process.env, CI: "1" },
-      detached: true,
+      shell: true,
+      detached: !WINDOWS,
+      windowsHide: true,
       stdio: ["ignore", fd, fd],
     });
     const ended = { timedOut: false, stopped: false };
