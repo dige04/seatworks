@@ -61,8 +61,9 @@ test("every role builds on every agent the kit ships, each in that agent's own t
     const waits = !["lead", "supervisor"].includes(as);
     const searches = SEARCHES.includes(as);
     const bare = as === "watcher";
-    // A seat that writes may move its own task branch, the only one it stands on; one that does not is refused outright.
-    const refusedGit = can(role, "write") ? DESK_GIT : [...DESK_GIT, ...MOVES];
+    // A seat that writes may move its own task branch, the only one it stands on; one that does not is refused outright,
+    // and one with no shell, whose no-shell is checked below, runs no git at all.
+    const refusedGit = bare ? [] : can(role, "write") ? DESK_GIT : [...DESK_GIT, ...MOVES];
     const freedGit = can(role, "write") ? MOVES : [];
     const team = withHarness(base, role.role, harness);
     assert.deepEqual(
@@ -219,7 +220,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         `${where}: writes into the state only where its content says`,
       );
       const rules = readFileSync(join(dir, "rules", "seatworks.rules"), "utf-8");
-      for (const command of bare ? [] : refusedGit)
+      for (const command of refusedGit)
         assert.match(
           rules,
           new RegExp(`\\["git", (\\[[^\\]]*)?"${command}"`),
