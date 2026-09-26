@@ -1,6 +1,6 @@
 import { headSha } from "../../core/git.ts";
 import { minutesSince } from "../../core/time.ts";
-import { type ToolReply, no, ok } from "../context.ts";
+import { type ToolReply, ok } from "../context.ts";
 import { askFirstHits, changeOf, landFacts } from "./land-facts.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { loadLedger } from "../store/ledger.ts";
@@ -20,26 +20,16 @@ export type Held = NonNullable<Lane["landApproval"]>;
 const NOT_READY = "Its Lead has not reported it ready as it now stands: never, or the lane was amended since.";
 
 /**
- * What the Human's earlier word still stops: an approval given while ready waits for READY again, and a hold with no
- * commit since stands while it still touches what they asked to be asked about. Out of the loop, their word stops nothing.
+ * What the Human's earlier word still stops: a hold with no commit since stands while it still touches what they asked to
+ * be asked about. Out of the loop, their word stops nothing.
  */
 export async function waitsForHuman(
   { ledgers, teamFor }: Pick<DeskServices, "ledgers" | "teamFor">,
   project: Project,
   lane: Lane,
   tip: string | undefined,
-  approved: Held | undefined,
 ): Promise<Closed | undefined> {
   if (!teamFor(project).hitl.on) return undefined;
-  if (approved?.ready && !lane.ready) {
-    const why = "its Lead has not reported it ready as it now stands";
-    return {
-      ...no(
-        `Lane ${lane.id} was not landed: ${why}. The Human's approval stands; land_lane lands it once its Lead reports it ready.`,
-      ),
-      blocked: why,
-    };
-  }
   const held = lane.landApproval;
   if (!held || held.approved || held.head !== tip) return undefined;
   const asks = askFirstHits(project, await changeOf(project, lane));
