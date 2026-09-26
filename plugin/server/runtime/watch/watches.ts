@@ -19,8 +19,16 @@ export type SeatLook = {
   instruction?: { text: string; from: string[] };
 };
 
-/** `placed` is false until the ledger has placed the seat, or while it cannot be read; `handedBack` is the outcome of a hand-back since `at` the desk did not gate. */
-export type SeatContext = { rules: Rules; handedBack: (at: number) => string | undefined; placed: boolean };
+/**
+ * `placed` is false until the ledger has placed the seat, or while it cannot be read; `handedBack` is the outcome of a
+ * hand-back since `at` the desk did not gate; `heard` whether the desk has ever had a call from the seat.
+ */
+export type SeatContext = {
+  rules: Rules;
+  handedBack: (at: number) => string | undefined;
+  heard: () => boolean;
+  placed: boolean;
+};
 
 type LongTurn = {
   longTurnMinutes: number;
@@ -179,6 +187,7 @@ export class SeatWatch {
     ];
     const pattern = stuck(this.window.sinceInstruction(), context.rules);
     if (pattern) facts.push(fact("stuck", pattern));
+    if (!context.heard()) facts.push(fact("desk-unreached", "ended a turn without one call to its team's tools"));
     return this.fresh(facts);
   }
 

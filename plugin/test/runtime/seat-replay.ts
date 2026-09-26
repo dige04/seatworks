@@ -71,7 +71,10 @@ export function watchOver(context: () => SeatContext | undefined, quirks?: Quirk
 
 /** `handed` is the outcome of a hand-back the turn made, if it made one; `quirks` are the harness's way of writing its timeline. */
 export function play(messages: StreamMessage[], given: Rules, handed?: string, quirks?: Quirks) {
-  return watchOver(() => ({ rules: given, handedBack: () => handed, placed: true }), quirks)(messages);
+  return watchOver(
+    () => ({ rules: given, handedBack: () => handed, heard: () => true, placed: true }),
+    quirks,
+  )(messages);
 }
 
 export const kinds = (facts: Fact[]) => facts.map((fact) => fact.kind);

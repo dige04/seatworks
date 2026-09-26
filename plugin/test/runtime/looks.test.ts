@@ -78,7 +78,7 @@ test("the watch's eye reads a seat's new words at its turn's end and while it ru
   await h.idle(sup);
   assert.match(
     h.heard(sup).join("\n"),
-    /INCIDENT I1 \(stand-in, attend\) on the Peer on L1-T1[^]*What was seen: The parser is missing, so I'll build a stub for it\./,
+    /INCIDENT I2 \(stand-in, attend\) on the Peer on L1-T1[^]*What was seen: The parser is missing, so I'll build a stub for it\./,
     "it reaches whoever supervises at once",
   );
   const asked = sensed.asked.length;
@@ -97,7 +97,7 @@ test("the watch's eye reads a seat's new words at its turn's end and while it ru
     "a turn still running is looked at every few minutes",
   );
   assert.equal(
-    book(h).I1!.later,
+    book(h).I2!.later,
     "A placeholder will do for the refund path.",
     "seen again, it is kept beside what was told",
   );
@@ -108,14 +108,14 @@ test("the watch's eye reads a seat's new words at its turn's end and while it ru
   });
   assert.equal(asking.ok, true, `the seat's own words are the Supervisor's to quote back: ${asking.text}`);
 
-  assert.equal((await h.call(sup, "supervisor", "mark_incident", { id: "I1", verdict: "noise" })).ok, true);
+  assert.equal((await h.call(sup, "supervisor", "mark_incident", { id: "I2", verdict: "noise" })).ok, true);
   timeline.beat("turn_started", "t3");
   timeline.add({ type: "reasoning", text: "Another placeholder, for the tax table this time." }, "t3");
   timeline.beat("turn_completed", "t3");
   await looked();
   assert.deepEqual(
-    Object.values(book(h)).map((item) => [item.id, item.count]),
-    [["I1", 3]],
+    Object.values(book(h)).flatMap((item) => (item.brain ? [[item.id, item.count]] : [])),
+    [["I2", 3]],
     "a pattern marked noise stays settled for its seat's task, in whatever words the next look finds it",
   );
 });
@@ -139,7 +139,7 @@ test("with both brains the sensor sifts and the Watcher seat judges only what it
   assert.equal(seat.asked.length, 1);
   assert.deepEqual(Object.keys(seat.asked[0]!.questions), ["turning"], "the unsure one, not what the sensor cleared");
   assert.deepEqual(seat.asked[0]!.state.items, ["[thought] Scrap the queue and poll instead."]);
-  assert.deepEqual(seat.asked[0]!.state.facts, ["call-failed"], "beside what the code saw meanwhile");
+  assert.deepEqual(seat.asked[0]!.state.facts, ["call-failed", "desk-unreached"], "beside what the code saw meanwhile");
   const found = Object.values(book(h)).find((item) => item.kind === "turning")!;
   assert.deepEqual(
     [found.seat, found.quote, found.facts[1]],
@@ -227,7 +227,7 @@ test("what a look reads and an incident quotes is cut where the owner says, and 
     "the brains read each item cut to the owner's length",
   );
   assert.deepEqual(
-    Object.values(book(h)).map((item) => [item.kind, item.quote]),
+    Object.values(book(h)).flatMap((item) => (item.brain ? [[item.kind, item.quote]] : [])),
     [["stand-in", "The parser is missin\n[… 43 more characters]"]],
     "a quote too, and a note is no incident",
   );

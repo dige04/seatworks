@@ -79,7 +79,7 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
   assert.equal(watcher!.cwd, h.project.root);
   assert.match(
     watcher!.prompt!,
-    /^CASE C\w+ about L1-T1: questions on the fields below\.\n\nseat:\nthe Peer on L1-T1 \(Clean build\)\n\ngoal:\ng\n[^]*items:\n- \[thought\] The parser is missing, so I'll build a stub for it\.\n\nQuestions:\nstruggling: [^\n]+\n {3}yes: [^\n]+\n {3}no: [^\n]+\n[^]*\n\nNext: judge C\w+: /,
+    /^CASE C\w+ about L1-T1: questions on the fields below\.\n\nseat:\nthe Peer on L1-T1 \(Clean build\)\n\ngoal:\ng\n[^]*items:\n- \[thought\] The parser is missing, so I'll build a stub for it\.\n\nfacts:\n- desk-unreached\n\nQuestions:\nstruggling: [^\n]+\n {3}yes: [^\n]+\n {3}no: [^\n]+\n[^]*\n\nNext: judge C\w+: /,
   );
   const first = watcher!.prompt!;
   const asked = questionsIn(first);

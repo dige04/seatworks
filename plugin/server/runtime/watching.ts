@@ -68,6 +68,14 @@ export class Watching {
         refusalsAt: attention.refusalsAt,
         stuckWithin: attention.stuckWithin,
       },
+      heard: () => {
+        try {
+          return loadLedger(project.state).agents[seat.id]?.recordedAt !== undefined;
+        } catch {
+          // A record that cannot be read cannot say the seat never reached it.
+          return true;
+        }
+      },
       handedBack: (at) => {
         try {
           const handback = taskOfPeer(loadLedger(project.state), seat.id)?.handback;

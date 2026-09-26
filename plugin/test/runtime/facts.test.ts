@@ -4,7 +4,7 @@ import { TEAM_SERVER } from "../../server/catalog/kit/kit.ts";
 import type { StreamMessage } from "../../server/adapters/paseo/stream.ts";
 import { callsTo } from "../../server/runtime/watch/facts.ts";
 import { SeatWatch } from "../../server/runtime/watch/watches.ts";
-import { again, claudeTurn2, fixture, kinds, kit, opening, piRow, play, rules } from "./seat-replay.ts";
+import { again, claudeTurn2, fixture, kinds, kit, opening, piRow, play, rules, watchOver } from "./seat-replay.ts";
 
 const done = piRow(11);
 const failedCat = piRow(15);
@@ -245,8 +245,21 @@ test("a seat refused again and again, by its agent's permissions or by the desk,
   );
 });
 
+test("a seat that ends a turn never having reached its team's tools is told of, since it can neither hand back nor ask", () => {
+  let heard = false;
+  const watch = watchOver(() => ({ rules: rules(), handedBack: () => undefined, heard: () => heard, placed: true }));
+  const turn = (id: string): StreamMessage[] => [
+    { event: { type: "turn_started", turnId: id } },
+    again(done, `ok-${id}`, 2),
+    { event: { type: "turn_completed", turnId: id } },
+  ];
+  assert.deepEqual(kinds(watch(turn("t1"))), ["desk-unreached"]);
+  heard = true;
+  assert.deepEqual(kinds(watch(turn("t2"))), [], "once the desk has heard from it, it is not");
+});
+
 test("a seat's turn stays open through the late end of an older turn, and a message steered into a long turn does not make it long again", () => {
-  const context = () => ({ rules: rules(), handedBack: () => undefined, placed: true });
+  const context = () => ({ rules: rules(), handedBack: () => undefined, heard: () => true, placed: true });
   const seat = { id: "s1", provider: "sw2-peer-claude", cwd: "/work" };
   const late = new SeatWatch(seat, context);
   late.see({ kind: "turn", phase: "started", turnId: "turn-2" }, 1_000);

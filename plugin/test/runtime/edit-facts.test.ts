@@ -144,6 +144,7 @@ test("an edit is read for weakened tests, silenced checks and writes outside the
   const told = watchOver(() => ({
     rules: rules({ cwd: "/work", scope: placed ? ["src/a.ts"] : undefined }),
     handedBack: () => undefined,
+    heard: () => true,
     placed,
   }));
   assert.deepEqual(kinds(told([...opening(), edit("b1", 2, { filePath: "/work/src/b.ts" })])), []);

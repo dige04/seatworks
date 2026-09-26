@@ -86,6 +86,11 @@ const FACTS = {
     next: "Nothing, if its record shows what it waits on; else read the lane's record, since its words may read worse than the work looks, and take the smallest step that unblocks it. Then mark_incident it.",
   },
   "ask-waiting": { level: "attend", title: "An ask left waiting on its reader" },
+  "desk-unreached": {
+    level: "attend",
+    title: "Ended a turn without ever reaching the team's tools",
+    next: "Its team's tools may never have reached it, and then it can neither hand back nor ask. Nothing, if its record shows it had no call to make yet; else a Lead is replaced with replace_lead, and a Peer's Lead is told to seat its task again. Then mark_incident it.",
+  },
   "call-failed": { level: "note" },
   "gate-failed": { level: "note" },
   "outside-scope": { level: "note" },
