@@ -26,6 +26,8 @@ const failing = (name: string, seq: number, detail?: Record<string, unknown>) =>
   return copy;
 };
 
+const LIMITS = { longTurnMinutes: 30, longTurnTimes: 3, longTurnAfterTurns: 5, longTurnMedianOf: 20 };
+
 const found = (messages: StreamMessage[], kind: string) =>
   play([...opening(), ...messages], rules()).filter((fact) => fact.kind === kind);
 
@@ -137,9 +139,12 @@ test("each harness's recorded turn is read into the facts it shows, once, never 
 
 test("a seat going round in circles is stuck: failing, repeating, alternating or saying the same thing, and a second loop after the first", () => {
   const quotes = (messages: StreamMessage[]) => found(messages, "stuck").map((fact) => fact.quote);
-  assert.match(
-    quotes([1, 2, 3].map((n) => run(`f${n}`, n + 1, "cat ./does-not-exist.txt", false))).join(),
-    /^the same action failing 3 times: bash: cat \.\/does-not-exist\.txt$/,
+  const failing3 = [1, 2, 3].map((n) => run(`f${n}`, n + 1, "cat ./does-not-exist.txt", false));
+  assert.match(quotes(failing3).join(), /^the same action failing 3 times: bash: cat \.\/does-not-exist\.txt$/);
+  assert.deepEqual(
+    kinds(play([...opening(), ...failing3], rules({ stuckWithin: 2 }))).filter((kind) => kind === "stuck"),
+    [],
+    "only as many of its latest steps as the owner sets are read for a loop",
   );
 
   const three = [again(done, "a", 2), again(done, "b", 3), again(done, "c", 4)];
@@ -217,21 +222,42 @@ test("a seat's turn stays open through the late end of an older turn, and a mess
   const late = new SeatWatch(seat, context);
   late.see({ kind: "turn", phase: "started", turnId: "turn-2" }, 1_000);
   late.see({ kind: "turn", phase: "completed", turnId: "turn-1" }, 2_000);
-  assert.equal(late.longTurn(1_000 + 40 * 60_000, 30).length, 1, "turn-2 is still running, so it is still timed");
+  assert.equal(late.longTurn(1_000 + 40 * 60_000, LIMITS).length, 1, "turn-2 is still running, so it is still timed");
   const ended = new SeatWatch(seat, context);
   ended.see({ kind: "turn", phase: "started", turnId: "turn-2" }, 1_000);
   ended.see({ kind: "turn", phase: "completed", turnId: "turn-1" }, 2_000);
   ended.see({ kind: "turn", phase: "completed", turnId: "turn-2" }, 3_000);
-  assert.deepEqual(ended.longTurn(1_000 + 40 * 60_000, 30), [], "its own end closes it");
+  assert.deepEqual(ended.longTurn(1_000 + 40 * 60_000, LIMITS), [], "its own end closes it");
 
   const steered = new SeatWatch(seat, context);
   const t0 = Date.parse("2026-09-19T10:00:00Z");
   steered.see({ kind: "turn", phase: "started", turnId: "t" }, t0);
-  assert.equal(steered.longTurn(t0 + 40 * 60_000, 30).length, 1);
+  assert.equal(steered.longTurn(t0 + 40 * 60_000, LIMITS).length, 1);
   const message = { type: "user_message", text: "Also check the README" };
   steered.see(
     { kind: "row", row: { item: message, seqStart: 1, seq: 1, epoch: "e", turnId: "t", replay: false } },
     t0 + 40 * 60_000,
   );
-  assert.deepEqual(steered.longTurn(t0 + 45 * 60_000, 30), []);
+  assert.deepEqual(steered.longTurn(t0 + 45 * 60_000, LIMITS), []);
+
+  // Two 20-minute turns, then a third running for 40.
+  const paced = () => {
+    const watch = new SeatWatch(seat, context);
+    for (const [turn, start] of [
+      ["p1", 0],
+      ["p2", 20],
+    ] as const) {
+      watch.see({ kind: "turn", phase: "started", turnId: turn }, t0 + start * 60_000);
+      watch.see({ kind: "turn", phase: "completed", turnId: turn }, t0 + (start + 20) * 60_000);
+    }
+    watch.see({ kind: "turn", phase: "started", turnId: "p3" }, t0 + 40 * 60_000);
+    return watch;
+  };
+  const limits = { longTurnMinutes: 30, longTurnTimes: 3, longTurnAfterTurns: 5, longTurnMedianOf: 20 };
+  assert.equal(paced().longTurn(t0 + 80 * 60_000, limits).length, 1, "two turns say nothing of its pace");
+  assert.deepEqual(
+    paced().longTurn(t0 + 80 * 60_000, { ...limits, longTurnAfterTurns: 2 }),
+    [],
+    "once the owner says two turns do, forty minutes is within three of its twenty",
+  );
 });

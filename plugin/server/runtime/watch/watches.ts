@@ -23,6 +23,13 @@ export type SeatLook = {
 /** `placed` is false until the ledger has placed the seat, or while it cannot be read; `handedBack` is the outcome of a hand-back since `at` the desk did not gate. */
 export type SeatContext = { rules: Rules; handedBack: (at: number) => string | undefined; placed: boolean };
 
+type LongTurn = {
+  longTurnMinutes: number;
+  longTurnTimes: number;
+  longTurnAfterTurns: number;
+  longTurnMedianOf: number;
+};
+
 const median = (values: number[]): number => {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)] ?? 0;
@@ -119,10 +126,15 @@ export class SeatWatch {
     return { units, facts, since, instruction: this.window.instruction() };
   }
 
-  longTurn(now: number, minutes: number): Fact[] {
+  longTurn(now: number, long: LongTurn): Fact[] {
+    if (this.durations.length > long.longTurnMedianOf)
+      this.durations.splice(0, this.durations.length - long.longTurnMedianOf);
     if (!this.running || !this.startedAt) return [];
-    const floor = minutes * 60_000;
-    const limit = this.durations.length >= 5 ? Math.max(floor, 3 * median(this.durations)) : floor;
+    const floor = long.longTurnMinutes * 60_000;
+    const limit =
+      this.durations.length >= long.longTurnAfterTurns
+        ? Math.max(floor, long.longTurnTimes * median(this.durations))
+        : floor;
     const took = now - this.startedAt;
     if (took < limit) return [];
     return this.fresh([
@@ -157,7 +169,6 @@ export class SeatWatch {
     this.running = false;
     this.window.closeRunning();
     if (since) this.durations.push(now - since);
-    if (this.durations.length > 20) this.durations.shift();
     this.startedAt = 0;
     const context = this.placed();
     if (phase !== "completed" || !context) return [];
@@ -276,11 +287,11 @@ export class Watches {
   }
 
   /** Each round: a turn running long, and a look at each seat whose look is due. */
-  round(now: number, timing: (watch: SeatWatch) => { longTurnMinutes: number; lookMinutes: number }): void {
+  round(now: number, timing: (watch: SeatWatch) => LongTurn & { lookMinutes: number }): void {
     for (const { watch } of this.followed.values()) {
-      const { longTurnMinutes, lookMinutes } = timing(watch);
-      this.found(watch, watch.longTurn(now, longTurnMinutes));
-      if (watch.lookDue(now, lookMinutes)) this.looked(watch, watch.look(now, false));
+      const limits = timing(watch);
+      this.found(watch, watch.longTurn(now, limits));
+      if (watch.lookDue(now, limits.lookMinutes)) this.looked(watch, watch.look(now, false));
     }
   }
 

@@ -25,6 +25,7 @@ export const rules = (extra: Partial<Rules> = {}): Rules => ({
   gates: [],
   repeatsAt: 3,
   recoverWithin: 10,
+  stuckWithin: 20,
   ...extra,
 });
 

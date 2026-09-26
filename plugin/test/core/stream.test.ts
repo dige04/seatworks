@@ -228,7 +228,12 @@ test("a follower lets go of a seat that is gone or never answers, and reads back
     ["completed", "done"],
   );
   assert.deepEqual(
-    watch.longTurn(Date.now() + 40 * 60_000, 30),
+    watch.longTurn(Date.now() + 40 * 60_000, {
+      longTurnMinutes: 30,
+      longTurnTimes: 3,
+      longTurnAfterTurns: 5,
+      longTurnMedianOf: 20,
+    }),
     [],
     "a turn that ended unseen is over, or it would read as a long turn for ever",
   );

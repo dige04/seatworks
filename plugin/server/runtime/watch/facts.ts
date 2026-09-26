@@ -21,6 +21,7 @@ export type Rules = {
   scope?: string[];
   repeatsAt: number;
   recoverWithin: number;
+  stuckWithin: number;
 };
 
 export const str = (value: unknown): string => (typeof value === "string" ? value : "");
@@ -65,8 +66,8 @@ function resultOf(call: Call): string {
   return `${failed(call) ? "failed" : "ok"}\n${str(call.detail.output)}\n${JSON.stringify(call.error ?? null)}`;
 }
 
-export function stuck(units: Unit[], rules: Pick<Rules, "repeatsAt">): string | undefined {
-  const recent = units.slice(-20);
+export function stuck(units: Unit[], rules: Pick<Rules, "repeatsAt" | "stuckWithin">): string | undefined {
+  const recent = units.slice(-rules.stuckWithin);
   const calls = recent.flatMap((unit) =>
     unit.kind === "call" && unit.call.ended && !unit.call.pseudo ? [unit.call] : [],
   );

@@ -67,6 +67,12 @@ export const AttentionChoice = z.strictObject({
   reviewsAt: z.number().int().min(2).optional(),
   suppressed: Pattern.optional(),
   longTurnMinutes: z.number().int().min(1).optional(),
+  /** Past `longTurnAfterTurns` turns, one is long at `longTurnTimes` the median of the last `longTurnMedianOf`. */
+  longTurnTimes: z.number().min(1).optional(),
+  longTurnAfterTurns: z.number().int().min(1).optional(),
+  longTurnMedianOf: z.number().int().min(1).optional(),
+  /** How many of a seat's latest steps are read for going round in circles. */
+  stuckWithin: z.number().int().min(2).optional(),
   /** How often the watch's eye reads a running seat's new words; it also reads at every turn's end. */
   lookMinutes: z.number().int().min(1).optional(),
   incidentsPerLane: z.number().int().min(0).optional(),
