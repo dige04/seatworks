@@ -1,8 +1,6 @@
 {
   "providerPrefix": "sw2-",
   "attention": {
-    "tickSeconds": 30,
-    "leadIdleMinutes": 12,
     "brain": "both",
     "sensor": "jev"
   },

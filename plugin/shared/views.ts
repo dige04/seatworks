@@ -1,6 +1,6 @@
 /** What the panel reads over RPC, one schema per answer: the client checks every answer against it, and both sides take their types from it. */
 import { z } from "zod";
-import { Connect, LayerSchema, Scalar } from "./settings.ts";
+import { AttentionChoice, Connect, LayerSchema, Scalar } from "./settings.ts";
 
 /** A call the panel made that the plugin refused, and why. */
 export const Refused = z.object({ error: z.string() });
@@ -57,26 +57,8 @@ export const CatalogView = z.object({
 });
 export type CatalogView = z.infer<typeof CatalogView>;
 
-/** The attention settings in force, every one resolved: what the watch and the round run on. */
-const Attention = z.object({
-  tickSeconds: z.number(),
-  leadIdleMinutes: z.number(),
-  askWaitingMinutes: z.number(),
-  askLapseMinutes: z.number(),
-  signals: z.record(z.string(), z.enum(["shadow", "on"])),
-  destructive: z.string(),
-  testPath: z.string(),
-  repeatsAt: z.number(),
-  recoverWithin: z.number(),
-  reworksAt: z.number(),
-  reviewsAt: z.number(),
-  suppressed: z.string(),
-  longTurnMinutes: z.number(),
-  lookMinutes: z.number(),
-  incidentsPerLane: z.number(),
-  brain: z.enum(["off", "sensor", "seat", "both"]),
-  sensor: z.string(),
-});
+/** The attention settings in force, every one resolved: what the watch and the round run on; a kit may name no sensor. */
+const Attention = AttentionChoice.required().extend({ sensor: z.string() });
 export type Attention = z.infer<typeof Attention>;
 
 /** Whether the Human is in the loop, resolved: the project's word over the machine's, and the machine's daily question limit. */
