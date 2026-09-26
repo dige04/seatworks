@@ -16,7 +16,7 @@ function mainBusy({ h }: Landable) {
   writeFileSync(join(h.root, "a.txt"), "the Human is editing\n");
 }
 
-test("a lane touching a path the Human asked to be asked about first waits for them: nothing lands, its Lead is told to hold still, and only the panel approves it", async () => {
+test("a lane touching a path the Human asked to be asked about first waits for them: nothing lands, its Lead is told why, and only the panel approves it", async () => {
   const { h, sup, lane, land, onMain } = await laneWith(risky, ["src/auth"]);
   await h.idle(sup);
   assert.match(
@@ -34,7 +34,7 @@ test("a lane touching a path the Human asked to be asked about first waits for t
   const toLead = h.heard(lane.lead!).join("\n");
   assert.match(
     toLead,
-    /LAND HELD L1 \(Cart\): the Human looks at it before it lands\. It changes src\/auth\/login\.ts, under src\/auth, which the Human asked to be asked about first\.[^]*Next: Commit nothing more on the lane until the Human decides\./,
+    /LAND HELD L1 \(Cart\): the Human looks at it before it lands\. It changes src\/auth\/login\.ts, under src\/auth, which the Human asked to be asked about first\.[^]*Next: Nothing now; a merge into the lane before they decide restarts their look\./,
   );
   assert.doesNotMatch(h.agents.get(lane.lead!)!.sent.join("\n"), /LAND HELD/);
   assert.doesNotMatch(toLead, /supervisor/i);

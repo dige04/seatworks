@@ -39,7 +39,14 @@ export const landLetters = {
   /** `head` is the lane's tip it was held at: a hold is told once per commit, and asks nothing of a Lead that has stopped. */
   landHeld(lane: Lane, reason: string, head: string): Letter {
     const text = `LAND HELD ${lane.id} (${lane.title}): the Human looks at it before it lands. ${reason} Approved, it lands and the lane closes; sent back, LAND SENT BACK brings their note. A new commit means it is looked at again from the start.`;
-    return fyi(mail("landheld", [lane.id, head], text, "Commit nothing more on the lane until the Human decides."));
+    return fyi(
+      mail(
+        "landheld",
+        [lane.id, head],
+        text,
+        "Nothing now; a merge into the lane before they decide restarts their look.",
+      ),
+    );
   },
 
   /** Another lane landed on this one's base, which now conflicts with it: word ahead of the landing that would find it. */
