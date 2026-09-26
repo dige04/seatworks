@@ -6,6 +6,7 @@ import { daemonLog } from "../../core/logger.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import type { SeatView, Seats } from "../../core/ports.ts";
 import { TASK } from "../../domain/task.ts";
+import { fact, findingsOf } from "../../domain/incident.ts";
 import type { Desk } from "../../desk/desk.ts";
 import { loadIncidents, openFor, saidBefore } from "../../desk/store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
@@ -20,7 +21,6 @@ import type { Outbox } from "../mail/outbox.ts";
 import type { TeamSource } from "../team-source.ts";
 import type { TurnRules } from "../turns.ts";
 import { deskFacts } from "../watch/history.ts";
-import { decide } from "../watch/findings.ts";
 import type { Watches } from "../watch/watches.ts";
 
 type SeatMap = Map<string, SeatView>;
@@ -177,7 +177,7 @@ export class Patrol {
       await this.deps.desk.notice(
         project,
         { id: seen.seat, provider: seat.provider, title: seat.title },
-        decide([seen.fact]),
+        findingsOf([seen.fact]),
       );
     }
   }
@@ -199,7 +199,7 @@ export class Patrol {
       this.idleFlag.set(lead.id, lead.updatedAt);
       const ending = (turns.lastEnding.get(lead.id) ?? "").replace(/\s+/g, " ").trim().slice(0, 400);
       const quote = `idle ${Math.round(idle / 60_000)} minutes with no running task, no open ask and no report of it ready; its last words: ${ending || "(nothing)"}`;
-      await desk.notice(project, lead, [{ kind: "lane-idle", level: "attend", quote, facts: ["lane-idle"] }]);
+      await desk.notice(project, lead, findingsOf([fact("lane-idle", quote)]));
     }
   }
 

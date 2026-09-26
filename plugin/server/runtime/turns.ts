@@ -3,6 +3,7 @@ import { can, seatOf, toolsOf, worksTasks } from "../catalog/kit/roles.ts";
 import type { PermissionRequested, Seats, TurnEnded } from "../core/ports.ts";
 import type { Lane } from "../domain/lane.ts";
 import { DECIDED, TASK, type Task } from "../domain/task.ts";
+import { fact, findingsOf } from "../domain/incident.ts";
 import type { Desk } from "../desk/desk.ts";
 import { type Ledger, laneOfLead, leadLaneOf, taskOfPeer } from "../domain/ledger.ts";
 import { holdOn, loadLedger } from "../desk/store/ledger.ts";
@@ -235,7 +236,7 @@ export class TurnRules {
     const why = denied
       ? `its Peer's last call ${denied.refused ? "was refused" : "did not finish"}: ${denied.what}`
       : `its Peer ended ${updated.silent} turns without a hand-back or an ask`;
-    const stalled = { kind: "stalled", level: "attend" as const, quote: why, facts: ["stalled"] };
-    await desk.notice(project, { id: agent.id, provider: agent.provider, title: agent.title }, [stalled]);
+    const seat = { id: agent.id, provider: agent.provider, title: agent.title };
+    await desk.notice(project, seat, findingsOf([fact("stalled", why)]));
   }
 }

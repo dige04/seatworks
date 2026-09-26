@@ -10,8 +10,7 @@ import { ASK, type Ask } from "../../domain/ask.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { TeamSource } from "../team-source.ts";
-import { fact } from "../../domain/incident.ts";
-import { decide } from "../watch/findings.ts";
+import { fact, findingsOf } from "../../domain/incident.ts";
 
 type AskDeps = { kit: Kit; desk: Desk; source: TeamSource };
 
@@ -61,7 +60,7 @@ async function waitedOn(
     const standing = openFor(book, reader, found.kind);
     if (!standing && saidBefore(book, reader, found.kind, quote)) continue;
     if (standing && standing.quote === quote && standing.told !== undefined) continue;
-    await desk.notice(project, { id: reader, provider: seat.provider, title: seat.title }, decide([found]));
+    await desk.notice(project, { id: reader, provider: seat.provider, title: seat.title }, findingsOf([found]));
   }
 }
 

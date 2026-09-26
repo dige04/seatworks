@@ -12,9 +12,8 @@ import { type Project, gateCommands, projectOf, readProjectConfig } from "../des
 import type { TeamSource } from "./team-source.ts";
 import { malformed } from "./timeline.ts";
 import type { Trouble } from "./panel/watch-view.ts";
-import type { Fact } from "../domain/incident.ts";
+import { type Fact, findingsOf } from "../domain/incident.ts";
 import { callsTo } from "./watch/facts.ts";
-import { decide } from "./watch/findings.ts";
 import type { SeatContext, SeatLook, SeatWatch, WatchedSeat, Watches } from "./watch/watches.ts";
 import { daemonLog } from "../core/logger.ts";
 
@@ -87,7 +86,7 @@ export class Watching {
       turn: watch.turnId,
     });
     this.deps.desk
-      .notice(project, watch.seat, decide(facts))
+      .notice(project, watch.seat, findingsOf(facts))
       .catch((error) => daemonLog.error("what the watch noticed could not be recorded:", error));
   }
 

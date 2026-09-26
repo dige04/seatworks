@@ -93,6 +93,19 @@ export const fact = (kind: FactKind, quote: string): Fact => ({
   ...("theirs" in FACTS[kind] ? { theirs: true as const } : {}),
 });
 
+const FIRST: FactKind[] = ["destructive", "stuck", "no-recovery", "long-turn"];
+
+const rank = ({ kind, level }: Finding) =>
+  (level === "page" ? 0 : 100) + (FIRST.includes(kind as FactKind) ? FIRST.indexOf(kind as FactKind) : FIRST.length);
+
+/** What of `facts` asks for attention, as the incident book takes it, a loop before a claim: a note stays on the record. */
+export const findingsOf = (facts: Fact[]): Finding[] =>
+  facts
+    .flatMap(({ kind, level, quote, theirs }): Finding[] =>
+      level === "note" ? [] : [{ kind, level, quote, facts: [kind], ...(theirs && { theirs }) }],
+    )
+    .sort((a, b) => rank(a) - rank(b));
+
 /** The title of a kind the incident book holds, which may be one this code no longer raises. */
 export function factTitle(kind: string): string | undefined {
   return (FACTS as Record<string, { title?: string }>)[kind]?.title;
