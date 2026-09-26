@@ -14,6 +14,12 @@ function issueCommand(forms: IssueForm[], ref: string): string[] | undefined {
   return undefined;
 }
 
+/** Zero-width, direction and tag characters: text a reader of the issue page never sees, which a model still reads. */
+const INVISIBLE = /[\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]|[\u{e0000}-\u{e007f}]/gu;
+
+/** An issue as its page shows it: an HTML comment, closed or not, and invisible characters say nothing to its reader. */
+const unseen = (text: string) => text.replace(/<!--[^]*?(-->|$)/g, "").replace(INVISIBLE, "");
+
 export function fetchIssue(forms: IssueForm[], ref: string, cwd: string): Promise<Issue | { error: string }> {
   const command = issueCommand(forms, ref);
   if (!command) return Promise.resolve({ error: `no issue form in ecosystem.json reads "${ref}"` });
@@ -26,7 +32,7 @@ export function fetchIssue(forms: IssueForm[], ref: string, cwd: string): Promis
       }
       try {
         const value = JSON.parse(String(stdout)) as Partial<Record<keyof Issue, unknown>>;
-        const field = (name: keyof Issue) => (typeof value[name] === "string" ? value[name] : "");
+        const field = (name: keyof Issue) => (typeof value[name] === "string" ? unseen(value[name]) : "");
         resolve({ title: field("title"), url: field("url"), body: field("body") });
       } catch {
         resolve({ error: `${file} printed what is not JSON` });
