@@ -139,7 +139,7 @@ function ownCopyLines(
   const home = holder ? undefined : laneHomeFor(undefined, config, copy.branch, work);
   if (typeof home === "object")
     lines.push(
-      `${human ? "The Human decides" : "You choose"} where the next lane works, before it opens: ${home.question}.`,
+      `Nothing on record chooses where the next lane works, so it opens in a copy of its own unless ${human ? "the Human chooses" : "you choose"} another: ${home.question}.`,
     );
   return [...lines, ""];
 }

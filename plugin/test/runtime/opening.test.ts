@@ -21,7 +21,8 @@ test("where a lane works is carried by open_lane or laneHome; with neither, a co
   const branch = () => h.git(h.root, "branch", "--show-current").trim();
   const open = (title: string, extra: Record<string, unknown> = {}) =>
     h.call(sup, "supervisor", "open_lane", lane(title, extra));
-  const choice = /The Human decides where the next lane works/;
+  const choice =
+    /Nothing on record chooses where the next lane works, so it opens in a copy of its own unless the Human chooses another: /;
   await h.call(sup, "supervisor", "set_project", { base: "main", gate: "true" });
   const endless = await h.call(sup, "supervisor", "set_project", { gate: "npm test", gateTimeoutMinutes: 0 });
   assert.match(endless.text, /^Nothing was set: gateTimeoutMinutes/);
@@ -142,7 +143,10 @@ test("with the Human out of the loop, where a lane works is the Supervisor's to 
   await h.call(sup, "supervisor", "set_project", { base: "main", gate: "true" });
   h.git(h.root, "switch", "-qc", "fix/login");
   const status = (await h.call(sup, "supervisor", "status", {})).text;
-  assert.match(status, /You choose where the next lane works, before it opens: carry on fix\/login here \(onBranch\)/);
+  assert.match(
+    status,
+    /Nothing on record chooses where the next lane works, so it opens in a copy of its own unless you choose another: carry on fix\/login here \(onBranch\)/,
+  );
   assert.match(status, /The Human is out of the loop: only the concept is theirs, so no landing waits for them/);
   const opened = await h.call(sup, "supervisor", "open_lane", lane("First"));
   assert.equal(opened.ok, true, opened.text);
