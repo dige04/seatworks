@@ -13,6 +13,7 @@ import { seatProblems } from "../../catalog/seat/seats.ts";
 import { layerValues, readShown, withKeys, withoutKeys, writeLayer } from "../../catalog/team/settings.ts";
 import { type Team, resolveTeam } from "../../catalog/team/team.ts";
 import { guidesDir } from "../../core/paths.ts";
+import type { Host } from "../../core/ports.ts";
 import type { Project } from "../../desk/project/project.ts";
 import type { TeamSource } from "../team-source.ts";
 import { describeCatalog } from "./catalog-view.ts";
@@ -30,6 +31,7 @@ type SettingsDeps = {
   changed: () => void;
   reconcile: () => Promise<void>;
   models: () => Promise<Record<string, { at: string; error: string | null; models: unknown[] }>>;
+  paseoTools: Host["tools"];
 };
 
 /** The machine's and a project's settings on the panel: read, checked against the team they make, and saved. */
@@ -89,7 +91,7 @@ export class SettingsPanel implements SettingsRpc {
   async doctor(slug?: string): Promise<Check[]> {
     const project = slug ? this.deps.source.named(slug) : undefined;
     if (slug && !project) return [{ id: "project", ok: false, detail: unknownProject(slug) }];
-    return doctor(this.deps.kit, this.deps.source.teamFor(project));
+    return doctor(this.deps.kit, this.deps.source.teamFor(project), this.deps.paseoTools);
   }
 
   async refreshModels(): Promise<ModelsRefreshed> {

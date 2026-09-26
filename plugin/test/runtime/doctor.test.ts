@@ -10,6 +10,7 @@ import { test } from "node:test";
 import type { z } from "zod";
 import { home } from "../../server/core/paths.ts";
 import { contracts } from "../../shared/rpc.ts";
+import { makeKit } from "../kit.ts";
 import { tempDir } from "../tempdir.ts";
 import { fakeIde } from "./code-fakes.ts";
 import { served, which } from "./served.ts";
@@ -47,6 +48,11 @@ test("the doctor over the panel names what this machine lacks for the team, a se
     assert.equal((await call(contracts.settingsWrite, { revision: read.revision, values })).status, "saved");
   };
   const checked = async () => Object.fromEntries((await call(contracts.doctor, {})).map((check) => [check.id, check]));
+  // Paseo's own tools, which the test kit's Supervisor keeps on, against the list the kit ships of them.
+  const shipped = makeKit().paseoTools;
+  const paseo = await fakeIde(t, { tools: shipped });
+  process.env.PASEO_LISTEN = `127.0.0.1:${paseo.port}`;
+  t.after(() => delete process.env.PASEO_LISTEN);
   const partial = await fakeIde(t, { tools: ["ide_find_references", "ide_open_project"] });
   const full = await fakeIde(t, { tools: ["ide_find_references", "ide_refactor_rename", "ide_open_project"] });
   const nowhere = await closedPort();
@@ -88,6 +94,15 @@ test("the doctor over the panel names what this machine lacks for the team, a se
   assert.match(unlogged.detail, /agent\.db for Peer, Scribe\. Log in with omp once/, "and how to get it is said");
   loggedIn(true);
   assert.equal((await checked())["harness:omp:HOME/.omp/agent/agent.db"]!.ok, true);
+
+  const newer = await fakeIde(t, { tools: [...shipped.filter((tool) => tool !== "speak"), "draw_diagram"] });
+  process.env.PASEO_LISTEN = `127.0.0.1:${newer.port}`;
+  const unlisted = (await checked())["paseo:tools"]!;
+  assert.equal(unlisted.ok, false, "the list is out of step with the Paseo this machine runs");
+  assert.match(unlisted.detail, /Paseo has draw_diagram, which catalog\/paseo\.json lacks/);
+  assert.match(unlisted.detail, /catalog\/paseo\.json names speak, which Paseo does not have/);
+  process.env.PASEO_LISTEN = `127.0.0.1:${paseo.port}`;
+  assert.equal((await checked())["paseo:tools"]!.ok, true);
 
   // A null in an outside server's tools list once threw out of the report, taking every check with it.
   const hostile = await fakeIde(t, { malformed: true });

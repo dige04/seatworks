@@ -1,11 +1,26 @@
 import type { PluginLifecycleEvents, PluginServerContext } from "@getpaseo/plugin/server";
 import type { Host, HostHooks, Models, PaseoConfig } from "../../core/ports.ts";
 import { type PaseoApi, seatsOn, workspacesOn } from "./agents.ts";
+import { readConfig } from "../../core/config-file.ts";
+import { getPath } from "../../core/json.ts";
 import { daemonLog } from "../../core/logger.ts";
+import { toolNames } from "../../core/mcp-client.ts";
+import { paseoConfigPath } from "../../core/paths.ts";
 
 /** Answers one contract's calls; Paseo has read each input with the contract's schema before the answer sees it. */
 type Answering = <I>(contract: { name: string }, answer: (input: I) => unknown) => void;
 type Handle = (contract: { name: string }, handler: (input: unknown, context: { paseo: PaseoApi }) => unknown) => void;
+
+/** Where Paseo lists its tools to its own agents: the daemon's TCP address, as its listen setting names it; a socket or pipe gives none. */
+function agentToolsUrl(): string | undefined {
+  const listed = getPath(readConfig(paseoConfigPath(), {}), ["daemon", "listen"]);
+  const listen = process.env.PASEO_LISTEN ?? (typeof listed === "string" ? listed : "127.0.0.1:6767");
+  if (/^\d+$/.test(listen)) return `http://127.0.0.1:${listen}/mcp/agents`;
+  const tcp = /^([^/\\]+):(\d+)$/.exec(listen);
+  if (!tcp) return undefined;
+  const host = ["0.0.0.0", "::", "[::]"].includes(tcp[1]!) ? "127.0.0.1" : tcp[1]!;
+  return `http://${host}:${tcp[2]!}/mcp/agents`;
+}
 
 /** Paseo hands the plugin its API only with a hook or a panel call, so each one binds it before the plugin acts. */
 export class PaseoHost implements Host {
@@ -45,6 +60,15 @@ export class PaseoHost implements Host {
 
   reached(): Promise<void> {
     return this.arrival;
+  }
+
+  async tools(): Promise<{ names: string[] } | { error: string } | undefined> {
+    const url = agentToolsUrl();
+    if (!url) return undefined;
+    const listed = await toolNames(url, 3000);
+    return listed.names
+      ? { names: listed.names }
+      : { error: `nothing answered at ${url}: ${listed.error ?? "no tool list"}` };
   }
 
   connect(server: PluginServerContext, hooks: HostHooks): void {

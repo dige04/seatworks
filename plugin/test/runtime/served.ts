@@ -61,6 +61,8 @@ export function daemon(
  * the input read by its schema, and the answer as sent read back by the schema the panel checks it with.
  */
 export function served(paseo: unknown = daemon()) {
+  // A socket nobody is at, unless a test names a Paseo of its own: the doctor never asks the owner's daemon for its tools.
+  process.env.PASEO_LISTEN ??= "unix:///nowhere/paseo.sock";
   const host = new PaseoHost();
   const runtime = new Runtime(makeKit(), host);
   const handlers = new Map<string, Handler>();

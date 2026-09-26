@@ -166,6 +166,8 @@ export type PaseoConfig = {
 export type Host = {
   connected(): boolean;
   reached(): Promise<void>;
+  /** Paseo's own tools as it lists them to its agents, or why they could not be listed; none where the desk cannot ask. */
+  tools(): Promise<{ names: string[] } | { error: string } | undefined>;
   seats: Seats;
   workspaces: Workspaces;
   models: Models;

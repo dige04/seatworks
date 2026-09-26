@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import type { Check } from "../../../shared/views.ts";
 import type { Kit, ProxySpec } from "../../catalog/kit/kit.ts";
+import { paseoToolsPolicy } from "../../catalog/kit/harness-files.ts";
 import { seatedAs } from "../../catalog/kit/roles.ts";
 import { connectToServer, hookTools, proxyOf } from "../../catalog/seat/servers.ts";
 import type { McpState } from "../../catalog/team/mcp-states.ts";
@@ -12,8 +13,10 @@ import { executableIn, expandHome, pathDirs } from "../../core/paths.ts";
 
 const onPath = (bin: string): boolean => executableIn(pathDirs(), bin) !== undefined;
 
-/** What the panel's Health section shows: the settings, the tools on PATH, each agent the seats run on, and each MCP server in use. */
-export async function doctor(kit: Kit, team: Team): Promise<Check[]> {
+type Listed = { names: string[] } | { error: string } | undefined;
+
+/** What the panel's Health section shows: the settings, git, each agent the seats run on, each MCP server in use, and Paseo's own tools. */
+export async function doctor(kit: Kit, team: Team, paseoTools: () => Promise<Listed>): Promise<Check[]> {
   const settings = {
     id: "settings",
     ok: team.errors.length === 0,
@@ -24,7 +27,37 @@ export async function doctor(kit: Kit, team: Team): Promise<Check[]> {
     const check = await serverCheck(team, state);
     if (check) checks.push(check);
   }
+  const paseo = await paseoCheck(kit, team, paseoTools);
+  if (paseo) checks.push(paseo);
   return checks;
+}
+
+/** When a seat has Paseo's own tools on: `allow` leaves on a tool catalog/paseo.json lacks, and a seat is asked before one it does not pre-approve. */
+async function paseoCheck(kit: Kit, team: Team, paseoTools: () => Promise<Listed>): Promise<Check | undefined> {
+  if (Object.values(team.roles).every((seat) => paseoToolsPolicy(kit, seat.role)?.enabled === false)) return undefined;
+  const id = "paseo:tools";
+  const listed = await paseoTools();
+  if (!listed)
+    return {
+      id,
+      ok: true,
+      detail: "Paseo listens on a socket, where the desk cannot ask for its tools; this is not a check.",
+    };
+  if ("error" in listed) return { id, ok: false, detail: `Paseo's own tools could not be listed: ${listed.error}.` };
+  const has = new Set(listed.names);
+  const lacked = listed.names.filter((tool) => !kit.paseoTools.includes(tool)).sort();
+  const gone = kit.paseoTools.filter((tool) => !has.has(tool)).sort();
+  if (lacked.length === 0 && gone.length === 0)
+    return { id, ok: true, detail: `catalog/paseo.json lists Paseo's ${listed.names.length} tools.` };
+  const said = [
+    ...(lacked.length > 0
+      ? [
+          `Paseo has ${lacked.join(", ")}, which catalog/paseo.json lacks: a role that lists \`allow\` leaves it on, and a seat is asked before using it.`,
+        ]
+      : []),
+    ...(gone.length > 0 ? [`catalog/paseo.json names ${gone.join(", ")}, which Paseo does not have.`] : []),
+  ];
+  return { id, ok: false, detail: said.join(" ") };
 }
 
 /** Git, which the desk runs itself for every lane and task; what a skill runs, its own compatibility line names. */
