@@ -12,7 +12,6 @@ import { workLetters } from "../letters/work-letters.ts";
 import type { DeskServices } from "../services.ts";
 import { bringLaneIn } from "../copies/sync.ts";
 
-/** A rework call as the tool takes it. */
 type ReworkCall = { task: string; text: string };
 
 /** Sends a task back to its Peer with what must change; a merged task goes back only to a Peer kept on it. */
@@ -28,7 +27,7 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
         ? `The Peer on ${asked.task.id} is gone: add a task for what must change.`
         : `The Peer on ${asked.task.id} is gone; cut the task and start a new one.`,
     );
-  // Sent back after its merge, a task in the lane's copy takes that copy onto its branch again: nothing may be left in it.
+  // Sent back after its merge, a task in the lane's copy takes it onto its branch again: nothing may be left there.
   const inLaneCopy = laneCopyToReopen(loadLedger(caller.project.state), asked.lane, asked.task);
   if (inLaneCopy && (await pristineState(inLaneCopy)) !== "clean") {
     const whose = asked.lane.slot
@@ -40,7 +39,7 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
   }
   const result = sendBack(desk, caller, str(args.task));
   if (typeof result === "string") return no(result);
-  // Reopened, it takes up the lane as it stands now, on its own branch; one that cannot is brought up to date at its hand-back.
+  // Reopened, it takes up the lane as it stands, on its own branch; one that cannot catches up at its hand-back.
   if (asked.task.status === "merged" && result.worktree && result.branch) {
     const switched = inLaneCopy ? await switchTo(inLaneCopy, result.branch, asked.lane.branch) : undefined;
     if (!switched) await bringLaneIn({ ...result, worktree: result.worktree, branch: result.branch }, asked.lane);
@@ -50,13 +49,11 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
   return ok(`Rework sent to the Peer on ${result.id}; its next hand-back arrives as mail.`);
 }
 
-/** The lane's copy a merged task goes back into, when it worked there and nobody else holds it now. */
 function laneCopyToReopen(ledger: Ledger, lane: Lane, task: Task): string | undefined {
   if (task.status !== "merged" || task.mode === "parallel" || holderOf(ledger, lane, task.id)) return undefined;
   return lane.worktree;
 }
 
-/** Moves the task back to rework under the lock, or says what stops it: a hold, its status, its Peer or copy gone, another writer. */
 function sendBack({ ledgers }: Pick<DeskServices, "ledgers">, caller: Caller, id: string): Task | string {
   return ledgers.transact(caller.project, (ledger): Task | string => {
     const found = laneTask(ledger, caller, id);

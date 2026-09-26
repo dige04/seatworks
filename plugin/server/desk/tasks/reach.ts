@@ -8,11 +8,7 @@ import type { Task } from "../../domain/task.ts";
 
 const SHOWN = 10;
 
-/**
- * What of a task's changed files its Lead should weigh, one note each and each file once: in what a task beside it holds,
- * outside the lane's write set, or for a parallel task outside what it holds, a path one writer at a time may write marked;
- * and apart from those, a one-writer path it changed that an open lane beside this one may write too.
- */
+/** What of a task's changed files its Lead should weigh, each file once: notes for the Lead, never a refusal. */
 export function reachNotes(ledger: Ledger, task: Task, lane: Lane, files: string[], serial: string[]): string[] {
   const notes: string[] = [];
   const taken = new Set<string>();

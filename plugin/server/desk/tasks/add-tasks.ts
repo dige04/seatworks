@@ -14,10 +14,8 @@ import { recordEvent } from "../store/event-log.ts";
 import { startWaiting } from "../waiting/tasks.ts";
 import { type Planned, hintedNote, layoutProblems, outsideNote, readPlan } from "./placement.ts";
 
-/** One task as add_tasks takes it, in the Lead's own key. */
 type AskedTask = Args & { key: string };
 
-/** Adds tasks to the Lead's lane in one go, each waiting for what it names, and starts what can start. */
 export async function addTasks(desk: DeskServices, caller: Caller, asked: AskedTask[]): Promise<ToolReply> {
   const { project } = caller;
   const lane = laneOfLead(loadLedger(project.state), caller.id);
@@ -49,7 +47,6 @@ export async function addTasks(desk: DeskServices, caller: Caller, asked: AskedT
   );
 }
 
-/** The role taking each task, by key, or why one cannot be taken. */
 function rolesFor(kit: Kit, team: Team, asked: AskedTask[]): Map<string, string> | string {
   const roles = new Map<string, string>();
   for (const task of asked) {
@@ -61,7 +58,7 @@ function rolesFor(kit: Kit, team: Team, asked: AskedTask[]): Map<string, string>
   return roles;
 }
 
-/** The role that takes a task, or why none can: a skill it lacks is refused here, since the Lead's context does not list them. */
+/** The role that takes a task, or why none can: a skill it lacks is refused here, as the Lead's context lists none. */
 function workRoleFor(kit: Kit, team: Team, args: Args): RoleSpec | string {
   // Writing, not `work`: a reviewing role holds `work` too, and would be offered as a Peer that cannot write.
   const asked = str(args.role);
@@ -77,7 +74,7 @@ function workRoleFor(kit: Kit, team: Team, args: Args): RoleSpec | string {
 
 type Recorded = { plan: Planned[]; ids: Map<string, string> };
 
-/** Checked and recorded in one transaction: a layout read before another call recorded its tasks could put two writers on a path. */
+/** Checked and recorded in one transaction: a layout read before another call's could put two writers on a path. */
 function record(
   { ledgers }: Pick<DeskServices, "ledgers">,
   caller: Caller,
@@ -109,7 +106,6 @@ function record(
   });
 }
 
-/** Puts the task as asked for on record in `ledger`, waiting for what it names, and gives its id; `startWaiting` starts it. */
 function recordTask(
   ledger: Ledger,
   lane: Lane,
@@ -132,7 +128,7 @@ function recordTask(
     outOfScope: strs(args.outOfScope),
     context: str(args.context) || undefined,
     skills: strs(args.skills),
-    // Every task writes on a branch of its own, one beside others in a copy of its own too: the lane branch takes only merges.
+    // Every task writes on its own branch, one beside others in its own copy too: the lane branch takes only merges.
     branch: `task/${id.toLowerCase()}-${slugify(title, 24)}`,
     worktree: parallel ? undefined : lane.worktree,
     slot: parallel ? undefined : lane.slot,

@@ -36,8 +36,8 @@ export class MergeQueue {
   }
 
   /**
-   * What a stop left accepted and unmerged goes through again, in the order it was accepted. Each lane's waits its turn in
-   * that lane's queue, so a task it finds merging was cut off by the stop and is not one this run is merging.
+   * What a stop left accepted and unmerged goes through again, in the order it was accepted. Each lane's waits its turn
+   * in that lane's queue, so a task it finds merging was cut off by the stop and is not one this run is merging.
    */
   async resume(project: Project): Promise<void> {
     const queued = Object.values(loadLedger(project.state).tasks).filter((task) => IN_QUEUE.includes(task.status));
@@ -45,7 +45,7 @@ export class MergeQueue {
     await Promise.all([...lanes].map((lane) => this.after(project, lane, () => this.takeUp(project, lane))));
   }
 
-  /** What waits for a lane's copy to be clean goes through again: at a turn's end, when a writer there may have committed. */
+  /** What waits for a lane's copy to be clean goes again at a turn's end, when a writer there may have committed. */
   retry(project: Project): Promise<void> {
     const waiting = Object.values(loadLedger(project.state).tasks).some(
       (task) => task.status === "queued" && task.held,
@@ -57,7 +57,6 @@ export class MergeQueue {
     return this.queues.run(`${project.slug}\n${lane}`, run);
   }
 
-  /** A merge that threw fails, and its Lead is told; what stopped it goes to the project's log. */
   private async crashed(project: Project, taskId: string, error: unknown): Promise<void> {
     this.desk.log(project, `merge ${taskId} crashed: ${errorText(error)}`);
     const ledger = loadLedger(project.state);
@@ -79,7 +78,7 @@ export class MergeQueue {
     }
   }
 
-  /** A merge a stop cut off: finished if the lane branch had moved to it, else queued again; true when nothing is left. */
+  /** A merge a stop cut off: finished if the lane branch had moved to it, else queued again; true when none is left. */
   private async cutOff(project: Project, task: Task, lane: Lane): Promise<boolean> {
     const cwd = lane.worktree;
     const made = cwd && task.branch ? await mergeOf(cwd, lane.branch, task.branch) : undefined;

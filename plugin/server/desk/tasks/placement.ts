@@ -32,7 +32,7 @@ export function taskPlacement(
   return { why: `${holder.id} ${doing}`, next: `Pass after ${holder.id} to start this once it is merged, ${beside}` };
 }
 
-/** What a parallel task holding `holds` collides with: the one-writer paths among them, and each task at work beside it, bar `apart`. */
+/** What a parallel task holding `holds` collides with: its one-writer paths, and each task at work beside it. */
 function collisions(
   ledger: Ledger,
   lane: Lane,
@@ -47,7 +47,6 @@ function collisions(
   return { serial: serialHits(holds, serial), tasks };
 }
 
-/** What a parallel task holding these paths would collide with: a one-writer path, or what a task beside it holds. */
 export function parallelProblem(
   ledger: Ledger,
   lane: Lane,
@@ -82,8 +81,8 @@ export type Planned = {
 };
 
 /**
- * The tasks in an order they can run in, or why they cannot: each key once, paths held by exactly the tasks that run beside
- * others, each `after` a key of it or a task of this lane still to be merged, and no loop.
+ * The tasks in an order they can run in, or why they cannot: each key once, paths held by exactly the tasks that run
+ * beside others, each `after` a key of it or a task of this lane still to be merged, and no loop.
  */
 export function readPlan(ledger: Ledger, lane: Lane, listed: Args[]): Planned[] | string {
   const tasks: Planned[] = listed.map((args) => {
@@ -132,7 +131,7 @@ export function readPlan(ledger: Ledger, lane: Lane, listed: Args[]): Planned[] 
   return order;
 }
 
-/** What in the layout would collide as the desk will run it: two tasks holding one path, or one path held beside another writer. */
+/** What in the layout would collide as it runs: two tasks holding one path, or one held beside another writer. */
 export function layoutProblems(ledger: Ledger, lane: Lane, plan: Planned[], serial: string[]): string[] {
   const findings: string[] = [];
   const before = new Map<string, Set<string>>();
@@ -161,14 +160,14 @@ export function layoutProblems(ledger: Ledger, lane: Lane, plan: Planned[], seri
   return findings;
 }
 
-/** A task's held paths outside its lane's write set, as a note to its Lead: the write set scopes a lane and never refuses a task. */
+/** A task's held paths outside its lane's write set, as a note to its Lead: a write set never refuses a task. */
 export function outsideNote(lane: Lane, id: string, holds: string[]): string | undefined {
   const outside = lane.writeSet.length > 0 ? holds.filter((path) => !firstOverlap([path], lane.writeSet)) : [];
   if (outside.length === 0) return undefined;
   return `${id} holds ${outside.join(", ")}, outside the lane's write set ${lane.writeSet.join(", ")}; it runs as asked, and what it changes there is noted again at hand-back and landing.`;
 }
 
-/** Paths a task in the lane's copy was given to hold, as a note to its Lead: that copy has one writer, so they are hints. */
+/** Paths a task in the lane's copy was given to hold, as a note to its Lead: that copy's one writer takes hints. */
 export function hintedNote(id: string, paths: string[]): string | undefined {
   if (paths.length === 0) return undefined;
   const as = paths.length === 1 ? "a hint" : "hints";

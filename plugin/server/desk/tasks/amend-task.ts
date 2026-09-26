@@ -16,7 +16,7 @@ type Changes = Record<string, string | string[]>;
 
 type Amended = { task: Task; amendment: Amendment; note?: string };
 
-/** Changes what a task asks while its Peer works, keeping what it asked before; the Peer is told at its next turn, not cut off. */
+/** Changes what a task asks while its Peer works, keeping what it asked before; the Peer hears at its next turn. */
 export async function amendTask(desk: DeskServices, caller: Caller, args: Args): Promise<ToolReply> {
   const changes = given(args, ["goal", "context"], ["acceptance", "outOfScope", "hints", "holds"]);
   const serial = await checked(desk, caller, args, changes);
@@ -37,7 +37,6 @@ export async function amendTask(desk: DeskServices, caller: Caller, args: Args):
   return ok(`${done.task.id} is amended${told}.${note}`);
 }
 
-/** Why the amendment is refused before anything is written, or the one-writer paths its new holds are checked against. */
 async function checked(desk: DeskServices, caller: Caller, args: Args, changes: Changes): Promise<string[] | string> {
   const asked = laneTask(loadLedger(caller.project.state), caller, str(args.task));
   if (typeof asked === "string") return [];
@@ -47,7 +46,7 @@ async function checked(desk: DeskServices, caller: Caller, args: Args, changes: 
   return serialIn(desk.kit, caller.project, asked.lane.worktree ?? caller.project.root);
 }
 
-/** What the amendment sets: paths given a task in the lane's copy to hold go among its hints, which that copy's one writer reads. */
+/** What the amendment sets: paths given a task in the lane's copy to hold go among its hints, as it holds nothing. */
 function asAsked(task: Task, changes: Changes): { set: Changes; hinted?: string[] } {
   const holds = changes.holds as string[] | undefined;
   if (task.mode === "parallel" || holds === undefined) return { set: changes };
@@ -92,7 +91,7 @@ function decided(ledger: Ledger, task: Task): string {
   return `${task.id} is ${task.status}; start a task for what is asked now.`;
 }
 
-/** A Lead widening a task past what it held settles structure; one changing what it is for turns sharply: W notes both. */
+/** A Lead widening a task past what it held settles structure; changing what it is for turns sharply: W notes both. */
 async function tellMoments(
   desk: DeskServices,
   caller: Caller,

@@ -22,7 +22,6 @@ import { type Synced, bringLaneIn } from "../copies/sync.ts";
 
 type Finding = { severity: string; where?: string; failure: string; fix: string; confirmedBy?: string };
 
-/** A hand-back as the done tool takes it: a task's outcome and summary, or a review's verdict and findings. */
 type HandingBack = {
   outcome?: string;
   summary?: string;
@@ -37,10 +36,8 @@ type HandingBack = {
   ran?: string[];
 };
 
-/** What a code task's copy holds as it hands back, as git says it. */
 type Work = { commit?: string; uncommitted: boolean; synced?: string; changed?: string[]; notes: string[] };
 
-/** The hand-back as written: its file, what it says, and the gate run on it. */
 type Written = { file: string; outcome: string; body: string; gate?: { ok: boolean; note: string } };
 
 const SHOWN_CHANGED = 20;
@@ -73,7 +70,6 @@ export async function handBack(desk: DeskServices, caller: Caller, args: Handing
   return ok(`Handed back.${reminder} End your turn now; if anything changes you will get a message.`);
 }
 
-/** Why this hand-back is refused before anything is read: a settled task, or a review leaving its risk rules unanswered. */
 function refusal(task: Task, args: HandingBack): string | undefined {
   if (SETTLED.includes(task.status)) return `This task is already ${task.status}; there is nothing to hand back.`;
   if (task.kind !== "review") return undefined;
@@ -90,7 +86,7 @@ function syncOf(task: Task, lane: Lane | undefined): Promise<Synced | undefined>
   return bringLaneIn({ ...task, worktree: task.worktree, branch: task.branch }, lane);
 }
 
-/** Bringing the lane in stopped on conflicts: the Peer settles them before it hands back, and its Lead is told in passing. */
+/** Bringing the lane in stopped on conflicts: the Peer settles them before it hands back; its Lead hears in passing. */
 async function settling(
   { mail }: Pick<DeskServices, "mail">,
   task: Task,
@@ -104,7 +100,6 @@ async function settling(
   );
 }
 
-/** What a code task's copy holds: its commit, work left uncommitted, the files it changed, and what of those to weigh. */
 async function workOf(kit: Kit, project: Project, ledger: Ledger, task: Task, synced?: Synced): Promise<Work> {
   if (task.kind === "review" || !task.worktree) return { uncommitted: false, notes: [] };
   const lane = ledger.lanes[task.lane];
@@ -126,7 +121,7 @@ async function workOf(kit: Kit, project: Project, ledger: Ledger, task: Task, sy
   return { commit, uncommitted, synced: line, changed, notes };
 }
 
-/** Gated at hand-back so the Lead has the verdict in time; gating after accept undid a merge already chosen. */
+/** Gated at hand-back, so the Lead has the verdict before it accepts. */
 async function write(
   desk: Pick<DeskServices, "kit" | "stopping">,
   project: Project,
@@ -196,7 +191,7 @@ function reviewBody(task: Task, args: HandingBack): { outcome: string; body: str
 
 const listOf = (items: string[] | undefined): string[] => (items ?? []).map((item) => item.trim()).filter(Boolean);
 
-/** Decided under the lock: an accept or cut can land during the gate, and `done` over `queued` made the merge queue skip it. */
+/** Decided under the lock: an accept or cut can land while the gate runs. */
 function record(
   { ledgers }: Pick<DeskServices, "ledgers">,
   project: Project,
@@ -224,7 +219,6 @@ function record(
   });
 }
 
-/** Whoever reads the hand-back is told and it goes on record; the watch's questions about it are asked, and not waited for. */
 async function tell(
   desk: DeskServices,
   caller: Caller,
@@ -243,7 +237,6 @@ async function tell(
   if (judged) void judge(desk, caller.project, judged);
 }
 
-/** What the Peer must fix before its turn ends: work left uncommitted, or a copy off its branch, where a commit belongs to no branch. */
 async function reminderOf(task: Task, uncommitted: boolean): Promise<string> {
   const meant = task.branch;
   const adrift = meant && task.worktree ? (await currentBranch(task.worktree)) !== meant : false;

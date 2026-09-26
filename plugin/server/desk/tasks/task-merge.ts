@@ -18,12 +18,11 @@ import { backOnLane, bringLaneIn } from "../copies/sync.ts";
 
 type Outcome = "merged" | "stop" | "fail";
 
-/** A gate verdict on a task's branch, with the failing run's tail when this merge ran it. */
 type Verdict = { ok: boolean; note: string; over?: string; run?: { tail: string; logFile: string } };
 
 export type MergeDesk = Pick<DeskBase, "kit" | "ledgers" | "mail" | "log" | "stopping">;
 
-/** Merges one accepted task into its lane: the lane brought into the task's copy, gated there, then taken on as it is. */
+/** Merges one accepted task into its lane: the lane brought into the task's copy, gated there, then taken as it is. */
 export class TaskMerge {
   private readonly desk: MergeDesk;
   private readonly merged: (project: Project) => Promise<void>;
@@ -33,7 +32,6 @@ export class TaskMerge {
     this.merged = merged;
   }
 
-  /** Merges the task, or settles what stops it; nothing lands in a lane on hold. */
   async run(project: Project, taskId: string): Promise<void> {
     const picked = this.pick(project, taskId);
     if (!picked) return;
@@ -52,7 +50,7 @@ export class TaskMerge {
     return this.mergeOnto(project, { ...task, branch: task.branch }, lane, cwd, at);
   }
 
-  /** The task, moved to merging; nothing when it is gone, or its lane is on hold and it waits queued for resume_lane. */
+  /** The task moved to merging; nothing when it is gone, or its lane is on hold and it waits queued for resume_lane. */
   private pick(project: Project, taskId: string): { task: Task; lane: Lane } | undefined {
     return this.desk.ledgers.transact(project, (ledger) => {
       const task = ledger.tasks[taskId];
@@ -67,7 +65,7 @@ export class TaskMerge {
     });
   }
 
-  /** Its branch carries the lane's tip it was gated with, so the lane takes that very tree, moved only from that tip. */
+  /** Its branch carries the lane tip it was gated with, so the lane takes that very tree, moved only from that tip. */
   private async mergeOnto(
     project: Project,
     task: Task & { branch: string },
@@ -93,7 +91,7 @@ export class TaskMerge {
 
   /**
    * The lane tip the task may merge onto now: its lane brought into its copy, and a green gate there or its Lead's word
-   * over a red one. What stops it is settled here: conflicts left for its Peer, a copy that cannot take the lane, a red gate.
+   * over a red one. What stops it is settled here: conflicts left for its Peer, a copy that cannot take the lane, red.
    */
   private async cleared(
     project: Project,
@@ -122,7 +120,7 @@ export class TaskMerge {
     return synced.at;
   }
 
-  /** The gate's verdict on the task's head: its hand-back's when that ran on the same commit, else one run now and kept. */
+  /** The gate's verdict on the task's head: its hand-back's when run on the same commit, else one run now and kept. */
   private async verdict(project: Project, task: Task & { worktree: string }, lane: Lane): Promise<Verdict | undefined> {
     const head = await headSha(task.worktree);
     const last = task.handback?.gate;
@@ -147,8 +145,8 @@ export class TaskMerge {
   }
 
   /**
-   * The Lead's accept stands: the task waits queued for `why` to clear and is tried again as each turn ends. Its Lead is
-   * told once for each reason, woken only when `why` is something to clear.
+   * The Lead's accept stands: the task waits queued for `why` to clear and is tried again as each turn ends. Its Lead
+   * is told once for each reason, woken only when `why` is something to clear.
    */
   private async hold(project: Project, task: Task, lane: Lane, why: string, clears = true): Promise<void> {
     let told = false;
@@ -159,7 +157,6 @@ export class TaskMerge {
     if (!told) await this.desk.mail.post(lane.lead, mergeLetters.waits(task, why, clears));
   }
 
-  /** A merge git made, recorded and told with what it changed. */
   async landed(
     project: Project,
     task: Task,
@@ -178,19 +175,17 @@ export class TaskMerge {
     // A task in the lane's copy gives it back to the lane branch: the same tree, so nothing in it changes.
     if (task.mode !== "parallel" && (await currentBranch(cwd)) === task.branch) await backOnLane(lane);
     const now = loadLedger(project.state);
-    // The gate ran before the merge, on the tree it made; the verdict on record, or its Lead's word over it, is what it says.
+    // The gate ran before the merge, on the tree it made: the verdict on record, or its Lead's word over it, stands.
     const gate = gateNote(project, now.tasks[task.id] ?? task);
     const reach = reachNotes(now, task, lane, counts?.files ?? [], serial);
     const letter = mergeLetters.merged(task, counts, reach, gate, othersLeft(now, task).length === 0);
     await this.finish(project, task, lane, "merged", letter);
   }
 
-  /** Fails the merge for `reason`. */
   fail(project: Project, task: Task, lane: Lane, reason: string): Promise<void> {
     return this.finish(project, task, lane, "fail", mergeLetters.mergeFailed(task, reason, ""));
   }
 
-  /** The record follows what the merge did, and its Lead is told. */
   private async finish(project: Project, task: Task, lane: Lane, move: Outcome, letter: Letter): Promise<void> {
     const moved = this.desk.ledgers.moveTask(project, task.id, move, (entry) => delete entry.held);
     if (typeof moved !== "object") return;

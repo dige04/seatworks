@@ -8,7 +8,6 @@ import { loadLedger } from "../store/ledger.ts";
 import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 
-/** A Lead accepts a handed-back task into its lane's merge queue. */
 export async function acceptTask(desk: DeskServices, caller: Caller, args: Args): Promise<ToolReply> {
   const { project } = caller;
   const found = laneTask(loadLedger(project.state), caller, str(args.task));
@@ -21,7 +20,6 @@ export async function acceptTask(desk: DeskServices, caller: Caller, args: Args)
   return queueTask(desk, project, task, args);
 }
 
-/** A task goes into its lane's merge queue once handed back, and over a red gate on its tree only with its Lead's reason. */
 async function queueTask(
   desk: Pick<DeskServices, "ledgers" | "merges">,
   project: Project,
@@ -37,7 +35,7 @@ async function queueTask(
       `${task.id}'s working copy is not on ${task.branch}, so nothing committed in it is on its branch. If its Peer bisected, send rework asking it to run git bisect reset, which takes the copy back to ${task.branch}, and to commit its work there; then accept it again. A copy that left some other way is not the Peer's to put back: raise it with ask.`,
     );
   }
-  // Only what is committed merges: work left beside it would be lost to the lane, and a copy that goes back to it carries it on.
+  // Only what is committed merges: work left beside it would be lost to the lane, and would follow the copy back.
   const copy = task.worktree ? await pristineState(task.worktree) : "clean";
   if (copy !== "clean")
     return no(

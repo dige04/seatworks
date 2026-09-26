@@ -16,7 +16,7 @@ import { backOnLane } from "../copies/sync.ts";
 
 type Copy = { id?: string; path: string; workspaceId?: string };
 
-/** Seats the Peer of a task recorded running; a failure gives back its copy, sets it waiting again, and is the reason. */
+/** Seats the Peer of a task recorded running; a failure gives back its copy, sets it waiting, and is the reason. */
 export async function startPeer(
   desk: DeskServices,
   project: Project,
@@ -52,7 +52,6 @@ export async function startPeer(
   }
 }
 
-/** The copy a Peer works in: its own for a task beside others, else the lane's, switched to the task's own branch. */
 async function peerCopy(
   { ledgers, slots }: Pick<DeskServices, "ledgers" | "slots">,
   project: Project,
@@ -73,7 +72,6 @@ async function peerCopy(
   return copy;
 }
 
-/** A Peer that did not start leaves its task waiting, and the copy it was given as it was. */
 async function putBack(
   { ledgers, slots }: Pick<DeskServices, "ledgers" | "slots">,
   project: Project,

@@ -24,7 +24,6 @@ type ReviewCall = { task?: string; focus: string; title?: string; role?: string 
 type Change = { where: string; spec: string };
 type Copy = { id?: string; path: string; workspaceId?: string };
 
-/** What a review is set up with before it is recorded: where it reads, what it reads, what it is asked, and by which role. */
 type Planned = {
   lane: Lane;
   target?: Task;
@@ -34,7 +33,6 @@ type Planned = {
   place: { where: string; range?: string };
 };
 
-/** Starts a read-only reviewer on a task of the Lead's lane, or on the whole lane. */
 export async function startReview(desk: DeskServices, caller: Caller, args: ReviewCall): Promise<ToolReply> {
   const planned = await plan(desk, caller, args);
   if (typeof planned === "string") return no(planned);
@@ -118,7 +116,6 @@ function record(
   });
 }
 
-/** Seats the reviewer; one that cannot start leaves the review cut. */
 async function seat(
   desk: DeskServices,
   caller: Caller,
@@ -154,8 +151,8 @@ async function seat(
 }
 
 /**
- * Where the change to review is read from: the copy its branch is checked out in until it merges, up to its last hand-back,
- * and the merge after that. Read from where its branch meets the lane's, what came in with the lane is not the task's.
+ * Where the change to review is read from: the copy its branch is checked out in until it merges, up to its last
+ * hand-back, and the merge after that. Read from where its branch meets the lane's: what the lane brought is not its.
  */
 async function rangeOf(project: Project, target: Task, lane: Lane, inOwnCopy: boolean): Promise<Change | undefined> {
   const tip = target.status === "running" || target.status === "rework" ? "HEAD" : (target.handback?.commit ?? "HEAD");
@@ -173,7 +170,7 @@ async function rangeOf(project: Project, target: Task, lane: Lane, inOwnCopy: bo
   return undefined;
 }
 
-/** Where a review of the whole lane reads it: the lane branch, which a task at work in the lane's copy has off its own. */
+/** Where a review of the whole lane reads it: the lane branch, which a task at work in the lane's copy has left. */
 async function laneView(ledger: Ledger, lane: Lane, copy: string): Promise<string> {
   const on = await currentBranch(copy);
   if (on === lane.branch) return `Your working copy is on ${lane.branch}.`;
@@ -195,7 +192,7 @@ async function askedOf(
   return [...new Set((files ? rulesFor(rules, files) : rules).map((rule) => rule.reviewQuestion))];
 }
 
-/** The lane's copy, and the one `target` still has its branch checked out in: its own beside others, else the lane's. */
+/** The lane's copy, and the one `target` still has its branch out in: its own beside others, else the lane's. */
 function copiesFor(
   ledger: Ledger,
   lane: Lane,
@@ -205,10 +202,10 @@ function copiesFor(
   const laneCopy: Copy | undefined = lane.slot
     ? ledger.slots[lane.slot]
     : { path: worktree, workspaceId: lane.workspaceId };
-  // A slot marked for teardown still answers as the task's copy; a reviewer seated there loses it at the Peer's turn end.
+  // A copy marked for teardown still answers as the task's; a reviewer seated there loses it at the Peer's turn end.
   const holds = target?.slot ? ledger.slots[target.slot] : undefined;
   const beside = target?.mode === "parallel" && holds?.task === target.id && !holds.releasing ? holds : undefined;
-  // Until it merges its branch is checked out in its copy, the lane's for a task there; merged, it is read from the lane's copy.
+  // Until it merges its branch is out in its copy, the lane's for a task there; merged, it is read in the lane's copy.
   const own = target && target.status !== "merged" ? (target.mode === "parallel" ? beside : laneCopy) : undefined;
   return { laneCopy, own };
 }
