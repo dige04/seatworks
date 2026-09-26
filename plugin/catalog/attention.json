@@ -9,6 +9,8 @@
   "leadIdleMinutes": 12,
   "askWaitingMinutes": 15,
   "askLapseMinutes": 45,
+  "silentTurns": 2,
+  "quietChars": 200,
   "repeatsAt": 3,
   "stuckWithin": 20,
   "recoverWithin": 10,

@@ -102,3 +102,36 @@ test("a task gone quiet until it stalls, or stopped on a refused call, is a stal
     /\(stalled, attend\) on the Peer on L1-T2 \(Parser\)[^]*What was seen: its Peer's last call was refused: Bash: git log/,
   );
 });
+
+test("how many quiet turns stall a task, and how much a seat may say after a refused call and still be stopped on it, are settings", async () => {
+  const { h, peer } = await laneWithPeer({ attention: { silentTurns: 3, quietChars: 300 } });
+  const heard = h.ledger().agents[peer]!;
+  while (Date.now() <= Math.max(heard.recordedAt ?? 0, heard.spokeAt ?? 0)) await sleep(1);
+  for (const words of ["Looking at it.", "Still looking."]) {
+    await h.beginTurn(peer);
+    await h.endTurn(peer, words);
+  }
+  assert.equal(h.ledger().tasks["L1-T1"]!.status, "running", "two quiet turns are not yet three");
+  await h.beginTurn(peer);
+  await h.endTurn(peer, "Still.");
+  assert.equal(h.ledger().tasks["L1-T1"]!.status, "stalled");
+
+  const { h: other, peer: stopped } = await laneWithPeer({ attention: { quietChars: 300 } });
+  await other.beginTurn(stopped);
+  await other.endTurn(
+    stopped,
+    "I could not read the log, so I will explain at length what I would have done. ".repeat(3),
+    {
+      type: "tool_call",
+      name: "Bash",
+      status: "failed",
+      error: { content: "Permission to use Bash with command git log has been denied." },
+      detail: { type: "shell", command: "git log" },
+    },
+  );
+  assert.equal(
+    other.ledger().tasks["L1-T1"]!.status,
+    "stalled",
+    "a few sentences past a refusal is still stopped on it",
+  );
+});

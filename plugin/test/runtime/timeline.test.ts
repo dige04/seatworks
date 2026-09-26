@@ -81,7 +81,7 @@ test("what a turn's end says of its last call and of calls its harness refused a
     ],
   ];
   for (const [timeline, pattern, expected, why] of lastCalls)
-    assert.deepEqual(deniedCall(timeline, pattern), expected, why);
+    assert.deepEqual(deniedCall(timeline, pattern, 200), expected, why);
 
   // Claude Code keeps unparsable input under `__unparsedToolInput` and repeats it in the error.
   const notJson = {

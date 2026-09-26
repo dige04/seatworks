@@ -25,12 +25,10 @@ export function outputText(timeline: Timeline): string {
     .join("");
 }
 
-const QUIET_CHARS = 200;
-
 /** What ended the turn on its last tool call: a refusal, or a call that simply never finished. */
 type LastCall = { what: string; refused: boolean };
 
-export function deniedCall(timeline: Timeline, refused: string): LastCall | undefined {
+export function deniedCall(timeline: Timeline, refused: string, quietChars: number): LastCall | undefined {
   const turn = timeline.slice(lastUserIndex(timeline) + 1);
   let lastTool = -1;
   for (let index = turn.length - 1; index >= 0; index--) {
@@ -51,7 +49,7 @@ export function deniedCall(timeline: Timeline, refused: string): LastCall | unde
     .filter((item) => item.type === "assistant_message" && typeof item.text === "string")
     .map((item) => item.text as string)
     .join("");
-  if (after.trim().length > QUIET_CHARS) return undefined;
+  if (after.trim().length > quietChars) return undefined;
   const detail = (call.detail ?? {}) as Record<string, unknown>;
   const what =
     typeof detail.command === "string" ? detail.command : typeof detail.filePath === "string" ? detail.filePath : "";

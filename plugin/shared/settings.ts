@@ -69,6 +69,10 @@ export const AttentionChoice = z.strictObject({
   longTurnTimes: z.number().min(1).optional(),
   longTurnAfterTurns: z.number().int().min(1).optional(),
   longTurnMedianOf: z.number().int().min(1).optional(),
+  /** How many turns a Peer may end with no hand-back or ask before its task counts as stalled. */
+  silentTurns: z.number().int().min(1).optional(),
+  /** How much a seat may write after a refused or unanswered call and still count as stopped on it. */
+  quietChars: z.number().int().min(0).optional(),
   /** How many of a seat's latest steps are read for going round in circles. */
   stuckWithin: z.number().int().min(2).optional(),
   /** How often the watch's eye reads a running seat's new words; it also reads at every turn's end. */

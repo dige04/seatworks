@@ -99,6 +99,7 @@ export class Runtime implements HostHooks {
       desk: this.desk,
       seats: host.seats,
       hitlOn: (project) => this.source.teamFor(project).hitl.on,
+      attention: (project) => this.source.teamFor(project).attention,
       remember,
       log,
     });

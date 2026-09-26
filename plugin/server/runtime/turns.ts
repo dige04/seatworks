@@ -1,3 +1,4 @@
+import type { Attention } from "../../shared/views.ts";
 import type { Kit, RoleSpec } from "../catalog/kit/kit.ts";
 import { can, seatOf, toolsOf, worksTasks } from "../catalog/kit/roles.ts";
 import type { PermissionRequested, Seats, TurnEnded } from "../core/ports.ts";
@@ -18,6 +19,7 @@ type TurnDeps = {
   seats: Pick<Seats, "respond">;
   /** Whether the Human stays in the loop for this project: off, the Supervisor asks them directly. */
   hitlOn: (project: Project) => boolean;
+  attention: (project: Project) => Pick<Attention, "silentTurns" | "quietChars">;
   remember: (project: Project) => void;
   log: (project: Project, line: string) => void;
 };
@@ -207,7 +209,8 @@ export class TurnRules {
   ): Promise<void> {
     const { desk } = this.deps;
     const { agent, timeline } = event;
-    const denied = deniedCall(timeline, this.deps.kit.ecosystem.watch.refused);
+    const { silentTurns, quietChars } = this.deps.attention(project);
+    const denied = deniedCall(timeline, this.deps.kit.ecosystem.watch.refused, quietChars);
     desk.event(project, {
       kind: "turn.silent",
       task: task.id,
@@ -217,7 +220,7 @@ export class TurnRules {
     });
     const updated = desk.setTask(project, task.id, (entry) => {
       entry.silent += 1;
-      if (entry.silent >= 2 || denied) TASK.move(entry, "stall");
+      if (entry.silent >= silentTurns || denied) TASK.move(entry, "stall");
     });
     if (!updated) return;
     if (updated.status !== "stalled") {
