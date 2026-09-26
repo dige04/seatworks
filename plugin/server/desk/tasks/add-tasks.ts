@@ -12,8 +12,7 @@ import { serialIn } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 import { startWaiting } from "../waiting/tasks.ts";
-import { type Planned, layoutProblems, readPlan } from "./layout.ts";
-import { hintedNote, outsideNote } from "./placement.ts";
+import { type Planned, hintedNote, layoutProblems, outsideNote, readPlan } from "./placement.ts";
 
 /** One task as add_tasks takes it, in the Lead's own key. */
 type AskedTask = Args & { key: string };
