@@ -32,7 +32,7 @@ type Props = {
 
 const ADD = "__add__";
 const EXAMPLE =
-  '{\n  "mcp": {\n    "filesystem": {\n      "type": "local",\n      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "."],\n      "enabled": true\n    }\n  }\n}';
+  '{\n  "mcp": {\n    "my-server": {\n      "type": "local",\n      "command": ["my-server", "--stdio"],\n      "enabled": true\n    }\n  }\n}';
 
 function Tuning({
   entry,

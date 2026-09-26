@@ -17,7 +17,7 @@ type Props = {
   onValueChange: (value: string) => void;
 };
 
-/** Matches the name or the id, so `glm` finds `zai/glm-5.3` and `sonnet` finds `Claude Sonnet 5`. */
+/** Matches every word typed against the name and the id together, so a word of either finds the model. */
 function matching(options: Option[], query: string): Option[] {
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return options;
