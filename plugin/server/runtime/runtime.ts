@@ -175,7 +175,6 @@ export class Runtime implements HostHooks {
     };
   }
 
-  /** Where seats' team servers reach the desk: known by their keys, shown their roles' choices, their calls answered. */
   private teamSocket(): TeamSocket {
     return new TeamSocket(deskSocket(), {
       whose: (key) => this.keys.whose(key),
@@ -261,7 +260,6 @@ export class Runtime implements HostHooks {
   async turnEnded(event: TurnEnded): Promise<void> {
     this.outbox.turnEnded(event.agent.id);
     this.watching.malformedCalls(event);
-    // Wrapped: a throw here left the seat's mail waiting until some unrelated event pumped it.
     try {
       const archiving = this.desk.archiving(event.agent.id);
       if (archiving) await this.desk.archive(event.agent.id, true);

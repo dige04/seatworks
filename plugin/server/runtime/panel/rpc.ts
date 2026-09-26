@@ -4,7 +4,6 @@ import { contracts } from "../../../shared/rpc.ts";
 type Contract = { name: string; input: z.ZodType; output: z.ZodType };
 type Out<C extends Contract> = z.input<C["output"]> | Promise<z.input<C["output"]>>;
 
-/** The machine's and a project's settings as the panel reads and changes them, and what the team they make needs. */
 export interface SettingsRpc {
   catalog(): Out<typeof contracts.catalog>;
   readSettings(project?: string): Out<typeof contracts.settingsRead>;
@@ -16,7 +15,6 @@ export interface SettingsRpc {
   refreshModels(): Out<typeof contracts.models>;
 }
 
-/** The projects on this machine: which are attached, and how each one's work stands. */
 export interface ProjectsRpc {
   projects(): Out<typeof contracts.projects>;
   addProject(root: string, values?: unknown): Out<typeof contracts.projectsAdd>;
@@ -27,7 +25,6 @@ export interface ProjectsRpc {
   flow(project: string, since?: string, open?: string[]): Out<typeof contracts.flow>;
 }
 
-/** Keeping the plugin itself in order: what it left behind, its updates, and what its content changed. */
 export interface UpkeepRpc {
   clean(remove?: string[]): Out<typeof contracts.clean>;
   update(apply: boolean, fetch?: boolean): Out<typeof contracts.update>;
@@ -35,7 +32,6 @@ export interface UpkeepRpc {
   content(seen?: string[]): Out<typeof contracts.content>;
 }
 
-/** What only the Human decides on the panel, and what they read there. */
 export interface HumanRpc {
   decideLand(project: string, lane: string, approve: boolean, note: string): Out<typeof contracts.landDecide>;
   answer(project: string, question: string, choice: string, note: string): Out<typeof contracts.questionAnswer>;
@@ -43,10 +39,8 @@ export interface HumanRpc {
   report(project: string): Out<typeof contracts.report>;
 }
 
-/** Everything the panel calls, by the area of the panel that calls it. */
 export type Panel = { settings: SettingsRpc; projects: ProjectsRpc; upkeep: UpkeepRpc; human: HumanRpc };
 
-/** Serves one contract: the handler takes what its input schema reads and gives what its output schema holds. */
 type Serve = <C extends Contract>(contract: C, answer: (input: z.output<C["input"]>) => Out<C>) => void;
 
 /** Every panel call answered with why the plugin cannot serve it, so the panel shows that rather than nothing. */

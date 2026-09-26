@@ -49,7 +49,7 @@ export class Patrol {
     this.deps = deps;
   }
 
-  /** One round at a time: the runtime arms the next timer without awaiting this one, and overlapping rounds double-wrote the ledger. */
+  /** One round at a time: the runtime arms the next timer without awaiting this one. */
   tick(now = Date.now()): Promise<void> {
     const running = this.round;
     if (running) return running;
@@ -64,7 +64,6 @@ export class Patrol {
     const { kit, desk, source } = this.deps;
     const seats: SeatMap = new Map((await this.deps.seats.open()).map((seat) => [seat.id, seat]));
     this.deps.watches.sync(seats.values());
-    // A Lead no longer listed is gone for good, and its idle mark with it.
     for (const id of this.idleFlag.keys()) if (!seats.has(id)) this.idleFlag.delete(id);
     this.deps.watches.round(now, (watch) => source.teamFor(projectOf(watch.seat.cwd)).attention);
     for (const seat of seats.values())
@@ -108,7 +107,6 @@ export class Patrol {
     ];
   }
 
-  /** Mail left waiting goes out once a round, to each seat that has any. */
   private async deliver(): Promise<void> {
     const { outbox } = this.deps;
     for (const to of new Set(outbox.letters().map((letter) => letter.to))) {
@@ -120,10 +118,7 @@ export class Patrol {
     }
   }
 
-  /**
-   * A stop loses the turns that ended and the merges that waited while the plugin was down, so the first round takes them
-   * up once, for every project on record.
-   */
+  /** A stop loses the turns that ended and the merges that waited meanwhile, so the first round takes them up once. */
   private async resume(seats: SeatMap): Promise<void> {
     const { desk } = this.deps;
     try {
@@ -187,10 +182,6 @@ export class Patrol {
     }
   }
 
-  /**
-   * A Lead waiting on nobody: not on hold, not reported ready, no landing of its lane waiting for the Human, and no lane
-   * open to clear the way for it.
-   */
   private async idleLanes(project: Project, ledger: Ledger, seats: SeatMap, now: number): Promise<void> {
     const { desk, turns } = this.deps;
     const { leadIdleMinutes } = this.deps.source.teamFor(project).attention;
@@ -212,10 +203,7 @@ export class Patrol {
     }
   }
 
-  /**
-   * The round lists its seats before a step reads its ledger, so a seat that ledger names and the round did not list is
-   * looked for again: these are the ones a listing asked for now still misses.
-   */
+  /** The round lists its seats before a step reads its ledger, so a seat named there and not listed is looked for again. */
   private async missing(ids: string[]): Promise<Set<string>> {
     if (ids.length === 0) return new Set();
     const listed = new Set((await this.deps.seats.open()).map((seat) => seat.id));

@@ -104,7 +104,7 @@ export function seatsOn(bound: Bound): Seats {
   };
 }
 
-/** Every workspace the daemon lists that is not being archived, page by page: an unpaged read is capped by the daemon. */
+/** Every workspace the daemon lists that is not being archived, page by page. */
 async function liveWorkspaces(bound: Bound): Promise<{ id: string; name: string; project: string }[]> {
   const paseo = reach(bound);
   const found: { id: string; name: string; project: string }[] = [];
@@ -145,7 +145,6 @@ export function workspacesOn(bound: Bound): Workspaces {
       await reach(bound).workspaces.ref(workspace).setTitle(title);
     },
     async archive(workspace: string): Promise<void> {
-      // The daemon reports a refusal as `error` in the payload, not as a throw.
       const result = await reach(bound).workspaces.archive(workspace);
       if (result.error) throw new Error(result.error);
     },

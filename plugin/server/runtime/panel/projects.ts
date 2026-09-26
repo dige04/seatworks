@@ -35,7 +35,6 @@ type ProjectsDeps = {
   adopt: (project: Project, draft: unknown) => Promise<string | undefined>;
 };
 
-/** The projects on this machine as the panel attaches and detaches them, and each one's status page and Flow tab. */
 export class ProjectsPanel implements ProjectsRpc {
   private readonly deps: ProjectsDeps;
 
@@ -116,7 +115,6 @@ export class ProjectsPanel implements ProjectsRpc {
       return {
         error: `${slug} stays: ${live.length} seat${live.length === 1 ? " is" : "s are"} still working in it (${live.join(", ")}): archive ${live.length === 1 ? "it" : "them"} first, since a working seat puts the project back on record.`,
       };
-    // Live work only: lanes and tasks are never removed, so counting them made Detach impossible after the first lane.
     const ledger = loadLedger(project.state);
     const open = Object.values(ledger.lanes).filter((lane) => lane.status !== "closed").length;
     // A closed lane still restoring the owner's copy is live: detached, the repo stays on its branch for good.

@@ -6,7 +6,6 @@ import { z } from "zod";
 import type { ToolReply, ToolRequest } from "../../desk/context.ts";
 import { daemonLog } from "../../core/logger.ts";
 
-/** What a seat's team server says on its line, one JSON object a line: who it is, a call, a call its harness stopped, an answer it took. */
 const Heard = z.discriminatedUnion("type", [
   z.object({ type: z.literal("hello"), key: z.string(), role: z.string(), cwd: z.string() }),
   z.object({ type: z.literal("call"), id: z.string(), tool: z.string(), args: z.record(z.string(), z.unknown()) }),
@@ -16,7 +15,6 @@ const Heard = z.discriminatedUnion("type", [
 
 type Choices = Record<string, Record<string, string[]>>;
 
-/** What the lines need of the desk: whose a key is, the sets a role's fields take, the calls, and a lost answer's letter. */
 type LineDesk = {
   whose(key: string): { agent: string } | { refused: string };
   choices(role: string, cwd: string): Choices;

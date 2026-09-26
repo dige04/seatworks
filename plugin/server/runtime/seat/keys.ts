@@ -16,7 +16,6 @@ const isBound = (value: unknown): value is Bound =>
  */
 export class SeatKeys {
   private readonly file: string;
-  /** The fault last reported, so a file that stays unreadable is reported once rather than at every look-up. */
   private told?: string;
 
   constructor() {

@@ -3,7 +3,6 @@ import { supportsRole } from "../../catalog/kit/harness-files.ts";
 import { templateRoles } from "../../catalog/team/mcp-states.ts";
 import type { CatalogView } from "../../../shared/views.ts";
 
-/** The kit as the panel reads it: roles, agents, servers, and the sensors the watch can be judged by. */
 export function describeCatalog(kit: Kit): CatalogView {
   return {
     roles: kit.roles.map((role) => ({

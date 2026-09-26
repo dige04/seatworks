@@ -16,7 +16,6 @@ import type { UpkeepRpc } from "./rpc.ts";
 
 type UpkeepDeps = { kit: Kit; source: TeamSource; seats: Seats };
 
-/** The plugin's own upkeep on the panel: what it left behind, its updates, and what its content changed. */
 export class UpkeepPanel implements UpkeepRpc {
   private readonly deps: UpkeepDeps;
 

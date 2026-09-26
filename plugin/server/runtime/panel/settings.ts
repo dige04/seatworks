@@ -36,7 +36,6 @@ type SettingsDeps = {
   paseoTools: Host["tools"];
 };
 
-/** The machine's and a project's settings on the panel: read, checked against the team they make, and saved. */
 export class SettingsPanel implements SettingsRpc {
   private readonly deps: SettingsDeps;
 

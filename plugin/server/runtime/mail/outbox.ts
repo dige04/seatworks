@@ -12,9 +12,8 @@ const isLetter = (value: unknown): value is Letter =>
   isRecord(value) && typeof value.to === "string" && typeof value.at === "number";
 type Compose = (seat: SeatLook, letters: Letter[]) => string;
 /**
- * What the outbox asks of the desk. `dropped` is told when a letter is given up on, so it is not lost quietly; `steers`, whether
- * the seat's harness takes a text into a running turn rather than replacing the turn; `calling`, whether the seat waits on a
- * call to the desk, where a text steered in reads as the call cut short; `holding`, whether its mail waits for a hold to lift.
+ * `steers`: the seat's harness takes a text into a running turn instead of replacing it; `calling`: the seat waits on a desk
+ * call, where a text steered in reads as the call cut short.
  */
 export type Rules = {
   dropped?: (letter: Letter, now: number) => void;
@@ -52,10 +51,7 @@ export class Outbox {
     this.rules = rules;
   }
 
-  /**
-   * Aged-out letters included: both writers rebuild the file from this read, so filtering here deletes. A file that cannot be
-   * read throws: every letter held in it would go with the next write.
-   */
+  /** Aged-out letters included, since both writers rebuild the file from this read; one that cannot be read throws. */
   letters(): Letter[] {
     const read = readKept<unknown[]>(this.file, [], Array.isArray);
     if ("fault" in read) throw keptFault(read.fault);
@@ -81,7 +77,6 @@ export class Outbox {
     const now = Date.now();
     const sentAt = this.sentKeys.get(Outbox.held(letter));
     const waiting = this.letters();
-    // An expired letter is not a pending duplicate; counted as one, it blocked a fresh post.
     if (
       (sentAt !== undefined && now - sentAt < DUPLICATE_MS) ||
       waiting.some((entry) => entry.key === letter.key && entry.to === letter.to && now - entry.at < KEEP_MS)
@@ -148,7 +143,7 @@ export class Outbox {
         this.rules.steers?.(seat) === true &&
         this.rules.calling?.(to) !== true;
       if (!steer && (midTurn(seat.status) || waiting)) return new Set<string>();
-      // Word that asks nothing of an idle seat now waits for a letter that does, or for a turn it is already in.
+      // Word that asks nothing of an idle seat waits for a letter that does, or for a turn it is already in.
       if (!steer && mine.every((letter) => letter.wakes === false)) return new Set<string>();
       const text = this.compose(seat, mine);
       const kinds = [...new Set(mine.map((letter) => letter.key.split(":")[0]!))];
