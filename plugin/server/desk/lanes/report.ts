@@ -103,6 +103,7 @@ async function tell(
 
 /** A lane that went on without the Human's answer to a costly question stops at its ready report; says which, when it did. */
 async function parkAtCheckpoint(desk: DeskServices, project: Project, lane: string): Promise<string | undefined> {
+  if (!desk.teamFor(project).hitl.on) return undefined;
   const waiting = desk.ledgers.transact(project, (ledger) => {
     const open = Object.values(ledger.questions).filter(
       (question) => question.lane === lane && question.status === "open" && question.class === "costly",
@@ -118,12 +119,13 @@ async function parkAtCheckpoint(desk: DeskServices, project: Project, lane: stri
 
 /** What landing a lane reported ready would bring and wait for, read before whoever lands it decides to. */
 async function readAhead(
-  { kit }: Pick<DeskServices, "kit">,
+  { kit, teamFor }: Pick<DeskServices, "kit" | "teamFor">,
   project: Project,
   lane: Lane,
 ): Promise<{ asks: string[]; facts: string[]; changes: boolean }> {
   const change = await changeOf(project, lane);
   const ledger = loadLedger(project.state);
   const facts = await landFacts(kit, project, ledger, lane, change);
-  return { asks: askFirstHits(project, change), facts, changes: changesStanding(ledger, lane) };
+  const asks = teamFor(project).hitl.on ? askFirstHits(project, change) : [];
+  return { asks, facts, changes: changesStanding(ledger, lane) };
 }

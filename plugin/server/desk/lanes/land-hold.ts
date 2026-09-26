@@ -21,15 +21,16 @@ const NOT_READY = "Its Lead has not reported it ready as it now stands: never, o
 
 /**
  * What the Human's earlier word still stops: an approval given while ready waits for READY again, and a hold with no
- * commit since stands while it still touches what they asked to be asked about.
+ * commit since stands while it still touches what they asked to be asked about. Out of the loop, their word stops nothing.
  */
 export async function waitsForHuman(
-  { ledgers }: Pick<DeskServices, "ledgers">,
+  { ledgers, teamFor }: Pick<DeskServices, "ledgers" | "teamFor">,
   project: Project,
   lane: Lane,
   tip: string | undefined,
   approved: Held | undefined,
 ): Promise<Closed | undefined> {
+  if (!teamFor(project).hitl.on) return undefined;
   if (approved?.ready && !lane.ready) {
     const why = "its Lead has not reported it ready as it now stands";
     return {
@@ -53,11 +54,11 @@ export async function waitsForHuman(
 }
 
 /**
- * Holds a landing for the Human where they asked to be asked first; all else the desk reads of it goes with it as
- * evidence. An approval stands for what it was given: a path they are newly asked about holds it again.
+ * Holds a landing for the Human where they asked to be asked first, while they are in the loop; all else the desk reads of
+ * it goes with it as evidence. An approval stands for what it was given: a path they are newly asked about holds it again.
  */
 export async function checkLanding(
-  { kit, ledgers, mail }: Pick<DeskServices, "kit" | "ledgers" | "mail">,
+  { kit, ledgers, mail, teamFor }: Pick<DeskServices, "kit" | "ledgers" | "mail" | "teamFor">,
   project: Project,
   lane: Lane,
   gate: { ok: boolean; ran: boolean },
@@ -65,7 +66,7 @@ export async function checkLanding(
   approved?: Held,
 ): Promise<{ held?: string; note: string }> {
   const change = await changeOf(project, lane);
-  const asks = askFirstHits(project, change);
+  const asks = teamFor(project).hitl.on ? askFirstHits(project, change) : [];
   const facts = await landFacts(kit, project, loadLedger(project.state), lane, change, { set: gate.ran, ok: gate.ok });
   const evidence = [...(lane.ready ? [] : [NOT_READY]), ...facts];
   const fresh = approved ? asks.filter((ask) => !approved.signals.includes(ask)) : asks;

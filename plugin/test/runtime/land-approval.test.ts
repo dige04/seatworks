@@ -103,7 +103,7 @@ test("an approval is for the lane as it was held, and for what the Human asked a
   const landable = await laneWith(
     { "src/auth/login.ts": "export const login = 1;\n", "db/001.sql": "create table t (id int);\n" },
     ["src/auth", "**/*.sql", "infra/"],
-    true,
+    { isolate: true },
   );
   const { h, sup, land, work, onMain } = landable;
   const askFirst = (paths: string[]) => h.call(sup, "supervisor", "set_project", { askFirst: paths });
@@ -154,7 +154,7 @@ test("an approval is for the lane as it was held, and for what the Human asked a
 });
 
 test("an approval that cannot land yet stands through a dirty base, a hold and a missing READY; a hold calls off only a landing not yet approved", async () => {
-  const landable = await laneWith(risky, ["src/auth"], true);
+  const landable = await laneWith(risky, ["src/auth"], { isolate: true });
   const { h, sup, lane, land, onMain } = landable;
   const hold = () => h.call(sup, "supervisor", "hold_lane", { lane: "L1", reason: "a page came in" });
   const resume = () => h.call(sup, "supervisor", "resume_lane", { lane: "L1" });
@@ -212,4 +212,13 @@ test("a landing the Human approves twice at once lands once, and the second appr
   looked.release();
   assert.ok("decided" in (await first));
   assert.equal(h.events("lane.closed").length, 1);
+});
+
+test("with the Human out of the loop nothing waits for them: a lane touching what they once asked to be asked about lands", async () => {
+  const { h, sup, land, onMain } = await laneWith(risky, ["src/auth"], { hitl: false });
+  assert.doesNotMatch(h.heard(sup).join("\n"), /Flow tab/, "the READY it sent asks nobody to wait for the Human");
+  const landed = await land();
+  assert.equal(landed.ok, true, landed.text);
+  assert.doesNotMatch(landed.text, /waits for the Human/);
+  assert.ok(onMain("src/auth/login.ts"));
 });

@@ -184,6 +184,7 @@ test("a lane whose base moved lands only once nobody writes in its copy: main is
 
 test("a lane carrying on the Human's branch is refused where there is none, started as a new branch that takes their work along, drawn without a base, and landed where it is", async () => {
   const h = harness();
+  h.projectSettings({ hitl: { on: true } });
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   const open = (title: string, extra: Record<string, unknown>) =>
     h.call(sup, "supervisor", "open_lane", { title, outcome: "the login fix is finished", ...scope, ...extra });

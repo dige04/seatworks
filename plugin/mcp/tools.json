@@ -161,7 +161,7 @@
     {
       "name": "land_lane",
       "title": "Land a lane",
-      "description": "Land a lane its Lead reported ready: the base is merged in, the gate runs, and it lands the project's way (landAs). Refused with the reason: a red gate lands only with overGate and your reason; a base conflict goes to its Lead. A landing touching askFirst waits for the Human; LANDED or SENT BACK comes as mail.",
+      "description": "Land a lane its Lead reported ready: the base is merged in, the gate runs, and it lands the project's way (landAs). Refused with the reason: a red gate lands only with overGate and your reason; a base conflict goes to its Lead. With the Human in the loop, one touching askFirst waits for them.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -564,7 +564,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Paths the Human sees before anything touching them lands; a path covers what is under it. Pass the whole list; empty lets all land."
+            "description": "Paths the Human, in the loop, sees before anything touching them lands; a path covers what is under it. Pass the whole list."
           },
           "riskRules": {
             "type": "array",

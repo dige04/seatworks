@@ -4,9 +4,17 @@ import { dirname, join } from "node:path";
 import { contracts } from "../../shared/rpc.ts";
 import { harness } from "./harness.ts";
 
-/** A lane with a gate that passes, one commit of `files` on it and a READY from its Lead between turns, whose Human asked to be asked first about `askFirst`. */
-export async function laneWith(files: Record<string, string>, askFirst: string[] = [], isolate = false) {
+/**
+ * A lane with a gate that passes, one commit of `files` on it and a READY from its Lead between turns, whose Human asked to
+ * be asked first about `askFirst`: in the loop by default when they did.
+ */
+export async function laneWith(
+  files: Record<string, string>,
+  askFirst: string[] = [],
+  { isolate = false, hitl = askFirst.length > 0 } = {},
+) {
   const h = harness();
+  h.projectSettings({ hitl: { on: hitl } });
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   await h.call(sup, "supervisor", "set_project", { gate: "true", askFirst });
   const opened = await h.call(sup, "supervisor", "open_lane", {
