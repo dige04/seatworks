@@ -171,6 +171,20 @@ export async function mergeBranch(cwd: string, branch: string, message: string, 
   return { ok: false, conflicts, message: (run.stdout + run.stderr).trim().slice(-1500) };
 }
 
+/**
+ * The files merging `onto` into `branch` would stop on, read without touching any working copy: none when it merges clean,
+ * nothing when git cannot say.
+ */
+export async function conflictsWith(cwd: string, branch: string, onto: string): Promise<string[] | undefined> {
+  const run = await git(cwd, ["merge-tree", "--write-tree", "--name-only", "--no-messages", branch, onto]);
+  if (run.code === 0) return [];
+  if (run.code !== 1) return undefined;
+  // The tree comes first, then each conflicted file up to a blank line.
+  const lines = run.stdout.split("\n").slice(1);
+  const end = lines.findIndex((line) => !line.trim());
+  return [...new Set((end < 0 ? lines : lines.slice(0, end)).map((line) => line.trim()))];
+}
+
 /** A merge begun in the copy and neither committed nor undone. */
 export async function mergeUnderWay(cwd: string): Promise<boolean> {
   return (await git(cwd, ["rev-parse", "-q", "--verify", "MERGE_HEAD"])).code === 0;

@@ -19,6 +19,7 @@ type Kind =
   | "ask"
   | "amended"
   | "baseconflict"
+  | "basemoved"
   | "beside"
   | "brief"
   | "canland"

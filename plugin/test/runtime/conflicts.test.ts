@@ -196,3 +196,36 @@ test("the merge queue hands a conflict to its Peer, merges nothing as nothing, w
   assert.equal(status("L1-T5"), "merged");
   assert.equal(h.git(h.root, "show", "main:f.txt"), "F\n");
 });
+
+test("a landing tells each lane still open on its base what now conflicts with it, and whoever landed it which lanes", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  await h.call(sup, "supervisor", "set_project", { gate: "true" });
+  const open = (title: string) =>
+    h.call(sup, "supervisor", "open_lane", { title, outcome: "x", ...scope, writeSet: ["a.txt"], isolate: true });
+  await open("First");
+  await open("Second");
+  await open("Third");
+  const [first, second, third] = ["L1", "L2", "L3"].map((id) => h.ledger().lanes[id]!);
+  h.commit(first!.worktree!, "a.txt", "first\n");
+  h.commit(second!.worktree!, "a.txt", "second\n");
+  h.commit(third!.worktree!, "c.txt", "third\n");
+  await h.call(first!.lead!, "lead", "report", { summary: "done", ready: true });
+  h.agents.get(first!.lead!)!.status = "idle";
+  const landed = await h.call(sup, "supervisor", "land_lane", { lane: "L1" });
+  assert.equal(landed.ok, true, landed.text);
+  assert.match(
+    landed.text,
+    /main now conflicts with lanes still open: L2 \(a\.txt\)\. Their Leads are told; between lanes it is yours\./,
+  );
+  assert.match(
+    h.heard(second!.lead!).join("\n"),
+    /BASE MOVED L2 \(Second\): L1 \(First\) landed on main, which now conflicts with lane\/l2-second in a\.txt\. Nothing was merged\./,
+  );
+  assert.doesNotMatch(
+    h.heard(third!.lead!).join("\n"),
+    /BASE MOVED/,
+    "a lane the landing does not touch hears nothing",
+  );
+  assert.equal(h.git(second!.worktree!, "status", "--porcelain"), "", "and no copy was touched");
+});

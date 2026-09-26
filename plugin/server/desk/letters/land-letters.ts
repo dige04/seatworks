@@ -42,6 +42,19 @@ export const landLetters = {
     return fyi(mail("landheld", [lane.id, head], text, "Commit nothing more on the lane until the Human decides."));
   },
 
+  /** Another lane landed on this one's base, which now conflicts with it: word ahead of the landing that would find it. */
+  baseMoved(landed: Lane, lane: Lane, conflicts: string[]): Letter {
+    const text = `BASE MOVED ${lane.id} (${lane.title}): ${landed.id} (${landed.title}) landed on ${lane.base}, which now conflicts with ${lane.branch} in ${conflicts.join(", ")}. Nothing was merged.`;
+    return fyi(
+      mail(
+        "basemoved",
+        [lane.id, landed.id],
+        text,
+        `Nothing now: before the lane lands, a task takes ${lane.base} in on its own branch; sooner if the lane's work needs it.`,
+      ),
+    );
+  },
+
   /** The base does not merge into the lane cleanly: a task takes it in on its own branch, as the Lead lays out. */
   baseConflict(lane: Lane, conflicts: string[]): Letter {
     const text = `BASE CONFLICT ${lane.id} (${lane.title}): ${lane.base} moved on, and merging it into ${lane.branch} stops on conflicts in ${conflicts.join(", ")}. Nothing was left in your working copy, and the lane does not land until it takes ${lane.base} in.`;

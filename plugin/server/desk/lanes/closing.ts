@@ -1,4 +1,4 @@
-import { landedRef } from "../../core/git.ts";
+import { conflictsWith, landedRef } from "../../core/git.ts";
 import { midTurn } from "../../core/paseo.ts";
 import { plural } from "../../core/text.ts";
 import { ASK } from "../../domain/ask.ts";
@@ -112,14 +112,35 @@ async function retire(
   }
   const reason = str(args.reason);
   recordEvent(project, { kind: "lane.closed", lane: lane.id, land: args.land, landing: landed.how, reason, writers });
+  const moved = args.land && !lane.onBranch ? await tellBaseMoved(desk, project, lane) : "";
   // With the Human out of the loop, what landed goes out when the Supervisor says: the desk only reminds it.
   const out =
     args.land && !lane.onBranch && !desk.teamFor(project).hitl.on
       ? `\n\nGetting it out is yours while the Human is out of the loop: push sends ${lane.base} to its remote, with a tag when it is a release.`
       : "";
-  const reply = `${closedReply(lane, landed, left, kept, [...branches, ...stowed.kept], stowed.note)}${out}`;
+  const reply = `${closedReply(lane, landed, left, kept, [...branches, ...stowed.kept], stowed.note)}${moved}${out}`;
   await openWaiting(desk, project, true);
   return ok(reply);
+}
+
+/**
+ * Each lane still open on the base a landing moved hears what now conflicts with it, ahead of its own landing; between lanes
+ * that is the Supervisor's, which is told which.
+ */
+async function tellBaseMoved({ mail }: Pick<DeskServices, "mail">, project: Project, landed: Lane): Promise<string> {
+  const others = Object.values(loadLedger(project.state).lanes).filter(
+    (other) => other.status === "open" && !other.onBranch && other.base === landed.base && other.id !== landed.id,
+  );
+  const hit: string[] = [];
+  for (const other of others) {
+    const conflicts = await conflictsWith(project.root, other.branch, other.base);
+    if (!conflicts || conflicts.length === 0) continue;
+    await mail.post(other.lead, landLetters.baseMoved(landed, other, conflicts));
+    hit.push(`${other.id} (${conflicts.join(", ")})`);
+  }
+  return hit.length > 0
+    ? `\n\n${landed.base} now conflicts with lanes still open: ${hit.join("; ")}. Their Leads are told; between lanes it is yours.`
+    : "";
 }
 
 /**
