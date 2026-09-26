@@ -29,7 +29,7 @@ export type Ecosystem = z.infer<typeof EcosystemFile>;
 export type ProxySpec = NonNullable<McpEntry["proxy"]>;
 export type SensorSpec = z.infer<typeof SensorFile>;
 export type CheckSpec = z.infer<typeof ChecksFile>[string];
-type PatternSpec = z.infer<typeof PatternsFile>[string];
+export type PatternSpec = z.infer<typeof PatternsFile>[string];
 
 export type Kit = {
   dir: string;

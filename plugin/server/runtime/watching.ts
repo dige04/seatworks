@@ -15,7 +15,7 @@ import type { Trouble } from "./panel/watch-view.ts";
 import { type Fact } from "./watch/fact-kinds.ts";
 import { callsTo } from "./watch/facts.ts";
 import { decide } from "./watch/findings.ts";
-import type { SeatContext, SeatWatch, WatchedSeat, Watches } from "./watch/watches.ts";
+import type { SeatContext, SeatLook, SeatWatch, WatchedSeat, Watches } from "./watch/watches.ts";
 import { daemonLog } from "../core/logger.ts";
 
 const TROUBLES = 10;
@@ -113,6 +113,21 @@ export class Watching {
         `the ${seat.role.label}'s ${call.tool} was written with an input that is not JSON, and never reached the desk`,
       );
     }
+  }
+
+  /** A look's new words go to the brains: the seat's own only, its thinking and what it said, never a tool's output. */
+  looked(watch: SeatWatch, look: SeatLook): void {
+    const project = projectOf(watch.seat.cwd);
+    if (this.deps.source.teamFor(project).brains.mode === "off") return;
+    const items = look.units.flatMap((unit) =>
+      (unit.kind === "thought" || unit.kind === "said") && unit.text.trim()
+        ? [{ kind: unit.kind, text: unit.text }]
+        : [],
+    );
+    const { facts, since, instruction } = look;
+    this.deps.desk
+      .look(project, watch.seat, { items, facts, since, ...(instruction ? { instruction } : {}) })
+      .catch((error) => daemonLog.error("what the watch looked at could not be read:", error));
   }
 
   /** Each fact goes on record, and what they add up to may open an incident. */

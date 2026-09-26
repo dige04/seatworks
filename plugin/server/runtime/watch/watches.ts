@@ -7,10 +7,18 @@ import { type Fact, fact } from "./fact-kinds.ts";
 import { Recovery, type Rules, onSettle, stuck } from "./facts.ts";
 import { contradicted, editBeforeLook, unverified } from "./turn-facts.ts";
 import type { Quirks } from "../../catalog/kit/timeline.ts";
-import { Window } from "./window.ts";
+import { type Unit, Window } from "./window.ts";
 import { daemonLog } from "../../core/logger.ts";
 
 export type WatchedSeat = { id: string; provider: string; cwd: string; title?: string | null };
+
+/** What one look read of a seat: its new units, the facts the code raised meanwhile, since when, and its latest instruction. */
+export type SeatLook = {
+  units: Unit[];
+  facts: string[];
+  since: number;
+  instruction?: { text: string; from: string[] };
+};
 
 /** `placed` is false until the ledger has placed the seat, or while it cannot be read; `handedBack` is the outcome of a hand-back since `at` the desk did not gate. */
 export type SeatContext = { rules: Rules; handedBack: (at: number) => string | undefined; placed: boolean };
@@ -29,6 +37,10 @@ export class SeatWatch {
   private readonly durations: number[] = [];
   private readonly told = new Set<string>();
   private readonly recovery = new Recovery();
+  /** Where the last look read the window to, when, and the facts the code raised since. */
+  private looked = 0;
+  private lookedAt = 0;
+  private readonly lookFacts = new Set<string>();
   private readonly context: () => SeatContext | undefined;
   private current: SeatContext | undefined;
 
@@ -46,6 +58,7 @@ export class SeatWatch {
     if (seen.kind === "idle") return this.idle();
     if (seen.kind === "reset") {
       this.window.clear();
+      this.looked = 0;
       this.recovery.reset();
       this.told.clear();
       return [];
@@ -80,6 +93,25 @@ export class SeatWatch {
       else this.told.delete("stuck");
     }
     return this.fresh(facts, change.call?.id);
+  }
+
+  /** Whether a look is due while the turn runs: `minutes` since the last look, or since the turn began. */
+  lookDue(now: number, minutes: number): boolean {
+    return this.running && now - Math.max(this.lookedAt, this.startedAt) >= minutes * 60_000;
+  }
+
+  /**
+   * What the seat did since its last look, and the facts the code raised meanwhile. `final`, at a turn's end, reads to its
+   * last word; while it runs, a thought or saying still being written waits for the next look.
+   */
+  look(now: number, final: boolean): SeatLook {
+    const since = Math.max(this.lookedAt, this.startedAt);
+    const { units, next } = this.window.since(this.looked, this.running && !final);
+    this.looked = next;
+    this.lookedAt = now;
+    const facts = [...this.lookFacts];
+    this.lookFacts.clear();
+    return { units, facts, since, instruction: this.window.instruction() };
   }
 
   longTurn(now: number, minutes: number): Fact[] {
@@ -163,6 +195,7 @@ export class SeatWatch {
       this.told.add(key);
       return true;
     });
+    for (const fact of kept) this.lookFacts.add(fact.kind);
     return kept;
   }
 }
@@ -172,6 +205,8 @@ type WatchDeps = {
   seats: Seats;
   context: (seat: WatchedSeat) => SeatContext | undefined;
   found: (watch: SeatWatch, facts: Fact[]) => void;
+  /** What a look read of the seat, for the brains. */
+  looked: (watch: SeatWatch, look: SeatLook) => void;
   /** A person wrote in the seat's own chat, past the desk. */
   spoke: (seat: WatchedSeat, text: string) => void;
 };
@@ -235,8 +270,13 @@ export class Watches {
     for (const id of [...this.followed.keys()]) if (!ids.has(id)) this.drop(id);
   }
 
-  round(now: number, minutes: (watch: SeatWatch) => number): void {
-    for (const { watch } of this.followed.values()) this.found(watch, watch.longTurn(now, minutes(watch)));
+  /** Each round: a turn running long, and a look at each seat whose look is due. */
+  round(now: number, timing: (watch: SeatWatch) => { longTurnMinutes: number; lookMinutes: number }): void {
+    for (const { watch } of this.followed.values()) {
+      const { longTurnMinutes, lookMinutes } = timing(watch);
+      this.found(watch, watch.longTurn(now, longTurnMinutes));
+      if (watch.lookDue(now, lookMinutes)) this.looked(watch, watch.look(now, false));
+    }
   }
 
   dispose(): void {
@@ -253,7 +293,12 @@ export class Watches {
     ) {
       this.deps.spoke(watch.seat, typeof seen.row.item.text === "string" ? seen.row.item.text : "");
     }
-    if (seen.kind !== "lost") return this.found(watch, watch.see(seen));
+    if (seen.kind !== "lost") {
+      this.found(watch, watch.see(seen));
+      // A turn's end is a look of its own, to the last word it wrote.
+      if (seen.kind === "turn" && seen.phase !== "started") this.looked(watch, watch.look(Date.now(), true));
+      return;
+    }
     if (this.followed.get(watch.seat.id)?.watch === watch) this.followed.delete(watch.seat.id);
     this.log(`${watch.seat.id} is no longer watched: ${seen.error}`);
   }
@@ -264,6 +309,14 @@ export class Watches {
       this.deps.found(watch, facts);
     } catch (error) {
       this.log(`what ${watch.seat.id} did could not be recorded:`, error);
+    }
+  }
+
+  private looked(watch: SeatWatch, look: SeatLook): void {
+    try {
+      this.deps.looked(watch, look);
+    } catch (error) {
+      this.log(`what ${watch.seat.id} did could not be looked at:`, error);
     }
   }
 

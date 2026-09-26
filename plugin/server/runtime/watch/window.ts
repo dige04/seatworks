@@ -87,6 +87,18 @@ export class Window {
     this.seq = 0;
   }
 
+  /**
+   * The units pushed from position `cursor` on, and the position after them: while `open`, a trailing thought or saying
+   * may still grow, so it waits for the next read. What the window has let go of is gone.
+   */
+  since(cursor: number, open: boolean): { units: Unit[]; next: number } {
+    const base = this.pushed - this.units.length;
+    const last = this.units.at(-1);
+    const end = open && (last?.kind === "said" || last?.kind === "thought") ? this.pushed - 1 : this.pushed;
+    const start = Math.min(Math.max(cursor, base), end);
+    return { units: this.units.slice(start - base, end - base), next: end };
+  }
+
   sinceInstruction(): Unit[] {
     return this.units.slice(Math.max(0, this.instructionAt + 1 - (this.pushed - this.units.length)));
   }

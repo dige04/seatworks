@@ -25,7 +25,7 @@ import type { DeskServices } from "../services.ts";
 
 export type Noticed = { id: string; provider: string; title?: string | null };
 
-type Placed = { where: string; lane?: Lane; task?: Task };
+export type Placed = { where: string; lane?: Lane; task?: Task };
 
 /**
  * A page is irreversible and often done already, so it reaches whoever supervises whatever the marks or the budget say. A
@@ -39,7 +39,8 @@ function holdFor(incident: Incident, incidents: Incidents, attention: Attention,
   return undefined;
 }
 
-function placeOf(project: Project, seat: Noticed): Placed {
+/** Where a seat works, as a letter names it: the Peer on a task, the Lead of a lane, or the seat by its title. */
+export function placeOf(project: Project, seat: Noticed): Placed {
   try {
     const ledger = loadLedger(project.state);
     const task = taskOfPeer(ledger, seat.id);

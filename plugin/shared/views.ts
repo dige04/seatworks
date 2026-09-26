@@ -71,6 +71,7 @@ const Attention = z.object({
   reviewsAt: z.number(),
   suppressed: z.string(),
   longTurnMinutes: z.number(),
+  lookMinutes: z.number(),
   incidentsPerLane: z.number(),
   brain: z.enum(["off", "sensor", "seat", "both"]),
   sensor: z.string(),

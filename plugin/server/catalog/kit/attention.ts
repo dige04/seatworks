@@ -10,6 +10,7 @@ export const ATTENTION: Omit<Attention, "destructive" | "testPath" | "suppressed
   reworksAt: 3,
   reviewsAt: 3,
   longTurnMinutes: 30,
+  lookMinutes: 5,
   incidentsPerLane: 2,
   brain: "off",
   sensor: "",

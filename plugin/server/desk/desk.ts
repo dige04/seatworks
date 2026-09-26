@@ -1,6 +1,7 @@
 import type { Kit, SensorSpec } from "../catalog/kit/kit.ts";
 import type { Team } from "../catalog/team/team.ts";
 import { KeyedQueue } from "../core/keyed-queue.ts";
+import { daemonLog } from "../core/logger.ts";
 import { midTurn } from "../core/paseo.ts";
 import { intentsPath } from "../core/paths.ts";
 import type { Judge, SeatView, Seats, Workspaces } from "../core/ports.ts";
@@ -38,6 +39,7 @@ import { MergeQueue } from "./tasks/merge-queue.ts";
 import { openWaiting } from "./waiting/lanes.ts";
 import { startWaiting } from "./waiting/tasks.ts";
 import type { Moment } from "./watch/checks.ts";
+import { type Look, readLook } from "./watch/brains.ts";
 import { type Noticed, closeIncidentsOf, notice, retell } from "./watch/notice.ts";
 import { Watcher } from "./watch/watcher.ts";
 
@@ -113,6 +115,15 @@ export class Desk {
 
   notice(project: Project, seat: Noticed, findings: Finding[], moment?: Moment): ReturnType<typeof notice> {
     return notice(this.services, project, seat, findings, moment);
+  }
+
+  /** What one look of the watch's eye read of a seat, for its brains. */
+  async look(project: Project, seat: Noticed, look: Look): Promise<void> {
+    try {
+      await readLook(this.services, project, seat, look);
+    } catch (error) {
+      daemonLog.error(`${project.slug}: the watch's brains could not read ${seat.id}:`, error);
+    }
   }
 
   retell(project: Project): Promise<string[]> {

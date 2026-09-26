@@ -132,6 +132,7 @@ export class Runtime implements HostHooks {
       seats: this.host.seats,
       context: (seat) => this.watching.context(seat),
       found: (watch, facts) => this.watching.found(watch, facts),
+      looked: (watch, look) => this.watching.looked(watch, look),
       spoke: (seat, text) =>
         void this.turns
           .spoke(seat, text)

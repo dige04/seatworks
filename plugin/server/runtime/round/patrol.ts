@@ -65,7 +65,7 @@ export class Patrol {
     this.deps.watches.sync(seats.values());
     // A Lead no longer listed is gone for good, and its idle mark with it.
     for (const id of this.idleFlag.keys()) if (!seats.has(id)) this.idleFlag.delete(id);
-    this.deps.watches.round(now, (watch) => source.teamFor(projectOf(watch.seat.cwd)).attention.longTurnMinutes);
+    this.deps.watches.round(now, (watch) => source.teamFor(projectOf(watch.seat.cwd)).attention);
     for (const seat of seats.values())
       if (seatOf(kit, seat.provider)?.role.tools) this.deps.remember(projectOf(seat.cwd));
     for (const project of desk.projects.values()) {
