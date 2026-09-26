@@ -43,12 +43,15 @@ export async function askHuman(desk: DeskServices, caller: Caller, args: AskHuma
     return no(
       "The Human is out of the loop on this project, so nothing queues for them: decide it yourself. If it is what the project does or how it behaves, ask them directly with your own question tool and write the answer into CONTEXT.md.",
     );
-  const invalid = optionsProblem(args) ?? overBudget(desk, project);
+  const invalid = optionsProblem(args);
   if (invalid) return no(invalid);
   const named = args.lane ? findLane(loadLedger(project.state), args.lane) : undefined;
   // The Supervisor may only raise a question's class above what the Human's standing orders make it.
   const floor =
     named && named.status !== "closed" && args.class === "reversible" ? await askFirstOf(project, named) : undefined;
+  // What cannot be undone, or what their standing orders raised, is never the Supervisor's to take: it queues past the limit.
+  const over = args.class === "irreversible" || floor ? undefined : overBudget(desk, project);
+  if (over) return no(over);
   const opened = recordQuestion(desk, caller, args, floor ? "costly" : args.class);
   if (typeof opened === "string") return no(opened);
   recordEvent(project, { kind: "question.asked", question: opened.id, lane: opened.lane ?? null, class: opened.class });

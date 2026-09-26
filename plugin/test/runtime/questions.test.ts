@@ -91,6 +91,14 @@ test("the Human's daily allowance of questions counts every project, on the Repo
     (await h.call(sup, "supervisor", "ask_human", packet())).text,
     /The Human has had 3 questions in the last day \([^)]*\), and 3 is what they allow/,
   );
+  assert.match(
+    (await h.call(sup, "supervisor", "ask_human", packet({ class: "irreversible" }))).text,
+    /^Asked the Human as H3;/,
+    "what cannot be undone is never refused for the limit, though it counts",
+  );
+  const counted = await h.rpc(contracts.report, { project: h.project.slug });
+  assert.ok("numbers" in counted);
+  assert.equal(counted.numbers[0]!.value, "4 of 3");
 });
 
 test("with the Human out of the loop nothing queues for them: the Supervisor decides, or asks them directly about the concept", async () => {
