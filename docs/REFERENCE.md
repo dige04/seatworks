@@ -469,7 +469,7 @@ The watch also asks what a code fact cannot read, one condition at a time, at th
 - Who answers is `attention.judge`, set on the panel (Team › Watcher, *Answered by*):
   - `off`: nothing is asked.
   - A sensor in `catalog/sensor/`, asked over HTTPS with its key; without the key, nothing is asked. The preset's is
-    `jev`: `typesafe/jev-1.13` through OpenRouter, with data collection denied, 5 s a try and one retry.
+    `jev`: `jev-1.13.0` asked of TypeSafe directly at `api.typesafe.ai`, 5 s a try and one retry.
   - A role that can `judge`: the Watcher seat, below.
 - **Shadow:** each answer, and each failure to get one, is appended to the project's `assessments.log` with the case,
   the questions, who answered and the verdicts; a failure also writes `watch.unasked` to `events.log`. No seat is sent
