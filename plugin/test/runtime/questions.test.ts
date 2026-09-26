@@ -73,6 +73,11 @@ test("a question's class decides what waits on it: an irreversible one holds its
   );
   assert.match(h.ledger().lanes.L1!.onHold?.reason ?? "", /waits for the Human's answer to H2/);
   assert.match(
+    h.heard(lane.lead!).join("\n"),
+    /HOLD L1 \(Build\): the desk has stopped this lane for the Human's answer: it waits for the Human's answer to H2/,
+    "a lane parked for the Human was not stopped by the owner",
+  );
+  assert.match(
     (await h.call(sup, "supervisor", "resume_lane", { lane: "L1" })).text,
     /^Lane L1 waits for the Human's answer to H2, and resumes only once they answer, decline or cancel it\.$/,
   );

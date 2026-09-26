@@ -107,9 +107,13 @@ export const workLetters = {
 
   /** Sent past the outbox, cutting a running turn short: to the Lead of `lane`, or else the Peer of `task`. */
   onHold(lane: Lane, reason: string, task?: Task): Letter {
+    const by =
+      lane.onHold?.by === "desk"
+        ? "the desk has stopped this lane for the Human's answer"
+        : "the owner has stopped this lane";
     const what = task
       ? `HOLD: the work on ${task.id} is stopped: ${reason}`
-      : `HOLD ${lane.id} (${lane.title}): the owner has stopped this lane: ${reason}`;
+      : `HOLD ${lane.id} (${lane.title}): ${by}: ${reason}`;
     return mail(
       "hold",
       [lane.id, task?.id ?? "lead", hash(reason)],
