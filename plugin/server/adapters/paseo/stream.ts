@@ -1,5 +1,5 @@
-import type { Seen, Stream, StreamRow } from "./ports.ts";
-import { daemonLog } from "./logger.ts";
+import type { Seen, Stream, StreamRow } from "../../core/ports.ts";
+import { daemonLog } from "../../core/logger.ts";
 
 type Cursor = { epoch: string; seq: number };
 
@@ -37,7 +37,7 @@ const SEED_ROWS = 200;
 
 const READY_MS = 10_000;
 
-function within<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
+function inTime<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error(`${what} took longer than ${ms} ms`)), ms);
@@ -80,20 +80,16 @@ class Follower implements Stream {
   }
 
   private async join(): Promise<void> {
-    await within(this.unsubscribe.ready, READY_MS, "joining a seat's timeline");
+    await inTime(this.unsubscribe.ready, READY_MS, "joining a seat's timeline");
     await this.seed();
     this.joined = true;
     for (const message of this.early.splice(0)) this.queue(message);
   }
 
-  private log(line: string, error: unknown): void {
-    daemonLog.error(line, error);
-  }
-
   private queue(message: StreamMessage): void {
     this.chain = this.chain
       .then(() => this.handle(message))
-      .catch((error) => this.log("a watched timeline could not be followed:", error));
+      .catch((error) => daemonLog.error("a watched timeline could not be followed:", error));
   }
 
   private tell(seen: Seen): void {
@@ -101,7 +97,7 @@ class Follower implements Stream {
     try {
       this.see(seen);
     } catch (error) {
-      this.log("a watched row could not be read:", error);
+      daemonLog.error("a watched row could not be read:", error);
     }
   }
 

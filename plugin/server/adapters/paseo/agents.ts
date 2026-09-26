@@ -2,7 +2,7 @@ import type { PluginHookContext } from "@getpaseo/plugin/server";
 import type { PendingPermission, PermissionResponse, SeatView } from "../../core/paseo.ts";
 import type { SeatLook, SeatSpec, Seats, Workspace, Workspaces } from "../../core/ports.ts";
 import { deskId } from "../../core/sent-by.ts";
-import { type TimelineHandle, follow } from "../../core/stream.ts";
+import { type TimelineHandle, follow } from "./stream.ts";
 
 export type PaseoApi = PluginHookContext["paseo"];
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { TEAM_SERVER } from "../../server/catalog/kit/kit.ts";
-import type { StreamMessage } from "../../server/core/stream.ts";
+import type { StreamMessage } from "../../server/adapters/paseo/stream.ts";
 import { callsTo } from "../../server/runtime/watch/facts.ts";
 import { SeatWatch } from "../../server/runtime/watch/watches.ts";
 import { again, claudeTurn2, fixture, kinds, kit, opening, piRow, play, rules } from "./seat-replay.ts";

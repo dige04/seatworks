@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { StreamMessage } from "../../server/core/stream.ts";
+import type { StreamMessage } from "../../server/adapters/paseo/stream.ts";
 import type { Rules } from "../../server/runtime/watch/facts.ts";
 import { again, fixture, opening, piRow, play, rules } from "./seat-replay.ts";
 

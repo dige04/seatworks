@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { StreamMessage } from "../../server/core/stream.ts";
+import type { StreamMessage } from "../../server/adapters/paseo/stream.ts";
 import { again, editCall, fixture, kinds, opening, piRow, play, rules, watchOver } from "./seat-replay.ts";
 
 /** An edit of `filePath` at `seq`, its detail set as each row needs. */

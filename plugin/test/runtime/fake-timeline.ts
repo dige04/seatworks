@@ -1,4 +1,4 @@
-import type { Page, StreamMessage, TimelineHandle } from "../../server/core/stream.ts";
+import type { Page, StreamMessage, TimelineHandle } from "../../server/adapters/paseo/stream.ts";
 
 type Row = { item: Record<string, unknown>; seq: number; turnId: string | null };
 type Entry = {

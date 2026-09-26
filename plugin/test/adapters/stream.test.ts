@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Seen } from "../../server/core/ports.ts";
-import { follow } from "../../server/core/stream.ts";
+import { follow } from "../../server/adapters/paseo/stream.ts";
 import { SeatWatch } from "../../server/runtime/watch/watches.ts";
 import { Window } from "../../server/runtime/watch/window.ts";
 import { FakeTimeline, settle } from "../runtime/fake-timeline.ts";

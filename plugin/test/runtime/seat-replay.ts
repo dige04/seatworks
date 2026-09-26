@@ -5,7 +5,7 @@ import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { watchPatterns } from "../../server/catalog/kit/patterns.ts";
 import type { Quirks } from "../../server/catalog/kit/timeline.ts";
 import type { Seen } from "../../server/core/ports.ts";
-import type { StreamMessage } from "../../server/core/stream.ts";
+import type { StreamMessage } from "../../server/adapters/paseo/stream.ts";
 import type { Fact } from "../../server/domain/incident.ts";
 import type { Rules } from "../../server/runtime/watch/facts.ts";
 import { type SeatContext, SeatWatch } from "../../server/runtime/watch/watches.ts";
