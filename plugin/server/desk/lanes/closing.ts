@@ -7,7 +7,6 @@ import { QUESTION } from "../../domain/question.ts";
 import { TASK } from "../../domain/task.ts";
 import { workKey } from "../claims.ts";
 import { no, ok, str } from "../context.ts";
-import { keptLetters } from "../letters/kept-letters.ts";
 import { landLetters } from "../letters/land-letters.ts";
 import { unfinished } from "./land-facts.ts";
 import type { Lane } from "../../domain/lane.ts";
@@ -115,7 +114,7 @@ async function retire(
   const { kept, writers } = await leadAndWriters(roster, lane, left.tasks);
   const stowed = await stowCopy(desk, project, lane, left.tasks, { land: args.land, kept, writers });
   if (lane.lead) closeIncidentsOf(desk, project, lane.lead);
-  if (kept) await mail.post(lane.lead, keptLetters.closed(lane, args.land, landed.how));
+  if (kept) await mail.post(lane.lead, landLetters.closed(lane, args.land, landed.how));
   if (lane.detourOf) {
     const waiting = loadLedger(project.state).lanes[lane.detourOf];
     if (waiting?.status === "open" && waiting.lead)

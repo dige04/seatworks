@@ -1,7 +1,7 @@
 import type { Lane } from "../../domain/lane.ts";
 import { type Letter, ended, fyi, mail } from "./envelope.ts";
 
-/** The letters a landing sends: that it may go ahead, that it waits on the Human, and what the Human decided. */
+/** What a lane's landing and closing send: it may go ahead, it waits on the Human, what they decided, it closed. */
 export const landLetters = {
   canLand(lane: Lane): Letter {
     return mail(
@@ -72,6 +72,14 @@ export const landLetters = {
         text,
         `Nothing now: who takes ${lane.base} in is chosen by whoever supervises, who tells you if it is this lane.`,
       ),
+    );
+  },
+
+  /** Its lane closed under a Lead kept on, which asks nothing of it now: read with whatever wakes it next. */
+  closed(lane: Lane, landed: boolean, how: string): Letter {
+    const text = `LANE CLOSED ${lane.id} (${lane.title}): ${landed ? "landed" : "dropped"}; ${how}. Its Peers are let go, and you stay on with what you know of it until the owner releases you.`;
+    return fyi(
+      mail("closed", [lane.id], text, "Nothing of the lane is yours to do now: answer whoever writes to you about it."),
     );
   },
 
