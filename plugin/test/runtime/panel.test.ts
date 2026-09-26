@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { allSignals } from "./noticed.ts";
-import { stateRoot } from "../../server/core/paths.ts";
+import { paseoConfigPath, stateRoot } from "../../server/core/paths.ts";
 import { contracts } from "../../shared/rpc.ts";
+import type { Layer } from "../../shared/settings.ts";
 import { settle } from "./fake-timeline.ts";
 import { harness, laneWithPeer } from "./harness.ts";
 
@@ -153,4 +154,33 @@ test("Migrate shows what you took in of the kit, when that cannot be read, as a 
   );
   assert.match(steps[0]!.what, /content\.json is there but could not be read/);
   assert.equal(readFileSync(taken, "utf-8"), "{not json");
+});
+
+test("a save is refused only for what it adds, and Migrate offers to drop a role the kit no longer has", async () => {
+  const h = harness();
+  h.machineSettings({ roles: { pager: { harness: "claude" } } });
+  const save = async (values: Layer) => {
+    const read = await h.rpc(contracts.settingsRead, { project: h.project.slug });
+    return h.rpc(contracts.settingsWrite, { project: h.project.slug, revision: read.revision, values });
+  };
+  assert.equal(
+    (await save({ hitl: { on: true } })).status,
+    "saved",
+    "the machine's old role does not block the project",
+  );
+  const refused = await save({ roles: { ghost: { harness: "claude" } } });
+  assert.deepEqual(
+    [refused.status, refused.status === "invalid" && refused.error],
+    ["invalid", "The project settings name an unknown role ghost"],
+  );
+
+  const plan = await h.rpc(contracts.migrate, { apply: false });
+  const step = plan.steps.find((each) => each.kind === "settings" && each.where === "machine");
+  assert.deepEqual(step?.detail, ["roles.pager"]);
+  // Paseo's config is always there where a plugin runs, and applying reconciles the seats' providers into it.
+  mkdirSync(dirname(paseoConfigPath()), { recursive: true });
+  writeFileSync(paseoConfigPath(), "{}\n");
+  await h.rpc(contracts.migrate, { apply: true });
+  const machine = JSON.parse(readFileSync(join(stateRoot(), "settings.json"), "utf-8")) as { roles?: object };
+  assert.deepEqual(machine.roles, {});
 });

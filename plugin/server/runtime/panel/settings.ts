@@ -59,12 +59,14 @@ export class SettingsPanel implements SettingsRpc {
       target.project ? resolveTeam(kit, source.machineLayer(), layer) : resolveTeam(kit, layer);
     const paths = { guides: guidesDir(), state: target.project?.state ?? "$SEATWORKS_STATE" };
     const unbuildable = (team: Team) => Object.keys(team.roles).flatMap((role) => seatProblems(kit, team, role, paths));
+    // Only what this save introduces is refused: a bad rule refuses a seat's whole build, long after the save, and an
+    // error the settings already had, such as a role the kit no longer has, would refuse every save, the fix included.
     const check = (layer: Layer) => {
+      const before = resolve(layerValues(target.file));
+      const fresh = (problems: string[], had: string[]) => problems.filter((problem) => !had.includes(problem));
       const team = resolve(layer);
-      if (team.errors.length > 0) return team.errors;
-      // Only what this save introduces is refused: a bad rule refuses a seat's whole build, long after the save.
-      const already = new Set(unbuildable(resolve(layerValues(target.file))));
-      return unbuildable(team).filter((problem) => !already.has(problem));
+      const errors = fresh(team.errors, before.errors);
+      return errors.length > 0 ? errors : fresh(unbuildable(team), unbuildable(before));
     };
     const result = writeLayer(target.file, revision, withKeys(values, layerValues(target.file)), check);
     if (result.status === "saved") {

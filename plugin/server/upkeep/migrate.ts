@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { MigrateStep, MigrateView } from "../../shared/upkeep-views.ts";
 import type { Kit } from "../catalog/kit/kit.ts";
 import { digest } from "../core/fs.ts";
-import { LayerSchema } from "../../shared/settings.ts";
+import { type Layer, LayerSchema } from "../../shared/settings.ts";
 import { stateRoot } from "../core/paths.ts";
 import { readJson, writeJson } from "../core/store.ts";
 import type { Project } from "../desk/project/project.ts";
@@ -63,12 +63,34 @@ function drop(root: unknown, path: Path): Path | undefined {
   return undefined;
 }
 
-function repairLayer(raw: unknown): { values: unknown; dropped: string[] } | undefined {
+/** Drops the roles `known` does not hold, as a layer names them for a seat and for an MCP server; names what it dropped. */
+function dropRoles(values: Layer, known: Set<string>): string[] {
+  const dropped: string[] = [];
+  for (const role of Object.keys(values.roles ?? {}))
+    if (!known.has(role)) {
+      delete values.roles![role];
+      dropped.push(`roles.${role}`);
+    }
+  for (const [server, choice] of Object.entries(values.mcp ?? {})) {
+    const gone = (choice.roles ?? []).filter((role) => !known.has(role));
+    if (gone.length === 0) continue;
+    choice.roles = choice.roles!.filter((role) => known.has(role));
+    dropped.push(...gone.map((role) => `mcp.${server}.roles: ${role}`));
+  }
+  return dropped;
+}
+
+/** The layer as this version reads it: what its schema refuses dropped, then every role the kit no longer has. */
+function repairLayer(raw: unknown, kit: Kit): { values: unknown; dropped: string[] } | undefined {
   const values = structuredClone(raw);
   const dropped: string[] = [];
   for (let round = 0; round < 50; round++) {
     const parsed = LayerSchema.safeParse(values);
-    if (parsed.success) return { values, dropped };
+    if (parsed.success)
+      return {
+        values,
+        dropped: [...dropped, ...dropRoles(values as Layer, new Set(kit.roles.map((role) => role.role)))],
+      };
     // One issue a round: dropping an array element moves every index an issue after it names.
     const issue = parsed.error.issues[0]!;
     const path = issue.path.map((key) => (typeof key === "symbol" ? String(key) : key));
@@ -101,9 +123,8 @@ function settingsSteps(ctx: MigrateContext): Step[] {
           auto: false,
         },
       ];
-    const raw = readJson<unknown>(file, {});
-    if (LayerSchema.safeParse(raw).success) return [];
-    const repaired = repairLayer(raw);
+    const repaired = repairLayer(readJson<unknown>(file, {}), ctx.kit);
+    if (repaired?.dropped.length === 0) return [];
     if (!repaired)
       return [
         {
