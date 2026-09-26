@@ -1,5 +1,5 @@
 import { type Args, type Caller, type ToolReply, given, no, ok, str } from "../context.ts";
-import { repeatsIncident } from "../store/incidents.ts";
+import { repeatsIncident } from "../messaging/repeats.ts";
 import { amend } from "../../domain/amendment.ts";
 import { findLane } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";

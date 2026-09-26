@@ -5,7 +5,8 @@ import type { SeatLook } from "../../core/ports.ts";
 import { HOUR_MS } from "../../core/time.ts";
 import { mailbox } from "../../desk/letters/envelope.ts";
 import { projectOf } from "../../desk/project/project.ts";
-import { holdOn, loadLedger } from "../../desk/store/ledger.ts";
+import { loadLedger } from "../../desk/store/ledger.ts";
+import { holdOn } from "../../desk/lanes/hold.ts";
 import { openAsksTo } from "../../domain/ledger.ts";
 import type { Letter, Rules } from "./outbox.ts";
 

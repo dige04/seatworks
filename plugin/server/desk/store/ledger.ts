@@ -1,6 +1,5 @@
 import { statSync } from "node:fs";
 import { join } from "node:path";
-import { errorText } from "../../core/errors.ts";
 import { isRecord } from "../../core/json.ts";
 import { keptFault, readKept, writeJson } from "../../core/store.ts";
 import { type Ledger, emptyLedger } from "../../domain/ledger.ts";
@@ -52,20 +51,4 @@ export function readLedger(state: string): Ledger {
   const ledger = loadLedger(state);
   cached.set(state, { mtimeMs: stamp.mtimeMs, size: stamp.size, ledger });
   return ledger;
-}
-
-/**
- * Why this seat is held: its lane's hold, or a ledger that cannot be read, which cannot say its lane is free. A seat that
- * `supervises` has no lane to hold and must still reach the Human, so nothing unread holds it.
- */
-export function holdOn(state: string, agentId: string, supervises: boolean): string | undefined {
-  let ledger: Ledger;
-  try {
-    ledger = loadLedger(state);
-  } catch (error) {
-    if (supervises) return undefined;
-    return `The desk's record cannot be read, so whether your lane is on hold is not known: ${errorText(error)}`;
-  }
-  const lane = ledger.lanes[ledger.agents[agentId]?.lane ?? ""];
-  return lane?.onHold && lane.status !== "closed" ? `Lane ${lane.id} is on hold: ${lane.onHold.reason}` : undefined;
 }

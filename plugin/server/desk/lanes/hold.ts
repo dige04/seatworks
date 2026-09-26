@@ -1,10 +1,12 @@
+import { errorText } from "../../core/errors.ts";
 import { type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import type { Lane } from "../../domain/lane.ts";
-import { findLane, laneSeats } from "../../domain/ledger.ts";
+import { type Ledger, findLane, laneSeats } from "../../domain/ledger.ts";
 import { workLetters } from "../letters/work-letters.ts";
 import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
+import { loadLedger } from "../store/ledger.ts";
 import { openWaiting } from "../waiting/lanes.ts";
 import { startWaiting } from "../waiting/tasks.ts";
 
@@ -78,4 +80,20 @@ export async function resumeLane(desk: DeskServices, caller: Caller, laneId: str
   await startWaiting(desk, project, true);
   await desk.merges.retry(project);
   return ok(`Lane ${lifted.lane.id} resumes: each of its seats is told to carry on, with what was held for it.`);
+}
+
+/**
+ * Why this seat is held: its lane's hold, or a ledger that cannot be read, which cannot say its lane is free. A seat that
+ * `supervises` has no lane to hold and must still reach the Human, so nothing unread holds it.
+ */
+export function holdOn(state: string, agentId: string, supervises: boolean): string | undefined {
+  let ledger: Ledger;
+  try {
+    ledger = loadLedger(state);
+  } catch (error) {
+    if (supervises) return undefined;
+    return `The desk's record cannot be read, so whether your lane is on hold is not known: ${errorText(error)}`;
+  }
+  const lane = ledger.lanes[ledger.agents[agentId]?.lane ?? ""];
+  return lane?.onHold && lane.status !== "closed" ? `Lane ${lane.id} is on hold: ${lane.onHold.reason}` : undefined;
 }

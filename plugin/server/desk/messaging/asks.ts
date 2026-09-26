@@ -2,7 +2,7 @@ import { can, roleNamed } from "../../catalog/kit/roles.ts";
 import { ASK } from "../../domain/ask.ts";
 import { askLetters } from "../letters/ask-letters.ts";
 import { type Caller, type ToolReply, no, ok } from "../context.ts";
-import { repeatsIncident } from "../store/incidents.ts";
+import { repeatsIncident } from "./repeats.ts";
 import type { Ask } from "../../domain/ask.ts";
 import { type Ledger, laneOfLead, nextAskId, taskOfPeer } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";

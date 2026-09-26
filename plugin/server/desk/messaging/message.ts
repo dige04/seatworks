@@ -1,7 +1,7 @@
 import { can } from "../../catalog/kit/roles.ts";
 import { SETTLED } from "../../domain/task.ts";
 import { type Caller, type ToolReply, no, ok } from "../context.ts";
-import { repeatsIncident } from "../store/incidents.ts";
+import { repeatsIncident } from "./repeats.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, findLane, findTask, laneOfLead } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
