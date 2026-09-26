@@ -16,10 +16,7 @@ export type McpServers = Record<string, unknown>;
 
 type ListedRole = z.infer<typeof RolesFile>["roles"][number];
 type RoleFile = Exclude<ListedRole, { like: string }>;
-/**
- * A role as loaded: one that follows another has taken that role's defaults, so every role has its own; one `like` another
- * has taken all but its name and defaults, and seats with that role's files.
- */
+/** A role as loaded: a follower has taken the defaults of the role it follows, and one `like` another all but its name and defaults. */
 export type RoleSpec = Omit<RoleFile, "defaults"> & { defaults: NonNullable<RoleFile["defaults"]>; like?: string };
 /** `models` is not the harness file's: Paseo lists them, and the kit holds the last list. */
 export type HarnessSpec = z.infer<typeof HarnessFile> & { models?: ModelSpec[] };
@@ -83,7 +80,6 @@ function loadToolSets(dir: string): Record<string, Record<string, ArgSchema>> {
   );
 }
 
-/** Reads a JSON file against its schema, naming the file and each field that is wrong. */
 function parsed<T extends z.ZodType>(schema: T, file: string, what: string): z.infer<T> {
   const result = schema.safeParse(JSON.parse(readFileSync(file, "utf-8")));
   if (!result.success) throw new Error(`${what} is not as the kit reads it:\n${z.prettifyError(result.error)}`);
@@ -259,6 +255,5 @@ function checkRefused(refused: Record<string, string>, harnesses: Record<string,
 }
 
 export const TEAM_SERVER = "team";
-/** What a seat's team server tells the desk it is: the key the seat was created with. */
 export const SEAT_KEY = "SEATWORKS_DESK_KEY";
 export const PASEO_SERVER = "paseo";

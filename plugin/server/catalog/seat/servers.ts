@@ -47,7 +47,7 @@ export function indexedProxies(team: Team): IndexedProxy[] {
   const found: IndexedProxy[] = [];
   for (const state of Object.values(team.mcp)) {
     const proxy = state.enabled ? proxyOf(state) : undefined;
-    // Keyed on opening alone, a preset without an open tool lost the sync and git exclude, and a Peer could commit `.idea/`.
+    // A proxy with no open tool may still sync or keep the IDE's folder out of git, which a Peer could otherwise commit.
     const serves = Boolean(proxy?.open || proxy?.close || proxy?.sync || proxy?.gitExclude?.length);
     if (proxy && serves && proxy.backend.type === "http")
       found.push({ ...proxy, backend: proxy.backend, id: state.id, label: state.label });

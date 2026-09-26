@@ -23,7 +23,6 @@ export function stateWrites(role: RoleSpec, state: string): string[] {
   return (role.writes ?? []).map((entry) => join(state, entry.replace(/\/$/, "")));
 }
 
-/** A seat's launch config as its role and the team make it: model, thinking, prompt, MCP servers and provider options. */
 export function applyRole(
   kit: Kit,
   team: Team,
@@ -94,11 +93,7 @@ function appendAt(options: Json | undefined, path: string, value: string): Json 
   return layered(options, added) as Json;
 }
 
-/**
- * What a seat's rules file takes in of the project's own instructions: each of `imports` the project has, unless a file
- * its agent reads there already takes it in, since Seatworks keeps its block in the project's AGENTS.md and Claude reads
- * that only where the project has no CLAUDE.md.
- */
+/** Each of `imports` the project has, unless a file its agent reads there takes it in already: Claude reads AGENTS.md only where there is no CLAUDE.md. */
 export function projectImports(harness: HarnessSpec, root: string | undefined): string {
   const spec = harness.projectInstructions;
   if (!spec || !root) return "";
@@ -115,10 +110,8 @@ export function projectImports(harness: HarnessSpec, root: string | undefined): 
 const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
- * The harness's own env goes in too: Paseo may run one agent server for every seat of a harness, built from its built-in provider.
- * `shim` is the directory `seatBin` writes, which goes first on the seat's PATH. TMPDIR is where every seat is told its
- * scratch files go, so it is always set: the system's, which is the daemon's own where it has one, as Linux services and
- * Windows often do not.
+ * The harness's own env too, as Paseo may run one agent server for every seat of a harness; TMPDIR, where every seat is told
+ * its scratch files go, is always set, as Linux services and Windows often have none. `shim` goes first on the PATH.
  */
 export function seatEnv(
   kit: Kit,

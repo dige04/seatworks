@@ -39,7 +39,7 @@ export function resolveRole(
       `${harness.label} has no ${role.role} settings under harness/${harness.id}/settings, shipped or in the state root's own folder, so it can't run the ${role.label}: add them there, or make the role like one that has them`,
     );
   const model = modelFor(harness, choice.model, kit.roles);
-  // Paseo refuses a bare provider before the daemon, which surfaced only as a format error at open_lane.
+  // Paseo refuses a provider with no model before the daemon sees it.
   if (!model)
     errors.push(
       `Paseo has listed no models for ${harness.label} yet and none is chosen for the ${role.label}; Paseo starts an agent only with one, so refresh the models or choose one`,
@@ -51,13 +51,12 @@ export function resolveRole(
   return { role, harness, model, thinking, rules, mcp: serversFor(role, harness, mcp, errors) };
 }
 
-/** The harness, model and thinking the layers leave the role on, and the Human's rules for it. */
 function chosen(role: RoleSpec, layers: Layer[], origin: Choice): { choice: Choice; rules: string } {
   let choice: Choice = { ...origin };
   const rules: string[] = [];
   for (const next of layers.map((layer) => layer.roles?.[role.role])) {
     if (!next) continue;
-    // Back on the role's own harness restores the preset; reset to the harness alone, it lost the preset's model and thinking.
+    // Back on the role's own harness restores the preset's model and thinking.
     if (next.harness && next.harness !== choice.harness)
       choice = next.harness === origin.harness ? { ...origin } : { harness: next.harness };
     if (next.model) choice.model = next.model;

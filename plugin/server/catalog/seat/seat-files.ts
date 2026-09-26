@@ -15,7 +15,6 @@ import { refusalLines, refusalSettings } from "./refusals.ts";
 import { snapshot } from "./snapshots.ts";
 import { type Team, skillDirsFor } from "../team/team.ts";
 
-/** What a seat's build changed, for the log: each file written, linked or removed. */
 type Recorder = { changes: string[]; note(changed: boolean, what: string): void; removed(what: string): void };
 
 export function recorder(): Recorder {
@@ -131,10 +130,7 @@ export function writeModelCatalog(harness: HarnessSpec, dir: string, record: Rec
   return setting;
 }
 
-/**
- * What the role writes under the project's state, where its harness takes it in the seat's settings: a list of roots, and
- * where the role's own settings name a permission profile, a grant in that profile too, since a profile reads no roots.
- */
+/** What the role writes under the project's state, as roots and, where its settings name a permission profile, as grants there, which reads no roots. */
 function stateWritesSetting(harness: HarnessSpec, role: RoleSpec, state: string | undefined, settings: Json): Json {
   const spec = harness.stateWrites;
   if (spec?.delivery !== "file" || !state) return {};

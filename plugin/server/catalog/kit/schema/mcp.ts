@@ -3,7 +3,6 @@ import { z } from "zod";
 import { Json, text, texts } from "./fields.ts";
 import { Pattern } from "../../../../shared/settings.ts";
 
-/** How a seat reaches an MCP server. */
 export const McpTransport = z.enum(["stdio", "http", "sse"]);
 
 const ProxyHook = {

@@ -74,10 +74,7 @@ export const AttentionChoice = z.strictObject({
   sensor: z.string().min(1).optional(),
 });
 
-/**
- * Whether the Human stays in the loop between the concept and the report. Off, only the concept is theirs and the Supervisor
- * decides the rest; on, it may queue questions for them, at most `questionsPerDay` across every project on this machine.
- */
+/** Off, only the concept is the Human's; on, questions may queue for them, at most `questionsPerDay` across this machine. */
 export const HitlChoice = z.strictObject({
   on: z.boolean().optional(),
   questionsPerDay: z.number().int().min(0).optional(),

@@ -1,5 +1,5 @@
 // A seat's agent, started only on the seat's own settings and with the flags its harness forces on it; Paseo's version
-// probe, which starts no session, passes unconfigured. Run as: node seat-room.mjs <args>, with the seat's provider env.
+// probe, which starts no session, passes unconfigured.
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { extname, join } from "node:path";

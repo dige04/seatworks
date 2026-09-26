@@ -17,8 +17,8 @@ function realGit(skip: string): string | undefined {
 }
 
 /**
- * Writes the directory a seat's PATH starts at, and gives it: a git that runs the kit's git shim with node, the shim and the real
- * git by absolute path, and for each command the kit refuses one that says why and fails. Nothing where this machine has no git.
+ * Writes the directory a seat's PATH starts at: a git that runs the kit's shim over the real git, and for each command the kit
+ * refuses one that says why and fails. Nothing where this machine has no git.
  */
 export function seatBin(kit: Kit, root = stateRoot()): string | undefined {
   const dir = join(root, "bin");

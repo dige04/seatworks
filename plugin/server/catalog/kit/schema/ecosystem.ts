@@ -39,7 +39,6 @@ export const EcosystemFile = z.strictObject({
     assertion: Pattern,
     refused: Pattern,
     runners: texts,
-    /** A review told to report only what it is sure of. */
     certainty: Pattern,
     /** A brief that writes the answer out: code in a fence, or numbered build steps that name files or follow on. */
     prewritten: z.strictObject({ code: Pattern, step: Pattern, then: Pattern, fileMember: Pattern }),
