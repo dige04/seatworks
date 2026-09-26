@@ -1,20 +1,19 @@
-import type { Kit } from "../../catalog/kit/kit.ts";
 import { can, roleNamed, seatOf } from "../../catalog/kit/roles.ts";
 import { type SeatView, midTurn } from "../../core/ports.ts";
 import { oneLine } from "../../core/text.ts";
-import { recordEvent } from "../../desk/store/event-log.ts";
-import type { Desk } from "../../desk/desk.ts";
-import { askLetters } from "../../desk/letters/ask-letters.ts";
-import { type Project, conceptFile } from "../../desk/project/project.ts";
-import { loadIncidents, openFor, saidBefore } from "../../desk/store/incidents.ts";
+import { recordEvent } from "../store/event-log.ts";
+import { askLetters } from "../letters/ask-letters.ts";
+import { type Project, conceptFile } from "../project/project.ts";
+import { loadIncidents, openFor, saidBefore } from "../store/incidents.ts";
 import { ASK, type Ask } from "../../domain/ask.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, taskOfPeer } from "../../domain/ledger.ts";
 import { AT_WORK } from "../../domain/task.ts";
-import type { TeamSource } from "../team-source.ts";
 import { fact, findingsOf } from "../../domain/incident.ts";
+import type { DeskServices } from "../services.ts";
+import { notice } from "../watch/notice.ts";
 
-type AskDeps = { kit: Kit; desk: Desk; source: TeamSource };
+type AskDeps = Pick<DeskServices, "kit" | "teamFor" | "ledgers" | "mail" | "roster" | "incidents">;
 
 /** An ask left waiting is a fact about its reader for the watch, never a reminder on a clock. */
 export async function dueAsks(
@@ -25,7 +24,7 @@ export async function dueAsks(
   now: number,
   missingOf: (ids: string[]) => Promise<Set<string>>,
 ): Promise<void> {
-  const team = deps.source.teamFor(project);
+  const team = deps.teamFor(project);
   const { askWaitingMinutes, askLapseMinutes } = team.attention;
   const lapses = (ask: Ask) =>
     !team.hitl.on && can(roleNamed(deps.kit, ask.fromRole), "lead") && now - ask.openedAt >= askLapseMinutes * 60_000;
@@ -56,7 +55,7 @@ function waitsOn(ledger: Ledger, reader: string, asker: string): string | undefi
 
 /** Two seats idle, each waiting on the other by the desk's record: nobody else moves first, so it is told at once. */
 async function eachOther(
-  { kit, desk }: AskDeps,
+  deps: AskDeps,
   project: Project,
   ledger: Ledger,
   seats: Map<string, SeatView>,
@@ -71,17 +70,17 @@ async function eachOther(
     const reader = seats.get(ask.to);
     const on = waitsOn(ledger, ask.to, ask.from);
     if (!reader || !on || !idle(ask.to) || !idle(ask.from)) continue;
-    if (can(seatOf(kit, reader.provider)?.role, "supervise")) continue;
+    if (can(seatOf(deps.kit, reader.provider)?.role, "supervise")) continue;
     const quote = `${ask.id} from ${ask.task ?? ask.lane ?? ask.from} waits on its answer, while it waits on ${on}; both are idle`;
     const found = fact("waits-on-each-other", quote);
     if (openFor(book, ask.to, found.kind) || saidBefore(book, ask.to, found.kind, quote)) continue;
-    await desk.notice(project, { id: ask.to, provider: reader.provider, title: reader.title }, findingsOf([found]));
+    await notice(deps, project, { id: ask.to, provider: reader.provider, title: reader.title }, findingsOf([found]));
   }
 }
 
 /** One fact per reader, naming every ask that waits on it: sighted again while open and untold, never once settled. */
 async function waitedOn(
-  { kit, desk }: AskDeps,
+  deps: AskDeps,
   project: Project,
   seats: Map<string, SeatView>,
   waiting: Map<string, Ask[]>,
@@ -91,7 +90,7 @@ async function waitedOn(
   for (const [reader, asks] of waiting) {
     const seat = seats.get(reader);
     // The watch tells only whoever supervises, and never about itself.
-    if (!seat || can(seatOf(kit, seat.provider)?.role, "supervise")) continue;
+    if (!seat || can(seatOf(deps.kit, seat.provider)?.role, "supervise")) continue;
     const quote = asks
       .map((ask) => `${ask.id} (${ask.kind}) from ${ask.task ?? ask.lane ?? ask.from}: ${oneLine(ask.text, 160)}`)
       .join("; ");
@@ -99,14 +98,14 @@ async function waitedOn(
     const standing = openFor(book, reader, found.kind);
     if (!standing && saidBefore(book, reader, found.kind, quote)) continue;
     if (standing && standing.quote === quote && standing.told !== undefined) continue;
-    await desk.notice(project, { id: reader, provider: seat.provider, title: seat.title }, findingsOf([found]));
+    await notice(deps, project, { id: reader, provider: seat.provider, title: seat.title }, findingsOf([found]));
   }
 }
 
 /** A Lead's ask nobody answered in time goes back to it to settle: it is told, and so is whoever it waited on. */
-async function lapse({ desk }: AskDeps, project: Project, ask: Ask, now: number): Promise<void> {
+async function lapse(deps: AskDeps, project: Project, ask: Ask, now: number): Promise<void> {
   const minutes = Math.round((now - ask.openedAt) / 60_000);
-  const lapsed = desk.transact(project, (current) => {
+  const lapsed = deps.ledgers.transact(project, (current) => {
     const entry = current.asks[ask.id];
     if (!entry || !ASK.may(entry.status, "answer")) return undefined;
     ASK.move(entry, "answer");
@@ -121,29 +120,23 @@ async function lapse({ desk }: AskDeps, project: Project, ask: Ask, now: number)
     minutes,
     text: oneLine(lapsed.text, 160),
   });
-  await desk.post(lapsed.from, askLetters.lapsed(lapsed, minutes, conceptFile(project.state)));
-  await desk.post(lapsed.to, askLetters.lapsedFor(lapsed, minutes));
+  await deps.mail.post(lapsed.from, askLetters.lapsed(lapsed, minutes, conceptFile(project.state)));
+  await deps.mail.post(lapsed.to, askLetters.lapsedFor(lapsed, minutes));
 }
 
-async function moveAsk(
-  { desk, kit }: AskDeps,
-  project: Project,
-  ask: Ask,
-  lane: Lane | undefined,
-  now: number,
-): Promise<void> {
-  const to = await desk.supervisorFor(project, lane?.opener);
+async function moveAsk(deps: AskDeps, project: Project, ask: Ask, lane: Lane | undefined, now: number): Promise<void> {
+  const to = await deps.roster.supervisorFor(project, lane?.opener);
   if (!to || to === ask.to) return;
-  const moved = desk.transact(project, (current) => {
+  const moved = deps.ledgers.transact(project, (current) => {
     const entry = current.asks[ask.id];
     if (!entry || entry.status !== "open" || entry.to !== ask.to) return undefined;
     entry.to = to;
     entry.movedAt = now;
     return { ...entry };
   });
-  const asker = roleNamed(kit, ask.fromRole)?.label ?? ask.fromRole;
+  const asker = roleNamed(deps.kit, ask.fromRole)?.label ?? ask.fromRole;
   const from = ask.task
     ? `the ${asker} on ${ask.task}, whose reader is gone`
     : `the ${asker} of ${ask.lane ?? "a lane"}, whose reader is gone`;
-  if (moved) await desk.post(to, askLetters.askTo(moved, from, "supervisor"));
+  if (moved) await deps.mail.post(to, askLetters.askTo(moved, from, "supervisor"));
 }

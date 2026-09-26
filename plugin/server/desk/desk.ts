@@ -2,6 +2,7 @@ import type { Kit, SensorSpec } from "../catalog/kit/kit.ts";
 import type { Team } from "../catalog/team/team.ts";
 import { KeyedQueue } from "../core/keyed-queue.ts";
 import { recordSpend } from "./seats/spend.ts";
+import { dueAsks } from "./messaging/due-asks.ts";
 import { Limiter } from "../core/limiter.ts";
 import { daemonLog } from "../core/logger.ts";
 import {
@@ -196,6 +197,17 @@ export class Desk {
 
   reapSlots(project: Project, live: Set<string>): Promise<void> {
     return reapKept(this.services, project, live);
+  }
+
+  /** Asks left waiting: a reader gone, a Lead's ask past its lapse, and asks their reader or both sides sit on. */
+  dueAsks(
+    project: Project,
+    ledger: Ledger,
+    seats: Map<string, SeatView>,
+    now: number,
+    missingOf: (ids: string[]) => Promise<Set<string>>,
+  ): Promise<void> {
+    return dueAsks(this.services, project, ledger, seats, now, missingOf);
   }
 
   recordSpend(project: Project, seats: Iterable<SeatView>): void {

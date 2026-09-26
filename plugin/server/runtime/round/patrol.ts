@@ -16,7 +16,6 @@ import { loadLedger } from "../../desk/store/ledger.ts";
 import { seatLetters } from "../../desk/letters/seat-letters.ts";
 import { type Project, projectOf } from "../../desk/project/project.ts";
 import { statusPage } from "../../desk/views/status.ts";
-import { dueAsks } from "./due-asks.ts";
 import type { Outbox } from "../mail/outbox.ts";
 import type { TeamSource } from "../team-source.ts";
 import type { ProjectRegistry } from "../project-registry.ts";
@@ -98,7 +97,7 @@ export class Patrol {
       ["a lane whose Lead is gone could not be told", () => this.goneLeads(project, ledger(), seats)],
       [
         "asks left waiting could not be read",
-        () => dueAsks(this.deps, project, ledger(), seats, now, (ids) => this.missing(ids)),
+        () => desk.dueAsks(project, ledger(), seats, now, (ids) => this.missing(ids)),
       ],
       ["what a lane's history shows could not be read", () => this.history(project, ledger(), seats)],
       ["how full a seat's context is could not be told", () => this.pressure(project, seats)],
