@@ -50,9 +50,7 @@
       "paseoTools": {
         "enabled": false
       },
-      "hidesWords": [
-        "supervisor"
-      ],
+      "hidesWords": [],
       "writes": [
         "plans/",
         "council/",

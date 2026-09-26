@@ -173,14 +173,10 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
   // Driven from the kit, not a copy: the copy had lost "seats", which `\bseat\b` does not cover.
   const kit = loadKit(join(import.meta.dirname, "..", ".."));
   const hides = (role: string) => kit.roles.find((entry) => entry.role === role)?.hidesWords ?? [];
-  assert.ok(hides("peer").length > 0 && hides("reviewer").length > 0 && hides("lead").length > 0);
+  assert.ok(hides("peer").length > 0 && hides("reviewer").length > 0);
   assert.deepEqual(
-    [
-      hiddenWordsIn(text(worker), hides("peer")),
-      hiddenWordsIn(text(worker), hides("reviewer")),
-      hiddenWordsIn(text(lead), hides("lead")),
-    ],
-    [[], [], []],
+    [hiddenWordsIn(text(worker), hides("peer")), hiddenWordsIn(text(worker), hides("reviewer"))],
+    [[], []],
   );
   for (const letter of [...worker, ...lead]) if (typeof letter !== "string") nextOf(letter);
 

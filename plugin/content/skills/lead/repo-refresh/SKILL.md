@@ -1,6 +1,6 @@
 ---
 name: repo-refresh
-description: "Refreshes one named repository around current production truth: audits documentation, plans, issues, tests, proof machinery, scripts and generated debris, classifies each suspect, and has the stale ones merged or deleted through tasks. Use when documentation, plans, tests or scripts have drifted from what production does, or when the owner asks for a refresh. Not for routine housekeeping on one change, or for redesigning working architecture."
+description: "Refreshes one named repository around current production truth: audits documentation, plans, issues, tests, proof machinery, scripts and generated debris, classifies each suspect, and has the stale ones merged or deleted through tasks. Use when documentation, plans, tests or scripts have drifted from what production does, or when the directive asks for a refresh. Not for routine housekeeping on one change, or for redesigning working architecture."
 ---
 
 # Repository refresh
@@ -27,4 +27,4 @@ An age threshold marks suspects, never deletion targets. Leave unrelated and pre
 
 ## Ends in
 
-A report, kept with `note` in repo-refresh as `YYYY-MM-DD.md`, of the before and after inventory; what was merged, deleted, rewritten and deliberately kept; the proof machinery removed or demoted and why; the validation actually run; and blocked decisions with remaining debt, summarized to the owner in `report`. It isn't complete while live references point at removed material, two documents own one contract, finished plans still read as active, or a mandatory proof route has no named risk and consumer.
+A report, kept with `note` in repo-refresh as `YYYY-MM-DD.md`, of the before and after inventory; what was merged, deleted, rewritten and deliberately kept; the proof machinery removed or demoted and why; the validation actually run; and blocked decisions with remaining debt, summarized in `report`. It isn't complete while live references point at removed material, two documents own one contract, finished plans still read as active, or a mandatory proof route has no named risk and consumer.
