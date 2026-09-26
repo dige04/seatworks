@@ -268,3 +268,36 @@ test("two lanes landed at once each stay on the base: the second waits for the f
     ["cart.txt", "order.txt"],
   );
 });
+
+test("with the Human out of the loop, getting what landed out is the Supervisor's: push sends the base and a release tag, never forced", async () => {
+  const { h, sup, land } = await laneWith({ "a.txt": "cart\n" });
+  const remote = tempDir("sw2-remote-");
+  h.git(remote, "init", "-q", "--bare");
+  h.git(h.root, "remote", "add", "origin", remote);
+  const landed = await land();
+  assert.equal(landed.ok, true, landed.text);
+  assert.match(
+    landed.text,
+    /Getting it out is yours while the Human is out of the loop: push sends main to its remote/,
+  );
+  const push = (args: Record<string, unknown> = {}) => h.call(sup, "supervisor", "push", args);
+  assert.match((await push()).text, /^Pushed main to origin\.$/);
+  const head = () => h.git(h.root, "rev-parse", "main").trim();
+  assert.equal(h.git(remote, "rev-parse", "main").trim(), head());
+  assert.match(
+    (await push({ tag: "v1.0.0", message: "the cart" })).text,
+    /^Pushed main and the tag v1\.0\.0 to origin\.$/,
+  );
+  assert.equal(h.git(remote, "rev-parse", "v1.0.0^{commit}").trim(), head());
+  assert.match((await push({ tag: "bad..tag" })).text, /bad\.\.tag is not a name git takes for a tag/);
+
+  const elsewhere = tempDir("sw2-elsewhere-");
+  h.git(elsewhere, "clone", "-q", remote, ".");
+  h.git(elsewhere, "commit", "-q", "--allow-empty", "-m", "elsewhere");
+  h.git(elsewhere, "push", "-q", "origin", "main");
+  h.git(h.root, "commit", "-q", "--allow-empty", "-m", "here");
+  assert.match((await push()).text, /^Nothing was pushed to origin: /, "a remote that moved on is never forced");
+
+  h.projectSettings({ hitl: { on: true } });
+  assert.match((await push()).text, /^Pushing and releasing are the Human's while they are in the loop/);
+});

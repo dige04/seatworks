@@ -16,6 +16,7 @@ import { judgeCase } from "./judge.ts";
 import { message } from "./message.ts";
 import { note } from "./note.ts";
 import { permit } from "./permit.ts";
+import { push } from "./push.ts";
 import { landLane } from "./land-lane.ts";
 import { openLane } from "./open-lane.ts";
 import { record } from "./record.ts";
@@ -39,6 +40,7 @@ export const TOOLS: ToolDef[] = [
   askHuman,
   recordHumanAnswer,
   permit,
+  push,
   replaceLead,
   releaseLead,
   setProject,

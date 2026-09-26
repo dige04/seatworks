@@ -40,6 +40,7 @@ export type DeskEvent =
   | { kind: "lane.resumed"; lane: string; by: string }
   | { kind: "question.asked"; question: string; lane: string | null; class: string }
   | { kind: "permission.answered"; agent: string; request: string; allow: boolean; by: string }
+  | { kind: "base.pushed"; base: string; remote: string; tag: string | null; by: string }
   | { kind: "question.answered"; question: string; status: string; by: "panel" | "chat" | "desk" }
   | { kind: "note.written"; file: string; by: string; replaced: boolean }
   | { kind: "task.held"; task: string; reason: string }

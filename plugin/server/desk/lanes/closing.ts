@@ -112,7 +112,12 @@ async function retire(
   }
   const reason = str(args.reason);
   recordEvent(project, { kind: "lane.closed", lane: lane.id, land: args.land, landing: landed.how, reason, writers });
-  const reply = closedReply(lane, landed, left, kept, [...branches, ...stowed.kept], stowed.note);
+  // With the Human out of the loop, what landed goes out when the Supervisor says: the desk only reminds it.
+  const out =
+    args.land && !lane.onBranch && !desk.teamFor(project).hitl.on
+      ? `\n\nGetting it out is yours while the Human is out of the loop: push sends ${lane.base} to its remote, with a tag when it is a release.`
+      : "";
+  const reply = `${closedReply(lane, landed, left, kept, [...branches, ...stowed.kept], stowed.note)}${out}`;
   await openWaiting(desk, project, true);
   return ok(reply);
 }

@@ -490,6 +490,30 @@
       }
     },
     {
+      "name": "push",
+      "title": "Push the base",
+      "description": "Send the project's base to its remote, and with tag, tag its head as a release and send that too. Yours while the Human is out of the loop; refused while they are in it. Never forced: a remote that moved on refuses it, and the project's push hooks run.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "string",
+            "description": "A release tag to put on the base's head, like v1.4.0; left out, only the base goes."
+          },
+          "message": {
+            "type": "string",
+            "description": "The tag's message: what the release brings, in a line."
+          }
+        }
+      }
+    },
+    {
       "name": "replace_lead",
       "title": "Replace a gone Lead",
       "description": "Seat a new Lead on an open lane whose Lead is gone, where the lane stands: its copy, branch, tasks and the asks waiting on the old Lead carry over, and the new Lead is told it takes over. A Lead Paseo already started for the lane is taken on instead of a second one.",
