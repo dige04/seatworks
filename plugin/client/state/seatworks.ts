@@ -182,7 +182,7 @@ export function useSeatworks(project?: string) {
 
   /** Attaches `root` with the setup the screen chose, in one call: the desk folds it into what the project holds. */
   const attach = useCallback(
-    async (root: string, values: Layer): Promise<string | null> => {
+    async (root: string, values: Layer): Promise<{ slug: string; note?: string } | null> => {
       return writing(async () => {
         const added = await latest.current.add({ root, values });
         if ("error" in added) {
@@ -194,10 +194,10 @@ export function useSeatworks(project?: string) {
           // Filed under the project the dialog is about to open, which is where it has to be read.
           setRefusal({ of: added.slug, text: added.refused });
           setSaved(false);
-          return added.slug;
+          return { slug: added.slug, note: added.note };
         }
         setSaved(true);
-        return added.slug;
+        return { slug: added.slug, note: added.note };
       }, null);
     },
     [writing],

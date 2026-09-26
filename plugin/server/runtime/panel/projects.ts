@@ -56,7 +56,10 @@ export class ProjectsPanel implements ProjectsRpc {
     // record() only logs failures; an attach whose slug cannot be found leaves every screen for it dead.
     if (!this.deps.source.named(project.slug))
       return { error: `${project.root} could not be put on record; see the daemon log.` };
-    writeProjectBlock(this.deps.kit, project.root);
+    // Uncommitted, the block stops a lane working in the Human's own copy from landing.
+    const note = writeProjectBlock(this.deps.kit, project.root)
+      ? "The Seatworks block changed in AGENTS.md; commit it."
+      : undefined;
     const refused =
       isRecord(values) && Object.keys(values).length > 0 ? await this.deps.adopt(project, values) : undefined;
     await this.deps.reconcile();
@@ -69,7 +72,7 @@ export class ProjectsPanel implements ProjectsRpc {
           error,
         ),
       );
-    return refused ? { slug: project.slug, root: project.root, refused } : { slug: project.slug, root: project.root };
+    return { slug: project.slug, root: project.root, ...(refused ? { refused } : {}), ...(note ? { note } : {}) };
   }
 
   candidateProjects(roots: string[]): string[] {

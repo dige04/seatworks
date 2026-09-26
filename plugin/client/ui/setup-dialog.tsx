@@ -1,5 +1,5 @@
 import type { PluginTheme } from "@getpaseo/plugin";
-import { Modal } from "@getpaseo/plugin/client/react-native";
+import { Modal, useToast } from "@getpaseo/plugin/client/react-native";
 import { ModelPicker } from "./model-picker.tsx";
 import { SettingsAction, SettingsCard, SettingsRow, SettingsSection, SettingsSelect } from "@getpaseo/plugin/client/ui";
 import { useEffect, useMemo, useState } from "react";
@@ -21,7 +21,7 @@ type Props = {
   theme: PluginTheme;
   disabled: boolean;
   onOpenChange: (open: boolean) => void;
-  attach: (root: string, values: Layer) => Promise<string | null>;
+  attach: (root: string, values: Layer) => Promise<{ slug: string; note?: string } | null>;
   listFolders: (path?: string) => Promise<Folders | { error: string }>;
   onAttached: (slug: string) => void;
 };
@@ -45,6 +45,7 @@ export function SetupDialog({
   listFolders,
   onAttached,
 }: Props) {
+  const toast = useToast();
   const [step, setStep] = useState(0);
   const [root, setRootPath] = useState("");
   const [draft, setDraft] = useState<Layer>({});
@@ -318,10 +319,11 @@ export function SetupDialog({
               theme={theme}
               disabled={disabled || !path}
               onPress={() =>
-                void attach(path, draft).then((slug) => {
-                  if (!slug) return;
+                void attach(path, draft).then((added) => {
+                  if (!added) return;
+                  if (added.note) toast.show(added.note, { variant: "info" });
                   close();
-                  onAttached(slug);
+                  onAttached(added.slug);
                 })
               }
             />

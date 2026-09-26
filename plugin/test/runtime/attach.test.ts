@@ -32,6 +32,11 @@ test("a project attached by path, set up, opened in Paseo's own project list, de
     "setting a project up puts the Seatworks block in its AGENTS.md, which every agent there reads, after the Human's own",
   );
   assert.equal(
+    added.note,
+    "The Seatworks block changed in AGENTS.md; commit it.",
+    "an uncommitted AGENTS.md stops a lane working in the Human's own copy from landing",
+  );
+  assert.equal(
     added.root,
     root,
     "a path inside the project registers the project root, before any agent has run in it",
@@ -66,6 +71,7 @@ test("a project attached by path, set up, opened in Paseo's own project list, de
   const written = agents();
   const again = which(await call(contracts.projectsAdd, { root }), "slug");
   assert.equal(agents(), written, "and setting it up again writes it once");
+  assert.equal(again.note, undefined, "and says nothing when nothing changed");
   assert.equal(again.slug, added.slug, "the same repository is the same project");
   const kept = which(await call(contracts.settingsRead, { project: added.slug }), "values").values;
   assert.deepEqual(
