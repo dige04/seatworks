@@ -1,7 +1,9 @@
 import type { CheckSpec } from "../../catalog/kit/kit.ts";
 import { errorText } from "../../core/errors.ts";
 import { daemonLog } from "../../core/logger.ts";
-import type { Answer, Judge, Question } from "../../core/ports.ts";
+import type { Answer, Judge, Judgement, Question } from "../../core/ports.ts";
+import { caseLetters } from "../letters/case-letters.ts";
+import { loadLedger } from "../store/ledger.ts";
 import type { Project } from "../project/project.ts";
 import { type Assessments, askKept, holds, keepUnasked } from "../store/assessments.ts";
 import type { DeskServices } from "../services.ts";
@@ -23,13 +25,15 @@ const REVIEW: Assessments = { log: "reviews", unasked: "review.unasked" };
 function judgeFor(
   { teamFor, sensorFor }: Pick<DeskServices, "teamFor" | "sensorFor">,
   project: Project,
-): { id: string; judge: Judge } | { id: string; unasked: string } {
+): { id: string; label: string; judge: Judge } | { id: string; unasked: string } {
   const { sensor } = teamFor(project).review;
   if (!sensor) return { id: "", unasked: "no sensor the kit knows is set to ask review's checks" };
   if (!sensor.key)
     return { id: sensor.id, unasked: `${sensor.sensor.label} has no ${sensor.sensor.key} on this machine` };
   const judge = sensorFor(sensor.sensor, sensor.key);
-  return judge ? { id: sensor.id, judge } : { id: sensor.id, unasked: "this host has no way to ask a sensor" };
+  return judge
+    ? { id: sensor.id, label: sensor.sensor.label, judge }
+    : { id: sensor.id, unasked: "this host has no way to ask a sensor" };
 }
 
 /** The check's wording with the fields the code fills; one left unfilled is the code's mistake, and nothing is asked. */
@@ -49,15 +53,16 @@ function verdictOf(check: CheckSpec, answer: Answer | undefined): string {
   return answer && "pick" in answer && answer.confidence >= check.sure ? answer.pick : "unclear";
 }
 
+const sureOf = (answer: Answer | undefined): number | undefined =>
+  answer === undefined ? undefined : "likely" in answer ? answer.likely : answer.confidence;
+
+type Asking = Pick<DeskServices, "kit" | "teamFor" | "sensorFor" | "roster" | "mail">;
+
 /**
- * Asks review's sensor about one case, and keeps what came back, or why nothing could be asked: in shadow that record is all
- * an answer does. Nothing the desk does waits on it, so it never throws.
+ * Asks review's sensor about one case, keeps what came back, or why nothing could be asked, and sends what it answered
+ * to whoever decides on the work as evidence. Nothing the desk does waits on it, so it never throws.
  */
-export async function judge(
-  services: Pick<DeskServices, "kit" | "teamFor" | "sensorFor">,
-  project: Project,
-  found: Case,
-): Promise<void> {
+export async function judge(services: Asking, project: Project, found: Case): Promise<void> {
   try {
     await ask(services, project, found);
   } catch (error) {
@@ -65,13 +70,9 @@ export async function judge(
   }
 }
 
-async function ask(
-  services: Pick<DeskServices, "kit" | "teamFor" | "sensorFor">,
-  project: Project,
-  found: Case,
-): Promise<void> {
+async function ask(services: Asking, project: Project, found: Case): Promise<void> {
   const { kit } = services;
-  const asked = Object.entries(found.asked).filter(([, { check }]) => kit.checks[check]?.mode === "shadow");
+  const asked = Object.entries(found.asked).filter(([, { check }]) => kit.checks[check] !== undefined);
   if (asked.length === 0) return;
   const chosen = judgeFor(services, project);
   const about = {
@@ -90,9 +91,29 @@ async function ask(
   } catch (error) {
     return keepUnasked(project, REVIEW, about, errorText(error));
   }
-  await askKept(project, REVIEW, about, chosen.judge, questions, (judged) => ({
-    verdicts: Object.fromEntries(
-      asked.map(([name, { check }]) => [name, verdictOf(kit.checks[check]!, judged.answers[name])]),
-    ),
+  const verdicts = (judged: Judgement) =>
+    Object.fromEntries(asked.map(([name, { check }]) => [name, verdictOf(kit.checks[check]!, judged.answers[name])]));
+  const judged = await askKept(project, REVIEW, about, chosen.judge, questions, (answered) => ({
+    verdicts: verdicts(answered),
   }));
+  if (!judged) return;
+  const read = Object.entries(verdicts(judged)).map(([name, verdict]) => ({
+    question: questions[name]!,
+    verdict,
+    sure: sureOf(judged.answers[name]),
+  }));
+  const to = await deciderOf(services, project, found.subject);
+  await services.mail.post(to, caseLetters.evidence(found.subject, found.episode, chosen.label, read));
+}
+
+/** Who decides on `subject`'s work: a task's lane's reader, who accepts it, or whoever supervises a lane, who lands it. */
+async function deciderOf(
+  { roster }: Pick<DeskServices, "roster">,
+  project: Project,
+  subject: string,
+): Promise<string | undefined> {
+  const ledger = loadLedger(project.state);
+  const task = ledger.tasks[subject];
+  if (task) return (await roster.readerOf(project, ledger.lanes[task.lane])).to;
+  return roster.supervisorFor(project, ledger.lanes[subject]?.opener);
 }

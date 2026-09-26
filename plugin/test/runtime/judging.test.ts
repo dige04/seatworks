@@ -132,7 +132,7 @@ function turn(
   );
 }
 
-test("a hand-back is asked about in shadow by review's own sensor, whatever reads for the watch, and what it says is kept, never sent", async () => {
+test("a hand-back is asked about by review's own sensor, whatever reads for the watch, and what it says is kept and reaches the Lead as evidence, not a verdict", async () => {
   const { asked, make, of } = sensor({ summary_admits_gap: 0.9, review_ran_invariant: 0.1 });
   const h = harness({ sensor: make });
   judgedBy("off", KEY);
@@ -163,10 +163,10 @@ test("a hand-back is asked about in shadow by review's own sensor, whatever read
   });
   await h.idle(lead);
   assert.match(h.heard(lead).join("\n"), /HANDBACK L1-T1/);
-  assert.doesNotMatch(
+  assert.match(
     h.heard(lead).join("\n"),
-    /summary_admits_gap|vendor\/model-1/,
-    "in shadow nothing it said reaches a seat",
+    /EVIDENCE on L1-T1, about L1-T1-\d+\.md: what Jev read in its words\.\n\n- Does `summary` say that something the task asked for was not done\? yes, 0\.90 sure: `summary` names a part of the task it skipped[^]*\nNext: Weigh it when you decide on L1-T1; nothing waits on it\./,
+    "every check asked is evidence for whoever accepts the work",
   );
 
   await h.call(lead, "lead", "rework", { task: "L1-T1", text: "Do the refund path too." });
@@ -319,7 +319,7 @@ test("a turn's moments are asked about: an act, an unbacked hand-back, a change 
   assert.equal(h.events("watch.fact").filter((event) => event.fact === "edit-before-look").length, lookless);
 });
 
-test("review records what it cannot ask as unasked, asks nothing its catalog turns off, and never seats the Watcher", async (t) => {
+test("review records what it cannot ask as unasked, and never seats the Watcher", async (t) => {
   const judged = sensor({ summary_admits_gap: 0.3 });
   const h = harness({ sensor: judged.make });
   const { lead, peer } = await lane(h, "a.txt");
@@ -341,12 +341,6 @@ test("review records what it cannot ask as unasked, asks nothing its catalog tur
   assert.deepEqual(watchersOf(h), [], "nor is the Watcher seat, which judges the watch, ever asked in its place");
 
   judgedBy("off", KEY);
-  const gap = h.runtime.kit.checks.summary_admits_gap!;
-  t.after(() => void (gap.mode = "shadow"));
-  gap.mode = "off";
-  await handBack("off in the catalog");
-  gap.mode = "shadow";
-  assert.deepEqual([judged.asked.length, kept(h.project.state).length], [0, 1]);
   await handBack("answered");
   assert.deepEqual(kept(h.project.state).at(-1)!.verdicts, { summary_admits_gap: "unclear" });
 

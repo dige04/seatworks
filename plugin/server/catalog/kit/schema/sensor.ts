@@ -26,7 +26,6 @@ const Instructions = z.union([
     .refine((fields) => typeof fields.question === "string", { error: "names no question" }),
 ]);
 
-const Mode = z.enum(["off", "shadow"]);
 const unit = z.number().min(0).max(1);
 
 /** The facts the code raises at a turn's end that open a question about that turn. */
@@ -43,7 +42,6 @@ const Condition = z
     criteria: z.strictObject({ true: text, false: text }),
     acts: z.record(z.string(), text.includes("{quote}")).optional(),
     facts: Facts,
-    mode: Mode,
     yes: unit,
     no: unit,
   })
@@ -56,7 +54,6 @@ const Pick = z
     instructions: Instructions,
     criteria: z.record(z.string(), text),
     facts: Facts,
-    mode: Mode,
     sure: unit,
     after: z.array(text).optional(),
   })

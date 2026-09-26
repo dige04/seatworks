@@ -28,6 +28,7 @@ type Kind =
   | "closed"
   | "detour"
   | "done"
+  | "evidence"
   | "failed"
   | "gone"
   | "halfopen"
