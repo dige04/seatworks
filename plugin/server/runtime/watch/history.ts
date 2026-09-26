@@ -4,11 +4,7 @@ import type { Task } from "../../domain/task.ts";
 import { SETTLED } from "../../domain/task.ts";
 import { type Fact, type FactKind, fact } from "../../domain/incident.ts";
 
-/**
- * What a lane's history shows that no turn window can. One fact per kind per lane, naming every task:
- * incidents key on seat and kind, and the exact quote is how a standing condition is not re-raised.
- */
-type Seen = { seat: string; fact: Fact };
+type LaneFact = { seat: string; fact: Fact };
 
 type Reading = {
   reworksAt: number;
@@ -35,12 +31,15 @@ function prewritten(text: string, { code, step, then, fileMember }: Reading["pre
   return then.test(read) || fileMember.test(read);
 }
 
-/** What the record shows of one open lane: its tasks, the ledger they are in, and the settings it is read by. */
 type LaneRecord = { here: Task[]; ledger: Ledger; reading: Reading };
 
-type Finding = [FactKind, string] | undefined;
+type Found = [FactKind, string] | undefined;
 
-export function deskFacts(ledger: Ledger, reading: Reading): Seen[] {
+/**
+ * What a lane's history shows that no turn window can. One fact per kind per lane, naming every task: incidents key on
+ * seat and kind, and the exact quote is how a standing condition is not raised again.
+ */
+export function deskFacts(ledger: Ledger, reading: Reading): LaneFact[] {
   const tasks = Object.values(ledger.tasks);
   return Object.values(ledger.lanes)
     .filter((lane) => lane.status === "open" && lane.lead)
@@ -53,7 +52,7 @@ export function deskFacts(ledger: Ledger, reading: Reading): Seen[] {
 }
 
 /** One task going round: each sending-back is a local fix to what the last one did not settle. */
-function reworkLoop({ here, reading }: LaneRecord): Finding {
+function reworkLoop({ here, reading }: LaneRecord): Found {
   const looping = here.filter((task) => !settled(task) && reworksOf(task) >= reading.reworksAt);
   if (looping.length === 0) return undefined;
   return [
@@ -68,7 +67,7 @@ function reworkLoop({ here, reading }: LaneRecord): Finding {
 }
 
 /** The lane going round: several tasks sent back is one missing foundation patched task by task. */
-function patchedNotFixed({ here, reading }: LaneRecord): Finding {
+function patchedNotFixed({ here, reading }: LaneRecord): Found {
   const patched = here.filter((task) => !settled(task) && reworksOf(task) > 0);
   const sendings = patched.reduce((total, task) => total + reworksOf(task), 0);
   if (patched.length < 2 || sendings < reading.reworksAt) return undefined;
@@ -79,7 +78,7 @@ function patchedNotFixed({ here, reading }: LaneRecord): Finding {
 }
 
 /** A hand-back that said partial or blocked, accepted all the same: nothing else records the Lead taking it in. */
-function acceptedUnfinished({ here }: LaneRecord): Finding {
+function acceptedUnfinished({ here }: LaneRecord): Found {
   const unfinished = here.filter((task) => task.status === "merged" && UNFINISHED.has(task.handback?.outcome ?? ""));
   if (unfinished.length === 0) return undefined;
   const named = unfinished.slice(0, MOST_NAMED);
@@ -90,8 +89,7 @@ function acceptedUnfinished({ here }: LaneRecord): Finding {
   ];
 }
 
-/** Reviews of one task that keep coming round without it settling. */
-function reviewsUnconverged({ here, ledger, reading }: LaneRecord): Finding {
+function reviewsUnconverged({ here, ledger, reading }: LaneRecord): Found {
   const reviews = new Map<string, Task[]>();
   for (const task of here)
     if (task.kind === "review" && task.of) reviews.set(task.of, [...(reviews.get(task.of) ?? []), task]);
@@ -112,7 +110,7 @@ function reviewsUnconverged({ here, ledger, reading }: LaneRecord): Finding {
 }
 
 /** A review asked for certainty reports less than it found, and what it drops is real. */
-function certaintyOnly({ here, reading }: LaneRecord): Finding {
+function certaintyOnly({ here, reading }: LaneRecord): Found {
   const timid = here.filter(
     (task) => task.kind === "review" && reading.certainty.test(task.goal.slice(0, READ_AT_MOST)),
   );
@@ -126,7 +124,7 @@ function certaintyOnly({ here, reading }: LaneRecord): Finding {
 }
 
 /** A brief that carries the answer gets agreement back, not engineering. */
-function briefPrewritten({ here, reading }: LaneRecord): Finding {
+function briefPrewritten({ here, reading }: LaneRecord): Found {
   const typed = here.filter(
     (task) =>
       task.kind === "code" && !settled(task) && prewritten(`${task.goal}\n${task.context ?? ""}`, reading.prewritten),
@@ -143,7 +141,7 @@ function briefPrewritten({ here, reading }: LaneRecord): Finding {
   ];
 }
 
-/** Each fact the record can show of a lane, in the order its Lead reads them. */
+/** Each fact the record can show of a lane, in the order they are raised. */
 const LANE_FACTS = [
   reworkLoop,
   patchedNotFixed,

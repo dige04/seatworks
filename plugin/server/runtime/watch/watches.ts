@@ -40,7 +40,7 @@ export class SeatWatch {
   readonly window: Window;
   private running = false;
   turnId: string | null = null;
-  startedAt = 0;
+  private startedAt = 0;
   private readonly durations: number[] = [];
   private readonly told = new Set<string>();
   private readonly recovery = new Recovery();

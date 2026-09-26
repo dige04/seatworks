@@ -14,7 +14,7 @@ import type { Roster } from "../seats/roster.ts";
 type Waiting = {
   project: string;
   within: number;
-  model: string;
+  provider: string;
   questions: Record<string, Question>;
   sent?: { seat: string; at: number };
   answered(judged: Judgement): void;
@@ -71,13 +71,13 @@ export class Watcher {
     const id = `C${this.stamp}${++this.count}`;
     const within = this.desk.teamFor(project).attention.watcherAnswerMinutes;
     const answer = new Promise<Judgement>((answered, failed) =>
-      this.waiting.set(id, { project: project.slug, within, model: role, questions, answered, failed }),
+      this.waiting.set(id, { project: project.slug, within, provider: role, questions, answered, failed }),
     );
     try {
       const seat = await this.deliver(project, role, caseLetters.case(id, subject, state, questions));
       const provider = (await this.roster.look(seat)).provider;
       const entry = this.waiting.get(id);
-      if (entry) Object.assign(entry, { model: provider ?? role, sent: { seat, at: Date.now() } });
+      if (entry) Object.assign(entry, { provider: provider ?? role, sent: { seat, at: Date.now() } });
     } catch (error) {
       this.waiting.delete(id);
       throw error;
@@ -140,7 +140,7 @@ export class Watcher {
     this.waiting.delete(id);
     entry.answered({
       answers: Object.fromEntries(words.map((one) => [one.question, answerOf(asked(one.question)!, one.says)])),
-      model: entry.model,
+      model: entry.provider,
       why: Object.fromEntries(words.map((one) => [one.question, one.why])),
     });
     return undefined;
