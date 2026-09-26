@@ -147,6 +147,16 @@ export async function removeWorktree(root: string, path: string | undefined): Pr
   await git(root, ["worktree", "prune"], 30_000);
 }
 
+/** What the desk commits is made as seatworks and unsigned: the Human's name and signer are for their own commits. */
+export const AS_DESK = [
+  "-c",
+  "user.name=seatworks",
+  "-c",
+  "user.email=seatworks@localhost",
+  "-c",
+  "commit.gpgSign=false",
+];
+
 type MergeResult = { ok: true; before: string; after: string } | { ok: false; conflicts: string[]; message: string };
 
 /**
@@ -162,16 +172,7 @@ export async function mergeBranch(
 ): Promise<MergeResult> {
   const before = await headSha(cwd);
   if (!before) return { ok: false, conflicts: [], message: "the lane working copy has no HEAD" };
-  const own = [
-    "-c",
-    "user.name=seatworks",
-    "-c",
-    "user.email=seatworks@localhost",
-    "-c",
-    "rerere.enabled=false",
-    "-c",
-    "commit.gpgSign=false",
-  ];
+  const own = [...AS_DESK, "-c", "rerere.enabled=false"];
   const run = await git(cwd, [...own, "merge", "--no-ff", "--no-verify", "-m", message, branch], timeout);
   if (run.code === 0) return { ok: true, before, after: (await headSha(cwd)) ?? before };
   const unmerged = await git(cwd, ["diff", "--name-only", "--diff-filter=U"]);

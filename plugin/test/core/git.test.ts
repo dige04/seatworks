@@ -43,7 +43,7 @@ async function laneOfTwo(onMain: boolean) {
   return { ...made, main: await made.sha("main"), tip: await made.sha("lane/l1") };
 }
 
-test("a lane lands on base only as its gate saw it, squashed, merged or fast-forwarded, and base moves only from the commit it was read as", async () => {
+test("a lane lands on base only as its gate saw it, squashed, merged or fast-forwarded, made as seatworks and unsigned, and base moves only from the commit it was read as", async () => {
   const ff = repo();
   ff.run("checkout", "-qb", "lane/l1");
   ff.run("checkout", "-qb", "task/l1-t1");
@@ -81,6 +81,17 @@ test("a lane lands on base only as its gate saw it, squashed, merged or fast-for
     assert.equal(squashed.run("rev-parse", KEEP).trim(), squashed.tip, "its steps are kept under a hidden ref");
     assert.equal(await contains(squashed.root, "main", "lane/l1"), false, "main does not carry the lane's own commits");
   }
+
+  const signing = await laneOfTwo(true);
+  signing.run("config", "commit.gpgSign", "true");
+  signing.run("config", "gpg.program", "false");
+  const unsigned = await landLane(signing.root, "main", "lane/l1", signing.tip, {
+    as: "squash",
+    message: "Cart (L1)",
+    keep: KEEP,
+  });
+  assert.equal(unsigned.landed, true, `a signer that needs the Human cannot stop a landing: ${unsigned.how}`);
+  assert.equal(signing.run("log", "-1", "--format=%an <%ae>", "main").trim(), "seatworks <seatworks@localhost>");
 
   const merge = await laneOfTwo(true);
   const merged = await landLane(merge.root, "main", "lane/l1", merge.tip, {

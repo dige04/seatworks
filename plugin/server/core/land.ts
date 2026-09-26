@@ -1,4 +1,4 @@
-import { type LandAs, cleanState, currentBranch, git, headSha, isAncestor } from "./git.ts";
+import { AS_DESK, type LandAs, cleanState, currentBranch, git, headSha, isAncestor } from "./git.ts";
 
 type LandResult = { landed: boolean; how: string };
 
@@ -31,9 +31,8 @@ export async function mergeCommit(
   message: string,
 ): Promise<string | undefined> {
   const tip = await headSha(cwd, branch);
-  const own = ["-c", "user.name=seatworks", "-c", "user.email=seatworks@localhost", "-c", "commit.gpgSign=false"];
   const made = tip
-    ? await git(cwd, [...own, "commit-tree", `${tip}^{tree}`, "-p", onto, "-p", tip, "-m", message])
+    ? await git(cwd, [...AS_DESK, "commit-tree", `${tip}^{tree}`, "-p", onto, "-p", tip, "-m", message])
     : undefined;
   return made?.code === 0 ? made.stdout.trim() : undefined;
 }
@@ -77,6 +76,7 @@ export async function landLane(
     else {
       const parents = how.as === "merge" ? [from, tested] : [from];
       const made = await git(root, [
+        ...AS_DESK,
         "commit-tree",
         `${tested}^{tree}`,
         ...parents.flatMap((parent) => ["-p", parent]),
