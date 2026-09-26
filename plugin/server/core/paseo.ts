@@ -9,7 +9,11 @@ export type SeatView = {
   archivedAt?: string | null;
   labels?: Record<string, string>;
   pendingPermissions?: PendingPermission[];
+  lastUsage?: SeatUsage | null;
 };
+
+/** What a seat's agent reports of its use, where it reports any: Claude's cost counts from when its agent started. */
+type SeatUsage = { totalCostUsd?: number; contextWindowUsedTokens?: number; contextWindowMaxTokens?: number };
 
 /** Whether a seat is in a turn; one still starting is, since its first turn is already under way. */
 export function midTurn(status: string | null | undefined): boolean {

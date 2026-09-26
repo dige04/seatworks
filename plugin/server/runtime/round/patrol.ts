@@ -25,9 +25,6 @@ import type { Watches } from "../watch/watches.ts";
 
 type SeatMap = Map<string, SeatView>;
 
-/** How full a seat's context is, where its agent reports it: Paseo lists it though the port does not name it. */
-type Usage = { lastUsage?: { contextWindowUsedTokens?: number; contextWindowMaxTokens?: number } };
-
 type PatrolDeps = {
   kit: Kit;
   source: TeamSource;
@@ -193,7 +190,7 @@ export class Patrol {
     for (const id of this.pressed) if (!seats.has(id)) this.pressed.delete(id);
     for (const seat of seats.values()) {
       if (projectOf(seat.cwd).slug !== project.slug || !this.deps.watches.watched(seat.provider)) continue;
-      const { contextWindowUsedTokens: used, contextWindowMaxTokens: max } = (seat as SeatView & Usage).lastUsage ?? {};
+      const { contextWindowUsedTokens: used, contextWindowMaxTokens: max } = seat.lastUsage ?? {};
       const full = used !== undefined && max ? used / max : 0;
       if (full < contextShare) {
         this.pressed.delete(seat.id);
