@@ -1,10 +1,9 @@
-import { recordEvent } from "../store/event-log.ts";
 import type { CheckSpec } from "../../catalog/kit/kit.ts";
 import { errorText } from "../../core/errors.ts";
 import { daemonLog } from "../../core/logger.ts";
 import type { Answer, Judge, Question } from "../../core/ports.ts";
 import type { Project } from "../project/project.ts";
-import { appendRecord } from "../store/records.ts";
+import { type Assessments, askKept, holds, keepUnasked } from "../store/assessments.ts";
 import type { DeskServices } from "../services.ts";
 
 /**
@@ -17,6 +16,8 @@ export type Case = {
   state: Record<string, unknown>;
   asked: Record<string, { check: string; fill?: Record<string, string> }>;
 };
+
+const REVIEW: Assessments = { log: "assessments", unasked: "review.unasked" };
 
 /** The sensor that asks review's checks for `project`, or why none can: no sensor, no key, or a host with no way to ask. */
 function judgeFor(
@@ -44,10 +45,9 @@ function questionOf(check: CheckSpec, fill: Record<string, string> = {}): Questi
 }
 
 /** Where an answer falls: a noul on its check's thresholds, a choice as picked where it is sure enough. */
-function verdictOf(check: CheckSpec, answer: Answer): string {
-  if (check.type === "choice") return "choice" in answer && answer.confidence >= check.sure ? answer.choice : "unclear";
-  const yes = "noul" in answer ? answer.noul : undefined;
-  return yes === undefined ? "unclear" : yes >= check.yes ? "yes" : yes <= check.no ? "no" : "unclear";
+function verdictOf(check: CheckSpec, answer: Answer | undefined): string {
+  if (check.type === "noul") return holds(check, answer);
+  return answer && "choice" in answer && answer.confidence >= check.sure ? answer.choice : "unclear";
 }
 
 /**
@@ -75,35 +75,25 @@ async function ask(
   const asked = Object.entries(found.asked).filter(([, { check }]) => kit.checks[check]?.mode === "shadow");
   if (asked.length === 0) return;
   const chosen = judgeFor(services, project);
-  const kept = {
-    at: new Date().toISOString(),
+  const about = {
     subject: found.subject,
     episode: found.episode,
     by: chosen.id,
     state: found.state,
     checks: Object.fromEntries(asked.map(([name, { check }]) => [name, check])),
   };
-  if ("unasked" in chosen) return unasked(project, kept, chosen.unasked);
-  const { judge } = chosen;
+  if ("unasked" in chosen) return keepUnasked(project, REVIEW, about, chosen.unasked);
+  let questions: Record<string, Question>;
   try {
-    const questions = Object.fromEntries(
+    questions = Object.fromEntries(
       asked.map(([name, { check, fill }]) => [name, questionOf(kit.checks[check]!, fill)]),
     );
-    const judged = await judge.ask(found.state, questions);
-    const verdicts = Object.fromEntries(
-      asked.map(([name, { check }]) => [name, verdictOf(kit.checks[check]!, judged.answers[name]!)]),
-    );
-    appendRecord(
-      project.state,
-      "assessments",
-      `${JSON.stringify({ ...kept, questions, model: judged.model, tokens: judged.tokens, answers: judged.answers, why: judged.why, verdicts })}\n`,
-    );
   } catch (error) {
-    unasked(project, kept, errorText(error));
+    return keepUnasked(project, REVIEW, about, errorText(error));
   }
-}
-
-function unasked(project: Project, kept: { subject: string; by: string }, why: string): void {
-  appendRecord(project.state, "assessments", `${JSON.stringify({ ...kept, unasked: why })}\n`);
-  recordEvent(project, { kind: "review.unasked", subject: kept.subject, by: kept.by, error: why });
+  await askKept(project, REVIEW, about, chosen.judge, questions, (judged) => ({
+    verdicts: Object.fromEntries(
+      asked.map(([name, { check }]) => [name, verdictOf(kit.checks[check]!, judged.answers[name])]),
+    ),
+  }));
 }

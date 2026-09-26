@@ -1,15 +1,13 @@
 import type { PatternSpec } from "../../catalog/kit/kit.ts";
 import { can, seatOf } from "../../catalog/kit/roles.ts";
-import { errorText } from "../../core/errors.ts";
-import type { Judge, Judgement, Question } from "../../core/ports.ts";
+import type { Judge, Question } from "../../core/ports.ts";
 import { clip } from "../../core/text.ts";
 import type { Finding } from "../../domain/incident.ts";
 import { tasksOf } from "../../domain/ledger.ts";
 import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
-import { recordEvent } from "../store/event-log.ts";
 import { loadLedger } from "../store/ledger.ts";
-import { appendRecord } from "../store/records.ts";
+import { type Assessments, askKept, holds } from "../store/assessments.ts";
 import { type Noticed, type Placed, notice, placeOf } from "./notice.ts";
 
 /** One of a seat's own words a look read: its thinking, what it said, or a brief it wrote. */
@@ -22,6 +20,8 @@ export type Look = {
   since: number;
   instruction?: { text: string; from: string[] };
 };
+
+const WATCH: Assessments = { log: "assessments", unasked: "watch.unasked" };
 
 const ITEM = 1500;
 const QUOTE = 400;
@@ -115,9 +115,6 @@ const asQuestion = (pattern: PatternSpec, instructions: string): Question => ({
   criteria: pattern.criteria,
 });
 
-const verdictOf = (pattern: PatternSpec, yes: number | undefined): "yes" | "no" | "unclear" =>
-  yes === undefined ? "unclear" : yes >= pattern.yes ? "yes" : yes <= pattern.no ? "no" : "unclear";
-
 /** Each item asked what its patterns ask of it; a yes is found, and a yes or an unsure answer is flagged for the seat. */
 async function sift(
   project: Project,
@@ -135,16 +132,19 @@ async function sift(
     if (mine.length === 0) continue;
     const questions = Object.fromEntries(mine.map(([id, pattern]) => [id, asQuestion(pattern, pattern.instructions!)]));
     const state = { text: item.text, ...asked };
-    const judged = await asking(project, subject, by.id, judge, state, questions);
+    const judged = await askKept(project, WATCH, { subject, episode: "look", by: by.id, state }, judge, questions);
     if (!judged) continue;
     for (const [id, pattern] of mine) {
       const answer = judged.answers[id];
-      const yes = answer && "noul" in answer ? answer.noul : undefined;
-      const verdict = verdictOf(pattern, yes);
+      const verdict = holds(pattern, answer);
       if (verdict !== "no") flagged.add(id);
       if (verdict === "yes")
         found.push({
-          ...finding(id, item.text, `seen by ${by.sensor.label}, ${yes!.toFixed(2)} sure, in its ${item.kind}`),
+          ...finding(
+            id,
+            item.text,
+            `seen by ${by.sensor.label}, ${(answer as { noul: number }).noul.toFixed(2)} sure, in its ${item.kind}`,
+          ),
           theirs: true,
         });
     }
@@ -172,13 +172,13 @@ async function weigh(
     ...(look.facts.length > 0 ? { facts: look.facts } : {}),
   };
   const questions = Object.fromEntries(patterns.map(([id, pattern]) => [id, asQuestion(pattern, pattern.seat)]));
-  const judged = await asking(project, subject, by, judge, state, questions);
+  const judged = await askKept(project, WATCH, { subject, episode: "look", by, state }, judge, questions);
   if (!judged) return [];
-  return patterns.flatMap(([id, pattern]) => {
-    const answer = judged.answers[id];
-    const yes = answer && "noul" in answer ? answer.noul : undefined;
-    return verdictOf(pattern, yes) === "yes" ? [finding(id, judged.why?.[id] ?? "", "judged by the Watcher seat")] : [];
-  });
+  return patterns.flatMap(([id, pattern]) =>
+    holds(pattern, judged.answers[id]) === "yes"
+      ? [finding(id, judged.why?.[id] ?? "", "judged by the Watcher seat")]
+      : [],
+  );
 }
 
 const finding = (kind: string, quote: string, seen: string): Finding => ({
@@ -187,28 +187,3 @@ const finding = (kind: string, quote: string, seen: string): Finding => ({
   quote: clip(quote.replace(/\s+/g, " ").trim(), QUOTE),
   facts: [kind, seen],
 });
-
-/** One brain asked, and what it answered kept for labels, or why it could not answer. */
-async function asking(
-  project: Project,
-  subject: string,
-  by: string,
-  judge: Judge,
-  state: Record<string, unknown>,
-  questions: Record<string, Question>,
-): Promise<Judgement | undefined> {
-  const kept = { at: new Date().toISOString(), subject, episode: "look", by, state, questions };
-  try {
-    const judged = await judge.ask(state, questions);
-    appendRecord(
-      project.state,
-      "assessments",
-      `${JSON.stringify({ ...kept, model: judged.model, tokens: judged.tokens, answers: judged.answers, why: judged.why })}\n`,
-    );
-    return judged;
-  } catch (error) {
-    appendRecord(project.state, "assessments", `${JSON.stringify({ ...kept, unasked: errorText(error) })}\n`);
-    recordEvent(project, { kind: "watch.unasked", subject, by, error: errorText(error) });
-    return undefined;
-  }
-}

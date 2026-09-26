@@ -1,0 +1,52 @@
+import { errorText } from "../../core/errors.ts";
+import type { RECORDS } from "../../core/paths.ts";
+import type { Answer, Judge, Judgement, Question } from "../../core/ports.ts";
+import type { Project } from "../project/project.ts";
+import { recordEvent } from "./event-log.ts";
+import { appendRecord } from "./records.ts";
+
+/** Where a judge's answers are kept, and the event that says one could not be asked: the watch's and review's are apart. */
+export type Assessments = { log: (typeof RECORDS)[number]; unasked: "watch.unasked" | "review.unasked" };
+
+/** What an answer is kept beside: about whom and which of theirs, by which judge, and what it read. */
+type About = { subject: string; episode: string; by: string; state: Record<string, unknown> } & Record<string, unknown>;
+
+/** Whether a condition holds by its thresholds: at or above `yes` it does, at or below `no` it does not, between is unclear. */
+export function holds(spec: { yes: number; no: number }, answer: Answer | undefined): "yes" | "no" | "unclear" {
+  const yes = answer && "noul" in answer ? answer.noul : undefined;
+  return yes === undefined ? "unclear" : yes >= spec.yes ? "yes" : yes <= spec.no ? "no" : "unclear";
+}
+
+export function keepUnasked(project: Project, where: Assessments, about: About, why: string): void {
+  appendRecord(
+    project.state,
+    where.log,
+    `${JSON.stringify({ at: new Date().toISOString(), ...about, unasked: why })}\n`,
+  );
+  recordEvent(project, { kind: where.unasked, subject: about.subject, by: about.by, error: why });
+}
+
+/** Asks `judge` and keeps what it answered for labels, with what `read` makes of it, or why it could not answer. */
+export async function askKept(
+  project: Project,
+  where: Assessments,
+  about: About,
+  judge: Judge,
+  questions: Record<string, Question>,
+  read: (judged: Judgement) => Record<string, unknown> = () => ({}),
+): Promise<Judgement | undefined> {
+  const at = new Date().toISOString();
+  try {
+    const judged = await judge.ask(about.state, questions);
+    const { model, tokens, answers, why } = judged;
+    appendRecord(
+      project.state,
+      where.log,
+      `${JSON.stringify({ at, ...about, questions, model, tokens, answers, why, ...read(judged) })}\n`,
+    );
+    return judged;
+  } catch (error) {
+    keepUnasked(project, where, { ...about, questions }, errorText(error));
+    return undefined;
+  }
+}
