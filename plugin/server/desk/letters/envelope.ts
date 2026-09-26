@@ -21,7 +21,6 @@ type Kind =
   | "baseconflict"
   | "basemoved"
   | "beside"
-  | "brief"
   | "canland"
   | "case"
   | "closed"
