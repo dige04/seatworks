@@ -53,10 +53,10 @@ function laneNotes(lane: Lane, now: number): string[] {
   if (lane.ready) notes.push(`Reported ready ${minutesSince(now, lane.ready.at)} min ago.`);
   if (land?.approved)
     notes.push(`Landing approved by the Human ${minutesSince(now, land.approved.at)} min ago; land_lane lands it.`);
-  else if (land) {
-    const why = land.signals.join(" ") || "every landing here is approved first.";
-    notes.push(`Landing waits ${minutesSince(now, land.since)} min for the Human's approval: ${why}`);
-  }
+  else if (land)
+    notes.push(
+      `Landing waits ${minutesSince(now, land.since)} min for the Human's approval: ${land.signals.join(" ")}`,
+    );
   return notes;
 }
 
