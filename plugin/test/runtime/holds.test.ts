@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { settle } from "./fake-timeline.ts";
 import { harness } from "./harness.ts";
+import { tempDir } from "../tempdir.ts";
 
 type Harness = ReturnType<typeof harness>;
 
@@ -187,4 +188,27 @@ test("a one-writer path a lane changed is noted where an open lane beside it may
     landed.text,
     /It changed what one writer at a time may write, which open lanes may write too: L2 \(package-lock\.json\)\.(?! Whichever)/,
   );
+});
+
+test("git the desk runs never runs a hook or a command a seat could plant in the repository it shares", async () => {
+  const { h, lead } = await laneWriting(["src/**"]);
+  const marks = tempDir("sw2-planted-");
+  const plant = (name: string) => `sh -c 'touch "${join(marks, name)}"; cat'`;
+  const hook = join(h.root, ".git", "hooks", "post-checkout");
+  writeFileSync(hook, `#!/bin/sh\ntouch "${join(marks, "hook")}"\n`);
+  chmodSync(hook, 0o755);
+  h.git(h.root, "config", "filter.planted.smudge", plant("smudge"));
+  h.git(h.root, "config", "filter.planted.clean", plant("clean"));
+  writeFileSync(join(h.root, ".git", "info", "attributes"), "* filter=planted\n");
+  await h.call(lead, "lead", "add_tasks", { tasks: [planned("a", "A", { holds: ["src/**"], parallel: true })] });
+  assert.deepEqual(readdirSync(marks), [], "making the task's copy");
+  h.commit(h.ledger().lanes.L1!.worktree!, "b.txt", "the lane moved on\n");
+  // The seat's own commit runs what its repository says: that is the seat's, not the desk's.
+  await handBack(h, "L1-T1", ["src/a.ts"]);
+  rmSync(marks, { recursive: true });
+  mkdirSync(marks);
+  await h.call(lead, "lead", "accept", { task: "L1-T1" });
+  await h.runtime.desk.settled(h.project);
+  assert.equal(h.ledger().tasks["L1-T1"]!.status, "merged");
+  assert.deepEqual(readdirSync(marks), []);
 });

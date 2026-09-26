@@ -1,26 +1,47 @@
 import { execFile, execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { devNull } from "node:os";
 import { join } from "node:path";
 
 type Run = { code: number; stdout: string; stderr: string };
 
-export function git(cwd: string, args: string[], timeout = 60_000): Promise<Run> {
+function spawnGit(args: string[], timeout: number): Promise<Run> {
   return new Promise((resolve) => {
-    // core.quotePath=false: non-ASCII paths otherwise come back octal-escaped and match no path a write set names.
-    execFile(
-      "git",
-      ["-C", cwd, "-c", "core.quotePath=false", ...args],
-      { timeout, maxBuffer: 16 * 1024 * 1024 },
-      (error, stdout, stderr) => {
-        const code = error
-          ? typeof (error as { code?: unknown }).code === "number"
-            ? (error as { code: number }).code
-            : 1
-          : 0;
-        resolve({ code, stdout: String(stdout), stderr: String(stderr) });
-      },
-    );
+    execFile("git", args, { timeout, maxBuffer: 16 * 1024 * 1024 }, (error, stdout, stderr) => {
+      const code = error
+        ? typeof (error as { code?: unknown }).code === "number"
+          ? (error as { code: number }).code
+          : 1
+        : 0;
+      resolve({ code, stdout: String(stdout), stderr: String(stderr) });
+    });
   });
+}
+
+/** Keys whose value git runs as a command, as git names them. */
+const RUNS_COMMAND =
+  "^(filter\\..+\\.(clean|smudge|process)|merge\\..+\\.driver|diff\\..+\\.(textconv|command)|core\\.(sshcommand|gitproxy|askpass|editor)|sequence\\.editor|gpg\\.(.+\\.)?program)$";
+
+/**
+ * What keeps git the desk runs, outside any seat's sandbox, from running what a seat could plant in the repository it
+ * shares: no hooks, no fsmonitor, and each command the repository's own config names emptied. The Human's global
+ * config, where their own filters such as LFS live, stands.
+ */
+async function unplanted(cwd: string): Promise<string[]> {
+  const listed = await spawnGit(
+    ["-C", cwd, "config", "--show-scope", "--name-only", "--get-regexp", RUNS_COMMAND],
+    30_000,
+  );
+  const planted = listed.stdout.split("\n").flatMap((line) => {
+    const [scope, key] = line.split("\t");
+    return key && (scope === "local" || scope === "worktree") ? ["-c", `${key}=`] : [];
+  });
+  return ["-c", `core.hooksPath=${devNull}`, "-c", "core.fsmonitor=false", ...planted];
+}
+
+export async function git(cwd: string, args: string[], timeout = 60_000): Promise<Run> {
+  // core.quotePath=false: non-ASCII paths otherwise come back octal-escaped and match no path a write set names.
+  return spawnGit(["-C", cwd, "-c", "core.quotePath=false", ...(await unplanted(cwd)), ...args], timeout);
 }
 
 export async function currentBranch(cwd: string): Promise<string | undefined> {
