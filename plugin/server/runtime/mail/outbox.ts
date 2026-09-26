@@ -36,7 +36,7 @@ export class Outbox {
   private readonly gone = new Set<string>();
 
   /** Keyed on the reader too: desk ids are unique only per project, and this one file serves them all. */
-  private static held(letter: { to: string; key: string }): string {
+  private static keyOf(letter: { to: string; key: string }): string {
     return `${letter.to}\n${letter.key}`;
   }
   private readonly perSeat = new KeyedQueue();
@@ -73,7 +73,7 @@ export class Outbox {
 
   async post(letter: Omit<Letter, "id" | "at">): Promise<Posted> {
     const now = Date.now();
-    const sentAt = this.sentKeys.get(Outbox.held(letter));
+    const sentAt = this.sentKeys.get(Outbox.keyOf(letter));
     const waiting = this.letters();
     if (
       (sentAt !== undefined && now - sentAt < DUPLICATE_MS) ||
@@ -156,7 +156,7 @@ export class Outbox {
       this.awaiting.set(to, now);
       const ids = new Set(mine.map((letter) => letter.id));
       for (const [key, at] of this.sentKeys) if (now - at >= DUPLICATE_MS) this.sentKeys.delete(key);
-      for (const letter of mine) this.sentKeys.set(Outbox.held(letter), now);
+      for (const letter of mine) this.sentKeys.set(Outbox.keyOf(letter), now);
       this.save(this.letters().filter((letter) => !ids.has(letter.id)));
       return ids;
     });

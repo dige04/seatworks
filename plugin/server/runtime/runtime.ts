@@ -31,7 +31,8 @@ import type { Panel } from "./panel/rpc.ts";
 import { SettingsPanel } from "./panel/settings.ts";
 import { UpkeepPanel } from "./panel/upkeep.ts";
 import { SeatKeys } from "./seat/keys.ts";
-import { composeMail, mailRules } from "./mail/mail-rules.ts";
+import { composeMail } from "./mail/compose-mail.ts";
+import { mailRules } from "./mail/mail-rules.ts";
 import { Outbox } from "./mail/outbox.ts";
 import { Patrol } from "./round/patrol.ts";
 import { PatrolClock } from "./round/patrol-clock.ts";
@@ -41,6 +42,7 @@ import { Seating } from "./seat/seating.ts";
 import { TeamSocket } from "./seat/team-socket.ts";
 import { TeamSource } from "./team-source.ts";
 import { TurnRules } from "./turns.ts";
+import { PermissionRules } from "./permissions.ts";
 import { PermissionWaits } from "./permission-waits.ts";
 import { Watches } from "./watch/watches.ts";
 import { watchView } from "./panel/watch-view.ts";
@@ -67,6 +69,7 @@ export class Runtime implements HostHooks {
   private readonly source: TeamSource;
   private readonly seating: Seating;
   private readonly turns: TurnRules;
+  private readonly permissions: PermissionRules;
   private readonly patrol: Patrol;
   private readonly watches: Watches;
   private readonly watching: Watching;
@@ -101,12 +104,16 @@ export class Runtime implements HostHooks {
     this.turns = new TurnRules({
       kit,
       desk: this.desk,
-      seats: host.seats,
-      hitlOn: (project) => this.source.teamFor(project).hitl.on,
       attention: (project) => this.source.teamFor(project).attention,
       remember,
-      log,
       troubles: this.troubles,
+    });
+    this.permissions = new PermissionRules({
+      kit,
+      desk: this.desk,
+      seats: host.seats,
+      hitlOn: (project) => this.source.teamFor(project).hitl.on,
+      log,
     });
     this.watching = new Watching({
       kit,
@@ -292,7 +299,7 @@ export class Runtime implements HostHooks {
 
   permissionRequested(event: PermissionRequested): Promise<void> {
     if (event.request.id) this.waits.asked(event.agent.id, event.request.id);
-    return this.turns.permission(event);
+    return this.permissions.permission(event);
   }
 
   private remember(project: Project): void {
