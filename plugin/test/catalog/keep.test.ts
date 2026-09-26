@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parse } from "smol-toml";
 import { hiddenWordsIn } from "../../server/catalog/kit/hidden-words.ts";
+import type { RoleSpec } from "../../server/catalog/kit/kit.ts";
 
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -136,6 +137,20 @@ const KEEP: Keep[] = [
     absent: ["supervisor", "lead", "peer", "reviewer", "watcher", "critic"],
   },
   {
+    id: "keep-12b",
+    title: "code.mjs takes its allowlist as data at launch",
+    file: "mcp/code.mjs",
+    check: "contains",
+    anchor: "const allowed = [...new Set(config.tools ?? [])];",
+  },
+  {
+    id: "keep-13",
+    title: "each seat gets its own team MCP server",
+    file: "server/catalog/seat/servers.ts",
+    check: "contains",
+    anchor: '[join(kit.dir, "mcp", "team.mjs"), role.role, role.tools, socket]',
+  },
+  {
     id: "keep-14a",
     title: "a letter frames the agent's record as data",
     file: "server/desk/letters/watch-letters.ts",
@@ -153,6 +168,59 @@ const KEEP: Keep[] = [
       "the SILENT or the LANE IDLE letter no longer holds it",
       (text, anchor) => text.indexOf(anchor) !== text.lastIndexOf(anchor),
     ],
+  },
+  {
+    id: "keep-15a",
+    title: "the outbox sends into a running turn only when it can steer",
+    file: "server/runtime/mail/outbox.ts",
+    check: "contains",
+    anchor: "if (!steer && (midTurn(seat.status) || waiting)) return new Set<string>();",
+  },
+  {
+    id: "keep-15b",
+    title: "the outbox holds mail for a seat awaiting permission",
+    file: "server/runtime/mail/outbox.ts",
+    check: "contains",
+    anchor: "if ((seat.pendingPermissions?.length ?? 0) > 0) return new Set<string>();",
+  },
+  {
+    id: "keep-16",
+    title: "the one-writer paths are a default, not a law",
+    file: "catalog/ecosystem.json",
+    check: "contains",
+    anchor: '"serialOnly": [',
+  },
+  {
+    id: "keep-17",
+    title: "seat settings layer the machine's keys, the harness base, the role file and the desk's part",
+    file: "server/catalog/seat/seat-files.ts",
+    check: "contains",
+    anchor: "const wanted = layered(layered(inherited(harness, seat.homeDir), kitSettings), extra) as Json;",
+  },
+  {
+    id: "keep-18",
+    title: "each seat is built in its own directory",
+    file: "server/catalog/seat/seats.ts",
+    check: "contains",
+    anchor: "const dir = seatDir(kit, seat.role, seat.harness, homeDir, project);",
+  },
+  {
+    id: "keep-19",
+    title: "which role gets which MCP tools is settings",
+    file: "shared/settings.ts",
+    check: "contains",
+    anchor: "tools: z.record(z.string(), z.array(z.string())).optional(),",
+    structure: [
+      "the line is no longer unique, so it no longer proves the MCP server's field",
+      (text, anchor) => text.indexOf(anchor) === text.lastIndexOf(anchor),
+    ],
+  },
+  {
+    id: "keep-20",
+    title: "each harness says how it takes MCP servers",
+    file: "server/catalog/seat/launch.ts",
+    check: "contains",
+    anchor: 'if (harness.mcp.delivery === "launch"',
   },
   {
     id: "keep-21a",
@@ -202,6 +270,13 @@ const KEEP: Keep[] = [
     ],
   },
   {
+    id: "refuted-1",
+    title: "one writer at a time in a shared working copy",
+    file: "server/desk/tasks/placement.ts",
+    check: "contains",
+    anchor: "is still writing in the lane's working copy, and it holds one writer at a time.",
+  },
+  {
     id: "refuted-2",
     title: "a lane never takes over a dirty working copy",
     file: "server/desk/copies/own-copy.ts",
@@ -214,6 +289,36 @@ const KEEP: Keep[] = [
     file: "server/desk/project/project.ts",
     check: "contains",
     anchor: "serialOnly: Array.isArray(stored.serialOnly) ? stored.serialOnly.map(String)",
+  },
+  {
+    id: "refuted-4a",
+    title: "Peers and Reviewers get no Paseo tools",
+    file: "roles.json",
+    check: "contains",
+    anchor: '"enabled": false',
+    structure: [
+      "peer or reviewer no longer has paseoTools.enabled false",
+      (text) => {
+        const roles = (JSON.parse(text) as { roles: RoleSpec[] }).roles;
+        return ["peer", "reviewer"].every((name) =>
+          roles.some((role) => role.role === name && role.paseoTools?.enabled === false),
+        );
+      },
+    ],
+  },
+  {
+    id: "refuted-4b",
+    title: "the Watcher is read-only",
+    file: "roles.json",
+    check: "contains",
+    anchor: "it cannot touch the work",
+    structure: [
+      "the Watcher can write, or writes something",
+      (text) =>
+        (JSON.parse(text) as { roles: RoleSpec[] }).roles.some(
+          (role) => role.role === "watcher" && !role.can?.includes("write") && (role.writes ?? []).length === 0,
+        ),
+    ],
   },
 ];
 
