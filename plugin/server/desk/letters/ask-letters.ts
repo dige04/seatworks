@@ -18,7 +18,7 @@ function askNext(ask: Ask): string {
 const keptOffBy = (question: Question) =>
   question.class === "irreversible" && question.lane ? `the Lead of ${question.lane}` : undefined;
 
-/** What the Human's word asks of whoever put the question: only a choice unlike what went ahead meanwhile turns anything round. */
+/** What the Human's word asks of whoever asked: a choice unlike what went ahead while they were silent is turned round. */
 function answeredNext(question: Question): string {
   const lead = keptOffBy(question);
   if (question.status === "declined")
@@ -33,9 +33,7 @@ function answeredNext(question: Question): string {
     return `Tell ${lead} their choice and how the lane goes on, and write it into CONTEXT.md if it settles the concept`;
   if (question.class === "irreversible")
     return "Carry their choice where it applies, and write it into CONTEXT.md if it settles the concept";
-  if (question.answer?.choice !== question.recommend)
-    return "Turn round what went ahead on your recommendation, and write their choice into CONTEXT.md if it settles the concept";
-  return "Write their choice into CONTEXT.md if it settles the concept";
+  return "If their choice is not what went ahead while they were silent, turn that round, and write it into CONTEXT.md if it settles the concept";
 }
 
 /** The letters an ask sends: to whoever it is put to, the answer back, and what becomes of one left unanswered. */

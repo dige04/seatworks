@@ -243,11 +243,12 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     openedAt: 0,
     answer: { choice: "Delete", by: "panel", at: 0 },
   };
-  assert.match(next(askLetters.humanAnswered(asked, undefined)), /^Turn round what went ahead on your recommendation/);
-  assert.match(
-    next(askLetters.humanAnswered({ ...asked, answer: { choice: "Archive", by: "panel", at: 0 } }, undefined)),
-    /^Write their choice into CONTEXT\.md/,
-  );
+  for (const choice of ["Delete", "Archive"])
+    assert.match(
+      next(askLetters.humanAnswered({ ...asked, answer: { choice, by: "panel", at: 0 } }, undefined)),
+      /^If their choice is not what went ahead while they were silent, turn that round, and write it into CONTEXT\.md/,
+      "what went ahead is what they were told would if silent, which the desk cannot compare with a choice",
+    );
 
   assert.match(
     next(workLetters.handback(task, "/h.md", "Outcome: complete", "agent-7", "lead")),
