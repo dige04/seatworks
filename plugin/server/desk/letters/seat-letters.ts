@@ -97,12 +97,12 @@ export const seatLetters = {
     lines.push(
       "",
       from
-        ? `The Human is out of the loop, so it is yours: permit with from ${from} and request ${request.id ?? ""}. Until then it reads nothing you send.`
+        ? `The Human is out of the loop, so it is yours: permit with from ${from} and request ${request.id}. Until then it reads nothing you send.`
         : "Only the Human can answer this, in Paseo. Until they do, it reads nothing you send.",
     );
     return mail(
       "permission",
-      [agent, request.id ?? ""],
+      [agent, request.id],
       lines.join("\n"),
       from
         ? "Allow what its work needs within its own copy; refuse, with why, what reaches past it."
@@ -115,7 +115,7 @@ export const seatLetters = {
   /** The Supervisor answered a Peer's permission past its Lead, which keeps the room's picture by hearing of it. */
   permitted(task: Task, request: PendingPermission, allow: boolean, why: string): Letter {
     const text = `PERMISSION ${allow ? "ALLOWED" : "REFUSED"} for ${task.id} (${task.title}) by the Supervisor: ${asked(request)}${allow ? "" : `\n\nWhy: ${clip(why, 600)}`}`;
-    return fyi(mail("permitted", [task.id, request.id ?? ""], text, "Nothing now."));
+    return fyi(mail("permitted", [task.id, request.id], text, "Nothing now."));
   },
 
   leadGone(lane: Lane): Letter {

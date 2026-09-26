@@ -79,7 +79,7 @@ export class TurnRules {
     if (!role?.tools) return;
     const project = projectOf(agent.cwd);
     const hold = holdOn(project.state, agent.id, can(role, "supervise"));
-    if (hold && request.id) {
+    if (hold) {
       await this.deps.seats.respond(agent.id, request.id, {
         behavior: "deny",
         message: `${hold}. Do nothing more until you are told it resumes.`,
@@ -89,7 +89,7 @@ export class TurnRules {
     // A seat stopped on a question reads nothing, and a team waiting on a sleeping Human is stuck: the question goes by the desk.
     // With the Human out of the loop, the Supervisor grills them on the concept with its agent's own question instead.
     const grilling = can(role, "supervise") && !this.deps.hitlOn(project);
-    if (request.kind === "question" && request.id && !grilling) {
+    if (request.kind === "question" && !grilling) {
       await this.deps.seats.respond(agent.id, request.id, {
         behavior: "deny",
         message: `A question that stops your turn is not taken here: ${askInstead(toolsOf(this.deps.kit, role))}.`,
@@ -111,7 +111,7 @@ export class TurnRules {
     );
     // Mail for nobody is dropped: the request is left in Paseo, and this record is all that says so.
     if (posted === "nobody")
-      this.deps.log(project, `nobody is seated to answer ${permitter?.from ?? who}'s permission ${request.id ?? ""}`);
+      this.deps.log(project, `nobody is seated to answer ${permitter?.from ?? who}'s permission ${request.id}`);
   }
 
   /** With the Human out of the loop, a Lead's or Peer's permission is whoever supervises its lane, by the task or lane it works. */
