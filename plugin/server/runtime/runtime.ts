@@ -46,6 +46,7 @@ import { Watches } from "./watch/watches.ts";
 import { watchView } from "./panel/watch-view.ts";
 import { Watching } from "./watching.ts";
 import { Troubles } from "./troubles.ts";
+import { ProjectRegistry } from "./project-registry.ts";
 
 type RuntimeOptions = {
   outboxFile?: string;
@@ -61,6 +62,7 @@ export class Runtime implements HostHooks {
   private readonly keys = new SeatKeys();
   private readonly waits = new PermissionWaits();
   private readonly troubles = new Troubles();
+  private readonly registry = new ProjectRegistry();
   private readonly socket: TeamSocket;
   private readonly source: TeamSource;
   private readonly seating: Seating;
@@ -117,6 +119,7 @@ export class Runtime implements HostHooks {
     this.patrol = new Patrol({
       kit,
       source: this.source,
+      registry: this.registry,
       desk: this.desk,
       seats: host.seats,
       outbox: this.outbox,
@@ -131,6 +134,7 @@ export class Runtime implements HostHooks {
       config: host.config,
       seats: host.seats,
       source: this.source,
+      registry: this.registry,
       modelsChanged: () => this.seating.forget(),
     });
     this.launch = new SeatLaunch(kit, this.seating, this.keys, remember);
@@ -154,7 +158,7 @@ export class Runtime implements HostHooks {
   }
 
   private panelOf(kit: Kit): Panel {
-    const { source } = this;
+    const { source, registry } = this;
     const changed = () => this.teamChanged();
     const reconcile = () => this.sync.reconcile();
     const seats = this.host.seats;
@@ -162,6 +166,7 @@ export class Runtime implements HostHooks {
     const settings = new SettingsPanel({
       kit,
       source,
+      registry,
       changed,
       reconcile,
       models: () => this.refreshModels(),
@@ -173,6 +178,7 @@ export class Runtime implements HostHooks {
       projects: new ProjectsPanel({
         kit,
         source,
+        registry,
         seats,
         workspaces: this.host.workspaces,
         held: () => this.outbox.held(),
@@ -182,8 +188,8 @@ export class Runtime implements HostHooks {
         adopt,
         desk: this.desk,
       }),
-      upkeep: new UpkeepPanel({ kit, source, seats }),
-      human: new HumanPanel({ kit, source, seats, human: this.desk.human, waits: this.waits }),
+      upkeep: new UpkeepPanel({ kit, source, registry, seats }),
+      human: new HumanPanel({ kit, source, registry, seats, human: this.desk.human, waits: this.waits }),
     };
   }
 
@@ -291,7 +297,7 @@ export class Runtime implements HostHooks {
 
   private remember(project: Project): void {
     this.desk.projects.set(project.slug, project);
-    this.source.record(project);
+    this.registry.record(project);
   }
 
   private indexesFor(project: Project): CodeIndex[] {

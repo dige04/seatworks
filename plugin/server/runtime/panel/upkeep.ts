@@ -12,9 +12,10 @@ import { contentChanges, takeIn } from "../../upkeep/content.ts";
 import { type LiveSeat, olderSeats } from "../../upkeep/older-seats.ts";
 import { applyUpdate, checkUpdate, npmInstall, reloadSoon } from "../../upkeep/update.ts";
 import type { TeamSource } from "../team-source.ts";
+import type { ProjectRegistry } from "../project-registry.ts";
 import type { UpkeepRpc } from "./rpc.ts";
 
-type UpkeepDeps = { kit: Kit; source: TeamSource; seats: Seats };
+type UpkeepDeps = { kit: Kit; source: TeamSource; registry: ProjectRegistry; seats: Seats };
 
 export class UpkeepPanel implements UpkeepRpc {
   private readonly deps: UpkeepDeps;
@@ -24,17 +25,17 @@ export class UpkeepPanel implements UpkeepRpc {
   }
 
   async clean(remove?: string[]): Promise<CleanView> {
-    const { kit, source } = this.deps;
+    const { kit, source, registry } = this.deps;
     const ctx = {
       kit,
       home: home(),
-      known: source.known(),
+      known: registry.known(),
       teamFor: (project: Project) => source.teamFor(project),
       live: await this.live(),
     };
     if (!remove) return { items: await scanGarbage(ctx), removed: [], failed: [] };
     const cleaned = await removeGarbage(ctx, remove);
-    for (const project of ctx.known) if (!source.named(project.slug)) source.forget(project.slug);
+    for (const project of ctx.known) if (!registry.named(project.slug)) registry.forget(project.slug);
     return cleaned;
   }
 

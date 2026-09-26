@@ -19,6 +19,7 @@ import { statusPage } from "../../desk/views/status.ts";
 import { dueAsks } from "./due-asks.ts";
 import type { Outbox } from "../mail/outbox.ts";
 import type { TeamSource } from "../team-source.ts";
+import type { ProjectRegistry } from "../project-registry.ts";
 import type { TurnRules } from "../turns.ts";
 import { deskFacts } from "../watch/history.ts";
 import type { Watches } from "../watch/watches.ts";
@@ -28,6 +29,7 @@ type SeatMap = Map<string, SeatView>;
 type PatrolDeps = {
   kit: Kit;
   source: TeamSource;
+  registry: Pick<ProjectRegistry, "known" | "onRecord">;
   desk: Desk;
   seats: Seats;
   outbox: Outbox;
@@ -62,7 +64,7 @@ export class Patrol {
   }
 
   private async runRound(now: number): Promise<void> {
-    const { kit, desk, source } = this.deps;
+    const { kit, desk, source, registry } = this.deps;
     const seats: SeatMap = new Map((await this.deps.seats.open()).map((seat) => [seat.id, seat]));
     this.deps.watches.sync(seats.values());
     for (const id of this.idleFlag.keys()) if (!seats.has(id)) this.idleFlag.delete(id);
@@ -71,7 +73,7 @@ export class Patrol {
       if (seatOf(kit, seat.provider)?.role.tools) this.deps.remember(projectOf(seat.cwd));
     for (const project of desk.projects.values()) {
       // Written to, a project removed while the plugin runs would come back as a state directory of its own.
-      if (!source.onRecord(project)) {
+      if (!registry.onRecord(project)) {
         desk.projects.delete(project.slug);
         continue;
       }
@@ -130,7 +132,7 @@ export class Patrol {
       daemonLog.error("what waited on a turn when the plugin stopped could not be taken up:", error);
     }
     const live = new Set(seats.keys());
-    for (const project of this.deps.source.known()) {
+    for (const project of this.deps.registry.known()) {
       await this.step(project, "the merges queued when the plugin stopped could not be taken up", () =>
         desk.resumeMerges(project),
       );

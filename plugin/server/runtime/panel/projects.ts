@@ -16,6 +16,7 @@ import { statusPage } from "../../desk/views/status.ts";
 import type { Added, Paths, ProjectRow, Removed, StatusView } from "../../../shared/views.ts";
 import type { FlowRead, WatchView } from "../../../shared/flow-views.ts";
 import type { TeamSource } from "../team-source.ts";
+import type { ProjectRegistry } from "../project-registry.ts";
 import { listFolders } from "./folders.ts";
 import type { ProjectsRpc } from "./rpc.ts";
 import { firstUnder } from "../../core/fs.ts";
@@ -28,6 +29,7 @@ export const unknownProject = (slug: string) => `No project named ${slug} has be
 type ProjectsDeps = {
   kit: Kit;
   source: TeamSource;
+  registry: ProjectRegistry;
   seats: Seats;
   workspaces: Workspaces;
   held: () => { to: string; text: string; at: number; until: number }[];
@@ -46,7 +48,7 @@ export class ProjectsPanel implements ProjectsRpc {
   }
 
   projects(): ProjectRow[] {
-    return this.deps.source.known().map((project) => ({ slug: project.slug, root: project.root }));
+    return this.deps.registry.known().map((project) => ({ slug: project.slug, root: project.root }));
   }
 
   /** Attaches the project at `root`, and saves the setup `values` chose for it in the same call. */
@@ -55,9 +57,9 @@ export class ProjectsPanel implements ProjectsRpc {
     if (!path || !existsSync(path) || !statSync(path).isDirectory())
       return { error: `${path || "That path"} is not a directory on this machine.` };
     const project = projectOf(path);
-    this.deps.source.record(project);
+    this.deps.registry.record(project);
     // record() only logs failures; an attach whose slug cannot be found leaves every screen for it dead.
-    if (!this.deps.source.named(project.slug))
+    if (!this.deps.registry.named(project.slug))
       return { error: `${project.root} could not be put on record; see the daemon log.` };
     const changed = writeProjectBlock(this.deps.kit, project.root);
     const note = changed ? "The Seatworks block changed in AGENTS.md; commit it." : undefined;
@@ -79,7 +81,7 @@ export class ProjectsPanel implements ProjectsRpc {
   }
 
   candidateProjects(roots: string[]): string[] {
-    const attached = new Set(this.deps.source.known().map((project) => project.root));
+    const attached = new Set(this.deps.registry.known().map((project) => project.root));
     const worktrees = worktreeRoot();
     const keep: string[] = [];
     for (const given of roots) {
@@ -101,7 +103,7 @@ export class ProjectsPanel implements ProjectsRpc {
   }
 
   async removeProject(slug: string): Promise<Removed> {
-    const project = this.deps.source.named(slug);
+    const project = this.deps.registry.named(slug);
     if (!project) return { error: unknownProject(slug) };
     // A seat still working in the project records it again on the next round, so detaching it first would not hold.
     let live: string[];
@@ -145,7 +147,7 @@ export class ProjectsPanel implements ProjectsRpc {
     } catch {
       // Gone already, or holding more than the desk put there: the folder stays.
     }
-    this.deps.source.forget(slug);
+    this.deps.registry.forget(slug);
     this.deps.changed();
     await this.deps.reconcile();
     return { removed: slug };
@@ -156,7 +158,7 @@ export class ProjectsPanel implements ProjectsRpc {
   }
 
   async status(slug: string): Promise<StatusView> {
-    const project = this.deps.source.named(slug);
+    const project = this.deps.registry.named(slug);
     if (!project) return { text: "", error: unknownProject(slug) };
     const seats = new Map((await this.deps.seats.open()).map((seat) => [seat.id, seat]));
     const human = this.deps.source.teamFor(project).hitl.on;
@@ -164,7 +166,7 @@ export class ProjectsPanel implements ProjectsRpc {
   }
 
   async flow(slug: string, since?: string, open?: string[]): Promise<FlowRead> {
-    const project = this.deps.source.named(slug);
+    const project = this.deps.registry.named(slug);
     if (!project) return { error: unknownProject(slug) };
     const seats = new Map((await this.deps.seats.open()).map((seat) => [seat.id, seat]));
     const roles = new Map(

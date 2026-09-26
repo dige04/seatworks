@@ -5,6 +5,7 @@ import { daemonLog } from "../core/logger.ts";
 import { stateRoot } from "../core/paths.ts";
 import type { Models, PaseoConfig, Seats } from "../core/ports.ts";
 import type { TeamSource } from "./team-source.ts";
+import type { ProjectRegistry } from "./project-registry.ts";
 
 type SyncOptions = {
   kit: Kit;
@@ -12,6 +13,7 @@ type SyncOptions = {
   config: PaseoConfig;
   seats: Seats;
   source: TeamSource;
+  registry: Pick<ProjectRegistry, "known">;
   modelsChanged: () => void;
 };
 
@@ -54,9 +56,9 @@ export class ProviderSync {
 
   private async apply(): Promise<void> {
     try {
-      const { kit, source, config } = this.options;
+      const { kit, source, registry, config } = this.options;
       const held = await config.read();
-      const teams = source.known().map((project) => source.teamFor(project));
+      const teams = registry.known().map((project) => source.teamFor(project));
       let plan = providerPatches(held, kit, teams);
       if (plan.stale.length > 0) plan = providerPatches(held, kit, teams, await this.inUse(plan.stale));
       for (const patch of plan.patches) await config.patch(patch);

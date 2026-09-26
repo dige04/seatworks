@@ -11,6 +11,7 @@ import type { LandDecided, OrdersRead, QuestionAnswered, ReportRead, ReportSeen 
 import { unknownProject } from "./projects.ts";
 import type { HumanRpc } from "./rpc.ts";
 import type { TeamSource } from "../team-source.ts";
+import type { ProjectRegistry } from "../project-registry.ts";
 import type { PermissionWaits } from "../permission-waits.ts";
 import type { Seated } from "../../desk/views/report-needs.ts";
 
@@ -19,6 +20,7 @@ type Refused = { error: string };
 type HumanDeps = {
   kit: Kit;
   source: TeamSource;
+  registry: Pick<ProjectRegistry, "named">;
   seats: Pick<Seats, "open">;
   human: Human;
   waits: Pick<PermissionWaits, "heardAt">;
@@ -41,7 +43,7 @@ export class HumanPanel implements HumanRpc {
   }
 
   private project(slug: string): Project | Refused {
-    return this.deps.source.named(slug) ?? { error: unknownProject(slug) };
+    return this.deps.registry.named(slug) ?? { error: unknownProject(slug) };
   }
 
   /** Their word on a held landing, from the panel, the one place it comes from: landing is already the Supervisor's call. */

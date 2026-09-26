@@ -17,6 +17,7 @@ import { guidesDir } from "../../core/paths.ts";
 import type { Host } from "../../core/ports.ts";
 import { type Project, projectOf } from "../../desk/project/project.ts";
 import type { TeamSource } from "../team-source.ts";
+import type { ProjectRegistry } from "../project-registry.ts";
 import { describeCatalog } from "./catalog-view.ts";
 import { doctor } from "./doctor.ts";
 import { foldDraft } from "./draft.ts";
@@ -30,6 +31,7 @@ type Target = { file: string; project?: Project };
 type SettingsDeps = {
   kit: Kit;
   source: TeamSource;
+  registry: Pick<ProjectRegistry, "named">;
   changed: () => void;
   reconcile: () => Promise<void>;
   models: () => Promise<Record<string, { at: string; error: string | null; models: unknown[] }>>;
@@ -87,9 +89,9 @@ export class SettingsPanel implements SettingsRpc {
   previewTeam(root: string, draft: unknown): TeamRead {
     const parsed = LayerSchema.safeParse(draft);
     if (!parsed.success) return { error: z.prettifyError(parsed.error) };
-    const { kit, source } = this.deps;
+    const { kit, source, registry } = this.deps;
     const project = projectOf(root);
-    const held = source.named(project.slug) ? layerValues(source.projectFile(project)) : {};
+    const held = registry.named(project.slug) ? layerValues(source.projectFile(project)) : {};
     const machine = source.machineLayer();
     const before = resolveTeam(kit, machine, held);
     const layer = foldDraft(held, parsed.data, (role) => before.roles[role]?.harness.id);
@@ -109,13 +111,13 @@ export class SettingsPanel implements SettingsRpc {
   }
 
   team(slug?: string): TeamRead {
-    const project = slug ? this.deps.source.named(slug) : undefined;
+    const project = slug ? this.deps.registry.named(slug) : undefined;
     if (slug && !project) return { error: unknownProject(slug) };
     return describeTeam(this.deps.kit, this.deps.source.teamFor(project), project);
   }
 
   async doctor(slug?: string): Promise<Check[]> {
-    const project = slug ? this.deps.source.named(slug) : undefined;
+    const project = slug ? this.deps.registry.named(slug) : undefined;
     if (slug && !project) return [{ id: "project", group: "machine", ok: false, detail: unknownProject(slug) }];
     return doctor(this.deps.kit, this.deps.source.teamFor(project), this.deps.paseoTools);
   }
@@ -132,7 +134,7 @@ export class SettingsPanel implements SettingsRpc {
 
   private target(slug?: string): Target | string {
     if (!slug) return { file: this.deps.source.machineFile() };
-    const project = this.deps.source.named(slug);
+    const project = this.deps.registry.named(slug);
     if (!project) return unknownProject(slug);
     return { file: this.deps.source.projectFile(project), project };
   }
