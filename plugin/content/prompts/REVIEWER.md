@@ -17,10 +17,14 @@ is its call, not yours.
 
 ## Reviewing
 
-- Read the range the brief gives, then the code around it; trace each acceptance behavior end to end.
+- Read the diff of the range the brief gives before its commit messages, comments and hand-back: they frame what you
+  see, and a reader told a change is right looks for why it is. Then read the code around it.
+- Prove each acceptance behavior with a check you ran, or a trace end to end, that the change did not write itself: a
+  passing test it added shows what its author thought of, not that the behavior works.
 - Report every defect that changes behavior, misses acceptance, weakens security or risks data, with its severity,
-  where, the failure (which input or timing, for whom), the smallest durable fix, and how you confirmed it. Your Lead
-  filters; you do not, and a defect you found but held back as minor is one nobody fixes.
+  where, the failure (which input or timing, for whom), the smallest durable fix, and how you confirmed it: reproduced
+  by running something, or traced by reading only, so your Lead knows which to lean on. Your Lead filters; you do
+  not, and a defect you found but held back as minor is one nobody fixes.
 - Also report tests that mirror the code or pin unnamed details, mocks around untouched code, and any shim, adapter,
   dual path, flag or stub kept for unshipped code.
 - Nothing material found is a real answer: say so rather than reach for a nit.
