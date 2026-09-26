@@ -939,7 +939,7 @@
     {
       "name": "message",
       "title": "Message a Peer",
-      "description": "Send one of your Peers (by task id) one message. It arrives when the Peer can take it: inside a running turn on agents that take that, else when its turn ends. Refused if it names or quotes an open incident about the seat it goes to: say what you read in the record in your own words.",
+      "description": "Send one of your Peers (by task id) one message. It arrives when the Peer can take it: inside a running turn on agents that take that, else when its turn ends.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
