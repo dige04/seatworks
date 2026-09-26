@@ -155,3 +155,34 @@ test("a Lead's look reads the briefs it wrote since, against what watches a Lead
   await looked();
   assert.equal(sensed.asked.length, before, "with the brain off, nothing is asked");
 });
+
+test("after a restart the eye reads only what is new: neither a seat's past words nor a brief its Lead wrote before", async (t) => {
+  const sensed = brain({});
+  const { h, lane, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  brains("sensor");
+  const lead = h.timelineOf(lane.lead!);
+  const turn = (stream: typeof timeline, id: string, item: Record<string, unknown>) => {
+    stream.beat("turn_started", id);
+    stream.add({ type: "user_message", text: "Go on.", clientMessageId: `sw2-message-${id}` }, id);
+    stream.add(item, id);
+    stream.beat("turn_completed", id);
+  };
+  turn(timeline, "t1", { type: "reasoning", text: "First I read the cart module." });
+  turn(lead, "l1", { type: "assistant_message", text: "Laid out the first task.", messageId: "l-m1" });
+  await looksOf(h, t)();
+  const read = () => sensed.asked.map((entry) => String(entry.state.text));
+  assert.ok(read().includes("First I read the cart module."));
+
+  h.restart();
+  await h.tick();
+  const looked = looksOf(h, t);
+  const before = sensed.asked.length;
+  turn(timeline, "t2", { type: "reasoning", text: "Now the totals." });
+  turn(lead, "l2", { type: "assistant_message", text: "Waiting on the hand-back.", messageId: "l-m2" });
+  await looked();
+  assert.deepEqual(
+    read().slice(before).sort(),
+    ["Now the totals.", "Waiting on the hand-back."],
+    "what the history replays was read before the restart, and the brief was laid out before it",
+  );
+});

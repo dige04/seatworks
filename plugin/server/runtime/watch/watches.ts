@@ -39,7 +39,7 @@ export class SeatWatch {
   private readonly recovery = new Recovery();
   /** Where the last look read the window to, when, and the facts the code raised since. */
   private looked = 0;
-  private lookedAt = 0;
+  private lookedAt = Date.now();
   private readonly lookFacts = new Set<string>();
   private readonly context: () => SeatContext | undefined;
   private current: SeatContext | undefined;
@@ -69,8 +69,13 @@ export class SeatWatch {
       return this.ended(seen.phase, now);
     }
     const { row } = seen;
+    const end = this.window.end();
     const change = this.window.add(row);
-    if (row.replay) return [];
+    if (row.replay) {
+      // Replayed history was read already, or said before the watch followed: no look reads it again.
+      if (this.looked >= end) this.looked = this.window.end();
+      return [];
+    }
     if (row.item.type === "user_message") {
       this.recovery.reset();
       for (const key of [...this.told]) if (key !== "long-turn") this.told.delete(key);

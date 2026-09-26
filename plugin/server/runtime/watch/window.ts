@@ -99,6 +99,11 @@ export class Window {
     return { units: this.units.slice(start - base, end - base), next: end };
   }
 
+  /** The position after the last unit pushed, as `since` counts. */
+  end(): number {
+    return this.pushed;
+  }
+
   sinceInstruction(): Unit[] {
     return this.units.slice(Math.max(0, this.instructionAt + 1 - (this.pushed - this.units.length)));
   }
