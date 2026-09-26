@@ -334,7 +334,7 @@
     {
       "name": "ask_human",
       "title": "Ask the Human",
-      "description": "Queue a decision only the Human can make: a behavior the concept leaves open, a risk only they may take. Give the choices as a user sees them, your recommendation and why, and what goes ahead while they are silent (class). Refused past their daily number, or with them out of the loop: then decide it.",
+      "description": "Queue a decision only the Human can make: a behavior the concept leaves open, a risk only they may take. Give the choices as a user sees them, your recommendation and why, and what goes ahead meanwhile (class). Past their daily number only what cannot be undone or touches askFirst queues; out of the loop nothing does: decide it.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -628,7 +628,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Globs no parallel lane or task may write: lockfiles, migrations, registries, project settings, scenes and assets."
+            "description": "Globs only one writer at a time may write, so no task beside others holds them: lockfiles, migrations, registries, project settings, scenes and assets."
           },
           "landAs": {
             "type": "string",
@@ -1206,7 +1206,7 @@
     {
       "name": "report",
       "title": "Report the lane",
-      "description": "Report the lane to the owner: when it is ready to land, when it is cut, or when a decision above you changed. At most 15 lines.",
+      "description": "Report the lane to the owner: when it is ready to land, when it is cut, or when a decision above you changed.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1218,7 +1218,7 @@
         "properties": {
           "summary": {
             "type": "string",
-            "description": "What the lane branch holds, how acceptance is proven, and what is carried; at most 15 lines."
+            "description": "What the lane branch holds, how acceptance is proven, and what is carried."
           },
           "ready": {
             "type": "boolean",
