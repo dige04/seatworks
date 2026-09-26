@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import type { UpdateView } from "../../shared/upkeep-views.ts";
 import { currentBranch, git } from "../core/git.ts";
 import { readJson } from "../core/store.ts";
-import { PLUGIN_ID, nodeBin } from "../core/paths.ts";
+import { PLUGIN_ID, commandIn, nodeBin, pathDirs } from "../core/paths.ts";
 import { daemonLog } from "../core/logger.ts";
 import { firstUnder } from "../core/fs.ts";
 import { isRecord, sortKeys } from "../core/json.ts";
@@ -148,10 +148,11 @@ export async function applyUpdate(ctx: UpdateContext): Promise<UpdateView> {
 
 export function npmInstall(dir: string): Promise<string | undefined> {
   return new Promise((resolve) => {
+    const npm = commandIn([dirname(nodeBin()), ...pathDirs()], "npm");
     execFile(
-      join(dirname(nodeBin()), "npm"),
+      npm.file,
       ["install", "--no-audit", "--no-fund"],
-      { cwd: dir, timeout: 300_000 },
+      { cwd: dir, timeout: 300_000, shell: npm.shell },
       (error, _stdout, stderr) =>
         resolve(error ? String(stderr).trim().split("\n").slice(-3).join("\n") || error.message : undefined),
     );
@@ -161,8 +162,14 @@ export function npmInstall(dir: string): Promise<string | undefined> {
 /** After the answer is on its way: the reload stops the runtime that is sending it. */
 export function reloadSoon(): void {
   setTimeout(() => {
-    execFile("paseo", ["plugin", "reload", PLUGIN_ID], { timeout: 60_000 }, (error, _stdout, stderr) => {
-      if (error) daemonLog.error("plugin reload after the update failed:", String(stderr) || error.message);
-    });
+    const paseo = commandIn(pathDirs(), "paseo");
+    execFile(
+      paseo.file,
+      ["plugin", "reload", PLUGIN_ID],
+      { timeout: 60_000, shell: paseo.shell },
+      (error, _stdout, stderr) => {
+        if (error) daemonLog.error("plugin reload after the update failed:", String(stderr) || error.message);
+      },
+    );
   }, 1000);
 }

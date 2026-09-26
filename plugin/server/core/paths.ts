@@ -96,6 +96,14 @@ export function executableIn(dirs: string[], name: string): string | undefined {
   return undefined;
 }
 
+/** How to start `name` from `dirs`: on Windows an npm-installed command is a .cmd, which only a shell starts, its path quoted. */
+export function commandIn(dirs: string[], name: string): { file: string; shell: boolean } {
+  const found = executableIn(dirs, name) ?? name;
+  return process.platform === "win32" && /\.(cmd|bat)$/i.test(found)
+    ? { file: `"${found}"`, shell: true }
+    : { file: found, shell: false };
+}
+
 export function intentsPath(homeDir = home()): string {
   return join(stateRoot(homeDir), "intents.json");
 }
