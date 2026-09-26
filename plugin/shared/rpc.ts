@@ -18,7 +18,7 @@ import {
   TeamRead,
   WriteResult,
 } from "./views.ts";
-import { CleanView, MigrateView, UpdateView } from "./upkeep-views.ts";
+import { CleanView, ContentView, MigrateView, UpdateView } from "./upkeep-views.ts";
 import { FlowRead } from "./flow-views.ts";
 
 const project = z.string().min(1).optional();
@@ -101,10 +101,10 @@ export const reportRpc = defineRpc({
   output: ReportRead,
 });
 export const modelsRpc = defineRpc({ name: "seatworks.models.refresh", input: z.object({}), output: ModelsRefreshed });
-export const decideRpc = defineRpc({
-  name: "seatworks.upkeep.decide",
-  input: z.object({ unit: z.string().min(1), choice: z.enum(["new", "mine", "seen"]) }),
-  output: MigrateView,
+export const contentRpc = defineRpc({
+  name: "seatworks.upkeep.content",
+  input: z.object({ seen: z.array(z.string()).optional() }),
+  output: ContentView,
 });
 export const cleanRpc = defineRpc({
   name: "seatworks.upkeep.clean",
@@ -146,7 +146,7 @@ export const contracts = {
   report: reportRpc,
   paths: pathsRpc,
   models: modelsRpc,
-  decide: decideRpc,
+  content: contentRpc,
   clean: cleanRpc,
   update: updateRpc,
   migrate: migrateRpc,

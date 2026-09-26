@@ -81,18 +81,15 @@ test("what the watch sees reaches whoever supervises, the Flow tab shows what wa
   );
 });
 
-test("Migrate shows what you took in of the kit, when that cannot be read, as a step for you, and writes nothing over it", async () => {
+test("the content view says when what you took in of the kit cannot be read, and writes nothing over it", async () => {
   const h = harness();
   const taken = join(stateRoot(), "content.json");
   mkdirSync(stateRoot(), { recursive: true });
   writeFileSync(taken, "{not json");
-  const plan = await h.rpc(contracts.migrate, {});
-  const steps = plan.steps.filter((step) => step.kind === "content");
-  assert.deepEqual(
-    steps.map((step) => step.where),
-    ["machine"],
-  );
-  assert.match(steps[0]!.what, /content\.json is there but could not be read/);
+  const read = await h.rpc(contracts.content, {});
+  assert.deepEqual(read.changes, []);
+  assert.match(read.fault ?? "", /content\.json is there but could not be read/);
+  assert.equal((await h.rpc(contracts.content, { seen: ["guides/PLANS.md"] })).changes.length, 0);
   assert.equal(readFileSync(taken, "utf-8"), "{not json");
 });
 

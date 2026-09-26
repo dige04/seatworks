@@ -161,7 +161,7 @@ export class Runtime implements HostHooks {
         changed,
         reconcile,
       }),
-      upkeep: new UpkeepPanel({ kit, source, seats, changed }),
+      upkeep: new UpkeepPanel({ kit, source, seats }),
       human: new HumanPanel(source, this.desk.human),
     };
   }

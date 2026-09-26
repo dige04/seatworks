@@ -5,17 +5,17 @@ import { errorText } from "../../core/errors.ts";
 import { home, paseoHome, stateRoot } from "../../core/paths.ts";
 import type { Seats } from "../../core/ports.ts";
 import { type Project, projectOf } from "../../desk/project/project.ts";
-import type { CleanView, ContentChange, MigrateStep, MigrateView, UpdateView } from "../../../shared/upkeep-views.ts";
+import type { CleanView, ContentView, MigrateView, UpdateView } from "../../../shared/upkeep-views.ts";
 import { removeGarbage, scanGarbage } from "../../upkeep/clean.ts";
-import { contentChanges, decide } from "../../upkeep/content.ts";
+import { contentChanges, takeIn } from "../../upkeep/content.ts";
 import { type LiveSeat, migrationPlan } from "../../upkeep/migrate.ts";
 import { applyUpdate, checkUpdate, npmInstall, reloadSoon } from "../../upkeep/update.ts";
 import type { TeamSource } from "../team-source.ts";
 import type { UpkeepRpc } from "./rpc.ts";
 
-type UpkeepDeps = { kit: Kit; source: TeamSource; seats: Seats; changed: () => void };
+type UpkeepDeps = { kit: Kit; source: TeamSource; seats: Seats };
 
-/** The plugin's own upkeep on the panel: what it left behind, its updates, and the kit files the owner changed. */
+/** The plugin's own upkeep on the panel: what it left behind, its updates, and what its content changed. */
 export class UpkeepPanel implements UpkeepRpc {
   private readonly deps: UpkeepDeps;
 
@@ -53,27 +53,17 @@ export class UpkeepPanel implements UpkeepRpc {
   }
 
   async migrate(): Promise<MigrateView> {
-    const ctx = { kit: this.deps.kit, home: home(), live: await this.live(), now: Date.now() };
-    const { content, unread } = await this.content();
-    const plan = migrationPlan(ctx);
-    return { ...plan, steps: [...plan.steps, ...unread], content };
+    return migrationPlan({ kit: this.deps.kit, home: home(), live: await this.live(), now: Date.now() });
   }
 
-  /** What the kit ships differently from what the owner took in; a record that cannot be read is a step for the owner, not the whole view failing. */
-  private async content(): Promise<{ content: ContentChange[]; unread: MigrateStep[] }> {
+  /** What the kit ships differently from what the owner took in, after taking in `seen`; a record that cannot be read is said, not the view failing. */
+  content(seen?: string[]): ContentView {
     try {
-      return { content: await contentChanges(this.deps.kit, stateRoot()), unread: [] };
+      if (seen) takeIn(this.deps.kit, stateRoot(), seen);
+      return { changes: contentChanges(this.deps.kit, stateRoot()), fault: null };
     } catch (error) {
-      const what = errorText(error);
-      return { content: [], unread: [{ kind: "content", where: "machine", what, detail: [] }] };
+      return { changes: [], fault: errorText(error) };
     }
-  }
-
-  async decide(unit: string, choice: "new" | "mine" | "seen"): Promise<MigrateView> {
-    await decide(this.deps.kit, stateRoot(), unit, choice);
-    // A seat's skills are read when it is built: the next one follows the answer.
-    this.deps.changed();
-    return this.migrate();
   }
 
   private async live(): Promise<LiveSeat[]> {

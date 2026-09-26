@@ -1,4 +1,4 @@
-/** The Upkeep section over RPC: what the plugin left behind, its updates, and the kit files the owner changed. */
+/** The Upkeep section over RPC: what the plugin left behind, its updates, and what its content changed. */
 import { z } from "zod";
 
 const CleanItem = z.object({
@@ -38,25 +38,25 @@ export const UpdateView = z.object({
 export type UpdateView = z.infer<typeof UpdateView>;
 
 const MigrateStep = z.object({
-  kind: z.enum(["seat", "content"]),
+  kind: z.literal("seat"),
   where: z.string(),
   what: z.string(),
   detail: z.array(z.string()),
 });
 export type MigrateStep = z.infer<typeof MigrateStep>;
-/** Guides and records are only told about, never replaced. */
+export const MigrateView = z.object({
+  stamp: z.string(),
+  since: z.string(),
+  steps: z.array(MigrateStep),
+});
+export type MigrateView = z.infer<typeof MigrateView>;
+
 const ContentChange = z.object({
   unit: z.string(),
   kind: z.enum(["guide", "record", "prompt", "skill"]),
   change: z.enum(["added", "changed", "removed"]),
   kept: z.boolean(),
-  keepable: z.boolean(),
 });
 export type ContentChange = z.infer<typeof ContentChange>;
-export const MigrateView = z.object({
-  stamp: z.string(),
-  since: z.string(),
-  steps: z.array(MigrateStep),
-  content: z.array(ContentChange),
-});
-export type MigrateView = z.infer<typeof MigrateView>;
+export const ContentView = z.object({ changes: z.array(ContentChange), fault: z.string().nullable() });
+export type ContentView = z.infer<typeof ContentView>;

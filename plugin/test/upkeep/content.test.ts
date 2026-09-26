@@ -1,105 +1,49 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { renderPrompt, skillSources } from "../../server/catalog/kit/content.ts";
-import { contentChanges, decide } from "../../server/upkeep/content.ts";
+import { contentChanges, takeIn } from "../../server/upkeep/content.ts";
 import { makeKit } from "../kit.ts";
 import { tempDir } from "../tempdir.ts";
 
-const env = {
-  ...process.env,
-  GIT_AUTHOR_NAME: "t",
-  GIT_AUTHOR_EMAIL: "t@t",
-  GIT_COMMITTER_NAME: "t",
-  GIT_COMMITTER_EMAIL: "t@t",
-};
-const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-C", cwd, ...args], { env, encoding: "utf-8" });
-
-/** A kit in a repository, with the owner's state beside it, taken in once as it ships. */
-async function world() {
+/** A kit with the owner's state beside it, taken in once as it ships. */
+function world() {
   const state = tempDir("sw2-state-");
   const kit = { ...makeKit(), own: join(state, "own") };
   writeFileSync(join(kit.dir, "content", "guides", "PLANS.md"), "# Plans\n");
-  git(kit.dir, "init", "-q");
-  git(kit.dir, "add", ".");
-  git(kit.dir, "commit", "-q", "-m", "2.0.1");
-  assert.deepEqual(await contentChanges(kit, state), [], "the first reading takes everything in as it ships");
+  assert.deepEqual(contentChanges(kit, state), [], "the first reading takes everything in as it ships");
   const ship = (path: string, text: string) => {
     mkdirSync(join(kit.dir, "content", path, ".."), { recursive: true });
     writeFileSync(join(kit.dir, "content", path), text);
-    git(kit.dir, "add", ".");
-    git(kit.dir, "commit", "-q", "-m", "2.0.2");
   };
   return { kit, state, ship };
 }
 
-const paths = { guides: "/g", state: "/s" };
-
-test("a changed prompt or skill is asked about; a changed guide or record is only told", async () => {
-  const { kit, state, ship } = await world();
+test("what the kit ships differently is told until the owner has seen it, their own copy named as the one in use", () => {
+  const { kit, state, ship } = world();
   ship("prompts/LEAD.md", "A new brief.");
   ship("skills/supervisor/plan-check/SKILL.md", "---\nname: plan-check\ndescription: checks a plan, better\n---\n");
   ship("guides/PLANS.md", "# Plans, rewritten\n");
-  const changes = await contentChanges(kit, state);
+  mkdirSync(join(kit.own, "prompts"), { recursive: true });
+  writeFileSync(join(kit.own, "prompts", "LEAD.md"), "My own brief.");
   assert.deepEqual(
-    changes.map((change) => [change.unit, change.kind, change.keepable]),
+    contentChanges(kit, state).map((change) => [change.unit, change.kind, change.change, change.kept]),
     [
-      ["guides/PLANS.md", "guide", false],
-      ["prompts/LEAD.md", "prompt", true],
-      ["skills/supervisor/plan-check", "skill", true],
+      ["guides/PLANS.md", "guide", "changed", false],
+      ["prompts/LEAD.md", "prompt", "changed", true],
+      ["skills/supervisor/plan-check", "skill", "changed", false],
     ],
+  );
+  takeIn(kit, state, ["prompts/LEAD.md", "guides/PLANS.md"]);
+  assert.deepEqual(
+    contentChanges(kit, state).map((change) => change.unit),
+    ["skills/supervisor/plan-check"],
+    "what was seen is not told again",
   );
 
   const taken = join(state, "content.json");
   writeFileSync(taken, "{not json");
-  await assert.rejects(contentChanges(kit, state), /content\.json is there but could not be read/);
-  await assert.rejects(decide(kit, state, "guides/PLANS.md", "seen"), /content\.json is there but could not be read/);
+  assert.throws(() => contentChanges(kit, state), /content\.json is there but could not be read/);
+  assert.throws(() => takeIn(kit, state, ["guides/PLANS.md"]), /content\.json is there but could not be read/);
   assert.equal(readFileSync(taken, "utf-8"), "{not json", "what the owner took in is not written over with everything");
-});
-
-test("an owner keeping their version of a changed prompt or skill has it in use and is still told of the next change, and taking the new one sets theirs aside", async () => {
-  const { kit, state, ship } = await world();
-  const role = (name: string) => kit.roles.find((entry) => entry.role === name)!;
-  const before = readFileSync(join(kit.dir, "content", "prompts", "LEAD.md"), "utf-8");
-  ship("prompts/LEAD.md", "A new brief.");
-  ship("skills/supervisor/plan-check/SKILL.md", "---\nname: plan-check\ndescription: checks a plan, better\n---\n");
-
-  await decide(kit, state, "prompts/LEAD.md", "mine");
-  await decide(kit, state, "skills/supervisor/plan-check", "mine");
-  assert.equal(
-    readFileSync(join(state, "own", "prompts", "LEAD.md"), "utf-8"),
-    before,
-    "the version the owner had, read back out of git",
-  );
-  assert.match(
-    renderPrompt(kit, role("lead"), "claude", paths),
-    /^# Lead\n/,
-    "and it is what the prompt is built from",
-  );
-  assert.equal(
-    skillSources(kit, role("supervisor")).get("plan-check"),
-    join(state, "own", "skills", "supervisor", "plan-check"),
-  );
-  assert.deepEqual(await contentChanges(kit, state), []);
-
-  ship("prompts/LEAD.md", "A newer brief.");
-  assert.deepEqual(
-    (await contentChanges(kit, state)).map((change) => [change.unit, change.kept]),
-    [["prompts/LEAD.md", true]],
-    "the original changing again is still told, as kept",
-  );
-
-  writeFileSync(join(state, "own", "prompts", "LEAD.md"), "My own edit.");
-  await decide(kit, state, "prompts/LEAD.md", "new", Date.parse("2026-09-22T07:12:30Z"));
-  assert.match(renderPrompt(kit, role("lead"), "claude", paths), /A newer brief\./, "the shipped one is used again");
-  assert.deepEqual(readdirSync(join(state, "own", "prompts")), ["LEAD.md.bak-20260922-071230"]);
-  assert.equal(
-    readFileSync(join(state, "own", "prompts", "LEAD.md.bak-20260922-071230"), "utf-8"),
-    "My own edit.",
-    "set aside, not deleted",
-  );
-  assert.equal(existsSync(join(state, "own", "prompts", "LEAD.md")), false);
-  assert.deepEqual(await contentChanges(kit, state), []);
 });

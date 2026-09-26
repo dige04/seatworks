@@ -4,12 +4,19 @@ import { ScrollView } from "@getpaseo/plugin/client/react-native";
 import { SettingsAction, SettingsCard, SettingsSection, SettingsSwitch } from "@getpaseo/plugin/client/ui";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Text, View } from "react-native";
-import { cleanRpc, decideRpc, migrateRpc, updateRpc } from "../../shared/rpc.ts";
-import type { CleanItem, CleanView, ContentChange, MigrateView, UpdateView } from "../../shared/upkeep-views.ts";
+import { cleanRpc, contentRpc, migrateRpc, updateRpc } from "../../shared/rpc.ts";
+import type {
+  CleanItem,
+  CleanView,
+  ContentChange,
+  ContentView,
+  MigrateView,
+  UpdateView,
+} from "../../shared/upkeep-views.ts";
 import { Button } from "./bits.tsx";
 import { message } from "../format/error.ts";
 
-type Busy = "update" | "migrate" | "clean" | "decide" | null;
+type Busy = "update" | "migrate" | "clean" | "content" | null;
 
 const plural = (count: number, one: string) => `${count} ${one}${count === 1 ? "" : "s"}`;
 
@@ -76,12 +83,13 @@ function versionLine(view: UpdateView | null): { title: string; state: string } 
 export function UpkeepSection({ theme }: { theme: PluginTheme }) {
   const update = useRpc(updateRpc);
   const migrate = useRpc(migrateRpc);
-  const decide = useRpc(decideRpc);
+  const content = useRpc(contentRpc);
   const clean = useRpc(cleanRpc);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
   const [updated, setUpdated] = useState<UpdateView | null>(null);
   const [migrated, setMigrated] = useState<MigrateView | null>(null);
+  const [changed, setChanged] = useState<ContentView | null>(null);
   const [cleaned, setCleaned] = useState<CleanView | null>(null);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const styles = useMemo(
@@ -120,7 +128,11 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
 
   useEffect(() => {
     void update({ apply: false, fetch: false }).then(setUpdated, (problem: unknown) => setError(message(problem)));
-    void run("migrate", async () => setMigrated(await migrate({})));
+    void run("migrate", async () => {
+      const [seats, kit] = await Promise.all([migrate({}), content({})]);
+      setMigrated(seats);
+      setChanged(kit);
+    });
     // Once per mount: an update reloads the plugin, and this is what the owner needs next.
   }, []);
 
@@ -128,8 +140,7 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
     updated && !updated.blocked && !updated.updated && updated.behind > 0 && updated.busy.length === 0,
   );
   const line = versionLine(updated);
-  const answer = (unit: string, choice: "new" | "mine" | "seen") =>
-    void run("decide", async () => setMigrated(await decide({ unit, choice })));
+  const seen = (units: string[]) => void run("content", async () => setChanged(await content({ seen: units })));
 
   // Only what needs the owner, one row each.
   const rows: ReactNode[] = [];
@@ -144,44 +155,23 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
         <View style={styles.actions}>{actions}</View>
       </View>,
     );
-  const content = migrated?.content ?? [];
-  for (const change of content.filter((entry) => entry.kind !== "guide" && entry.kind !== "record")) {
+  if (changed?.fault) row("content-fault", true, changed.fault, null, null);
+  const changes = changed?.changes ?? [];
+  for (const change of changes.filter((entry) => entry.kind !== "guide" && entry.kind !== "record")) {
     const name = unitName(change);
-    if (change.change === "removed") {
-      row(
-        change.unit,
-        false,
-        `${name} was removed`,
-        change.kept ? "Your own copy is kept and still used." : null,
-        <Button label="OK" theme={theme} disabled={busy !== null} onPress={() => answer(change.unit, "seen")} />,
-      );
-      continue;
-    }
     row(
       change.unit,
-      !change.kept,
-      change.change === "added" ? `New ${name}` : change.kept ? `${name}: the original changed` : `${name} changed`,
-      change.kept ? "You keep your own copy." : null,
-      <>
-        {change.kept || change.keepable ? (
-          <Button
-            label="Keep mine"
-            theme={theme}
-            disabled={busy !== null}
-            onPress={() => answer(change.unit, "mine")}
-          />
-        ) : null}
-        <Button
-          label="Use new"
-          tone="accent"
-          theme={theme}
-          disabled={busy !== null}
-          onPress={() => answer(change.unit, "new")}
-        />
-      </>,
+      false,
+      change.change === "added"
+        ? `New ${name}`
+        : change.change === "removed"
+          ? `${name} was removed`
+          : `${name} changed`,
+      change.kept ? "Your own copy is the one in use." : null,
+      <Button label="OK" theme={theme} disabled={busy !== null} onPress={() => seen([change.unit])} />,
     );
   }
-  const told = content.filter((entry) => entry.kind === "guide" || entry.kind === "record");
+  const told = changes.filter((entry) => entry.kind === "guide" || entry.kind === "record");
   if (told.length > 0) {
     row(
       "told",
@@ -192,13 +182,7 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
         label="Got it"
         theme={theme}
         disabled={busy !== null}
-        onPress={() =>
-          void run("decide", async () => {
-            let last: MigrateView | null = null;
-            for (const entry of told) last = await decide({ unit: entry.unit, choice: "seen" });
-            if (last) setMigrated(last);
-          })
-        }
+        onPress={() => seen(told.map((entry) => entry.unit))}
       />,
     );
   }

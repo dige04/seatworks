@@ -47,5 +47,5 @@ function seatSteps(ctx: MigrateContext, since: string): MigrateStep[] {
 
 export function migrationPlan(ctx: MigrateContext): MigrateView {
   const stamp = stampKit(ctx.kit, ctx.home, ctx.now);
-  return { ...stamp, steps: seatSteps(ctx, stamp.since), content: [] };
+  return { ...stamp, steps: seatSteps(ctx, stamp.since) };
 }

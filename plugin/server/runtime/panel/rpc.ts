@@ -26,12 +26,12 @@ export interface ProjectsRpc {
   flow(project: string, since?: string, open?: string[]): Out<typeof contracts.flow>;
 }
 
-/** Keeping the plugin itself in order: what it left behind, its updates, and the kit files the owner changed. */
+/** Keeping the plugin itself in order: what it left behind, its updates, and what its content changed. */
 export interface UpkeepRpc {
   clean(remove?: string[]): Out<typeof contracts.clean>;
   update(apply: boolean, fetch?: boolean): Out<typeof contracts.update>;
   migrate(): Out<typeof contracts.migrate>;
-  decide(unit: string, choice: "new" | "mine" | "seen"): Out<typeof contracts.decide>;
+  content(seen?: string[]): Out<typeof contracts.content>;
 }
 
 /** What only the Human decides on the panel, and what they read there. */
@@ -75,7 +75,7 @@ export function registerRpc(handle: Serve, panel: Panel): void {
   handle(contracts.clean, (input) => upkeep.clean(input.remove));
   handle(contracts.update, (input) => upkeep.update(input.apply, input.fetch));
   handle(contracts.migrate, () => upkeep.migrate());
-  handle(contracts.decide, (input) => upkeep.decide(input.unit, input.choice));
+  handle(contracts.content, (input) => upkeep.content(input.seen));
   handle(contracts.landDecide, (input) => human.decideLand(input.project, input.lane, input.approve, input.note));
   handle(contracts.questionAnswer, (input) => human.answer(input.project, input.question, input.choice, input.note));
   handle(contracts.orders, (input) => human.orders(input.project));
