@@ -51,7 +51,7 @@ test("a base that conflicts with a lane leaves nothing in its copy, its Lead has
   assert.doesNotMatch(h.agents.get(cart.lead!)!.sent.join("\n"), /BASE CONFLICT/, "a fact wakes nobody");
   assert.match(
     h.heard(cart.lead!).join("\n"),
-    /BASE CONFLICT L1 \(Cart\): main moved on, and merging it into lane\/l1-cart stops on conflicts in a\.txt\. Nothing was left in your working copy[^]*A Peer that takes it in runs git merge --no-edit main and commits what it settles with git commit --no-edit, since an editor would wait forever in its session\.\n\nNext: Nothing now: who takes main in is chosen by whoever supervises, who tells you if it is this lane\./,
+    /BASE CONFLICT L1 \(Cart\): main moved on, and merging it into lane\/l1-cart stops on conflicts in a\.txt\. Nothing was left in your working copy[^]*A Peer that takes it in runs git merge --no-edit main and commits what it settles with git commit --no-edit, since an editor would wait forever in its session\.\n\nNext: Nothing now: who takes main in is chosen by the Supervisor, who tells you if it is this lane\./,
   );
 
   assert.match((await land("L2")).text, /conflicts with lane\/l2-bees in b\.txt/);
@@ -236,7 +236,7 @@ test("a landing tells each lane still open on its base what now conflicts with i
   );
   assert.match(
     h.heard(second!.lead!).join("\n"),
-    /BASE MOVED L2 \(Second\): L1 \(First\) landed on main, which now conflicts with lane\/l2-second in a\.txt\. Nothing was merged\.\n\nNext: Nothing now: who takes main in before the lane lands is chosen by whoever supervises; ask if your lane's work needs it sooner\./,
+    /BASE MOVED L2 \(Second\): L1 \(First\) landed on main, which now conflicts with lane\/l2-second in a\.txt\. Nothing was merged\.\n\nNext: Nothing now: who takes main in before the lane lands is chosen by the Supervisor; ask if your lane's work needs it sooner\./,
   );
   assert.doesNotMatch(
     h.heard(third!.lead!).join("\n"),

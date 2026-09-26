@@ -70,7 +70,7 @@ export const landLetters = {
         "basemoved",
         [lane.id, landed.id],
         text,
-        `Nothing now: who takes ${lane.base} in before the lane lands is chosen by whoever supervises; ask if your lane's work needs it sooner.`,
+        `Nothing now: who takes ${lane.base} in before the lane lands is chosen by the Supervisor; ask if your lane's work needs it sooner.`,
       ),
     );
   },
@@ -83,7 +83,7 @@ export const landLetters = {
         "baseconflict",
         [lane.id, conflicts.join(",")],
         text,
-        `Nothing now: who takes ${lane.base} in is chosen by whoever supervises, who tells you if it is this lane.`,
+        `Nothing now: who takes ${lane.base} in is chosen by the Supervisor, who tells you if it is this lane.`,
       ),
     );
   },
