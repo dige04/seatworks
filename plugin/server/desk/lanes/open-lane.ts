@@ -31,7 +31,7 @@ type OpenLaneCall = {
   acceptance: string[];
   appetite?: string;
   deadline?: string;
-  outOfScope: string[];
+  outOfScope?: string[];
   issue?: string;
   isolate?: boolean;
   base?: string;

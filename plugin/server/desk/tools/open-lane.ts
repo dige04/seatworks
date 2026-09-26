@@ -23,5 +23,5 @@ export const openLane = defineTool({
     role: z.string().optional(),
     humanSaid: z.string().optional(),
   }),
-  handle: (desk, caller, args) => open(desk, caller, { ...args, outOfScope: args.outOfScope ?? [] }),
+  handle: (desk, caller, args) => open(desk, caller, args),
 });
