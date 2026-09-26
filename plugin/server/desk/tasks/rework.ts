@@ -30,10 +30,14 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
     );
   // Sent back after its merge, a task in the lane's copy takes that copy onto its branch again: nothing may be left in it.
   const inLaneCopy = laneCopyToReopen(loadLedger(caller.project.state), asked.lane, asked.task);
-  if (inLaneCopy && (await pristineState(inLaneCopy)) !== "clean")
+  if (inLaneCopy && (await pristineState(inLaneCopy)) !== "clean") {
+    const whose = asked.lane.slot
+      ? `Nobody writes in that copy now: add a task whose Peer commits what belongs to the lane and clears the rest, and send ${asked.task.id} back once it is merged.`
+      : `That copy is the project's own, so what is left there is likely the Human's: ask, and send ${asked.task.id} back once it is committed or put away.`;
     return no(
-      `The lane's working copy has work uncommitted (${await uncommittedIn(inLaneCopy)}), so ${asked.task.id} cannot go back onto its branch there. Clear it, then send it back.`,
+      `The lane's working copy has work uncommitted (${await uncommittedIn(inLaneCopy)}), so ${asked.task.id} cannot go back onto its branch there. ${whose}`,
     );
+  }
   const result = sendBack(desk, caller, str(args.task));
   if (typeof result === "string") return no(result);
   // Reopened, it takes up the lane as it stands now, on its own branch; one that cannot is brought up to date at its hand-back.

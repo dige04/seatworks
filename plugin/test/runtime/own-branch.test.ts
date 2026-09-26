@@ -91,7 +91,7 @@ test("a task in the lane's copy works on a branch of its own, and the lane branc
   writeFileSync(join(copy, "a.txt"), "someone's\n");
   assert.equal(
     (await h.call(lead, "lead", "rework", { task: "L1-T1", text: "fix it" })).text,
-    "The lane's working copy has work uncommitted (M a.txt), so L1-T1 cannot go back onto its branch there. Clear it, then send it back.",
+    "The lane's working copy has work uncommitted (M a.txt), so L1-T1 cannot go back onto its branch there. That copy is the project's own, so what is left there is likely the Human's: ask, and send L1-T1 back once it is committed or put away.",
   );
   h.git(copy, "checkout", "--", "a.txt");
   assert.equal((await h.call(lead, "lead", "rework", { task: "L1-T1", text: "fix it" })).ok, true);
