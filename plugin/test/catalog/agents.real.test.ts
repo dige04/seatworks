@@ -25,7 +25,7 @@ const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DESK_GIT = "push pull checkout switch update-ref stash worktree".split(" ");
 /** What moves the branch checked out: a writing seat's own task branch, where it always stands; refused outright to the rest. */
 const MOVES = "merge reset rebase cherry-pick".split(" ");
-const SEARCHES = ["supervisor", "lead", "peer"];
+const SEARCHES = ["supervisor", "lead", "peer", "reviewer"];
 const BUILT_INS: Record<string, string[]> = {
   claude:
     "Bash Edit Write MultiEdit NotebookEdit Read Glob Grep LSP WebFetch WebSearch Skill TodoWrite TaskCreate TaskGet TaskList TaskUpdate AskUserQuestion".split(
@@ -145,7 +145,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       assert.equal(
         deny.includes("WebSearch"),
         !searches,
-        `${where}: a Reviewer judges what is in front of it, and the Watcher touches nothing`,
+        `${where}: a seat may look up what it judges, such as a CVE, but the Watcher, which touches nothing`,
       );
       if (bare)
         for (const tool of BUILT_INS.claude!)

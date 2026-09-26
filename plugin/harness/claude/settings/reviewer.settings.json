@@ -6,7 +6,6 @@
       "MultiEdit",
       "NotebookEdit",
       "Edit(./**)",
-      "WebSearch",
       "Bash(git commit *)",
       "Bash(git -C * commit *)",
       "Bash(git add *)",

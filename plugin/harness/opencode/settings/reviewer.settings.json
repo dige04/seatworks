@@ -1,7 +1,6 @@
 {
   "permission": {
     "edit": "deny",
-    "websearch": "deny",
     "bash": {
       "git add": "deny",
       "git add *": "deny",
