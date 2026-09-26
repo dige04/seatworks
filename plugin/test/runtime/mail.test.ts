@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { intentsPath } from "../../server/core/paths.ts";
 import { sentBy } from "../../server/core/sent-by.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { tempDir } from "../tempdir.ts";
@@ -237,6 +238,24 @@ test("a call that runs longer than a seat can wait is answered once by mail, and
   assert.equal(readdirSync(join(h.project.state, "gates")).filter((name) => name.startsWith("L1-")).length, 1);
   assert.equal(heard(h, lead).split("ANSWER to your report call").length - 1, 1, "once, for both calls");
   assert.match(heard(h, sup), /REPORT L1/);
+
+  // An answer promised as mail that the outbox cannot take stays promised, so the next start still owns up to it.
+  rmSync(go);
+  const errors = t.mock.method(console, "error", () => {});
+  const post = t.mock.method(h.runtime.outbox, "post", async () => {
+    throw new Error("the disk is full");
+  });
+  assert.match((await call("r3", lead, "lead", "report", report)).text, /still working on report/);
+  writeFileSync(go, "");
+  const said = () => errors.mock.calls.map((line) => line.arguments.map(String).join(" ")).join("\n");
+  assert.ok(await within(5000, () => /could not be mailed/.test(said())), "reported, and the desk goes on");
+  const kept = JSON.parse(readFileSync(intentsPath(), "utf-8")) as { promised: { agent: string; tool: string }[] };
+  assert.deepEqual(
+    kept.promised.map(({ agent, tool }) => [agent, tool]),
+    [[lead, "report"]],
+  );
+  post.mock.restore();
+  errors.mock.restore();
 
   rmSync(go);
   await h.call(sup, "supervisor", "set_project", { gateOn: "task" });
