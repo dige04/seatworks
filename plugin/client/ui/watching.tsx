@@ -4,8 +4,7 @@ import { type ReactNode, useMemo } from "react";
 import { Text, View } from "react-native";
 import { Dot, Rule } from "./bits.tsx";
 import type { WatchJudge, WatchView } from "../../shared/flow-views.ts";
-import { incidentState } from "../format/watch.ts";
-import { judgeWords } from "../format/watch.ts";
+import { incidentState, judgeWords } from "../format/watch.ts";
 
 const ago = (minutes: number): string =>
   minutes < 1 ? "just now" : minutes < 60 ? `${minutes} min ago` : `${Math.round(minutes / 60)} h ago`;
@@ -76,9 +75,9 @@ function Trouble({ watch, theme }: { watch: WatchView; theme: PluginTheme }) {
   );
 }
 
-function JudgeLine({ judge, theme }: { judge: WatchJudge; theme: PluginTheme }) {
+function JudgeLine({ judge, judgeRole, theme }: { judge: WatchJudge; judgeRole: string; theme: PluginTheme }) {
   const styles = useStyles(theme);
-  const words = judgeWords(judge);
+  const words = judgeWords(judge, judgeRole);
   const tone = {
     success: theme.colors.statusSuccess,
     warning: theme.colors.statusWarning,
@@ -100,23 +99,26 @@ function JudgeLine({ judge, theme }: { judge: WatchJudge; theme: PluginTheme }) 
   );
 }
 
-/** Who answers the watch, then what the code noticed and nobody has marked yet, in short cards like the open asks. */
-export function WatchCard({ watch, theme }: { watch: WatchView; theme: PluginTheme }) {
+type WatchProps = { watch: WatchView; supervisor: string; judgeRole: string; theme: PluginTheme };
+
+/** Who answers the watch, then how many incidents stand where: what W found is its own, so the Human sees counts, not the cases. */
+export function WatchCard({ watch, supervisor, judgeRole, theme }: WatchProps) {
   const styles = useStyles(theme);
+  const counts = new Map<string, number>();
+  for (const item of watch.incidents) {
+    const state = incidentState(item, supervisor);
+    counts.set(state, (counts.get(state) ?? 0) + 1);
+  }
   return (
     <View style={{ gap: 10 }}>
-      <JudgeLine judge={watch.judge} theme={theme} />
-      {watch.incidents.length > 0 ? (
+      <JudgeLine judge={watch.judge} judgeRole={judgeRole} theme={theme} />
+      {counts.size > 0 ? (
         <Section title={`Incidents · ${watch.incidents.length} not yet marked`} theme={theme}>
-          {watch.incidents.map((item, index) => (
-            <View key={item.id}>
+          {[...counts].map(([state, count], index) => (
+            <View key={state}>
               {index > 0 ? <Rule theme={theme} /> : null}
               <View style={[styles.row, { alignItems: "center" }]}>
-                <View style={styles.labels}>
-                  <Text style={styles.title}>{`${item.id} · ${item.title}`}</Text>
-                  <Text style={styles.hint}>{`${item.name} · ${incidentState(item)}`}</Text>
-                </View>
-                <Text style={styles.hint}>{ago(item.minutes)}</Text>
+                <Text style={styles.title}>{`${count} ${state}`}</Text>
               </View>
             </View>
           ))}

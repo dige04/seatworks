@@ -15,6 +15,7 @@ type Navigation = PluginSurfaceProps["navigation"];
 
 type Props = {
   following: boolean;
+  judgeRole: string;
   flow: FlowView | null;
   error: string | null;
   live: boolean;
@@ -294,7 +295,18 @@ function AsksCard({ asks, theme }: { asks: FlowAsk[]; theme: PluginTheme }) {
   );
 }
 
-export function FlowSection({ following, flow, error, live, theme, disabled, onLive, onOpen, navigation }: Props) {
+export function FlowSection({
+  following,
+  judgeRole,
+  flow,
+  error,
+  live,
+  theme,
+  disabled,
+  onLive,
+  onOpen,
+  navigation,
+}: Props) {
   const styles = useStyles(theme);
   const empty = flow !== null && flow.lanes.length === 0 && flow.supervisors.length === 0;
 
@@ -379,7 +391,14 @@ export function FlowSection({ following, flow, error, live, theme, disabled, onL
         </SettingsCard>
       ) : null}
 
-      {live && flow ? <WatchCard watch={flow.watch} theme={theme} /> : null}
+      {live && flow ? (
+        <WatchCard
+          watch={flow.watch}
+          supervisor={flow.supervisors[0]?.label ?? "seat that supervises"}
+          judgeRole={judgeRole}
+          theme={theme}
+        />
+      ) : null}
 
       {live && flow && flow.asks.length > 0 ? <AsksCard asks={flow.asks} theme={theme} /> : null}
     </SettingsSection>

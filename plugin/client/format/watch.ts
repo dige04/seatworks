@@ -7,25 +7,28 @@ const HELD: Record<string, string> = {
   shadow: "recorded · mail is off",
 };
 
-/** Where an incident has got to, as the card shows it. */
-export function incidentState(item: WatchIncident): string {
-  if (item.told) return "told the Supervisor";
+/** Where an incident has got to, as the card counts it; `supervisor` is the kit's label for the role told. */
+export function incidentState(item: WatchIncident, supervisor: string): string {
+  if (item.told) return `told the ${supervisor}`;
   return (item.held ? HELD[item.held] : undefined) ?? "recorded";
 }
 
-/** Who answers the watch's questions and how that stands, in words and a tone: fine, failing, or nobody asked. */
-export function judgeWords(judge: WatchJudge): { title: string; hint: string; tone: "success" | "warning" | "muted" } {
+/** Who answers the watch's questions and how that stands, in words and a tone; `judgeRole` is the Team chip it is set on. */
+export function judgeWords(
+  judge: WatchJudge,
+  judgeRole: string,
+): { title: string; hint: string; tone: "success" | "warning" | "muted" } {
   const kept = "Its answers are kept in assessments.log; no seat is sent them.";
   if (judge.state === "off")
     return {
       title: "No brain reads what the watch sees",
-      hint: "Brains is off: set it on Team, on the Watcher. The code's own facts go on.",
+      hint: `Brains is off: set it on Team, on the ${judgeRole}. The code's own facts go on.`,
       tone: "muted",
     };
   if (judge.state === "nokey")
     return {
       title: `${judge.label} is asked nothing: it has no key`,
-      hint: `Add its ${judge.detail} on Team, under Machine defaults, on the Watcher. The code's own facts go on.`,
+      hint: `Add its ${judge.detail} on Team, under Machine defaults, on the ${judgeRole}. The code's own facts go on.`,
       tone: "muted",
     };
   if (judge.state === "failing")

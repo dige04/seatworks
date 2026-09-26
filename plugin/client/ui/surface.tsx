@@ -205,6 +205,7 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
         {tab === "flow" ? (
           <FlowSection
             following={Boolean(project)}
+            judgeRole={data.catalog.roles.find((role) => role.can.includes("judge"))?.label ?? "role that judges"}
             flow={flow}
             error={flowError}
             live={flowLive}

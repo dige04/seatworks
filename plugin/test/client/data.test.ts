@@ -161,7 +161,7 @@ const incident = (over: Partial<WatchIncident>): WatchIncident => ({
   ...over,
 });
 const INCIDENTS: [Partial<WatchIncident>, string][] = [
-  [{ told: true }, "told the Supervisor"],
+  [{ told: true }, "told the Chief"],
   [{ held: "budget" }, "held · the lane's limit for today is reached"],
   [{ held: "probation" }, "held · most of this kind's last ten were marked noise"],
   [{ held: "nobody" }, "held · nobody is seated to tell"],
@@ -175,7 +175,7 @@ const JUDGES: [WatchJudge, ReturnType<typeof judgeWords>][] = [
     { ...judge, label: "", state: "off" },
     {
       title: "No brain reads what the watch sees",
-      hint: "Brains is off: set it on Team, on the Watcher. The code's own facts go on.",
+      hint: "Brains is off: set it on Team, on the Judge. The code's own facts go on.",
       tone: "muted",
     },
   ],
@@ -183,7 +183,7 @@ const JUDGES: [WatchJudge, ReturnType<typeof judgeWords>][] = [
     { ...judge, state: "nokey", detail: "OpenRouter key" },
     {
       title: "Jev is asked nothing: it has no key",
-      hint: "Add its OpenRouter key on Team, under Machine defaults, on the Watcher. The code's own facts go on.",
+      hint: "Add its OpenRouter key on Team, under Machine defaults, on the Judge. The code's own facts go on.",
       tone: "muted",
     },
   ],
@@ -205,7 +205,7 @@ const JUDGES: [WatchJudge, ReturnType<typeof judgeWords>][] = [
   ],
 ];
 
-test("the watch card says in words where an incident has got to and who answers the watch's questions, and how that stands", () => {
-  for (const [over, words] of INCIDENTS) assert.equal(incidentState(incident(over)), words);
-  for (const [state, words] of JUDGES) assert.deepEqual(judgeWords(state), words, state.state);
+test("the watch card says in words where an incident has got to and who answers the watch's questions, and how that stands, naming roles as the kit labels them", () => {
+  for (const [over, words] of INCIDENTS) assert.equal(incidentState(incident(over), "Chief"), words);
+  for (const [state, words] of JUDGES) assert.deepEqual(judgeWords(state, "Judge"), words, state.state);
 });
