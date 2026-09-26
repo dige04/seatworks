@@ -51,7 +51,7 @@ test("a base that conflicts with a lane leaves nothing in its copy, its Lead has
   assert.doesNotMatch(h.agents.get(cart.lead!)!.sent.join("\n"), /BASE CONFLICT/, "a fact wakes nobody");
   assert.match(
     h.heard(cart.lead!).join("\n"),
-    /BASE CONFLICT L1 \(Cart\): main moved on, and merging it into lane\/l1-cart stops on conflicts in a\.txt\. Nothing was left in your working copy[^]*\n\nNext: Nothing now: who takes main in is chosen by whoever supervises, who tells you if it is this lane\./,
+    /BASE CONFLICT L1 \(Cart\): main moved on, and merging it into lane\/l1-cart stops on conflicts in a\.txt\. Nothing was left in your working copy[^]*A Peer that takes it in runs git merge --no-edit main and commits what it settles with git commit --no-edit, since an editor would wait forever in its session\.\n\nNext: Nothing now: who takes main in is chosen by whoever supervises, who tells you if it is this lane\./,
   );
 
   assert.match((await land("L2")).text, /conflicts with lane\/l2-bees in b\.txt/);
@@ -120,7 +120,7 @@ test("the merge queue hands a conflict to its Peer, merges nothing as nothing, w
   await h.idle(lead);
   assert.match(
     h.agents.get(lead)!.sent.join("\n"),
-    /MERGE CONFLICT L1-T1 \(B\) with lane\/l1-two\.\nFiles: b\.txt\nThe lane branch is unchanged\. The desk began merging lane\/l1-two into the task's branch in its own copy and left the conflicts there\.\n\nNext: Send rework asking its Peer to settle them and commit the merge with git commit/,
+    /MERGE CONFLICT L1-T1 \(B\) with lane\/l1-two\.\nFiles: b\.txt\nThe lane branch is unchanged\. The desk began merging lane\/l1-two into the task's branch in its own copy and left the conflicts there\.\n\nNext: Send rework asking its Peer to settle them and commit the merge with git commit --no-edit, since an editor would wait forever in its session/,
   );
   writeFileSync(join(first.worktree!, "b.txt"), "both sides\n");
   h.git(first.worktree!, "commit", "-qam", "Settle the lane into the task");

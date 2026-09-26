@@ -64,7 +64,7 @@ export const landLetters = {
 
   /** The base does not merge into the lane: a fact for its Lead, since who takes it in is chosen above the lane. */
   baseConflict(lane: Lane, conflicts: string[]): Letter {
-    const text = `BASE CONFLICT ${lane.id} (${lane.title}): ${lane.base} moved on, and merging it into ${lane.branch} stops on conflicts in ${conflicts.join(", ")}. Nothing was left in your working copy, and the lane does not land until it takes ${lane.base} in.`;
+    const text = `BASE CONFLICT ${lane.id} (${lane.title}): ${lane.base} moved on, and merging it into ${lane.branch} stops on conflicts in ${conflicts.join(", ")}. Nothing was left in your working copy, and the lane does not land until it takes ${lane.base} in. A Peer that takes it in runs git merge --no-edit ${lane.base} and commits what it settles with git commit --no-edit, since an editor would wait forever in its session.`;
     return fyi(
       mail(
         "baseconflict",
