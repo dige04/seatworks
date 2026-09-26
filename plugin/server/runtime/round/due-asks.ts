@@ -8,7 +8,9 @@ import type { Project } from "../../desk/project/project.ts";
 import { loadIncidents, openFor, saidBefore } from "../../desk/store/incidents.ts";
 import { ASK, type Ask } from "../../domain/ask.ts";
 import type { Lane } from "../../domain/lane.ts";
-import type { Ledger } from "../../domain/ledger.ts";
+import { type Ledger, taskOfPeer } from "../../domain/ledger.ts";
+import { AT_WORK } from "../../domain/task.ts";
+import { midTurn } from "../../core/paseo.ts";
 import type { TeamSource } from "../team-source.ts";
 import { fact, findingsOf } from "../../domain/incident.ts";
 
@@ -38,6 +40,43 @@ export async function dueAsks(
       waiting.set(ask.to, [...(waiting.get(ask.to) ?? []), ask]);
   }
   await waitedOn(deps, project, seats, waiting);
+  await eachOther(deps, project, ledger, seats, open);
+}
+
+/** Whether `reader` waits on `asker` too: on an ask of its own, or on the hand-back of a task at work in the lane it leads. */
+function waitsOn(ledger: Ledger, reader: string, asker: string): string | undefined {
+  const asked = Object.values(ledger.asks).find(
+    (ask) => ask.status === "open" && ask.from === reader && ask.to === asker,
+  );
+  if (asked) return `its own ${asked.id} to it`;
+  const task = taskOfPeer(ledger, asker);
+  const lane = task && ledger.lanes[task.lane];
+  return task && lane?.lead === reader && AT_WORK.includes(task.status) ? `${task.id}'s hand-back` : undefined;
+}
+
+/** Two seats idle, each waiting on the other by the desk's record: nobody else moves first, so it is told at once. */
+async function eachOther(
+  { kit, desk }: AskDeps,
+  project: Project,
+  ledger: Ledger,
+  seats: Map<string, SeatView>,
+  open: Ask[],
+): Promise<void> {
+  const idle = (id: string) => {
+    const seat = seats.get(id);
+    return seat !== undefined && !midTurn(seat.status) && (seat.pendingPermissions?.length ?? 0) === 0;
+  };
+  const book = loadIncidents(project.state);
+  for (const ask of open) {
+    const reader = seats.get(ask.to);
+    const on = waitsOn(ledger, ask.to, ask.from);
+    if (!reader || !on || !idle(ask.to) || !idle(ask.from)) continue;
+    if (can(seatOf(kit, reader.provider)?.role, "supervise")) continue;
+    const quote = `${ask.id} from ${ask.task ?? ask.lane ?? ask.from} waits on its answer, while it waits on ${on}; both are idle`;
+    const found = fact("waits-on-each-other", quote);
+    if (openFor(book, ask.to, found.kind) || saidBefore(book, ask.to, found.kind, quote)) continue;
+    await desk.notice(project, { id: ask.to, provider: reader.provider, title: reader.title }, findingsOf([found]));
+  }
 }
 
 /** One fact per reader, naming every ask that waits on it: sighted again while open and untold, never once settled. */

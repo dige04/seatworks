@@ -160,3 +160,30 @@ test("a seat whose context nears full, as its agent reports it, is told once whi
   assert.equal(told(), 1, "once while it stays full");
   assert.equal(h.ledger().tasks["L1-T1"]!.status, "running", "nothing acts on it");
 });
+
+test("a Lead and its Peer idle, each waiting on the other, are told of at once: nobody else will move first", async () => {
+  const { h, sup, lane, peer } = await laneWithPeer();
+  const lead = lane.lead!;
+  await h.call(peer, "peer", "ask", {
+    question: "Round half up or down?",
+    tried: "read the spec",
+    bestGuess: "half up",
+  });
+  h.agents.get(peer)!.status = "running";
+  h.agents.get(lead)!.status = "idle";
+  await h.tick();
+  const told = () =>
+    h
+      .heard(sup)
+      .join("\n")
+      .match(/\(waits-on-each-other, attend\)/g)?.length ?? 0;
+  assert.equal(told(), 0, "a Peer still at work waits on nobody yet");
+  h.agents.get(peer)!.status = "idle";
+  await h.tick();
+  await h.tick();
+  assert.match(
+    h.heard(sup).join("\n"),
+    /INCIDENT I\d+ \(waits-on-each-other, attend\) on the Lead of L1[^]*What was seen: A\d+ from L1-T1 waits on its answer, while it waits on L1-T1's hand-back; both are idle/,
+  );
+  assert.equal(told(), 1, "once, while it stands");
+});

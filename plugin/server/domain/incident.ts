@@ -87,6 +87,7 @@ const FACTS = {
     next: "Nothing, if its record shows what it waits on; else read the lane's record, since its words may read worse than the work looks, and take the smallest step that unblocks it. Then mark_incident it.",
   },
   "ask-waiting": { level: "attend", title: "An ask left waiting on its reader" },
+  "waits-on-each-other": { level: "attend", title: "Two seats idle, each waiting on the other" },
   "desk-unreached": {
     level: "attend",
     title: "Ended a turn without ever reaching the team's tools",
