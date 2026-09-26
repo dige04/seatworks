@@ -27,6 +27,6 @@ const Verdict = z.strictObject({
   ran: z.array(z.string()).optional(),
 });
 
-export const done = defineTool({ name: "done", input: HandBack, handle: handBack });
+export const done = defineTool({ name: "done", input: HandBack, speaks: true, handle: handBack });
 
-export const doneReview = defineTool({ name: "done", input: Verdict, handle: handBack });
+export const doneReview = defineTool({ name: "done", input: Verdict, speaks: true, handle: handBack });

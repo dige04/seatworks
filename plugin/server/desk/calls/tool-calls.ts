@@ -15,9 +15,6 @@ import { recordEvent } from "../store/event-log.ts";
 /** How long a harness waits on one call before it gives up; the desk answers first. */
 export const ANSWER_WITHIN_MS = 240_000;
 
-/** The tools a seat says something with; any other call only shows it was heard from. */
-const SPEAKS = ["done", "ask", "answer", "message", "report"];
-
 type Mail = Parameters<typeof inTime>[3];
 
 /** A seat's tool calls: who is calling, whether the call fits what the seat was shown, and its reply in time or as mail. */
@@ -70,7 +67,7 @@ export class ToolCalls {
   async handle(request: ToolRequest): Promise<ToolReply> {
     const caller = await this.caller(request);
     if ("error" in caller) return no(caller.error);
-    const reply = await this.run(caller, request);
+    const { reply, speaks } = await this.run(caller, request);
     const text = clip(reply.text, 300);
     recordEvent(caller.project, {
       kind: "tool",
@@ -80,34 +77,34 @@ export class ToolCalls {
       ok: reply.ok,
       reply: text,
     });
-    if (reply.ok) this.heardFrom(caller, request.tool);
+    if (reply.ok) this.heardFrom(caller, speaks);
     return reply;
   }
 
   /** The tool's reply, or why it was not carried out: a tool the seat was not shown, args that miss its schema, a crash. */
-  private async run(caller: Caller, request: ToolRequest): Promise<ToolReply> {
+  private async run(caller: Caller, request: ToolRequest): Promise<{ reply: ToolReply; speaks?: true }> {
     const shown = schemaOf(this.desk.kit, caller.role, request.tool);
     const tool = shown ? servedBy(this.tools, request.tool, shown) : undefined;
-    if (!shown || !tool) return no(`Unknown tool ${request.tool}.`);
+    if (!shown || !tool) return { reply: no(`Unknown tool ${request.tool}.`) };
     const args = (request.args ?? {}) as Args;
     const problems = argsProblems(shown, args);
     if (problems.length > 0)
-      return no(`${request.tool} was not carried out: it ${problems.join("; ")}. ${shapeOf(shown)}`);
+      return { reply: no(`${request.tool} was not carried out: it ${problems.join("; ")}. ${shapeOf(shown)}`) };
     try {
-      return await tool.handle(this.desk, caller, tool.input.parse(withoutNulls(args)));
+      return { reply: await tool.handle(this.desk, caller, tool.input.parse(withoutNulls(args))), speaks: tool.speaks };
     } catch (error) {
       this.desk.log(caller.project, `${caller.role.role} ${caller.id} ${request.tool} crashed: ${errorText(error)}`);
-      return no(`${request.tool} failed: ${errorText(error)}`);
+      return { reply: no(`${request.tool} failed: ${errorText(error)}`) };
     }
   }
 
   /** Notes that the seat was heard from; noting it must not turn a reply it has earned into a crash. */
-  private heardFrom(caller: Caller, tool: string): void {
+  private heardFrom(caller: Caller, speaks: boolean | undefined): void {
     try {
       this.desk.ledgers.transact(caller.project, (ledger) => {
         const ref = ledger.agents[caller.id] ?? { id: caller.id, role: caller.role.role };
         ref.recordedAt = Date.now();
-        if (SPEAKS.includes(tool)) ref.spokeAt = ref.recordedAt;
+        if (speaks) ref.spokeAt = ref.recordedAt;
         ledger.agents[caller.id] = ref;
       });
     } catch (error) {

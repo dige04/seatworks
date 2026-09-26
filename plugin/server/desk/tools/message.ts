@@ -5,6 +5,7 @@ import { defineTool } from "../services.ts";
 
 export const message = defineTool({
   name: "message",
+  speaks: true,
   input: z.strictObject({ to: z.string(), text: z.string() }),
   handle: (desk, caller, args) => sendMessage(desk, caller, { to: str(args.to), text: str(args.text) }),
 });
