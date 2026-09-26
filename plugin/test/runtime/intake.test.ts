@@ -85,7 +85,7 @@ test("a lane that waits is recorded, amended, opened off a base holding the work
   assert.equal(readFileSync(join(h.root, "a.txt"), "utf-8"), "cart\n");
   assert.match(
     h.heard(sup).join("\n"),
-    /WAITING L2 \(Order\), the lane you opened to wait for L1: Lane L2 is open on lane\/l2-order/,
+    /OPENED L2 \(Order\), the lane you opened to wait for L1: Lane L2 is open on lane\/l2-order/,
   );
   assert.match(h.agents.get(order.lead)!.prompt ?? "", /Outcome: orders from an upserted cart/);
   assert.match((await h.call(sup, "supervisor", "amend_lane", { ...amended, lane: "L1" })).text, /Lane L1 is closed/);
@@ -242,7 +242,7 @@ test("tasks that wait are recorded, amended, held while the lane's copy is taken
   await h.idle(lead);
   assert.match(
     h.agents.get(lead)!.sent.join("\n"),
-    /WAITING L1-T3 \(Receipt\), the task you started to wait for L1-T2: Started L1-T3 in the lane's working copy/,
+    /STARTED L1-T3 \(Receipt\), the task you started to wait for L1-T2: Started L1-T3 in the lane's working copy/,
   );
 
   await add("p", "Probe", { holds: ["d.txt"], parallel: true });

@@ -4,9 +4,10 @@ import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Letter, fyi, list, mail } from "./envelope.ts";
 
-const waited = (entry: Lane | Task, what: string): string => {
+/** A lane or task that waited, under `head`: still waiting, or started or opened now. */
+const waited = (head: "WAITING" | "STARTED" | "OPENED", entry: Lane | Task, what: string): string => {
   const after = entry.after?.length ? ` to wait for ${entry.after.join(", ")}` : "";
-  return `WAITING ${entry.id} (${entry.title}), the ${"lane" in entry ? (after ? "task you started" : "task from your plan") : "lane you opened"}${after}: ${what}`;
+  return `${head} ${entry.id} (${entry.title}), the ${"lane" in entry ? (after ? "task you started" : "task from your plan") : "lane you opened"}${after}: ${what}`;
 };
 
 /** A task's and a lane's course: hand-backs and rework, reports and amendments, waits, starts and holds. */
@@ -100,7 +101,7 @@ export const workLetters = {
     return mail(
       "held",
       [entry.id, hash(why)],
-      waited(entry, `${"lane" in entry ? "it has not started" : "it is not open"}: ${why}`),
+      waited("WAITING", entry, `${"lane" in entry ? "it has not started" : "it is not open"}: ${why}`),
       next,
     );
   },
@@ -163,10 +164,12 @@ export const workLetters = {
   },
 
   started(task: Task, what: string): Letter {
-    return fyi(mail("started", [task.id], waited(task, what), "Nothing now: its hand-back arrives as mail."));
+    return fyi(
+      mail("started", [task.id], waited("STARTED", task, what), "Nothing now: its hand-back arrives as mail."),
+    );
   },
 
   opened(lane: Lane, what: string): Letter {
-    return fyi(mail("opened", [lane.id], waited(lane, what), "Nothing now."));
+    return fyi(mail("opened", [lane.id], waited("OPENED", lane, what), "Nothing now."));
   },
 };

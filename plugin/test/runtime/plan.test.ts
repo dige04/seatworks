@@ -56,7 +56,7 @@ test("a Lead lays its lane out: tasks in the lane's copy run in turn, tasks besi
     "the lane's copy takes one writer at a time, and the listed order is only the order they start in",
   );
   await h.idle(lead);
-  assert.doesNotMatch(h.agents.get(lead)!.sent.join("\n"), /WAITING L1-T3/, "the reply already said it started");
+  assert.doesNotMatch(h.agents.get(lead)!.sent.join("\n"), /STARTED L1-T3/, "the reply already said it started");
   assert.match(h.agents.get(h.ledger().tasks["L1-T3"]!.peer!)!.provider, /peer/, "no role given is the preset's own");
   assert.match(
     briefOf(h, "L1-T3"),
