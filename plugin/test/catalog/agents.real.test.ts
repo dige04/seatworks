@@ -163,6 +163,11 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         bare ? [false, false, false] : [undefined, undefined, undefined],
         `${where}: a seat that touches nothing has no shell, image viewer or sleep`,
       );
+      assert.equal(
+        features.default_mode_request_user_input,
+        as === "supervisor" ? true : undefined,
+        `${where}: only the Supervisor may ask the Human with its agent's own question, in the mode a seat runs in, which the desk lets through with the Human out of the loop`,
+      );
       assert.equal(at(settings, "approval_policy"), "never", `${where}: nobody is there to approve`);
       assert.equal(
         at(settings, "skills.bundled.enabled"),
