@@ -3,8 +3,6 @@ import { isRecord } from "../../core/json.ts";
 import { readJsonFile, readKept, writeJson } from "../../core/store.ts";
 import { type Incident, close } from "../../domain/incident.ts";
 
-export type { Incident } from "../../domain/incident.ts";
-
 export type Incidents = { next: number; items: Record<string, Incident> };
 
 type Sighting = Omit<
