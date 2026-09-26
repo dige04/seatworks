@@ -316,6 +316,17 @@ test("a second reviewer seats as the Reviewer on the same agent, with another mo
   );
 });
 
+test("the Lead, who accepts a task on reading its code, is given every code tool a Reviewer of that task is", () => {
+  const kit = loadKit(PLUGIN);
+  const shown = describeTeam(kit, resolveTeam(kit, allOn(kit))).roles;
+  for (const [server, tools] of Object.entries(shown.reviewer!.tools))
+    assert.deepEqual(
+      tools.filter((tool) => !shown.lead!.tools[server]?.includes(tool)),
+      [],
+      `${server}: what the Reviewer reads the change with, the Lead weighing its verdict reads with too`,
+    );
+});
+
 test("the preset reads what the watch sees with both brains: the kit's sensor sifts, and its Watcher seat judges", () => {
   const { brains } = resolveTeam(loadKit(PLUGIN));
   assert.deepEqual([brains.mode, brains.sensor?.id, brains.seat?.role], ["both", "jev", "watcher"]);

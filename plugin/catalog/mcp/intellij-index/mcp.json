@@ -86,7 +86,10 @@
       "ide_search_text",
       "ide_find_definition",
       "ide_call_hierarchy",
-      "ide_find_implementations"
+      "ide_find_implementations",
+      "ide_symbol_info",
+      "ide_find_super_methods",
+      "ide_diagnostics"
     ],
     "peer": [
       "ide_find_symbol",
