@@ -39,7 +39,7 @@ export class Roster {
     return this.seats.respond(agentId, requestId, response);
   }
 
-  /** Who reads what is meant for a lane's Lead: the Lead while it is seated, else whoever supervises, who can seat one. */
+  /** Who reads what is meant for a lane's Lead: the Lead while seated, else whoever supervises, who can seat one. */
   async readerOf(
     project: Project,
     lane: Lane | undefined,
@@ -53,7 +53,7 @@ export class Roster {
     return lane?.lead && (await this.seated(lane.lead)) ? lane.lead : undefined;
   }
 
-  /** Sends past the outbox, cutting a running turn short; a seat that is gone is left so, since a send would start it again. */
+  /** Sends past the outbox, cutting a running turn short; a seat that is gone is left so, as a send would start it. */
   async interrupt(agentId: string, letter: { key: string; text: string }): Promise<boolean> {
     if (!(await this.seated(agentId))) return false;
     await this.seats.send(agentId, letter.text, [letter.key.split(":")[0]!], "interrupt");
@@ -91,7 +91,6 @@ export class Roster {
     return can(seatOf(this.kit, seat.provider)?.role, capability) && projectOf(seat.cwd).slug === project.slug;
   }
 
-  /** Whether the seat is archived once its turn ends. */
   archiving(agentId: string): boolean {
     return this.intents.toArchive().includes(agentId);
   }
@@ -110,7 +109,7 @@ export class Roster {
     }
   }
 
-  /** After a stop: a seat left to end its turn goes now if the listing shows that turn over, and is forgotten if it is gone. */
+  /** After a stop: a seat left to end its turn goes if the listing shows it over, and is forgotten if it is gone. */
   async archiveWaiting(listed: Map<string, SeatView>): Promise<void> {
     for (const id of this.intents.toArchive()) {
       const seat = listed.get(id);

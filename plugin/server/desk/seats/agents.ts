@@ -47,7 +47,7 @@ export class Agents {
     return { role, config };
   }
 
-  /** Paseo can filter agents by label, so what a seat is and what it specialises in are written where that filter can read them. */
+  /** Paseo filters agents by label, so what a seat is and what it specialises in go where that filter reads. */
   private marks(role: RoleSpec, project: Project): Record<string, string> {
     return {
       "seatworks.project": project.slug,
@@ -97,7 +97,7 @@ export class Agents {
   async retire(project: Project, task: Task, into?: string): Promise<string | undefined> {
     await letGo(this.desk, this.roster, project, task.peer);
     if (task.kind !== "code") return undefined;
-    // A task in the lane's copy leaves only its branch: dropped once `into` holds all of it, kept and named while it holds more.
+    // A task in the lane's copy leaves only its branch: dropped once `into` holds all of it, kept and named while not.
     if (task.mode !== "parallel")
       return task.branch &&
         into &&

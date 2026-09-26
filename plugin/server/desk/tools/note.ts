@@ -5,7 +5,6 @@ import { z } from "zod";
 import { no, ok } from "../context.ts";
 import { defineTool } from "../services.ts";
 
-/** Keeps a page in a folder the caller's role writes under the project's state, never in the repository. */
 export const note = defineTool({
   name: "note",
   input: z.strictObject({ kind: z.string(), name: z.string(), text: z.string() }),

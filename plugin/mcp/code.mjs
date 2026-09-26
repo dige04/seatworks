@@ -59,7 +59,6 @@ function excludeFromGit() {
 class Backend {
   #client;
   #connecting;
-  // The client made last, connected or still starting: what closing the backend closes.
   #latest;
   connected = () => {};
 
@@ -91,7 +90,6 @@ class Backend {
     return client.callTool({ name, arguments: args }, { timeout: timeoutMs, resetTimeoutOnProgress: true, signal: ctx?.mcpReq.signal, onprogress: progress?.forward });
   }
 
-  /** A stdio backend is sent the end of its input, then a signal if it stays: MCP's own way to stop a server. */
   close() {
     return this.#latest?.close() ?? Promise.resolve();
   }
@@ -114,7 +112,7 @@ function withoutKey(schema, key) {
 function shownOf(name, listed) {
   const own = config.descriptions?.[name];
   const found = listed?.tools?.find((tool) => tool.name === name);
-  // Appended, never replaced: a preset description alone hid the note, and a seat kept calling a server that never answered.
+  // Appended, never replaced: a preset description alone hid the note.
   const noted = (note) => ({ description: `${own ?? ""}\n\n${note}`.trim(), inputSchema: fromJsonSchema({ type: "object", properties: {}, additionalProperties: true }, unchecked) });
   if (!listed) return noted(`${label} was not reachable when this session started; calls fail until it runs.`);
   if (!found) return noted(`Switched off in ${label} right now; calls fail until it is switched on.`);
@@ -138,7 +136,6 @@ function routeOf(result, route) {
   }
 }
 
-/** Progress for a harness that asked: ticks of its own while a call runs, and what the backend says of its work. */
 function progressOf(ctx, name) {
   const ticking = ticker(ctx, `${label} is still working on ${name}.`);
   if (!ticking) return { stop: () => {} };
@@ -235,7 +232,7 @@ serveStdio(async () => {
   const mcp = new McpServer({ name: config.name ?? "code", version }, { capabilities: { tools: { listChanged: true } }, instructions: config.instructions || undefined });
   const entries = new Map(allowed.map((name) => [name, mcp.registerTool(name, shownOf(name, listed), (args, ctx) => callTool(name, args, ctx))]));
   if (listed) return mcp;
-  // Shown as unreachable: once the backend answers, each tool is shown as it is, and the harness is told the list changed.
+  // Shown as unreachable until the backend answers; then each tool shows as it is, and the harness hears of the change.
   let shown = false;
   const refresh = async (client) => {
     const late = await client.listTools().catch(() => undefined);

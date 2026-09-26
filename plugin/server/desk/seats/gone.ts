@@ -2,7 +2,7 @@ import type { DeskBase } from "../base.ts";
 import type { Project } from "../project/project.ts";
 import type { Roster } from "./roster.ts";
 
-/** Marks a seat's binding gone: from here on nothing hands it work or counts it as kept, whatever Paseo lists meanwhile. */
+/** Marks a seat's binding gone: nothing hands it work or counts it as kept from here on, whatever Paseo lists. */
 export function markGone({ ledgers }: Pick<DeskBase, "ledgers">, project: Project, agentId: string): void {
   ledgers.transact(project, (ledger) => {
     const bound = ledger.agents[agentId];
@@ -10,7 +10,7 @@ export function markGone({ ledgers }: Pick<DeskBase, "ledgers">, project: Projec
   });
 }
 
-/** Lets a seat of the team go: its binding says so before Paseo archives it, which waits for a turn under way unless forced. */
+/** Lets a seat go: its binding says so before Paseo archives it, which waits for a turn under way unless forced. */
 export async function letGo(
   desk: Pick<DeskBase, "ledgers">,
   roster: Roster,

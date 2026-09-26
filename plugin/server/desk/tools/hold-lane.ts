@@ -3,7 +3,6 @@ import { str } from "../context.ts";
 import { holdLane as hold } from "../lanes/hold.ts";
 import { defineTool } from "../services.ts";
 
-/** Stops a lane where it stands: its seats are cut short, read nothing more, and nothing starts or lands until resume_lane. */
 export const holdLane = defineTool({
   name: "hold_lane",
   input: z.strictObject({ lane: z.string(), reason: z.string() }),

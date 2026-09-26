@@ -10,7 +10,7 @@ import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 
-/** The Peers kept idle in a lane after their tasks were accepted: each bound to its own task and not gone, until its Lead releases it. */
+/** The Peers kept idle in a lane after their tasks merged: each bound to its own task and not gone, until released. */
 export function keptPeers(ledger: Ledger, laneId: string): AgentRef[] {
   return Object.values(ledger.agents).filter((agent) => {
     const task = ledger.tasks[agent.task ?? ""];
@@ -30,14 +30,14 @@ export function keptCopy(ledger: Ledger, lane: Lane): string | undefined {
   return lane.status === "closed" && slot?.lane === lane.id && !slot.releasing ? slot.id : undefined;
 }
 
-/** How a kept copy is put away: a landed lane's branch goes with it once it is in, a dropped one stays for the Human. */
+/** A kept copy put away: a landed lane's branch goes with it once it is in, a dropped one's stays for the Human. */
 const stowOf = (project: Project, lane: Lane) => ({
   project,
   slot: lane.slot,
   ...(lane.landed ? { dropBranch: lane.branch, into: landedRef(lane.id) } : {}),
 });
 
-/** The seats of a lane let go but still ending a turn in its copy, the Lead and its Peers alike: the copy waits for them. */
+/** The seats of a lane let go but still ending a turn in its copy, Lead and Peers alike: the copy waits for them. */
 function stillWriting(desk: DeskServices, ledger: Ledger, lane: Lane): string[] {
   const ids = [
     lane.lead,
@@ -48,7 +48,7 @@ function stillWriting(desk: DeskServices, ledger: Ledger, lane: Lane): string[] 
   return [...new Set(ids.filter((id): id is string => typeof id === "string" && desk.roster.archiving(id)))];
 }
 
-/** Lets a closed lane's kept Lead go, and its copy once nobody is writing in it; what that did, or nothing if neither was left. */
+/** Lets a closed lane's Lead go, and its copy once nobody writes in it; what that did, or nothing if none was left. */
 async function releaseKept(desk: DeskServices, project: Project, lane: Lane): Promise<string | undefined> {
   const { roster, teardowns } = desk;
   const lead = lane.lead && (await roster.seated(lane.lead)) ? lane.lead : undefined;
@@ -69,12 +69,11 @@ async function releaseKept(desk: DeskServices, project: Project, lane: Lane): Pr
     : `Lane ${lane.id}'s Lead was gone already; ${put}.`;
 }
 
-/** Where a merged task's branch is found: under the landed ref once its lane landed, and on the lane branch before. */
 const mergedInto = (lane: Lane) => (lane.landed ? landedRef(lane.id) : lane.branch);
 
 /**
- * The round's teardown: what stopped writers held, and the copy a kept seat held once that seat is gone, archived by the
- * Human or with its superior: a kept Lead's, and a merged parallel task's kept by its Peer.
+ * The round's teardown: what stopped writers held, and the copy a kept seat held once that seat is gone, archived by
+ * the Human or with its superior: a kept Lead's, and a merged parallel task's kept by its Peer.
  */
 export async function reapKept(desk: DeskServices, project: Project, live: Set<string>): Promise<void> {
   await desk.teardowns.reap(project, live);

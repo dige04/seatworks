@@ -33,7 +33,7 @@ export class Teardowns {
     this.ownCopy = ownCopy;
   }
 
-  /** Puts a lane's copy away, or waits for the seats still writing in it: removing or switching it under them loses their work. */
+  /** Puts a lane's copy away, or waits for the seats writing in it: removing or switching it under them loses work. */
   async putAway(teardown: Teardown, writers: string[] = []): Promise<string | undefined> {
     const waiting = [...new Set(writers)];
     if (waiting.length === 0 || (!teardown.slot && !teardown.restore)) return this.run(teardown);
@@ -63,7 +63,7 @@ export class Teardowns {
     for (const project of this.desk.projects.values()) await this.finish(project, ended);
   }
 
-  /** A writer that is no longer a seat has stopped for good: after an archive, crash or restart its turn-end never comes. */
+  /** A writer no longer a seat has stopped for good: after an archive, crash or restart its turn end never comes. */
   reap(project: Project, live: Set<string>): Promise<void> {
     return this.finish(project, (id) => !live.has(id));
   }
@@ -97,7 +97,7 @@ export class Teardowns {
     }
   }
 
-  /** Drops the writers that have stopped from a wait as it stands in the ledger; the wait comes back once nobody is left in it. */
+  /** Drops the writers that stopped from a wait as the ledger has it; the wait comes back once nobody is left in it. */
   private leftToWait<T extends { writers: string[] }>(wait: T, stopped: (agentId: string) => boolean): T | undefined {
     const left = wait.writers.filter((id) => !stopped(id));
     wait.writers = left;

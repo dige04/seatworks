@@ -6,7 +6,7 @@ import { loadLedger } from "../store/ledger.ts";
 
 type Ended = (agentId: string) => boolean;
 
-/** What waited on turns that ended goes on: the teardowns they held up, each project's merges, and landings held for their writers. */
+/** What waited on ended turns goes on: teardowns they held up, each project's merges, landings held on writers. */
 export async function turnsEnded(
   desk: Pick<DeskServices, "teardowns" | "projects" | "ledgers" | "mail" | "log" | "merges">,
   ended: Ended,
@@ -26,7 +26,7 @@ async function releaseLandings(
 ): Promise<void> {
   const lanes = Object.values(loadLedger(project.state).lanes);
   for (const lane of lanes.filter((entry) => entry.status === "open" && entry.landing?.writers.some(ended))) {
-    // Who is left is worked out where it is written: a turn that ended meanwhile must not be written back as still in the way.
+    // Who is left is worked out where it is written: a turn that ended meanwhile must not be written back in the way.
     const by = ledgers.transact(project, (ledger) => {
       const entry = ledger.lanes[lane.id];
       if (!entry?.landing) return undefined;

@@ -13,7 +13,6 @@ async function ownCopy(root: string): Promise<OwnCheckout> {
   return { branch, head: branch ? undefined : (await headSha(root))?.slice(0, 7), work: await uncommittedPaths(root) };
 }
 
-/** A supervisor also sees the Human's own checkout, read from git only here, when it asks. */
 export const status = defineTool({
   name: "status",
   input: z.strictObject({}),

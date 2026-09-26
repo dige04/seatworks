@@ -17,7 +17,6 @@ const Asked = z.strictObject({
   role: z.string().optional(),
 });
 
-/** Adds tasks to the Lead's lane in one go, each waiting for what it names; a layout holding one path twice is refused. */
 export const addTasks = defineTool({
   name: "add_tasks",
   input: z.strictObject({ tasks: z.array(Asked) }),

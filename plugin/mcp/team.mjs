@@ -13,8 +13,7 @@ const read = (file) => JSON.parse(readFileSync(join(here, file), "utf-8"));
 const tools = read("tools.json")[toolSet] ?? [];
 const instructions = read("instructions.json")[toolSet];
 const { version } = read("../package.json");
-// A dropped line is tried again that soon. A harness's first list waits that long for the desk's choices, well inside the
-// second Codex gives a server to start; choices that come later reach it as a changed list, and the desk checks values anyway.
+// Retry a dropped line after that; a first list waits that long for the desk's choices, well within a harness's start.
 const RETRY_MS = 2_000;
 const WELCOME_MS = 300;
 
