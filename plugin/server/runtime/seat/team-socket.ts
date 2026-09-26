@@ -33,21 +33,25 @@ const UNKNOWN =
 /** Where seats' team servers reach the desk: one line each, a call answered on the line it came by. */
 export class TeamSocket {
   private readonly path: string;
+  private readonly pipe: boolean;
   private readonly desk: LineDesk;
   private readonly lines = new Set<Line>();
   private server: Server | undefined;
 
   constructor(path: string, desk: LineDesk) {
     this.path = path;
+    this.pipe = path.startsWith("\\\\.\\pipe\\");
     this.desk = desk;
   }
 
   /** A socket file left by a plugin that stopped without closing it is taken over. */
   listen(): void {
-    rmSync(this.path, { force: true });
+    if (!this.pipe) rmSync(this.path, { force: true });
     const server = createServer((socket) => this.serve(socket));
     server.on("error", (error) => daemonLog.error("the desk's socket failed:", error));
-    server.listen(this.path, () => chmodSync(this.path, 0o600));
+    server.listen(this.path, () => {
+      if (!this.pipe) chmodSync(this.path, 0o600);
+    });
     this.server = server;
   }
 
@@ -55,7 +59,7 @@ export class TeamSocket {
     this.server?.close();
     this.server = undefined;
     for (const line of this.lines) line.socket.destroy();
-    rmSync(this.path, { force: true });
+    if (!this.pipe) rmSync(this.path, { force: true });
   }
 
   /** Whether the agent waits on a call: answered or not, until its server says the harness took the answer. */

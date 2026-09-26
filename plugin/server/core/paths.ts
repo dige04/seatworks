@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { accessSync, constants, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, delimiter, extname, join } from "node:path";
@@ -52,9 +53,14 @@ export function worktreeRoot(homeDir = home()): string {
   return join(stateRoot(homeDir), "worktrees");
 }
 
-/** Where seats' team servers reach the desk: beside the state it keeps, and open to this user alone. */
+/**
+ * Where seats' team servers reach the desk: a socket beside the state it keeps, open to this user alone; on Windows, which
+ * has no socket files, a named pipe named for that state.
+ */
 export function deskSocket(homeDir = home()): string {
-  return join(stateRoot(homeDir), "desk.sock");
+  const root = stateRoot(homeDir);
+  if (process.platform !== "win32") return join(root, "desk.sock");
+  return `\\\\.\\pipe\\seatworks-${createHash("sha256").update(root).digest("hex").slice(0, 16)}`;
 }
 
 export function nodeBin(): string {
