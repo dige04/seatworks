@@ -3,12 +3,11 @@ import { can, seatOf } from "../../catalog/kit/roles.ts";
 import type { Judge, Question } from "../../core/ports.ts";
 import { clip } from "../../core/text.ts";
 import type { Finding } from "../../domain/incident.ts";
-import { tasksOf } from "../../domain/ledger.ts";
+import { type Ledger, tasksOf } from "../../domain/ledger.ts";
 import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
-import { loadLedger } from "../store/ledger.ts";
 import { type Assessments, askKept, holds } from "../store/assessments.ts";
-import { type Noticed, type Placed, notice, placeOf } from "./notice.ts";
+import { type Noticed, type Placed, ledgerOf, notice, placeIn } from "./notice.ts";
 
 /** One of a seat's own words a look read: its thinking, what it said, or a brief it wrote. */
 type Item = { kind: "thought" | "said" | "brief"; text: string };
@@ -31,14 +30,20 @@ type Pattern = [string, PatternSpec];
  * unsure, and what only it can judge. What they find goes to the incident book, which tells whoever supervises; every
  * answer is kept for labels.
  */
-export async function readLook(services: DeskServices, project: Project, seat: Noticed, look: Look): Promise<void> {
+export async function readLook(
+  services: Pick<DeskServices, "kit" | "incidents" | "teamFor" | "mail" | "roster" | "sensorFor" | "watcher">,
+  project: Project,
+  seat: Noticed,
+  look: Look,
+): Promise<void> {
   const { kit, teamFor } = services;
   const { brains, attention } = teamFor(project);
   const cut = { item: attention.lookItemChars, quote: attention.quoteChars };
   const role = seatOf(kit, seat.provider)?.role;
   if (brains.mode === "off" || !role) return;
-  const place = placeOf(project, seat);
-  const items = [...look.items, ...briefsSince(project, seat, place, look.since)].map((item) => ({
+  const ledger = ledgerOf(project);
+  const place = placeIn(ledger, seat);
+  const items = [...look.items, ...briefsSince(ledger, seat, place, look.since)].map((item) => ({
     ...item,
     text: clip(item.text, cut.item),
   }));
@@ -76,7 +81,7 @@ export async function readLook(services: DeskServices, project: Project, seat: N
       findings.push(...(await weigh(project, subject, brains.seat, judge, place, items, judged, asked, look, cut)));
     }
   }
-  if (findings.length > 0) await notice(services, project, seat, findings);
+  if (findings.length > 0) await notice(services, project, seat, findings, place);
 }
 
 /** What the seat's work asks of it, which a judgement that leaves it out gets wrong. */
@@ -88,24 +93,20 @@ function askedOf(place: Placed): Record<string, unknown> {
 }
 
 /** The briefs a Lead wrote since its last look: the tasks it laid out, each as its Peer reads what it is asked. */
-function briefsSince(project: Project, seat: Noticed, place: Placed, since: number): Item[] {
-  if (!place.lane || place.task || place.lane.lead !== seat.id) return [];
-  try {
-    return tasksOf(loadLedger(project.state), place.lane.id)
-      .filter((task) => task.kind === "code" && task.openedAt >= since)
-      .map((task) => ({
-        kind: "brief" as const,
-        text: [
-          `${task.id}: ${task.goal}`,
-          task.context ?? "",
-          task.hints.length > 0 ? `Hints: ${task.hints.join(", ")}` : "",
-        ]
-          .filter(Boolean)
-          .join("\n"),
-      }));
-  } catch {
-    return [];
-  }
+function briefsSince(ledger: Ledger | undefined, seat: Noticed, place: Placed, since: number): Item[] {
+  if (!ledger || !place.lane || place.task || place.lane.lead !== seat.id) return [];
+  return tasksOf(ledger, place.lane.id)
+    .filter((task) => task.kind === "code" && task.openedAt >= since)
+    .map((task) => ({
+      kind: "brief" as const,
+      text: [
+        `${task.id}: ${task.goal}`,
+        task.context ?? "",
+        task.hints.length > 0 ? `Hints: ${task.hints.join(", ")}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    }));
 }
 
 /** A question as a brain is asked it: the sensor on one item's `text`, the seat on the whole look. */

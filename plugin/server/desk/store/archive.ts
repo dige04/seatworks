@@ -261,15 +261,17 @@ export function fileRecords(state: string, ledger: Ledger, keepBytes = ARCHIVE_K
 }
 
 /** Checked on a plain read first, so a round with nothing to archive does not rewrite the ledger; records follow once it is saved. */
-export function archiveFinished(services: DeskServices, project: Project, gone: Gone): void {
-  const taken = takeFinished(loadLedger(project.state), gone)
-    ? services.ledgers.transact(project, (ledger) => {
+export function archiveFinished({ ledgers }: Pick<DeskServices, "ledgers">, project: Project, gone: Gone): void {
+  const read = loadLedger(project.state);
+  const archived = takeFinished(read, gone)
+    ? ledgers.transact(project, (ledger) => {
         const found = takeFinished(ledger, gone);
         if (found) keepArchived(project.state, found);
-        return found;
+        return { taken: found, ledger };
       })
     : undefined;
-  const filed = fileRecords(project.state, loadLedger(project.state));
+  const taken = archived?.taken;
+  const filed = fileRecords(project.state, archived?.ledger ?? read);
   if (taken || filed.length > 0) {
     recordEvent(project, {
       kind: "ledger.archived",

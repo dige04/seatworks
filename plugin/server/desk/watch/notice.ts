@@ -4,7 +4,7 @@ import { type Finding, type Incident, deliveryOf, factNext, tell, unheard } from
 import { closeSeat, forget, settledAsNoise, sight } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
-import { laneOfLead, taskOfPeer } from "../../domain/ledger.ts";
+import { type Ledger, laneOfLead, taskOfPeer } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { errorText } from "../../core/errors.ts";
 import { watchLetters } from "../letters/watch-letters.ts";
@@ -16,28 +16,36 @@ export type Noticed = { id: string; provider: string; title?: string | null };
 export type Placed = { where: string; lane?: Lane; task?: Task };
 
 /** Where a seat works, as a letter names it: the Peer on a task, the Lead of a lane, or the seat by its title. */
-export function placeOf(project: Project, seat: Noticed): Placed {
-  try {
-    const ledger = loadLedger(project.state);
-    const task = taskOfPeer(ledger, seat.id);
-    const lane = task ? ledger.lanes[task.lane] : laneOfLead(ledger, seat.id);
-    if (task) return { where: `the Peer on ${task.id} (${task.title})`, lane, task };
-    if (lane) return { where: `the Lead of ${lane.id} (${lane.title})`, lane };
-  } catch {
-    // A ledger that cannot be read leaves the seat named by its title alone.
-  }
+export function placeIn(ledger: Ledger | undefined, seat: Noticed): Placed {
+  const task = ledger && taskOfPeer(ledger, seat.id);
+  const lane = task ? ledger.lanes[task.lane] : ledger && laneOfLead(ledger, seat.id);
+  if (task) return { where: `the Peer on ${task.id} (${task.title})`, lane, task };
+  if (lane) return { where: `the Lead of ${lane.id} (${lane.title})`, lane };
   return { where: seat.title ? `${seat.title} (${seat.id})` : seat.id };
 }
 
+/** The ledger if it can be read: one that cannot leaves a seat named by its title alone. */
+export function ledgerOf(project: Project): Ledger | undefined {
+  try {
+    return loadLedger(project.state);
+  } catch {
+    return undefined;
+  }
+}
+
+export const placeOf = (project: Project, seat: Noticed): Placed => placeIn(ledgerOf(project), seat);
+
+type Noticing = Pick<DeskServices, "kit" | "incidents" | "teamFor" | "mail" | "roster">;
+
 /** What the watch saw of a seat: the findings that open or sight incidents, held or told as each one's signal says. */
 export async function notice(
-  services: DeskServices,
+  services: Noticing,
   project: Project,
   seat: Noticed,
   findings: Finding[],
+  place = placeOf(project, seat),
   now = Date.now(),
 ): Promise<{ opened: Incident[]; sent: string[]; place: Placed }> {
-  const place = placeOf(project, seat);
   if (findings.length === 0) return { opened: [], sent: [], place };
   for (const finding of findings) {
     recordEvent(project, {
@@ -129,7 +137,7 @@ function openIncidents(
  * and never to the seat it watched. With nobody seated to tell, each is held until somebody sits down.
  */
 async function deliver(
-  services: DeskServices,
+  services: Noticing,
   project: Project,
   seat: Noticed,
   place: Placed,
@@ -183,7 +191,7 @@ function unheardAll(incidents: DeskServices["incidents"], project: Project, ids:
   });
 }
 
-export async function retell(services: DeskServices, project: Project, now = Date.now()): Promise<string[]> {
+export async function retell(services: Noticing, project: Project, now = Date.now()): Promise<string[]> {
   const { incidents } = services;
   const told: string[] = [];
   const nobody = incidents.transact(project, (incidents) =>
@@ -216,6 +224,11 @@ export async function retell(services: DeskServices, project: Project, now = Dat
   return told;
 }
 
-export function closeIncidentsOf(services: DeskServices, project: Project, seat: string, now = Date.now()): string[] {
-  return services.incidents.transact(project, (incidents) => closeSeat(incidents, seat, now));
+export function closeIncidentsOf(
+  { incidents }: Pick<DeskServices, "incidents">,
+  project: Project,
+  seat: string,
+  now = Date.now(),
+): string[] {
+  return incidents.transact(project, (book) => closeSeat(book, seat, now));
 }
