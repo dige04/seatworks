@@ -49,9 +49,9 @@ python3 "$SEATWORKS_KIT/content/skills/lead/ultra-review/scripts/review_pack.py"
   --include AGENTS.md --exclude-tests --task "BRIEF" --out "$SEATWORKS_STATE/ultra-review/NAME-review.md" --dry-run
 ```
 
-It packs the reviewable files with the change's diff, turns each rule group into a reviewer question, and writes the reviewer prompt. Add `--focus` for an excluded file that carries behavior and `--include` for each governing document the reviewer needs to judge the architecture. For a large or architecture review, `--format zip` builds a source snapshot without the diff, prompt beside it, so the reviewer reads source truth, not a patch. `ask` the owner with the dry run's file count and size, defaulting to build, then build without `--dry-run`.
+It packs the reviewable files with the change's diff, turns each rule group into a reviewer question, and writes the reviewer prompt. Add `--focus` for an excluded file that carries behavior and `--include` for each governing document the reviewer needs to judge the architecture. For a large or architecture review, `--format zip` builds a source snapshot without the diff, prompt beside it, so the reviewer reads source truth, not a patch. `ask` the Supervisor with the dry run's file count and size, defaulting to build, then build without `--dry-run`.
 
 ## Ends in
 
 - **hunt:** the report. Fill its Rulings table: a confirmed finding becomes a task in `add_tasks` whose context names the finding IDs, whose hints point where it was found, and whose acceptance includes its disconfirming check; a rejected one keeps its row with your reason.
-- **pack:** the file and its prompt, named to the owner in `report`, who decides where they go.
+- **pack:** the file and its prompt, named in `report`, for the Supervisor to decide where they go.

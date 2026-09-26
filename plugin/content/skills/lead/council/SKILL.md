@@ -1,6 +1,6 @@
 ---
 name: council
-description: "Settles one non-trivial architecture, code, product, research, strategy, policy, or incident decision with sealed independent reviewers, bounded verification, and one binding verdict the Lead drafts alone. Use when a decision has several defensible answers and is expensive or hard to reverse, or when the owner or the directive asks for one; not for a choice a cheap slice settles."
+description: "Settles one non-trivial architecture, code, product, research, strategy, policy, or incident decision with sealed independent reviewers, bounded verification, and one binding verdict the Lead drafts alone. Use when a decision has several defensible answers and is expensive or hard to reverse, or when the Supervisor or the directive asks for one; not for a choice a cheap slice settles."
 ---
 
 # Council
@@ -31,7 +31,7 @@ Reviewers of one model are sealed but correlated: treat their agreement as weak 
 
 Fill the neutral brief in [references/report-format.md](references/report-format.md): the request verbatim, a decision question that clarifies but never narrows it, facts with provenance apart from claims, constraints apart from preferences, the scope reviewers may read, and the snapshot commit. Build the case output contract from the request's natural units, asking only what comparing evidence needs; the file also holds focus texts, claim types and statuses. Work only on a task's branch is read by starting reviewers with that `task`.
 
-**Framing lint.** Repair the brief until it preserves the request, implies no preferred verdict, marks unverified premises as claims, excludes no option without authority, and keeps every unit the requester expects with no filler. `ask` the owner only when missing authority or scope would change the decision. Then start Round 1 at once.
+**Framing lint.** Repair the brief until it preserves the request, implies no preferred verdict, marks unverified premises as claims, excludes no option without authority, and keeps every unit the requester expects with no filler. `ask` only when missing authority or scope would change the decision. Then start Round 1 at once.
 
 ## 2. Sealed Round 1
 
