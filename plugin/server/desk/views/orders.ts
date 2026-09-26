@@ -24,9 +24,8 @@ export function ordersView(kit: Kit, project: Project, now = Date.now()): Orders
     fault: "fault" in read ? read.fault : null,
     askFirst: config?.askFirst ?? [],
     riskRules: config
-      ? (config.riskRules ?? kit.ecosystem.riskRules).map(({ paths, invariant, reviewQuestion, rehearse }) => ({
+      ? (config.riskRules ?? kit.ecosystem.riskRules).map(({ paths, reviewQuestion, rehearse }) => ({
           paths,
-          invariant,
           reviewQuestion,
           rehearse: rehearse ?? null,
         }))

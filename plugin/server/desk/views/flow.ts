@@ -69,7 +69,6 @@ function tasksByLane(
       after: task.after ?? [],
       held: task.held?.why ?? null,
       peer,
-      minutes: minutes(now, task.updatedAt),
       handback: task.handback ? minutes(now, task.handback.at) : null,
     };
     held.set(task.lane, [...(held.get(task.lane) ?? []), built]);
@@ -227,5 +226,5 @@ export function flowView(
     questions: questionsOf(ledger, now),
   };
   const revision = createHash("sha1").update(JSON.stringify(body)).digest("hex").slice(0, 16);
-  return { ...body, at: now, revision };
+  return { ...body, revision };
 }

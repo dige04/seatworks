@@ -11,7 +11,6 @@ export function describeCatalog(kit: Kit): CatalogView {
       label: role.label,
       description: role.description ?? "",
       can: role.can ?? [],
-      concern: role.concern ?? null,
       defaults: role.defaults,
       follows: role.follows ?? null,
       harnesses: Object.values(kit.harnesses)
@@ -30,10 +29,7 @@ export function describeCatalog(kit: Kit): CatalogView {
         id: entry.id,
         label: entry.label,
         description: entry.description ?? "",
-        kind: entry.kind,
-        transport: entry.kind === "proxy" ? "stdio" : (entry.server?.type ?? "stdio"),
         settings: entry.settings,
-        defaults: entry.defaults,
         roles: templateRoles(entry),
       })),
     sensors: Object.values(kit.sensors).map((sensor) => ({

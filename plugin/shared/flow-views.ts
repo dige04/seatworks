@@ -22,7 +22,6 @@ const FlowTask = z.object({
   after: z.array(z.string()),
   held: z.string().nullable(),
   peer: FlowSeat.nullable(),
-  minutes: z.number(),
   handback: z.number().nullable(),
 });
 export type FlowTask = z.infer<typeof FlowTask>;
@@ -104,7 +103,6 @@ const WatchView = z.object({
 export type WatchView = z.infer<typeof WatchView>;
 const FlowView = z.object({
   project: z.string(),
-  at: z.number(),
   revision: z.string(),
   supervisors: z.array(FlowSeat),
   lanes: z.array(FlowLane),

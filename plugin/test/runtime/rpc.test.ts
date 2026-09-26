@@ -41,11 +41,9 @@ test("every contract the panel calls is served, the first call brings the daemon
     ],
   );
   assert.deepEqual(
-    catalog.mcp.map((entry) => [entry.id, entry.transport]),
-    [
-      ["ide", "stdio"],
-      ["docs", "http"],
-    ],
+    catalog.mcp.map((entry) => entry.id),
+    ["ide", "docs"],
+    "in the order the kit gives them",
   );
   const nowhere = await call(contracts.team, { project: "nowhere-000000" });
   assert.match(

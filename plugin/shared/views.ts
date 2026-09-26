@@ -36,7 +36,6 @@ export const CatalogView = z.object({
       label: z.string(),
       description: z.string(),
       can: z.array(z.string()),
-      concern: z.string().nullable(),
       defaults: z.object({ harness: z.string(), model: z.string().optional(), thinking: z.string().optional() }),
       follows: z.string().nullable(),
       harnesses: z.array(z.string()),
@@ -50,10 +49,7 @@ export const CatalogView = z.object({
       id: z.string(),
       label: z.string(),
       description: z.string(),
-      kind: z.string(),
-      transport: z.string(),
       settings: z.record(z.string(), SettingSpec),
-      defaults: z.object({ enabled: z.boolean() }),
       roles: z.array(z.string()),
     }),
   ),
@@ -161,7 +157,6 @@ const OrdersView = z.object({
   riskRules: z.array(
     z.object({
       paths: z.array(z.string()),
-      invariant: z.string(),
       reviewQuestion: z.string(),
       rehearse: z.string().nullable(),
     }),
