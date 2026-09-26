@@ -250,3 +250,26 @@ test("Paseo holds a provider for each role and agent an attached project's team 
     "and no patch touches them",
   );
 });
+
+test("while Paseo cannot say which seats are live, a provider the team no longer seats stays, since a seat may still run on it", async () => {
+  const paseo = daemon();
+  const { call, providers } = served(paseo);
+  const root = realpathSync(tempDir("sw2-rpc-unlisted-"));
+  git(root, "init", "-q");
+  const added = which(await call(contracts.projectsAdd, { root }), "slug");
+  assert.ok("sw2-lead-claude" in (await providers()));
+  paseo.agents.list = async () => {
+    throw new Error("the daemon did not answer");
+  };
+  const own = which(await call(contracts.settingsRead, { project: added.slug }), "values");
+  const values = { roles: { lead: { harness: "omp" } } };
+  assert.equal(
+    (await call(contracts.settingsWrite, { project: added.slug, revision: own.revision, values })).status,
+    "saved",
+  );
+  assert.deepEqual(
+    Object.keys(await providers()).sort(),
+    ["sw2-lead-claude", "sw2-lead-omp", "sw2-peer-omp", "sw2-scribe-omp", "sw2-supervisor-claude"],
+    "the Lead's new agent is set up, and its old one stays until Paseo can say nobody runs on it",
+  );
+});
