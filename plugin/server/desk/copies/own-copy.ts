@@ -24,7 +24,7 @@ export class OwnCopy {
   }
 
   async inPlace(project: Project, branch: string, base: string): Promise<{ path: string; workspaceId: string }> {
-    const copy = await pristineState(project.root);
+    const copy = await pristineState(project.root, false);
     if (copy !== "clean") {
       throw new Error(
         copy === "dirty"

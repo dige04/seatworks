@@ -131,7 +131,7 @@ async function homeOf(
   // A waiting lane opens into the copy as it is by then; one the copy is taken from gets a copy of its own or waits.
   if (!opensNow || ownCopyHolder(Object.values(loadLedger(project.state).lanes)))
     return { home: said ?? config.laneHome };
-  const home = laneHomeFor(said, config, here, await uncommittedPaths(project.root));
+  const home = laneHomeFor(said, config, here, await uncommittedPaths(project.root, false));
   if (typeof home !== "object") return { home };
   if (said ?? config.laneHome)
     return {

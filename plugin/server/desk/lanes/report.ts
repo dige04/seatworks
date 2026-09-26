@@ -69,7 +69,7 @@ async function readyBlocked(desk: DeskServices, project: Project, lane: Lane): P
   const holding = inCopy.find((task) => task.branch === on);
   if (holding)
     return `The lane's working copy is on ${on}, ${holding.id}'s branch, not ${lane.branch}: the gate would read ${holding.id}'s tree. Report ready once it is merged or cut.`;
-  const unsaved = await unsavedIn(lane.worktree!);
+  const unsaved = await unsavedIn(lane.worktree!, !lane.slot);
   return unsaved
     ? `The lane's working copy ${unsaved}: only what is committed is gated and lands. Report ready once it is committed or cleared.`
     : undefined;

@@ -35,7 +35,7 @@ export async function landLane(
   const approved = lane.landApproval?.approved && lane.landApproval.head === tip ? lane.landApproval : undefined;
   const waits = await waitsForHuman(desk, project, lane, tip);
   if (waits) return waits;
-  const unsaved = lane.worktree ? await unsavedIn(lane.worktree) : undefined;
+  const unsaved = lane.worktree ? await unsavedIn(lane.worktree, !lane.slot) : undefined;
   if (unsaved) {
     const why = `its working copy ${unsaved}`;
     const text = `Lane ${lane.id} was not closed: ${why}. Only what is committed lands, so overGate does not pass it: have its Lead get it committed or cleared, then land_lane it again; or drop_lane it, which keeps the copy and that work.`;

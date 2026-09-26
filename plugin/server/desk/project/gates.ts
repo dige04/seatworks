@@ -65,7 +65,7 @@ export async function laneGate(
   const files = rehearsing ? (await changeOf(project, lane)).files : [];
   const steps = [...(gate ? [{ command: gate, what: gate }] : []), ...rehearsals(project, desk.kit, files)];
   if (steps.length === 0 || !lane.worktree) return { ok: true, text: "no gate set", ran: false };
-  const unsaved = await unsavedIn(lane.worktree);
+  const unsaved = await unsavedIn(lane.worktree, !lane.slot);
   if (unsaved) return { ok: false, text: `the gate did not run: the lane's working copy ${unsaved}`, ran: false };
   const runs = await runSteps(desk, project, lane.id, lane.worktree, steps, false);
   for (const run of runs)

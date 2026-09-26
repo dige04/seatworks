@@ -126,6 +126,31 @@ test("work nobody committed in a lane's copy never lands, over the gate or not, 
   assert.equal(readFileSync(join(copy, "notes.txt"), "utf-8"), "half a thought\n", "the desk never deletes work");
 });
 
+test("in the Human's own checkout, files git does not track are theirs: a fact for whoever lands, never a stop, while changes to tracked files still stop READY and landing", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  await h.call(sup, "supervisor", "set_project", { gate: "true" });
+  writeFileSync(join(h.root, "notes.txt"), "the Human's own notes\n");
+  const opened = await h.call(sup, "supervisor", "open_lane", { title: "Cart", outcome: "a cart", ...scope });
+  assert.equal(opened.ok, true, opened.text);
+  const lane = h.ledger().lanes.L1!;
+  assert.equal(lane.slot, undefined, "it opened in the project's own copy");
+  writeFileSync(join(h.root, "a.txt"), "cart\n");
+  h.git(h.root, "commit", "-qam", "cart");
+  writeFileSync(join(h.root, "b.txt"), "the Human is editing\n");
+  const report = () => h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  assert.match((await report()).text, /working copy has work uncommitted \(M b\.txt\)/);
+  h.git(h.root, "checkout", "--", "b.txt");
+  const ready = await report();
+  assert.equal(ready.ok, true, ready.text);
+  h.agents.get(lane.lead!)!.status = "idle";
+  const landed = await h.call(sup, "supervisor", "land_lane", { lane: "L1" });
+  assert.equal(landed.ok, true, landed.text);
+  assert.match(landed.text, /The project's own copy holds files git does not track, which do not land: notes\.txt\./);
+  assert.equal(readFileSync(join(h.root, "notes.txt"), "utf-8"), "the Human's own notes\n");
+  assert.equal(h.git(h.root, "show", "main:a.txt"), "cart\n");
+});
+
 /** Runs `during` with a git first on PATH that fails the `nth` call whose words hold `words`, as git fails when it cannot read. */
 async function withGitFailing<T>(h: Harness, words: string, nth: number, during: () => Promise<T>): Promise<T> {
   const bin = tempDir("sw2-git-");

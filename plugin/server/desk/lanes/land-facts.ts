@@ -1,5 +1,5 @@
 import { changedFiles, diffCounts, kindOf } from "../../core/git-diff.ts";
-import { commitsAhead, git, mergeBase } from "../../core/git.ts";
+import { commitsAhead, git, mergeBase, untrackedPaths } from "../../core/git.ts";
 import { coverOf, globToRegex, uncovered } from "../../core/scope.ts";
 import { capped, plural } from "../../core/text.ts";
 import type { Kit } from "../../catalog/kit/kit.ts";
@@ -180,11 +180,22 @@ export async function landFacts(
         : [`Gate: ${gate.ok ? "passed" : "failed"} on the lane.`]),
     ...(await testFacts(kit, root, from, lane.branch, files)),
     ...outside,
+    ...(await untrackedFacts(lane)),
     ...(writers.length > 0
       ? [`It changed what one writer at a time may write, which open lanes may write too: ${besideText(writers)}.`]
       : []),
     ...recordFacts(project, ledger, lane),
   ];
+}
+
+/** In the Human's own checkout, what git does not track is theirs and stops nothing, but it neither lands nor goes. */
+async function untrackedFacts(lane: Lane): Promise<string[]> {
+  if (lane.slot || !lane.worktree) return [];
+  const files = await untrackedPaths(lane.worktree);
+  if (files?.length === 0) return [];
+  return files
+    ? [`The project's own copy holds files git does not track, which do not land: ${capped(files, SHOWN)}.`]
+    : ["What the project's own copy holds untracked could not be read from git."];
 }
 
 /** The test files a change touches: changed, deleted, or weakened by a skip marker or lost assertions. */

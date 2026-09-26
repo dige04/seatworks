@@ -96,11 +96,11 @@ export function cleanState(cwd: string): Promise<Cleanliness> {
 }
 
 /**
- * Uncommitted and untracked paths, or undefined when git cannot say. Read NUL-separated, so a path with a space or an
- * arrow in it is itself, and a rename names where it went, not where it came from.
+ * Uncommitted paths, untracked ones too unless `untracked` is false, or undefined when git cannot say. Read
+ * NUL-separated, so a path with a space or an arrow in it is itself, and a rename names where it went.
  */
-export async function uncommittedPaths(cwd: string): Promise<string[] | undefined> {
-  const run = await git(cwd, ["status", "--porcelain", "-z"]);
+export async function uncommittedPaths(cwd: string, untracked = true): Promise<string[] | undefined> {
+  const run = await git(cwd, ["status", "--porcelain", "-z", ...(untracked ? [] : ["--untracked-files=no"])]);
   if (run.code !== 0) return undefined;
   const entries = run.stdout.split("\0").filter(Boolean);
   const found: string[] = [];
@@ -113,9 +113,19 @@ export async function uncommittedPaths(cwd: string): Promise<string[] | undefine
   return found;
 }
 
-/** Nothing uncommitted or untracked, as a lane takeover requires. */
-export async function pristineState(cwd: string): Promise<Cleanliness> {
-  const paths = await uncommittedPaths(cwd);
+/** The files in `cwd` git does not track, or undefined when git cannot say. */
+export async function untrackedPaths(cwd: string): Promise<string[] | undefined> {
+  const run = await git(cwd, ["status", "--porcelain", "-z"]);
+  if (run.code !== 0) return undefined;
+  return run.stdout
+    .split("\0")
+    .filter((entry) => entry.startsWith("?? "))
+    .map((entry) => entry.slice(3));
+}
+
+/** Nothing uncommitted, and nothing untracked unless `untracked` is false. */
+export async function pristineState(cwd: string, untracked = true): Promise<Cleanliness> {
+  const paths = await uncommittedPaths(cwd, untracked);
   return paths === undefined ? "unknown" : paths.length > 0 ? "dirty" : "clean";
 }
 
@@ -268,8 +278,8 @@ export async function mergeOf(
 }
 
 /** What is uncommitted in `cwd`, named: a stray message file reads as unfinished work otherwise. */
-export async function uncommittedIn(cwd: string): Promise<string> {
-  const run = await git(cwd, ["status", "--porcelain"]);
+export async function uncommittedIn(cwd: string, untracked = true): Promise<string> {
+  const run = await git(cwd, ["status", "--porcelain", ...(untracked ? [] : ["--untracked-files=no"])]);
   const lines = run.stdout.split("\n").filter((line) => line.trim());
   const shown = lines
     .slice(0, 6)
