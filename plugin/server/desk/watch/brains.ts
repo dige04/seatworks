@@ -82,10 +82,16 @@ export async function readLook(
   if (findings.length > 0) await notice(services, project, seat, findings, place);
 }
 
-/** What the seat's work asks of it, which a judgement that leaves it out gets wrong. */
+/** What the seat's work asks of it, which a judgement that leaves it out gets wrong, and what it last handed back. */
 function askedOf(place: Placed): Record<string, unknown> {
   const { task, lane } = place;
-  if (task) return { goal: task.goal, acceptance: task.acceptance, out_of_scope: task.outOfScope };
+  if (task)
+    return {
+      goal: task.goal,
+      acceptance: task.acceptance,
+      out_of_scope: task.outOfScope,
+      ...(task.handback ? { handback: task.handback.summary } : {}),
+    };
   if (lane) return { goal: lane.outcome, acceptance: lane.acceptance, out_of_scope: lane.outOfScope };
   return {};
 }

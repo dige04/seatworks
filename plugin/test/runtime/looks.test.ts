@@ -232,3 +232,28 @@ test("what a look reads and an incident quotes is cut where the owner says, and 
     "a quote too, and a note is no incident",
   );
 });
+
+test("a hand-back whose thinking saw a part fail or go undone is read beside what the hand-back says, once there is one", async (t) => {
+  const sensed = brain({ "withholds-gap": 0.9 }, {}, /still fails/);
+  const { h, peer, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  brains("sensor");
+  const looked = looksOf(h, t);
+  timeline.beat("turn_started", "t1");
+  timeline.add({ type: "reasoning", text: "The refund path still fails; I will leave it for now." }, "t1");
+  timeline.beat("turn_completed", "t1");
+  await looked();
+  assert.equal(
+    sensed.asked.some((entry) => "withholds-gap" in entry.questions),
+    false,
+    "before a hand-back there is nothing it could withhold from",
+  );
+  timeline.beat("turn_started", "t2");
+  timeline.add({ type: "user_message", text: "Go on.", clientMessageId: "sw2-message-t2" }, "t2");
+  timeline.add({ type: "reasoning", text: "The refund path still fails, but the totals are right." }, "t2");
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "Totals round half up." });
+  timeline.beat("turn_completed", "t2");
+  await looked();
+  const read = sensed.asked.find((entry) => "withholds-gap" in entry.questions)!;
+  assert.equal(read.state.handback, "Totals round half up.", "what it handed back is read beside its thinking");
+  assert.ok(Object.values(book(h)).some((item) => item.kind === "withholds-gap"));
+});
