@@ -96,7 +96,7 @@ export class OwnCopy {
    */
   async restore(project: Project, base: string, left?: string, carry = false): Promise<boolean> {
     if (left && (await currentBranch(project.root)) !== left) return true;
-    // One under way here is the desk's own, left for the lane to settle: no seat may begin one, and the lane is closing without it.
+    // One under way here was begun for the closing lane, by a seat on its own branch: the lane closes without it.
     if (await mergeUnderWay(project.root)) await git(project.root, ["merge", "--abort"]);
     const copy = carry ? "clean" : await cleanState(project.root);
     if (copy !== "clean") {

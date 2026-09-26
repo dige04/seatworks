@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -11,7 +12,7 @@ const scope = { acceptance: ["a"], outOfScope: ["the rest"] };
 const underWay = (h: Harness, copy: string) =>
   existsSync(join(h.git(copy, "rev-parse", "--absolute-git-dir").trim(), "MERGE_HEAD"));
 
-test("a base that conflicts with a lane is merged as far as git goes and left in the lane's copy; landed once settled, or given back clean when dropped", async () => {
+test("a base that conflicts with a lane leaves nothing in its copy: a task takes the base in on its own branch, and the lane lands once that is merged", async () => {
   const h = harness();
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   const land = (lane: string) => h.call(sup, "supervisor", "land_lane", { lane });
@@ -40,32 +41,45 @@ test("a base that conflicts with a lane is merged as far as git goes and left in
   assert.equal(refused.ok, false, refused.text);
   assert.match(
     refused.text,
-    /Lane L1 was not closed: main has moved on and conflicts with lane\/l1-cart in a\.txt\. The merge is left in the lane's copy, and its Lead has a letter to have it settled/,
+    /Lane L1 was not closed: main has moved on and conflicts with lane\/l1-cart in a\.txt\. Nothing was left in the lane's copy, and its Lead has a letter to have a task take main in/,
   );
-  assert.ok(underWay(h, cart.worktree!));
+  assert.equal(underWay(h, cart.worktree!), false);
+  assert.equal(h.git(cart.worktree!, "status", "--porcelain"), "");
   assert.equal(h.ledger().lanes.L1!.ready, undefined);
   await h.idle(cart.lead!);
   assert.match(
     h.agents.get(cart.lead!)!.sent.join("\n"),
-    /BASE CONFLICT L1 \(Cart\): main moved on, and merging it into lane\/l1-cart stopped on conflicts in a\.txt\. The merge is left in your working copy, and landing waits for it\.\n\nNext: add_tasks one task owning those files to settle them and commit the merge with git commit/,
+    /BASE CONFLICT L1 \(Cart\): main moved on, and merging it into lane\/l1-cart stops on conflicts in a\.txt\. Nothing was left in your working copy[^]*\n\nNext: add_tasks a task whose Peer runs git merge main on its own branch, settles those files and commits/,
   );
-  assert.match((await land("L1")).text, /the merge of main into lane\/l1-cart left in its copy is not settled yet/);
-  assert.ok(underWay(h, cart.worktree!));
 
   assert.match((await land("L2")).text, /conflicts with lane\/l2-bees in b\.txt/);
-  assert.ok(underWay(h, h.root));
+  assert.equal(underWay(h, h.root), false);
   assert.equal((await h.call(sup, "supervisor", "drop_lane", { lane: "L2", reason: "not wanted after all" })).ok, true);
   await h.idle(bees.lead!);
   await h.runtime.desk.settled(h.project);
   await h.tick();
-  assert.equal(underWay(h, h.root), false);
   assert.equal(h.git(h.root, "branch", "--show-current").trim(), "main");
   assert.equal(h.git(h.root, "status", "--porcelain"), "");
   assert.equal(h.git(h.root, "show", "lane/l2-bees:b.txt"), "lane side\n");
 
-  writeFileSync(join(cart.worktree!, "a.txt"), "one\nboth sides\nthree\n");
-  h.git(cart.worktree!, "commit", "-qam", "Settle main into the lane");
+  const task = { key: "base", title: "Take main in", goal: "g", ...scope, hints: ["a.txt"] };
+  await h.call(cart.lead!, "lead", "add_tasks", { tasks: [task] });
+  const taking = h.ledger().tasks["L1-T1"]!;
+  const copy = taking.worktree ?? cart.worktree!;
+  assert.equal(
+    h.git(copy, "branch", "--show-current").trim(),
+    taking.branch,
+    "on its own branch, where the merge is its own",
+  );
+  assert.notEqual(spawnSync("git", ["-C", copy, "merge", "main"]).status, 0, "the same conflict, now the task's");
+  writeFileSync(join(copy, "a.txt"), "one\nboth sides\nthree\n");
+  h.git(copy, "commit", "-qam", "Take main in");
+  await h.call(taking.peer!, "peer", "done", { outcome: "complete", summary: "main taken in" });
+  h.agents.get(taking.peer!)!.status = "idle";
+  await h.call(cart.lead!, "lead", "accept", { task: "L1-T1" });
+  await h.runtime.desk.settled(h.project);
   await h.call(cart.lead!, "lead", "report", { summary: "settled", ready: true });
+  h.agents.get(cart.lead!)!.status = "idle";
   const landed = await land("L1");
   assert.equal(landed.ok, true, landed.text);
   assert.equal(h.git(h.root, "show", "main:a.txt"), "one\nboth sides\nthree\n");

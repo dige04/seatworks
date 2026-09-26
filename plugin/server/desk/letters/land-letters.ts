@@ -42,14 +42,14 @@ export const landLetters = {
     return fyi(mail("landheld", [lane.id, head], text, "Commit nothing more on the lane until the Human decides."));
   },
 
-  /** No seat may run git merge, so landing began bringing the base in and left what stopped it for a Peer to settle. */
+  /** The base does not merge into the lane cleanly: a task takes it in on its own branch, as the Lead lays out. */
   baseConflict(lane: Lane, conflicts: string[]): Letter {
-    const text = `BASE CONFLICT ${lane.id} (${lane.title}): ${lane.base} moved on, and merging it into ${lane.branch} stopped on conflicts in ${conflicts.join(", ")}. The merge is left in your working copy, and landing waits for it.`;
+    const text = `BASE CONFLICT ${lane.id} (${lane.title}): ${lane.base} moved on, and merging it into ${lane.branch} stops on conflicts in ${conflicts.join(", ")}. Nothing was left in your working copy, and the lane does not land until it takes ${lane.base} in.`;
     return mail(
       "baseconflict",
       [lane.id, conflicts.join(",")],
       text,
-      "add_tasks one task owning those files to settle them and commit the merge with git commit, then report the lane ready again.",
+      `add_tasks a task whose Peer runs git merge ${lane.base} on its own branch, settles those files and commits; once it is merged, report ready again.`,
     );
   },
 

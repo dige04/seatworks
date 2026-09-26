@@ -143,8 +143,8 @@ export async function removeWorktree(root: string, path: string | undefined): Pr
 type MergeResult = { ok: true; before: string; after: string } | { ok: false; conflicts: string[]; message: string };
 
 /**
- * `leave` keeps a merge stopped on conflicts in place for a seat to settle and commit, since no seat may run git merge; anything
- * else that stops it is undone. The Human's rerere would settle conflicts unseen, their signer can wait on them, and their
+ * `leave` keeps a merge stopped on conflicts in place for the seat whose branch it is to settle and commit; anything else that
+ * stops it is undone. The Human's rerere would settle conflicts unseen, their signer can wait on them, and their
  * commit hooks judge their people's commits, not the desk's merges: none of them applies.
  */
 export async function mergeBranch(cwd: string, branch: string, message: string, leave = false): Promise<MergeResult> {
@@ -171,7 +171,7 @@ export async function mergeBranch(cwd: string, branch: string, message: string, 
   return { ok: false, conflicts, message: (run.stdout + run.stderr).trim().slice(-1500) };
 }
 
-/** A merge begun in the copy and neither committed nor undone: no seat may begin one, so it is one the desk left for a seat to settle. */
+/** A merge begun in the copy and neither committed nor undone. */
 export async function mergeUnderWay(cwd: string): Promise<boolean> {
   return (await git(cwd, ["rev-parse", "-q", "--verify", "MERGE_HEAD"])).code === 0;
 }
