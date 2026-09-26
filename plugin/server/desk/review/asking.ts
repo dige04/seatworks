@@ -7,8 +7,8 @@ import { type Assessments, askKept, holds, keepUnasked } from "../store/assessme
 import type { DeskServices } from "../services.ts";
 
 /**
- * One moment of the record review asks about, as evidence for whoever accepts the work: whose it is (`subject`), which of theirs (`episode`), the state the
- * questions read, and each question by the name it is asked under, with the check it comes from and the fields the code fills.
+ * One moment of the record review asks about as evidence for whoever accepts the work: whose (`subject`), which of theirs
+ * (`episode`), the state its questions read, and each question by name with its check and the fields the code fills.
  */
 export type Case = {
   subject: string;
@@ -44,7 +44,6 @@ function questionOf(check: CheckSpec, fill: Record<string, string> = {}): Questi
   return { type: check.type, instructions: filled as Record<string, string>, criteria: check.criteria };
 }
 
-/** Where an answer falls: a noul on its check's thresholds, a choice as picked where it is sure enough. */
 function verdictOf(check: CheckSpec, answer: Answer | undefined): string {
   if (check.type === "noul") return holds(check, answer);
   return answer && "choice" in answer && answer.confidence >= check.sure ? answer.choice : "unclear";

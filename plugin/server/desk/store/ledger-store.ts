@@ -18,7 +18,6 @@ export class LedgerStore {
     this.touched = touched;
   }
 
-  /** The ledger as it stands; one that cannot be read throws rather than reads as empty. */
   read(project: Project): Ledger {
     return loadLedger(project.state);
   }
@@ -32,7 +31,6 @@ export class LedgerStore {
     return result;
   }
 
-  /** Changes one lane under the lock; undefined when there is no such lane. */
   setLane<T = void>(project: Project, laneId: string, change: (lane: Lane) => Sync<T>): T | undefined {
     return this.transact<T | undefined>(project, (ledger) => {
       const lane = ledger.lanes[laneId];
@@ -40,7 +38,6 @@ export class LedgerStore {
     });
   }
 
-  /** Changes one task under the lock and stamps it; a copy of it as saved, or undefined when there is no such task. */
   setTask(project: Project, taskId: string, change: (task: Task) => void): Task | undefined {
     return this.transact(project, (ledger) => {
       const task = ledger.tasks[taskId];
@@ -51,7 +48,6 @@ export class LedgerStore {
     });
   }
 
-  /** Moves a task by its lifecycle, `change` alongside; a move the table refuses changes nothing and gives the status that stopped it. */
   moveTask(
     project: Project,
     taskId: string,
@@ -68,7 +64,6 @@ export class LedgerStore {
     });
   }
 
-  /** As `moveTask`, for a lane: a move its table refuses leaves it as it was. */
   moveLane(project: Project, laneId: string, move: LaneMove): void {
     this.setLane(project, laneId, (lane) => {
       LANE.move(lane, move);

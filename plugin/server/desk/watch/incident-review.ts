@@ -12,7 +12,6 @@ type Verdict = NonNullable<Incident["label"]>;
 
 const at = (ms: number) => new Date(ms).toISOString().slice(0, 16).replace("T", " ");
 
-/** One incident told to whoever supervises, as its list shows it. */
 function line(item: Incident): string {
   const sent = `told ${at(item.told ?? item.last)}`;
   const state = item.open ? sent : ["closed", sent, item.label ? `marked ${item.label}` : "not marked"].join(", ");

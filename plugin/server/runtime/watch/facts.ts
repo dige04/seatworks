@@ -5,7 +5,10 @@ import { oneLine } from "../../core/text.ts";
 import { type Fact, fact } from "../../domain/incident.ts";
 import type { Call, Unit } from "./window.ts";
 
-/** `skipped` and `assertion` are global, since they are counted; `runners` are the commands whose first word says little. */
+/**
+ * `skipped` and `assertion` are global, since they are counted; `runners` are the commands whose first word says little;
+ * `scope` is a parallel task's holds or its lane's write set, and empty or none is anywhere in its copy.
+ */
 export type Rules = {
   destructive: RegExp;
   testPath: RegExp;
@@ -17,7 +20,6 @@ export type Rules = {
   gates: string[];
   cwd?: string;
   temp?: string;
-  /** What the seat writes inside: a parallel task's holds, or its lane's write set; empty or none is anywhere in its copy. */
   scope?: string[];
   repeatsAt: number;
   recoverWithin: number;

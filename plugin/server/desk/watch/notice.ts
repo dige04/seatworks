@@ -37,7 +37,6 @@ export const placeOf = (project: Project, seat: Noticed): Placed => placeIn(ledg
 
 type Noticing = Pick<DeskServices, "kit" | "incidents" | "teamFor" | "mail" | "roster">;
 
-/** What the watch saw of a seat: the findings that open or sight incidents, held or told as each one's signal says. */
 export async function notice(
   services: Noticing,
   project: Project,
@@ -86,7 +85,6 @@ async function pageUnbooked(
   for (const page of pages) await mail.post(to, watchLetters.unbooked(page, place, seat.id, fault, { human }));
 }
 
-/** Opens or sights an incident for each finding not settled as noise, and tells what is not told yet. */
 function openIncidents(
   { kit, incidents, teamFor }: Pick<DeskServices, "kit" | "incidents" | "teamFor">,
   project: Project,

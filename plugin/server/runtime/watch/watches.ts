@@ -12,7 +12,6 @@ import { daemonLog } from "../../core/logger.ts";
 
 export type WatchedSeat = { id: string; provider: string; cwd: string; title?: string | null };
 
-/** What one look read of a seat: its new units, the facts the code raised meanwhile, since when, and its latest instruction. */
 export type SeatLook = {
   units: Unit[];
   facts: string[];
@@ -44,7 +43,6 @@ export class SeatWatch {
   private readonly durations: number[] = [];
   private readonly told = new Set<string>();
   private readonly recovery = new Recovery();
-  /** Where the last look read the window to, when, and the facts the code raised since. */
   private looked = 0;
   private lookedAt = Date.now();
   private readonly lookFacts = new Set<string>();
@@ -107,7 +105,6 @@ export class SeatWatch {
     return this.fresh(facts, change.call?.id);
   }
 
-  /** Whether a look is due while the turn runs: `minutes` since the last look, or since the turn began. */
   lookDue(now: number, minutes: number): boolean {
     return this.running && now - Math.max(this.lookedAt, this.startedAt) >= minutes * 60_000;
   }
@@ -221,7 +218,6 @@ type WatchDeps = {
   seats: Seats;
   context: (seat: WatchedSeat) => SeatContext | undefined;
   found: (watch: SeatWatch, facts: Fact[]) => void;
-  /** What a look read of the seat, for the brains. */
   looked: (watch: SeatWatch, look: SeatLook) => void;
   /** A person wrote in the seat's own chat, past the desk. */
   spoke: (seat: WatchedSeat, text: string) => void;
@@ -286,7 +282,6 @@ export class Watches {
     for (const id of [...this.followed.keys()]) if (!ids.has(id)) this.drop(id);
   }
 
-  /** Each round: a turn running long, and a look at each seat whose look is due. */
   round(now: number, timing: (watch: SeatWatch) => LongTurn & { lookMinutes: number }): void {
     for (const { watch } of this.followed.values()) {
       const limits = timing(watch);

@@ -15,11 +15,7 @@ import { decide } from "../watch/findings.ts";
 
 type AskDeps = { kit: Kit; desk: Desk; source: TeamSource };
 
-/**
- * An open ask whose reader is gone goes to whoever supervises now. One left waiting is a fact about its reader for the
- * watch, never a reminder on a clock. With the Human out of the loop, a Lead's ask unanswered in the owner's time goes back
- * to the Lead to settle.
- */
+/** An ask left waiting is a fact about its reader for the watch, never a reminder on a clock. */
 export async function dueAsks(
   deps: AskDeps,
   project: Project,
@@ -84,7 +80,6 @@ async function lapse({ desk }: AskDeps, project: Project, ask: Ask, now: number)
   await desk.post(lapsed.to, askLetters.lapsedFor(lapsed, minutes));
 }
 
-/** An ask whose reader has gone goes to whoever supervises now, a Lead's own ask included. */
 async function moveAsk(
   { desk, kit }: AskDeps,
   project: Project,

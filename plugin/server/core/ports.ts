@@ -182,7 +182,6 @@ export type Question = {
 /** A noul's answer is how likely its condition holds, from 0 to 1; a choice's, the pick and how sure of it. */
 export type Answer = { noul: number } | { choice: string; confidence: number };
 
-/** Each question's answer; the model that answered, the input it read where it says, and a seat's reason for each answer. */
 export type Judgement = {
   answers: Record<string, Answer>;
   model: string;
@@ -190,5 +189,4 @@ export type Judgement = {
   why?: Record<string, string>;
 };
 
-/** Whatever answers the watch's questions about one moment of the record. */
 export type Judge = { ask(state: Record<string, unknown>, questions: Record<string, Question>): Promise<Judgement> };

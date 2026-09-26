@@ -29,8 +29,8 @@ const unit = z.number().min(0).max(1);
 const Facts = z.array(text).min(1).optional();
 
 /**
- * One condition, answered yes or no: at or above `yes` it holds, at or below `no` it does not, and between is unclear. A question
- * about an act names in `acts` each fact that opens it and the act as it asks it, the fact's own words where `{quote}` is.
+ * One condition: at or above `yes` it holds, at or below `no` it does not, between is unclear. `acts` names each fact that
+ * opens a question about an act, and the act as it asks it, with the fact's own words where `{quote}` is.
  */
 const Noul = z
   .strictObject({
@@ -65,10 +65,8 @@ export const ChecksFile = z.record(
 );
 
 /**
- * One thing the watch's brains read a seat's own words for: the capabilities of the seats it watches, which of their items
- * it reads, the sensor's one-condition question on an item's `text` (none when only the seat can judge it), the seat's
- * question on the whole look, what each answer means, the signs the look must hold for a yes to count, its thresholds,
- * whether a yes asks attention or is only kept, a note, and what it asks of whoever supervises beyond the plain next step.
+ * What the brains read a seat's own words for: whom it watches, what it reads, the sensor's one-condition question on an
+ * item's `text` (none when only the seat can judge) and the seat's on the whole look, the signs a yes needs, and its level.
  */
 const Pattern = z
   .strictObject({

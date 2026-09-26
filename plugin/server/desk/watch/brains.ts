@@ -9,7 +9,6 @@ import type { DeskServices } from "../services.ts";
 import { type Assessments, askKept, holds } from "../store/assessments.ts";
 import { type Noticed, type Placed, ledgerOf, notice, placeIn } from "./notice.ts";
 
-/** One of a seat's own words a look read: its thinking, what it said, or a brief it wrote. */
 type Item = { kind: "thought" | "said" | "brief"; text: string };
 
 /** What one look read of a seat, as the brains take it: its words since `since`, the code's facts meanwhile, its instruction. */
@@ -71,7 +70,6 @@ export async function readLook(
       : undefined;
   if (sifted && brains.mode === "sensor") findings.push(...sifted.found);
   if (brains.seat && brains.mode !== "sensor") {
-    // In both, the seat judges what the sensor flagged or left unsure; with no sensor to sift, it judges it all.
     const judged =
       sifted && brains.mode === "both"
         ? patterns.filter(([id, pattern]) => sifted.flagged.has(id) || !pattern.instructions)
@@ -109,14 +107,12 @@ function briefsSince(ledger: Ledger | undefined, seat: Noticed, place: Placed, s
     }));
 }
 
-/** A question as a brain is asked it: the sensor on one item's `text`, the seat on the whole look. */
 const asQuestion = (pattern: PatternSpec, instructions: string): Question => ({
   type: "noul",
   instructions,
   criteria: pattern.criteria,
 });
 
-/** Each item asked what its patterns ask of it; a yes is found, and a yes or an unsure answer is flagged for the seat. */
 async function sift(
   project: Project,
   subject: string,

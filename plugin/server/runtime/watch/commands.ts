@@ -10,7 +10,6 @@ const VARIABLE = /^\$\{?([A-Za-z_]\w*)\}?(?:\/|$)/;
 
 const unquoted = (word: string) => word.replace(/^["']|["']$/g, "");
 
-/** What a command makes for itself before it removes it: the variables it sets from mktemp, and what it creates with mkdir or touch. */
 function madeBy(parts: string[]): { variables: Set<string>; paths: string[] } {
   const variables = new Set([...parts.join("\n").matchAll(MKTEMP)].map((match) => match[1]!));
   const paths = parts.flatMap((part) => {

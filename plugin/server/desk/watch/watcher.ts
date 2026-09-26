@@ -25,7 +25,6 @@ type Said = { question: string; says: string; why: string };
 
 const UNSURE = "unsure";
 
-/** The words a question takes: yes, no or unsure, or one of a choice's names or unsure. */
 const takes = (question: Question) => [
   ...(question.type === "noul" ? ["yes", "no"] : Object.keys(question.criteria)),
   UNSURE,
@@ -56,7 +55,6 @@ export class Watcher {
     this.agents = agents;
   }
 
-  /** The project's Watcher as a judge of cases about `subject`, seated as `role`. */
   judge(project: Project, role: string, subject: string): Judge {
     return { ask: (state, questions) => this.ask(project, role, subject, state, questions) };
   }
@@ -90,7 +88,6 @@ export class Watcher {
     return this.lines.run(project.slug, () => this.deliverOne(project, role, letter));
   }
 
-  /** To the project's Watcher, or as the first word of one seated for it. */
   private async deliverOne(project: Project, role: string, letter: Letter): Promise<string> {
     const seated = await this.roster.holderOf(project, "judge");
     if (!seated) return this.start(project, role, letter.text);
@@ -111,7 +108,7 @@ export class Watcher {
     return seat;
   }
 
-  /** A Watcher's answer to a case, or why it is not taken: every question once, by name, in words its question takes, each with a why. */
+  /** Why an answer is not taken, if it is not: every question once, by name, in words its question takes, with a why. */
   answer(caller: string, id: string, said: Said[]): string | undefined {
     const entry = this.waiting.get(id);
     if (!entry)

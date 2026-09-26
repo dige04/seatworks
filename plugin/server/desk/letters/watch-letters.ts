@@ -5,7 +5,6 @@ import type { Finding } from "../../domain/incident.ts";
 import type { Incident } from "../../domain/incident.ts";
 import { type Letter, mail } from "./envelope.ts";
 
-/** What the watch raises with whoever supervises: an incident, or a moment SLP wakes them for. */
 export const watchLetters = {
   /**
    * Read by whoever supervises, W's only reader. `steers` when a message reaches the seat mid-turn; `human` when the Human

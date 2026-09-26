@@ -54,10 +54,7 @@ export function readLedger(state: string): Ledger {
   return ledger;
 }
 
-/**
- * Why this seat is held, as its Lead, a Peer or a reviewer: its lane's hold, or a ledger that cannot be read, which cannot say
- * the lane is free and so holds it too.
- */
+/** Why this seat is held: its lane's hold, or a ledger that cannot be read, which cannot say its lane is free. */
 export function holdOn(state: string, agentId: string): string | undefined {
   let ledger: Ledger;
   try {

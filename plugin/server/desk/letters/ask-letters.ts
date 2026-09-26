@@ -106,7 +106,6 @@ export const askLetters = {
     );
   },
 
-  /** With the Human out of the loop, a Lead's ask nobody answered in time is its own to settle, from what it has. */
   lapsed(ask: Ask, minutes: number): Letter {
     return mail(
       "lapsed",

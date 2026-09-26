@@ -9,7 +9,6 @@ import { type Project, riskRulesOf } from "../project/project.ts";
 
 const SAID = 3000;
 
-/** One moment of a watched seat's turn: the facts the code found in it, the seat's latest instruction and who sent it, and the turn. */
 export type Moment = {
   facts: { kind: string; quote: string }[];
   instruction?: { text: string; from: string[] };

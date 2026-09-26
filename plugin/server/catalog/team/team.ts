@@ -9,8 +9,8 @@ import { type RoleSeat, resolveRole } from "./role-seats.ts";
 import { can, seatedAs } from "../kit/roles.ts";
 
 /**
- * The brains that read what the watch's eye sees, as the settings chose: the sensor, with its key where a settings layer
- * keeps one, and the role that can judge, whose seat reads; `mode` says which of them read.
+ * The brains that read what the watch's eye sees: the sensor, with its key where a layer keeps one, and the role that
+ * judges; `mode` says which of them read.
  */
 type Brains = {
   mode: "off" | "sensor" | "seat" | "both";

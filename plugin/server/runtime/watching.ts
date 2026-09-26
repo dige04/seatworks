@@ -35,7 +35,6 @@ export class Watching {
     return this.troubles.get(project.slug) ?? [];
   }
 
-  /** What the watch reads of a seat: whether it is placed, and the rules it is held to. */
   context(seat: WatchedSeat): SeatContext | undefined {
     const found = seatOf(this.deps.kit, seat.provider);
     if (!found) return undefined;
@@ -135,7 +134,6 @@ export class Watching {
       .catch((error) => daemonLog.error("what the watch looked at could not be read:", error));
   }
 
-  /** Each fact goes on record, and what they add up to may open an incident. */
   found(watch: SeatWatch, facts: Fact[]): void {
     const project = projectOf(watch.seat.cwd);
     for (const fact of facts)

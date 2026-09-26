@@ -11,7 +11,7 @@ type Decisions = {
   retries: number;
 };
 
-/** Between retries. It holds the process open: a script left with nothing else to wait on exited mid-retry. */
+/** Not unref'd, so a script with nothing else to wait on does not exit mid-retry. */
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** A body that stalls is as late as a response that never comes, so the one signal cuts both. */

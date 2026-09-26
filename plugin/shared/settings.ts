@@ -82,7 +82,6 @@ export const AttentionChoice = z.strictObject({
   watcherAnswerMinutes: z.number().int().min(1).optional(),
   /** Which brains read what the watch's eye sees: none, the sensor, the Watcher seat, or both (the sensor sifts, the seat judges). */
   brain: z.enum(["off", "sensor", "seat", "both"]).optional(),
-  /** The sensor the brain uses, by its id in the kit's catalog. */
   sensor: z.string().min(1).optional(),
 });
 

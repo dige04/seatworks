@@ -73,10 +73,7 @@ function carriedOn(ledger: Ledger): Set<string> {
 
 type Entries = { tasks: Task[]; asks: Ask[]; questions: Question[]; agents: AgentRef[] };
 
-/**
- * Whether a closed lane still has something pending: open work naming it, a copy or merge not settled, an open ask or
- * question, a question asked within the day (the Human's daily count reads the ledger), or a seat still there.
- */
+/** A question asked within the day keeps its lane: the Human's daily count of questions reads the ledger. */
 function stillPending(ledger: Ledger, lane: Lane, of: Entries, carried: Set<string>, gone: Gone, now: number): boolean {
   const taskIds = new Set(of.tasks.map((task) => task.id));
   const seats = new Set(
@@ -107,7 +104,6 @@ export function takeFinished(ledger: Ledger, gone: Gone, now = Date.now()): Take
   return taken.lanes.length + taken.agents.length + taken.asks.length + taken.questions.length > 0 ? taken : undefined;
 }
 
-/** Closed lanes past the newest few, with everything on record for them, once nothing of theirs is pending. */
 function takeLanes(ledger: Ledger, gone: Gone, now: number): LaneArchive[] {
   const carried = carriedOn(ledger);
   const closed = Object.values(ledger.lanes)
@@ -134,7 +130,6 @@ function takeLanes(ledger: Ledger, gone: Gone, now: number): LaneArchive[] {
   return taken;
 }
 
-/** Gone seats bound to no lane but each role's newest, then answered asks and day-old settled questions whose asker left. */
 function takeUnbound(ledger: Ledger, gone: Gone, now: number, taken: Taken): void {
   const newest = new Map<string, string>();
   for (const agent of Object.values(ledger.agents)) if (!agent.lane) newest.set(agent.role, agent.id);

@@ -12,7 +12,6 @@ export function testMarkers(kit: Kit): TestMarkers {
   };
 }
 
-/** How a change to a test file weakened it, if it did: a new skip marker, or fewer assertions. */
 export function weakened(before: string, after: string, markers: TestMarkers): string | undefined {
   const count = (text: string, pattern: RegExp): number => (text.match(pattern) ?? []).length;
   if (count(after, markers.skipped) > count(before, markers.skipped)) return "adds a skip marker";

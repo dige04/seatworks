@@ -19,7 +19,6 @@ const isKept = (value: unknown): value is Kept =>
  */
 export class Intents {
   private readonly file: string;
-  /** The fault last reported, so a file that stays unreadable is reported once rather than at every read. */
   private told?: string;
 
   constructor(file: string) {
@@ -37,7 +36,6 @@ export class Intents {
     return undefined;
   }
 
-  /** Writes what `change` makes of the file as it stands; nothing when it cannot be read, or when `change` changes nothing. */
   private change(change: (kept: Kept) => Kept | undefined): void {
     const kept = this.read();
     const next = kept && change(kept);
