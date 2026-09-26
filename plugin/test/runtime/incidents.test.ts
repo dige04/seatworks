@@ -202,6 +202,12 @@ test("a kind most of whose last ten marks were noise is held on probation, and a
     /peer-1/,
     "what the book held back is the owner's to label, not the Supervisor's to read",
   );
+  const held = Object.values(book(h)).find((item) => item.held === "probation")!;
+  assert.equal(
+    (await h.call(sup, "supervisor", "mark_incident", { id: held.id, verdict: "noise" })).ok,
+    false,
+    "nor to mark",
+  );
   marks(5, 10, 3);
   await notice(h, seat(3), "stuck");
   assert.ok(told(3), "half of the last ten useful is not probation, and a mark of unknown says nothing either way");

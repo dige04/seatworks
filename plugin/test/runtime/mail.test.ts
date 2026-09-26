@@ -204,6 +204,15 @@ test("a Peer's silence is counted turn by turn, nudged, then told to its Lead, a
     2,
     "both went",
   );
+
+  archive(h, lead);
+  await turn("Still nothing.");
+  await turn("Nothing yet.");
+  assert.match(
+    heard(h, sup),
+    /SILENT L1-T1[^]*Nothing yet[^]*Next: Its Lead is gone: replace_lead/,
+    "with its Lead gone, whoever supervises is told, with the step it can take",
+  );
 });
 
 test("a Peer that is gone is found past the first page of agents, its Lead told, its copy freed, and its mail shown until given up on", async () => {

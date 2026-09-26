@@ -19,6 +19,15 @@ const packet = (extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
+test("a costly question still open when the Human steps out of the loop parks nothing at its lane's ready report", async () => {
+  const { h, sup, lane } = await laneWithPeer({ hitl: { on: true } }, undefined, { holds: ["a.txt"], parallel: true });
+  await h.call(sup, "supervisor", "ask_human", packet({ lane: "L1", class: "costly" }));
+  h.projectSettings({ hitl: { on: false } });
+  const reported = await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  assert.equal(reported.ok, true, reported.text);
+  assert.equal(h.ledger().lanes.L1!.onHold, undefined, "the Supervisor decides it now");
+});
+
 test("a question's class decides what waits on it: an irreversible one holds its lane now, a costly one at its ready report, and the Human's standing orders raise it", async () => {
   const { h, sup, lane } = await laneWithPeer({ hitl: { on: true } }, undefined, {
     holds: ["a.txt"],

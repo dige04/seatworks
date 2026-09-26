@@ -97,8 +97,8 @@ test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
     [],
     "nor reaches it when its turn ends",
   );
-  const asked = await h.call(lead, "lead", "message", { to: "L1-T1", text: "Why rm -rf build node_modules?" });
-  assert.equal(asked.ok, true, "the command it ran is its own words, which its Lead may name back to it");
+  const asked = await h.call(sup, "supervisor", "message", { to: "L1-T1", text: "Why rm -rf build node_modules?" });
+  assert.equal(asked.ok, true, "the command it ran is its own words, which whoever supervises may name back to it");
   assert.ok(
     watched.labels["paseo.parent-agent-id"],
     "a seat the desk starts under another has a parent, so Paseo never pushes its reply to the Human's phone",
@@ -145,5 +145,26 @@ test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
     (await h.call(sup, "supervisor", "incidents", {})).text,
     /unverified/,
     "held back, it is not listed",
+  );
+});
+
+test("a failure goes unrecovered after as many steps as the settings say", async (t) => {
+  const { h, timeline } = await laneWithPeer({ attention: { signals: allSignals, recoverWithin: 2 } });
+  const noticed = noticesOf(h, t);
+  const run = (callId: string, command: string, status: string) =>
+    timeline.add(
+      { type: "tool_call", callId, name: "Bash", status, detail: { type: "shell", command, output: "" } },
+      "t1",
+    );
+  timeline.beat("turn_started", "t1");
+  timeline.add({ type: "user_message", text: "Fix the build" }, "t1");
+  run("c1", "make build", "failed");
+  run("c2", "ls", "completed");
+  run("c3", "cat Makefile", "completed");
+  await settle();
+  await noticed();
+  assert.deepEqual(
+    h.events("watch.fact").flatMap((event) => (event.fact === "no-recovery" ? [event.quote] : [])),
+    ["2 steps since `make build` failed, and neither it nor the gate has passed since"],
   );
 });
