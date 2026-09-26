@@ -45,6 +45,12 @@ test("a Lead reads its lane and its Peers' records and keeps its own pages, and 
       ["plans/cart-plan.md", true],
     ],
   );
+  const page = join(h.project.state, "pre-mortem", "cart.md");
+  assert.equal(
+    await say(sup, "supervisor", "note", { kind: "pre-mortem", name: "cart.md", text: "# Cart" }),
+    `Wrote ${page}. Name it by that path wherever you point to it.`,
+    "the Supervisor keeps its pages as a Lead does, since neither writes in the repository",
+  );
 
   h.timelineOf(lead).add({ type: "assistant_message", text: "Splitting the build into one task." });
   await h.call(sup, "supervisor", "open_lane", {
