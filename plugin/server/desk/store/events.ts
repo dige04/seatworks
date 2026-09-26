@@ -56,6 +56,7 @@ export type DeskEvent =
   | { kind: "review.started"; task: string; of: string | null; reviewer: string }
   | { kind: "ask.opened"; ask: string; from: string; to: string }
   | { kind: "ask.answered"; ask: string; by: string; told: string | null }
+  | { kind: "ask.lapsed"; ask: string; from: string; minutes: number; text: string }
   | { kind: "slot.taken"; slot: string; branch: string; lane?: string; task?: string }
   | { kind: "slot.heldOpen"; slot: string; writers: string[] }
   | { kind: "slot.released"; slot: string; removed: boolean; kept: string | undefined }

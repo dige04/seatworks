@@ -2,6 +2,7 @@ import type { Kit } from "../../catalog/kit/kit.ts";
 import { can, roleNamed, seatOf } from "../../catalog/kit/roles.ts";
 import type { SeatView } from "../../core/ports.ts";
 import { oneLine } from "../../core/text.ts";
+import { recordEvent } from "../../desk/store/event-log.ts";
 import type { Desk } from "../../desk/desk.ts";
 import { askLetters } from "../../desk/letters/ask-letters.ts";
 import { type Project, conceptFile } from "../../desk/project/project.ts";
@@ -114,6 +115,13 @@ async function lapse({ desk }: AskDeps, project: Project, ask: Ask, now: number)
     return { ...entry };
   });
   if (!lapsed) return;
+  recordEvent(project, {
+    kind: "ask.lapsed",
+    ask: lapsed.id,
+    from: lapsed.from,
+    minutes,
+    text: oneLine(lapsed.text, 160),
+  });
   await desk.post(lapsed.from, askLetters.lapsed(lapsed, minutes, conceptFile(project.state)));
   await desk.post(lapsed.to, askLetters.lapsedFor(lapsed, minutes));
 }

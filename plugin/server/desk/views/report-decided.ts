@@ -7,7 +7,7 @@ import { seatPhrase } from "./report-seats.ts";
 
 /**
  * What a seat decided that would have been the Human's to watch: pushes and tags, merges and landings over a red gate,
- * permissions given or refused for them, oldest first; the reasons are the words of whoever decided.
+ * permissions given or refused for them, asks a Lead settles for want of an answer, oldest first; the reasons are the words of whoever decided.
  */
 export function decidedFor(kit: Kit, ledger: Ledger, events: DatedEvent[], now: number): ReportItem[] {
   const who = (id: string) => seatPhrase(kit, ledger, id);
@@ -28,6 +28,14 @@ export function decidedFor(kit: Kit, ledger: Ledger, events: DatedEvent[], now: 
           {
             title: event.task ? `${event.task} accepted over a red gate` : `${event.lane} landed over a red gate`,
             detail: by(event.by, event.reason),
+            minutes,
+          },
+        ];
+      case "ask.lapsed":
+        return [
+          {
+            title: `${event.ask} went back to ${who(event.from)} to settle`,
+            detail: `nobody answered in ${event.minutes} minutes: ${event.text}`,
             minutes,
           },
         ];
