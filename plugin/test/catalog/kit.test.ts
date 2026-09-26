@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { renderPrompt } from "../../server/catalog/kit/content.ts";
 import { can, roleNamed, roleThatCan, rolesThatCan, toolsOf } from "../../server/catalog/kit/roles.ts";
+import { supportsRole } from "../../server/catalog/kit/harness-files.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { tempDir } from "../tempdir.ts";
 
@@ -262,6 +263,17 @@ test("a roles or refused file in the state root replaces the shipped one, and a 
     renderPrompt(own, own.roles[0]!, "claude", { guides: "/g", state: "/s" }),
     /You drive\./,
     "its prompt is read from where it says, not from inside the package",
+  );
+  const acme = own.harnesses.acme!;
+  assert.equal(supportsRole(own, acme, own.roles[0]!), false, "a role of its own needs its sandbox on each harness");
+  put(mine, "own/harness/acme/settings/driver.settings.json", { sandbox: "read-only" });
+  mkdirSync(join(mine, "own/harness/acme/delta"));
+  writeFileSync(join(mine, "own/harness/acme/delta/driver.md"), "On Acme, keep to the left lane.\n");
+  assert.equal(supportsRole(own, acme, own.roles[0]!), true, "found in the state root's own harness folder");
+  assert.match(
+    renderPrompt(own, own.roles[0]!, "acme", { guides: "/g", state: "/s" }),
+    /You drive\.\n\nOn Acme, keep to the left lane\./,
+    "and so is what that harness adds to its prompt",
   );
 });
 

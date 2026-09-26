@@ -35,7 +35,7 @@ export function resolveRole(
   }
   if (!supportsRole(kit, harness, role))
     errors.push(
-      `${harness.label} has no ${role.role} settings under harness/${harness.id}/settings, so it can't run the ${role.label}`,
+      `${harness.label} has no ${role.role} settings under harness/${harness.id}/settings, shipped or in the state root's own folder, so it can't run the ${role.label}: add them there, or make the role like one that has them`,
     );
   const model = modelFor(harness, choice.model, kit.roles);
   // Paseo refuses a bare provider before the daemon, which surfaced only as a format error at open_lane.

@@ -284,8 +284,9 @@ its own, however short.
   `writes`, `follows`. Nothing in `server/` compares a role to a name; capabilities decide routing,
   acceptance, watching and judging.
 - **A `roles.json` in the state root replaces the shipped one**, and may point at its own prompts and
-  skills, so another arrangement needs no fork. Going your own way inherits the machinery, not the
-  wording.
+  skills, so another arrangement needs no fork. A role of its own takes its sandbox, deltas and rules
+  from the state root's `own/harness/<agent>/` first, or is `like` a role that has them. Going your own
+  way inherits the machinery, not the wording.
 
 ## Where things live that you would not guess
 

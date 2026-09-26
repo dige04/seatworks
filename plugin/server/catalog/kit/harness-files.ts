@@ -3,15 +3,25 @@ import { join } from "node:path";
 import type { HarnessSpec, Kit, RoleSpec } from "./kit.ts";
 import { seatedAs } from "./roles.ts";
 
+/**
+ * A harness's file for `role`: the state root's own copy first, as its prompts and skills are found, so a role the owner
+ * adds can be seated without a fork; else the shipped one.
+ */
+export function harnessFile(kit: Kit, harness: string, source: string, role: RoleSpec): string {
+  const path = join("harness", harness, source.replaceAll("ROLE", seatedAs(role)));
+  const mine = kit.own ? join(kit.own, path) : undefined;
+  return mine && existsSync(mine) ? mine : join(kit.dir, path);
+}
+
 export function roleSettingsFile(kit: Kit, harness: HarnessSpec, role: RoleSpec): string {
-  return join(kit.dir, "harness", harness.id, harness.settings.roleSource.replace("ROLE", seatedAs(role)));
+  return harnessFile(kit, harness.id, harness.settings.roleSource, role);
 }
 
 export function harnessFileSources(kit: Kit, harness: HarnessSpec, role: RoleSpec): Record<string, string[]> {
   return Object.fromEntries(
     Object.entries(harness.files ?? {}).map(([path, sources]) => [
       path,
-      sources.map((source) => join(kit.dir, "harness", harness.id, source.replaceAll("ROLE", seatedAs(role)))),
+      sources.map((source) => harnessFile(kit, harness.id, source, role)),
     ]),
   );
 }
