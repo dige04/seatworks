@@ -66,9 +66,8 @@ The plugin **serves** SLP so it works better with Paseo. It must **never constra
   permission prompts with `permit`, and pushes with `push`. On, their question queue, standing orders
   and landing approvals apply. Code that waits for the Human reads the flag.
 
-**Where the code is not there yet.**
-- Every watch signal and pattern ships in shadow, told to no one until labels turn it on.
-- The `old-is-gone-test` pattern is missing: it needs the names of the tests a diff removes.
+**Where the code is not there yet.** The `old-is-gone-test` pattern is missing: it needs the names of
+the tests a diff removes.
 
 ## What the plugin may decide
 
@@ -99,11 +98,11 @@ These eight rules settle most questions about where a behaviour belongs.
    while they are in the loop, or is held, and the Supervisor hears of it at once.
 6. **What code can check is code.** A prompt keeps only judgement. An instruction that depends on the
    situation is the `Next:` line of the letter that brings the situation, not a table in a prompt.
-7. **No switch that turns a constraint off.** Three exceptions, each set by who it constrains or by
-   evidence: a watch signal's or pattern's shadow or on, which labels decide; the Human's standing
-   orders; and the Human-in-the-loop flag.
-8. **A signal earns its way.** A new question or incident ships in shadow, recorded and acted on by
-   nothing, until labels show it is worth someone's attention.
+7. **No switch that turns a constraint off.** Two exceptions, both the Human's to set: their standing
+   orders, and the Human-in-the-loop flag, which says whether they are in the loop at all.
+8. **W reports what it sees.** A watch signal is W's information: no switch per signal, no shadow. What
+   W finds reaches the Supervisor, which decides what to do with it; only a kind the Supervisor marked
+   noise is not told again about the same seat and task.
 
 ## Commands
 
@@ -124,9 +123,9 @@ the test did not ask for fails it.
 - **Never start the daemon or launch seats to test.** Seats are real agents with broad permissions,
   and they cost money. The suite, your reading and `~/.paseo/daemon.log` are the evidence.
 - **Never print or cat a file that can hold a key:** `settings.json` under
-  `~/.local/share/seatworks-v3/`, the `settings.json.bak-*` copies Migrate keeps beside it, any
-  project's `settings.json`, `~/.paseo/config.json`. Fake keys in tests never start with OpenRouter's
-  real key prefix, so a scan for that prefix before a push finds only a real key.
+  `~/.local/share/seatworks-v3/` and any copy of it beside it, any project's `settings.json`,
+  `~/.paseo/config.json`. Fake keys in tests never start with OpenRouter's real key prefix, so a scan
+  for that prefix before a push finds only a real key.
 - **Some lines must stay word for word.** `plugin/test/catalog/keep.test.ts` names each one (in
   prompts, skills, harness settings and some code) and what it keeps, and fails when one goes. Such a
   line is SLP's or Paseo's need, not style: change it only when that need changed, and say so in the
