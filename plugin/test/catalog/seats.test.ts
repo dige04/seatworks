@@ -401,6 +401,31 @@ test("an agent configured in its own file format gets its catalog trimmed, its s
   );
 });
 
+test("an owner's own agent config a seat takes keys from, when it cannot be read, is said in the daemon's log, and the seat takes none of it", (t) => {
+  const offering = "process.stdout.write(JSON.stringify({models:[{slug:'a'}]}))";
+  const agent = JSON.parse(cx(["node", "-e", offering])) as { settings: Record<string, unknown> };
+  agent.settings.inherits = { from: "HOME/.cx/config.toml", keys: ["model_provider"] };
+  const kit = withAgent("cx", {
+    "harness.json": JSON.stringify(agent),
+    "settings.toml": "",
+    "settings/lead.settings.toml": "",
+    "rules/all.rules": "",
+    "rules/lead.rules": "",
+  });
+  const team = withHarness(resolveTeam(kit), "lead", kit.harnesses.cx!);
+  const home = tempDir("sw2-cx-home-");
+  mkdirSync(join(home, ".cx"), { recursive: true });
+  writeFileSync(join(home, ".cx", "config.toml"), 'model_provider = "mine\n');
+  const said = reported(t);
+  materialize(kit, team, "lead", home, project, {});
+  const dir = seatDir(kit, team.roles.lead!.role, kit.harnesses.cx!, home, project);
+  assert.equal(readConfig<{ model_provider?: string }>(join(dir, "config.toml"), {}).model_provider, undefined);
+  assert.match(
+    said(),
+    /config\.toml is there but could not be read: it is not TOML[^\n]*, so Cx seats take none of its model_provider/,
+  );
+});
+
 test("a changed skill reaches the seat as a new copy, the one read before stays as it was, and a copy nobody touches for two weeks goes", () => {
   const kit = makeKit();
   const home = tempDir("sw2-home-");

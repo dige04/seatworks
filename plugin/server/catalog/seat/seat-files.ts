@@ -61,7 +61,10 @@ export function seedRecords(kit: Kit, state: string): string[] {
 function inherited(harness: HarnessSpec, homeDir: string): Json {
   const inherits = harness.settings.inherits;
   if (!inherits) return {};
-  const own = readConfig<Json>(expandHome(inherits.from, homeDir), {});
+  const path = expandHome(inherits.from, homeDir);
+  const fault = configFault(path);
+  if (fault) daemonLog.error(`${fault}, so ${harness.label} seats take none of its ${inherits.keys.join(", ")}`);
+  const own = readConfig<Json>(path, {});
   return Object.fromEntries(inherits.keys.filter((key) => own[key] !== undefined).map((key) => [key, own[key]]));
 }
 
