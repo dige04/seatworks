@@ -78,7 +78,7 @@ export async function notice(
 
 /** Opens or sights an incident for each finding not settled as noise, and holds it where attention says so, else tells it. */
 function openIncidents(
-  { incidents, teamFor }: Pick<DeskServices, "incidents" | "teamFor">,
+  { kit, incidents, teamFor }: Pick<DeskServices, "kit" | "incidents" | "teamFor">,
   project: Project,
   seat: Noticed,
   place: Placed,
@@ -102,7 +102,7 @@ function openIncidents(
         facts: finding.facts,
         ...(finding.theirs && { theirs: finding.theirs }),
       };
-      if (settledAsNoise(book, sighting, now)) continue;
+      if (settledAsNoise(book, sighting, now, Object.hasOwn(kit.patterns, finding.kind))) continue;
       const { incident, opened: isNew } = sight(book, sighting, now);
       if (deliveryOf(incident) === "told") continue;
       const held = holdFor(incident, book, attention, now);

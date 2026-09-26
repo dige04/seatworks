@@ -71,11 +71,14 @@ export function saidBefore(incidents: Incidents, seat: string, kind: string, quo
   );
 }
 
+const episode = (item: { task?: string; lane?: string }) => item.task ?? item.lane;
+
 /**
- * Already settled as noise on this seat in these exact words: counts the sighting and answers true. `mark_incident` closes
- * an incident, so a standing condition would reopen after every mark. Only at `attend`, only for `noise`.
+ * Already settled as noise on this seat: counts the sighting and answers true. `mark_incident` closes an incident, so a
+ * standing condition would reopen after every mark. A code fact settles in these exact words; a pattern, whose words are
+ * new at every look, for the seat's task or lane. Only at `attend`, only for `noise`.
  */
-export function settledAsNoise(incidents: Incidents, sighting: Sighting, now: number): boolean {
+export function settledAsNoise(incidents: Incidents, sighting: Sighting, now: number, pattern: boolean): boolean {
   if (sighting.level === "page") return false;
   const marked = Object.values(incidents.items).find(
     (item) =>
@@ -83,7 +86,7 @@ export function settledAsNoise(incidents: Incidents, sighting: Sighting, now: nu
       item.label === "noise" &&
       item.seat === sighting.seat &&
       item.kind === sighting.kind &&
-      item.quote === sighting.quote,
+      (pattern ? episode(item) === episode(sighting) : item.quote === sighting.quote),
   );
   if (!marked) return false;
   marked.count += 1;

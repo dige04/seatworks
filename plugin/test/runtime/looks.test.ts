@@ -105,6 +105,17 @@ test("the watch's eye reads a seat's new words at its turn's end and while it ru
     text: 'You thought "A placeholder will do for the refund path." What does the refund path need?',
   });
   assert.equal(asking.ok, true, `the seat's own words are the Supervisor's to quote back: ${asking.text}`);
+
+  assert.equal((await h.call(sup, "supervisor", "mark_incident", { id: "I1", verdict: "noise" })).ok, true);
+  timeline.beat("turn_started", "t3");
+  timeline.add({ type: "reasoning", text: "Another placeholder, for the tax table this time." }, "t3");
+  timeline.beat("turn_completed", "t3");
+  await looked();
+  assert.deepEqual(
+    Object.values(book(h)).map((item) => [item.id, item.count]),
+    [["I1", 3]],
+    "a pattern marked noise stays settled for its seat's task, in whatever words the next look finds it",
+  );
 });
 
 test("with both brains the sensor sifts and the Watcher seat judges only what it flagged or left unsure, in the words its why quotes", async (t) => {
