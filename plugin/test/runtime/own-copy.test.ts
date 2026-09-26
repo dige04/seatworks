@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { loadConfig } from "../../server/desk/project/project.ts";
@@ -153,7 +153,12 @@ test("a lane whose base moved lands only once nobody writes in its copy: main is
   h.agents.get(lane.lead!)!.status = "idle";
   await h.endTurn(lane.lead!, "reported");
   assert.match(h.heard(sup).join("\n"), /CAN LAND L1/);
+  // A project's own hooks, as husky or commitlint install them, judge its people's commits, not the desk's merges.
+  const hooks = join(h.git(h.root, "rev-parse", "--absolute-git-dir").trim(), "hooks");
+  for (const hook of ["pre-merge-commit", "commit-msg"])
+    writeFileSync(join(hooks, hook), "#!/bin/sh\necho refused by the project >&2\nexit 1\n", { mode: 0o755 });
   const landed = await land("L1");
+  for (const hook of ["pre-merge-commit", "commit-msg"]) rmSync(join(hooks, hook));
   assert.equal(landed.ok, true, landed.text);
   assert.match(landed.text, /Gate: none set, so nothing ran the lane's checks\./);
   assert.match(h.git(h.root, "show", "main:a.txt"), /four/);
