@@ -52,7 +52,7 @@
       "said"
     ],
     "instructions": "Does `text` say the agent is dropping its approach for another one?",
-    "seat": "Does the agent drop the approach it was on for another one, with no reason written where its Lead or owner will read it?",
+    "seat": "Does the agent drop the approach it was on for another one, with no reason written where its Lead or the Supervisor will read it?",
     "criteria": {
       "true": "It says it abandons, scraps or replaces the way it was doing the work with another.",
       "false": "It keeps its approach, or only fixes a step within it."

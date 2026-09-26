@@ -57,7 +57,7 @@ For a material factual dispute, start one to three Verifiers, each with one prop
 
 **Audit** the draft (optional in `debate`, default in `debate-with-proof`, mandatory in `high-risk`) with an Auditor whose focus holds the brief, the reports by role, the model, the draft and the dissent. Resolve each material finding by revising, removing the claim, or returning it to its step.
 
-**The verdict**, in the requester's words: the decision and why, which claims stand, required action and owner boundaries, validation, dissent and your answer, limitations and reopen conditions, and whether the run was degraded. Keep it with `note` in council as `<case-id>.md`.
+**The verdict**, in the requester's words: the decision and why, which claims stand, required action and ownership boundaries, validation, dissent and your answer, limitations and reopen conditions, and whether the run was degraded. Keep it with `note` in council as `<case-id>.md`.
 
 ## Stopping rules
 
