@@ -1,11 +1,12 @@
 import { mkdirSync } from "node:fs";
+import { join } from "node:path";
 import type { Kit, SensorSpec } from "../catalog/kit/kit.ts";
 import type { ModelCache } from "../catalog/paseo/models.ts";
 import { type IndexedProxy, choicesFor, indexedProxies } from "../catalog/seat/servers.ts";
 import { placeGuides, sweepSnapshots } from "../catalog/seat/snapshots.ts";
 import { errorText } from "../core/errors.ts";
 import { daemonLog } from "../core/logger.ts";
-import { deskSocket, home, nodeBin, outboxPath, stateRoot } from "../core/paths.ts";
+import { deskSocket, home, nodeBin, stateRoot } from "../core/paths.ts";
 import type {
   AgentConfig,
   HookAgent,
@@ -77,7 +78,7 @@ export class Runtime implements HostHooks {
     this.seating = new Seating(kit, this.source, { node: nodeBin(), socket: deskSocket() });
     const rules = mailRules(kit, (agentId) => this.socket.calling(agentId));
     const compose = (to: string, list: Parameters<typeof composeMail>[2]) => composeMail(host.seats, to, list);
-    this.outbox = new Outbox(options.outboxFile ?? outboxPath(), compose, host.seats, rules);
+    this.outbox = new Outbox(options.outboxFile ?? join(stateRoot(), "outbox.json"), compose, host.seats, rules);
     const log = (project: Project, line: string) => this.log(project, line);
     const remember = (project: Project) => this.remember(project);
     this.desk = new Desk({

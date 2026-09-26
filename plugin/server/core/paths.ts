@@ -96,10 +96,6 @@ export function executableIn(dirs: string[], name: string): string | undefined {
   return undefined;
 }
 
-export function outboxPath(homeDir = home()): string {
-  return join(stateRoot(homeDir), "outbox.json");
-}
-
 export function intentsPath(homeDir = home()): string {
   return join(stateRoot(homeDir), "intents.json");
 }
