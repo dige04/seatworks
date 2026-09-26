@@ -194,13 +194,11 @@ export class Patrol {
       const idle = now - Date.parse(lead.updatedAt);
       if (idle < leadIdleMinutes * 60_000 || this.idleFlag.get(lead.id) === lead.updatedAt) continue;
       if (activeTasks(ledger, lane.id).length > 0 || openAsksFrom(ledger, lead.id).length > 0) continue;
-      const to = await desk.supervisorFor(project, lane.opener);
-      const posted = await desk.post(
-        to,
-        seatLetters.laneIdle(lane, Math.round(idle / 60_000), turns.lastEnding.get(lead.id) ?? "", lead.updatedAt),
-      );
-      // Noted as told only when somebody was: set first, a notice to nobody was never tried again.
-      if (posted !== "nobody") this.idleFlag.set(lead.id, lead.updatedAt);
+      // Once per idle spell; the incident book holds it for nobody, or in shadow, and tells it when it may.
+      this.idleFlag.set(lead.id, lead.updatedAt);
+      const ending = (turns.lastEnding.get(lead.id) ?? "").replace(/\s+/g, " ").trim().slice(0, 400);
+      const quote = `idle ${Math.round(idle / 60_000)} minutes with no running task, no open ask and no report of it ready; its last words: ${ending || "(nothing)"}`;
+      await desk.notice(project, lead, [{ kind: "lane-idle", level: "attend", quote, facts: ["lane-idle"] }]);
     }
   }
 

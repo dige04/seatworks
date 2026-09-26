@@ -92,12 +92,14 @@ test("a lane's own record raises an incident about its Lead once, held while the
     await h.call(peer, "peer", "done", { outcome: "complete", summary: `round ${round}` });
     await h.call(lead, "lead", "rework", { task: "L1-T1", text: "not yet" });
   };
+  // The second sending-back is a struggle of the Peer's too, which the book keeps apart from this.
+  const loops = () => Object.values(book(h)).filter((item) => item.kind === "rework-loop");
   for (const round of [1, 2, 3]) await rework(round);
   assert.equal(h.ledger().tasks["L1-T1"]!.reworks, 3, "three sendings-back are on the record");
   await h.tick();
   assert.deepEqual(
-    Object.values(book(h)).map((item) => [item.kind, item.held]),
-    [["rework-loop", "shadow"]],
+    loops().map((item) => item.held),
+    ["shadow"],
     "a lane's record is gone through for what no turn shows, held while the watch is off",
   );
   assert.doesNotMatch(h.heard(sup).join("\n"), /INCIDENT/);
@@ -105,37 +107,34 @@ test("a lane's own record raises an incident about its Lead once, held while the
   writeFileSync(join(h.project.state, "settings.json"), JSON.stringify({ attention: { watch: true } }));
   await h.tick();
   const told = h.heard(sup).join("\n");
+  const [first] = loops();
   assert.match(
     told,
-    /INCIDENT I1 \(rework-loop, attend\) on the Lead of L1 \(Build\)/,
+    new RegExp(`INCIDENT ${first!.id} \\(rework-loop, attend\\) on the Lead of L1 \\(Build\\)`),
     "told once turned on, about the seat that decides to send it back",
   );
   assert.match(told, /What was seen: L1-T1 \(Clean build\) has been sent back 3 times/);
-  assert.deepEqual(Object.keys(book(h)), ["I1"], "the incident already on the book, not a second one");
+  assert.equal(loops().length, 1, "the incident already on the book, not a second one");
   assert.doesNotMatch(h.heard(lead).join("\n"), /INCIDENT/, "never shown to the Lead it is about");
 
   const marked = await h.call(sup, "supervisor", "mark_incident", {
-    id: "I1",
+    id: first!.id,
     verdict: "noise",
     note: "expected: the brief changed under it",
   });
   assert.equal(marked.ok, true, marked.text);
   await h.tick();
   await h.tick();
-  assert.deepEqual(Object.keys(book(h)), ["I1"], "the same three sendings-back are not raised again once marked");
+  assert.equal(loops().length, 1, "the same three sendings-back are not raised again once marked");
   await rework(4);
   await h.tick();
-  assert.deepEqual(Object.keys(book(h)), ["I1", "I2"], "a fourth sending-back is something new to say");
+  assert.equal(loops().length, 2, "a fourth sending-back is something new to say");
 
-  assert.equal((await h.call(sup, "supervisor", "mark_incident", { id: "I2", verdict: "noise" })).ok, true);
+  assert.equal((await h.call(sup, "supervisor", "mark_incident", { id: loops()[1]!.id, verdict: "noise" })).ok, true);
   await rework(5);
   h.agents.get(lead)!.archivedAt = new Date().toISOString();
   await h.tick();
-  assert.deepEqual(
-    Object.keys(book(h)),
-    ["I1", "I2"],
-    "an incident about a Lead that has gone is one nobody can close",
-  );
+  assert.equal(loops().length, 2, "an incident about a Lead that has gone is one nobody can close");
 });
 
 const quote = "the same action failing 3 times: Bash: npm test";

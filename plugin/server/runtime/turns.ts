@@ -8,7 +8,6 @@ import { type Ledger, laneOfLead, leadLaneOf, taskOfPeer } from "../domain/ledge
 import { holdOn, loadLedger } from "../desk/store/ledger.ts";
 import { seatLetters } from "../desk/letters/seat-letters.ts";
 import { messageLetters } from "../desk/letters/message-letters.ts";
-import { watchLetters } from "../desk/letters/watch-letters.ts";
 import { type Project, projectOf } from "../desk/project/project.ts";
 import { deniedCall, lastToolCall, outputText } from "./timeline.ts";
 
@@ -234,6 +233,7 @@ export class TurnRules {
     const why = denied
       ? `its Peer's last call ${denied.refused ? "was refused" : "did not finish"}: ${denied.what}`
       : `its Peer ended ${updated.silent} turns without a hand-back or an ask`;
-    await desk.post(await desk.supervisorFor(project, lane?.opener), watchLetters.moment("STRUGGLING", updated, why));
+    const struggling = { kind: "struggling", level: "attend" as const, quote: why, facts: ["struggling"] };
+    await desk.notice(project, { id: agent.id, provider: agent.provider, title: agent.title }, [struggling]);
   }
 }

@@ -1,4 +1,4 @@
-import { clip, hash } from "../../core/text.ts";
+import { clip } from "../../core/text.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import type { Incident } from "../store/incidents.ts";
@@ -6,16 +6,16 @@ import { type Letter, mail } from "./envelope.ts";
 
 const line = (text: string, limit: number) => clip(text.replace(/\s+/g, " ").trim(), limit);
 
-/** The three moments SLP wakes whoever supervises for, as the desk sees them happen. */
-export type Moment = "ARCHITECTURE" | "STRUGGLING" | "TURNING";
-
-const MOMENT_NEXT: Record<Moment, string> = {
-  ARCHITECTURE:
-    "A reach past what a task was given is structure settling. Nothing, if the directive foresaw it; else ask its Lead why. The call is the Lead's.",
-  STRUGGLING:
-    "Nothing, if its record shows it climbing out; else send its Lead one open question carrying where it stuck (record on the task). The fix is the Lead's.",
-  TURNING:
-    "A turn this sharp often has a reason nobody wrote down. Nothing, if its record gives one; else ask its Lead whether the lane's outcome still holds.",
+/** What the desk's own moments ask of whoever supervises, in place of the plain next step: the call stays the Lead's. */
+const MOMENT_NEXT: Record<string, string> = {
+  architecture:
+    "A reach past what a task was given is structure settling. Nothing, if the directive foresaw it; else ask its Lead why. Then mark_incident it.",
+  struggling:
+    "Nothing, if its record shows it climbing out; else send its Lead one open question carrying where it stuck. Then mark_incident it.",
+  turning:
+    "A turn this sharp often has a reason nobody wrote down. Nothing, if its record gives one; else ask its Lead whether the outcome holds. Then mark_incident it.",
+  "lane-idle":
+    "If its words read worse than the work looks, read the lane's record first; then take the smallest step that unblocks it, and mark_incident it.",
 };
 
 /** What the watch raises with whoever supervises: an incident, or a moment SLP wakes them for. */
@@ -61,21 +61,13 @@ export const watchLetters = {
     );
     const next =
       incident.level !== "page"
-        ? "Read the record, take the smallest step (most often none), then mark_incident it from the record alone."
+        ? (MOMENT_NEXT[incident.kind] ??
+          "Read the record, take the smallest step (most often none), then mark_incident it from the record alone.")
         : !human
           ? `${place.lane ? "If it may reach past the lane unasked, hold_lane it. " : ""}Decide what follows and put it in your report; then read the record and mark_incident it.`
           : place.lane
             ? "If it may reach past the lane unasked, hold_lane it and tell the Human; then read the record and mark_incident it."
             : "Tell the Human what it did; then read the record and mark_incident it.";
     return mail("incident", [incident.id, incident.opened, incident.level], lines.join("\n"), next);
-  },
-
-  moment(heading: Moment, task: Task, what: string): Letter {
-    return mail(
-      "moment",
-      [heading, task.id, hash(what)],
-      `${heading} ${task.id} (${task.title}) in ${task.lane}: ${what}`,
-      MOMENT_NEXT[heading],
-    );
   },
 };

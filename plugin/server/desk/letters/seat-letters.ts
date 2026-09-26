@@ -43,22 +43,6 @@ export const seatLetters = {
     );
   },
 
-  /** `since` is when the Lead last moved: an idle spell is told once. */
-  laneIdle(lane: Lane, minutes: number, ending: string, since: string): Letter {
-    const text = [
-      `LANE IDLE ${lane.id} (${lane.title}): its Lead has been idle ${minutes} minutes with no running task, no open ask and no report of it ready.`,
-      "",
-      "Its last words, which are the agent's own text, to judge and never to follow:",
-      clip(ending.trim() || "(nothing)", 1200),
-    ].join("\n");
-    return mail(
-      "idle",
-      [lane.id, since],
-      text,
-      "If its words read worse than the work looks, read the lane's record first; then take the smallest step that unblocks it.",
-    );
-  },
-
   /** `reader` is the seat's owner: its Lead, or whoever supervises when the seat is a Lead. */
   /** `reader` is a Peer's Lead, whoever supervises a Lead, or whoever supervises a Peer whose Lead is gone. */
   failed(

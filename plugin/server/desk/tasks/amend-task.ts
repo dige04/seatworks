@@ -76,7 +76,7 @@ function record(
   });
 }
 
-/** A task widened past what it held settles structure; one whose goal changed turns sharply: whoever supervises hears. */
+/** A Lead widening a task past what it held settles structure; one changing what it is for turns sharply: W notes both. */
 async function tellMoments(
   desk: DeskServices,
   caller: Caller,
@@ -89,16 +89,16 @@ async function tellMoments(
     await tellMoment(
       desk,
       caller.project,
-      task,
-      "ARCHITECTURE",
-      `its Lead widened what it holds by ${widened.join(", ")}, because ${why}`,
+      caller.id,
+      "architecture",
+      `${task.id} widened to hold ${widened.join(", ")}, because ${why}`,
     );
   if (typeof was.goal === "string")
     await tellMoment(
       desk,
       caller.project,
-      task,
-      "TURNING",
-      `its Lead changed what it is for, because ${why}\nwas: ${was.goal}\nnow: ${task.goal}`,
+      caller.id,
+      "turning",
+      `${task.id} changed what it is for, because ${why}; was: ${was.goal}; now: ${task.goal}`,
     );
 }

@@ -45,14 +45,8 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
   }
   // Keyed by the rework's count, each letter is its own: none is dropped as a repeat.
   await desk.mail.post(result.peer, workLetters.rework(result, text));
-  if (result.reworks === 2)
-    await tellMoment(
-      desk,
-      caller.project,
-      result,
-      "STRUGGLING",
-      `its Lead sent it back a second time: ${oneLine(text)}`,
-    );
+  if (result.reworks === 2 && result.peer)
+    await tellMoment(desk, caller.project, result.peer, "struggling", `sent back a second time: ${oneLine(text)}`);
   return ok(`Rework sent to the Peer on ${result.id}; its next hand-back arrives as mail.`);
 }
 

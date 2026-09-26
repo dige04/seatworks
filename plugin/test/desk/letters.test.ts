@@ -272,8 +272,12 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     /^If it may reach past the lane unasked, hold_lane it\. Decide what follows and put it in your report/,
   );
   assert.doesNotMatch(alone, /Human/, "with the Human out of the loop, a page is the Supervisor's to hold and decide");
-  for (const moment of ["ARCHITECTURE", "STRUGGLING", "TURNING"] as const)
-    assert.match(next(watchLetters.moment(moment, task, "x")), /Nothing, if /, `${moment} offers nothing first`);
+  for (const kind of ["architecture", "struggling", "turning"])
+    assert.match(
+      next(watchLetters.incident({ ...incident, kind }, { lane, task }, { steers: true, human: true })),
+      /Nothing, if /,
+      `${kind} offers nothing first`,
+    );
   assert.match(
     next(workLetters.handback({ ...task, kind: "review" }, "/h.md", "Verdict: accept", "agent-7", "lead")),
     /^Weigh its findings, then cut it/,

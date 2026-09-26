@@ -1,18 +1,22 @@
-import type { Task } from "../../domain/task.ts";
-import { loadLedger } from "../store/ledger.ts";
-import type { Moment } from "../letters/watch-letters.ts";
-import { watchLetters } from "../letters/watch-letters.ts";
-import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
+import type { Project } from "../project/project.ts";
+import { notice } from "./notice.ts";
 
-/** Tells whoever supervises a task's lane of a moment SLP wakes it for: structure settled, a task struggling, a sharp turn. */
+/** The moments SLP wakes whoever supervises for, as the desk sees them happen: a task struggling, structure settling, a sharp turn, a Lead idle with nothing going. */
+type MomentKind = "struggling" | "architecture" | "turning" | "lane-idle";
+
+/**
+ * Raises a moment about `seat` as a code fact of W's: it opens or sights an incident, which the book holds in shadow,
+ * budgets, labels and tells whoever supervises, or keeps for somebody to sit down.
+ */
 export async function tellMoment(
   desk: DeskServices,
   project: Project,
-  task: Task,
-  moment: Moment,
+  seat: string,
+  kind: MomentKind,
   what: string,
 ): Promise<void> {
-  const opener = loadLedger(project.state).lanes[task.lane]?.opener;
-  await desk.mail.post(await desk.roster.supervisorFor(project, opener), watchLetters.moment(moment, task, what));
+  const look = await desk.roster.look(seat).catch(() => undefined);
+  const noticed = { id: seat, provider: look?.provider ?? "", title: look?.title };
+  await notice(desk, project, noticed, [{ kind, level: "attend", quote: what, facts: [kind] }]);
 }

@@ -4,7 +4,7 @@ import { harness } from "./harness.ts";
 
 test("an idle Lead with nothing running, asked or reported ready wakes whoever supervises, and one waiting on it or on the Human does not", async () => {
   const h = harness();
-  h.projectSettings({ hitl: { on: true } });
+  h.projectSettings({ hitl: { on: true }, attention: { watch: true, incidentsPerLane: 10 } });
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   const scope = { outcome: "x", acceptance: ["a"], outOfScope: ["the rest"] };
   await h.call(sup, "supervisor", "set_project", { askFirst: ["b.txt"] });
@@ -27,11 +27,12 @@ test("an idle Lead with nothing running, asked or reported ready wakes whoever s
   const said = h.heard(sup).join("\n");
   assert.match(
     said,
-    /LANE IDLE L1 \(Quiet\): its Lead has been idle \d+ minutes with no running task, no open ask and no report of it ready\./,
+    /INCIDENT I1 \(lane-idle, attend\) on the Lead of L1 \(Quiet\)[^]*What was seen: idle \d+ minutes with no running task, no open ask and no report of it ready; its last words: /,
   );
   assert.doesNotMatch(
     said,
-    /LANE IDLE L[234]/,
+    /lane-idle, attend\) on the Lead of L[234]/,
     "a Lead told to wait, or waiting on whoever lands it or on the Human, is not idle",
   );
+  assert.doesNotMatch(h.heard(lanes.L1!.lead!).join("\n"), /INCIDENT/, "never to the Lead it is about");
 });
