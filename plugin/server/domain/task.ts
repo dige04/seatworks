@@ -47,12 +47,14 @@ export const HOLDS_COPY: readonly TaskStatus[] = [
 ];
 export const ACTIVE: readonly TaskStatus[] = ["running", "rework", "queued", "merging"];
 
+/** `reworks` is how many times the task had been sent back when this came: a later rework makes it an older word. */
 type Handback = {
   file: string;
   outcome: string;
   commit?: string;
   summary: string;
   at: number;
+  reworks: number;
   gate?: { ok: boolean; note: string; sha?: string; over?: string };
 };
 

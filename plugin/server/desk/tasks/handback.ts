@@ -218,6 +218,7 @@ function record(
       commit,
       summary: clip(summary, 400),
       at: Date.now(),
+      reworks: entry.reworks ?? 0,
       ...gate,
     };
     return undefined;

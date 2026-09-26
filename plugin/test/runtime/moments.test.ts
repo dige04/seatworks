@@ -73,6 +73,11 @@ test("a task gone quiet until it stalls, or stopped on a refused call, is a stru
     1,
     "a turn quiet after it stalled is the same struggle",
   );
+  assert.match(
+    (await h.call(lane.lead!, "lead", "accept", { task: "L1-T1" })).text,
+    /^L1-T1 is in the merge queue\. Its last hand-back came before your last rework, so what it says may not be what its branch holds\./,
+    "accepting it then takes the branch as it is, and the Lead is told the hand-back is older",
+  );
 
   await h.call(lane.lead!, "lead", "add_tasks", { tasks: [parser] });
   const beside = h.ledger().tasks["L1-T2"]!.peer!;

@@ -51,7 +51,7 @@ const task = (over: Partial<Task> & { id: string }): Task => ({
   ...over,
 });
 
-const handback = (outcome: string) => ({ file: "f", outcome, summary: "s", at: 0 });
+const handback = (outcome: string) => ({ file: "f", outcome, summary: "s", at: 0, reworks: 0 });
 
 function ledgerOf(tasks: Task[], over: Partial<Lane> = {}): Ledger {
   const held = emptyLedger();

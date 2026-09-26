@@ -65,7 +65,11 @@ async function queueTask(
       (entry) => entry.lane === task.lane && IN_QUEUE.includes(entry.status),
     ).length - 1;
   merges.enqueue(project, task.id);
+  const older =
+    (task.reworks ?? 0) > task.handback.reworks
+      ? " Its last hand-back came before your last rework, so what it says may not be what its branch holds."
+      : "";
   return ok(
-    `${task.id} is in the merge queue${ahead > 0 ? ` behind ${ahead}` : ""}. MERGED, MERGE RED, MERGE WAITS or MERGE FAILED arrives as mail.`,
+    `${task.id} is in the merge queue${ahead > 0 ? ` behind ${ahead}` : ""}.${older} MERGED, MERGE RED, MERGE WAITS or MERGE FAILED arrives as mail.`,
   );
 }
