@@ -28,13 +28,13 @@ async function handTo(
 const unread = (who: string) => `${who} is not seated any more, so a message would wait for nobody.`;
 
 /**
- * Why a settled task takes no message: a merged one's Peer is kept only to take rework, which would wake it in a copy it no
- * longer holds; rework is its Lead's to send, which `by` says when whoever supervises asks.
+ * Why a settled task takes no message: a merged one's Peer in the lane's copy is kept only to take rework, since a message
+ * would wake it in a copy it no longer holds; rework is its Lead's to send, which `by` says when whoever supervises asks.
  */
 const settled = (task: Task, by: "lead" | "owner") =>
-  task.status === "merged"
+  task.status === "merged" && task.mode !== "parallel"
     ? `${task.id} is merged, and its Peer is kept only to take rework: ${by === "lead" ? "send rework" : "ask its Lead to send rework"} if its work must change.`
-    : SETTLED.includes(task.status)
+    : task.status !== "merged" && SETTLED.includes(task.status)
       ? `${task.id} is ${task.status}, and its Peer went with it.`
       : undefined;
 

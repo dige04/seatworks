@@ -1,6 +1,5 @@
 import { can, roleNamed } from "../../catalog/kit/roles.ts";
 import { ASK } from "../../domain/ask.ts";
-import { SETTLED } from "../../domain/task.ts";
 import { askLetters } from "../letters/ask-letters.ts";
 import { type Caller, type ToolReply, no, ok } from "../context.ts";
 import { repeatsIncident } from "../store/incidents.ts";
@@ -64,17 +63,16 @@ export async function askUp(
   // With nobody above seated it waits on the gone Lead, and the round hands it to whoever supervises once one sits down.
   const to = reader ?? lane.lead;
   const text = asked.tried ? `${asked.question}\n\nTried: ${asked.tried}` : asked.question;
-  // Opened for the task the caller still works: it may have been cut while whoever answers was looked up.
+  // Opened for the task the caller still holds, merged and kept included: it may have been cut meanwhile.
   const entry = ledgers.transact(project, (current) => {
     const now = taskOfPeer(current, caller.id);
-    if (now?.id !== task.id || SETTLED.includes(now.status)) return undefined;
+    if (now?.id !== task.id || now.status === "cut") return undefined;
     const from = { from: caller.id, fromRole: caller.role.role, to, lane: lane.id, task: task.id };
     const created = newAsk(current, { ...from, kind: "question", text, default: asked.guess });
     current.asks[created.id] = created;
     return { ...created };
   });
-  if (!entry)
-    return no(`${task.id} was accepted or cut while you asked, so there is nothing to ask about; end your turn.`);
+  if (!entry) return no(`${task.id} was cut while you asked, so there is nothing to ask about; end your turn.`);
   recordEvent(project, { kind: "ask.opened", ask: entry.id, from: caller.id, to });
   if (!reader)
     return ok(
