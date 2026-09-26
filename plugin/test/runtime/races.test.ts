@@ -171,6 +171,8 @@ test("two seats' turns ending at once tell whoever tried to land once, and put a
   });
   await h.idle(sup);
   assert.equal(landings(), 1);
+  // This fork lands no lane before its review hands back, idle seat or not.
+  await h.call(reviewer, "reviewer", "done", { verdict: "accept", answer: "Right." });
   assert.equal((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).ok, true);
 
   await h.call(sup, "supervisor", "open_lane", { title: "Again", ...scope });

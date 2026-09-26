@@ -268,3 +268,15 @@ test("two lanes landed at once each stay on the base: the second waits for the f
     ["cart.txt", "order.txt"],
   );
 });
+
+test("a lane whose review is still running is not landed until that review comes back", async () => {
+  const { h, lane, land, onMain } = await laneWith({ "src/cart.ts": "export const cart = 1;\n" });
+  const started = await h.call(lane.lead!, "lead", "start_review", { focus: "And the lane?" });
+  assert.equal(started.ok, true, started.text);
+  const review = Object.values(h.ledger().tasks).find((task) => task.kind === "review")!;
+  const refused = await land();
+  assert.equal(refused.ok, false);
+  assert.match(refused.text, new RegExp(`Lane L1 was not landed: its review ${review.id} is still running`));
+  assert.equal(onMain("src/cart.ts"), false);
+  assert.equal(h.ledger().lanes.L1!.status, "open");
+});

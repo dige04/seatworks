@@ -3,6 +3,7 @@ import { landLane as landOnBase } from "../../core/land.ts";
 import { no, ok } from "../context.ts";
 import { laneGate } from "../project/gates.ts";
 import type { Lane } from "../../domain/lane.ts";
+import { AT_WORK } from "../../domain/task.ts";
 import { type Ledger, tasksOf } from "../../domain/ledger.ts";
 import { landLetters } from "../letters/land-letters.ts";
 import { type Project, loadConfig } from "../project/project.ts";
@@ -64,6 +65,13 @@ async function gateThenLand(
   over: OverGate,
   approved: Held | undefined,
 ): Promise<Closed | Landed> {
+  // A review not handed back is evidence not yet in, even with its seat idle: landing now throws away what it finds.
+  const reviewing = tasksOf(ledger, lane.id).filter((task) => task.kind === "review" && AT_WORK.includes(task.status));
+  if (reviewing.length > 0) {
+    const why = `its review ${reviewing.map((task) => task.id).join(", ")} is still running`;
+    const text = `Lane ${lane.id} was not landed: ${why}. Its findings come as mail; land it once they are settled, or cut the review first.`;
+    return { ...no(text), blocked: why };
+  }
   // What lands is the head its gate saw: a lane that moves after the gate lands nothing.
   const tested = await headSha(project.root, lane.branch);
   const gate = await laneGate(desk, project, lane);
