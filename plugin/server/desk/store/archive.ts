@@ -166,7 +166,10 @@ function takeUnbound(ledger: Ledger, gone: Gone, now: number, taken: Taken): voi
   }
 }
 
-/** Keyed by lane, so doing it again after a crash rewrites the same file; an unreadable one is started over, not left to stop every round. */
+/**
+ * Keyed by lane, so doing it again after a crash rewrites the same file. One that cannot be read is set aside for the Human,
+ * never written over, and a new one is started: the records filed into it are gone from where they came from.
+ */
 function fileLane(state: string, id: string, change: (archive: LaneArchive) => void): void {
   const file = join(archiveDir(state), `${id}.json.gz`);
   let archive: LaneArchive = { tasks: [], asks: [], questions: [], agents: [], records: {} };
@@ -174,7 +177,9 @@ function fileLane(state: string, id: string, change: (archive: LaneArchive) => v
     try {
       archive = JSON.parse(gunzipSync(readFileSync(file)).toString("utf-8")) as LaneArchive;
     } catch (error) {
-      daemonLog.error(`${file} could not be read and is started over:`, error);
+      const aside = `${file}.unreadable-${new Date().toISOString().replace(/\D/g, "").slice(0, 14)}`;
+      renameSync(file, aside);
+      daemonLog.error(`${file} could not be read and is set aside as ${aside}:`, error);
     }
   }
   change(archive);
