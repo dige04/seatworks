@@ -61,6 +61,7 @@ export class Desk {
   private readonly services: DeskServices;
   private readonly intents: Intents;
   private readonly calls: ToolCalls;
+  private readonly stop = new AbortController();
 
   constructor(options: DeskOptions) {
     const projects = new Map<string, Project>();
@@ -81,6 +82,7 @@ export class Desk {
       closing: new Claims(),
       landings: new KeyedQueue(),
       lastStatus: new Map(),
+      stopping: this.stop.signal,
     };
     this.intents = new Intents(intentsPath());
     const roster = new Roster(options.kit, options.seats, this.intents);
@@ -217,5 +219,10 @@ export class Desk {
 
   handle(request: ToolRequest): Promise<ToolReply> {
     return this.calls.handle(request);
+  }
+
+  /** The plugin stops: gates still running are killed with their process groups, not left writing into a copy. */
+  dispose(): void {
+    this.stop.abort();
   }
 }

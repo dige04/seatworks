@@ -213,6 +213,7 @@ export class Runtime implements HostHooks {
     this.socket.close();
     this.watches.dispose();
     this.clock.stop();
+    this.desk.dispose();
   }
 
   sessionOpen(request: SessionOpen): SessionOpen {

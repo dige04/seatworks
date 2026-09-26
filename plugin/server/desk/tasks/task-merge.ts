@@ -22,7 +22,7 @@ type Outcome = "merged" | "conflict" | "red" | "fail";
 /** A gate verdict on a task's branch, with the failing run's tail when this merge ran it. */
 type Verdict = { ok: boolean; note: string; over?: string; run?: { tail: string; logFile: string } };
 
-export type MergeDesk = Pick<DeskBase, "kit" | "ledgers" | "incidents" | "mail" | "log">;
+export type MergeDesk = Pick<DeskBase, "kit" | "ledgers" | "incidents" | "mail" | "log" | "stopping">;
 
 /** Merges one accepted task into its lane: the lane brought into the task's copy, gated there, then taken on as it is. */
 export class TaskMerge {
@@ -129,7 +129,7 @@ export class TaskMerge {
     const last = task.handback?.gate;
     if (last && last.sha === head) return last;
     const files = await changedFiles(task.worktree, `${lane.branch}...HEAD`);
-    const run = await taskGate(this.desk.kit, project, task.id, task.worktree, files);
+    const run = await taskGate(this.desk, project, task.id, task.worktree, files);
     if (!run) return undefined;
     this.desk.ledgers.setTask(project, task.id, (entry) => {
       if (entry.handback) entry.handback.gate = { ok: run.ok, note: run.note, sha: head };

@@ -2,7 +2,15 @@ import { spawn } from "node:child_process";
 import { closeSync, mkdirSync, openSync, readSync, statSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 
-type GateResult = { ok: boolean; code: number | null; timedOut: boolean; seconds: number; tail: string };
+/** `stopped`: killed because `stop` fired, as the plugin stopped. */
+type GateResult = {
+  ok: boolean;
+  code: number | null;
+  timedOut: boolean;
+  stopped: boolean;
+  seconds: number;
+  tail: string;
+};
 
 const TAIL_LINES = 40;
 const TAIL_CHARS = 3000;
@@ -41,7 +49,14 @@ export function lastBytes(file: string, limit = 64 * 1024): string {
   }
 }
 
-export function runGate(command: string, cwd: string, logFile: string, timeoutMs: number): Promise<GateResult> {
+/** Runs `command` in its own process group, killed whole on timeout, on `stop`, or once the command itself exits. */
+export function runGate(
+  command: string,
+  cwd: string,
+  logFile: string,
+  timeoutMs: number,
+  stop?: AbortSignal,
+): Promise<GateResult> {
   mkdirSync(dirname(logFile), { recursive: true });
   const started = Date.now();
   const fd = openSync(logFile, "w");
@@ -54,32 +69,52 @@ export function runGate(command: string, cwd: string, logFile: string, timeoutMs
       detached: true,
       stdio: ["ignore", fd, fd],
     });
-    let timedOut = false;
-    let answered = false;
-    const timer = setTimeout(() => {
-      timedOut = true;
+    const ended = { timedOut: false, stopped: false };
+    const kill = (why: keyof typeof ended) => {
+      ended[why] = true;
       killGroup(child.pid);
-    }, timeoutMs);
+    };
+    const timer = setTimeout(() => kill("timedOut"), timeoutMs);
+    const onStop = () => kill("stopped");
+    let answered = false;
     const finish = (code: number | null) => {
       if (answered) return;
       answered = true;
       clearTimeout(timer);
+      stop?.removeEventListener("abort", onStop);
       killGroup(child.pid);
-      try {
-        closeSync(fd);
-      } catch {
-        // Closed already: the log holds what was written.
-      }
-      resolve({
-        ok: code === 0 && !timedOut,
-        code,
-        timedOut,
-        seconds: Math.round((Date.now() - started) / 1000),
-        tail: tailOf(lastBytes(logFile)),
-      });
+      closeLog(fd);
+      resolve(verdict(code, ended, started, logFile));
     };
+    if (stop?.aborted) onStop();
+    else stop?.addEventListener("abort", onStop, { once: true });
     child.on("error", () => finish(127));
     // exit, not close: the command's own answer, whatever it left running behind it.
     child.on("exit", (code, signal) => finish(code ?? (signal ? null : 0)));
   });
+}
+
+function verdict(
+  code: number | null,
+  { timedOut, stopped }: { timedOut: boolean; stopped: boolean },
+  started: number,
+  logFile: string,
+): GateResult {
+  const seconds = Math.round((Date.now() - started) / 1000);
+  return {
+    ok: code === 0 && !timedOut && !stopped,
+    code,
+    timedOut,
+    stopped,
+    seconds,
+    tail: tailOf(lastBytes(logFile)),
+  };
+}
+
+function closeLog(fd: number): void {
+  try {
+    closeSync(fd);
+  } catch {
+    // Closed already: the log holds what was written.
+  }
 }
