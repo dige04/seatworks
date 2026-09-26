@@ -62,6 +62,7 @@ test("a Claude seat per project writes shared plus role settings, links skills a
 
   const changes = materialize(kit, team, "lead", home, project, serversFor(kit, team, "lead", context));
   assert.ok(changes.length > 0);
+  assert.equal(readFileSync(join(dir, "CLAUDE.md"), "utf-8"), "## Seatworks\n\nWork through the team tools.\n");
   assert.equal(lstatSync(join(dir, "settings.json")).isSymbolicLink(), false);
   assert.deepEqual(readConfig(join(dir, "settings.json"), {}), {
     autoMemoryEnabled: false,
@@ -89,7 +90,7 @@ test("a Claude seat per project writes shared plus role settings, links skills a
   assert.ok(removed.includes("skill ide-guide removed"));
 });
 
-test("a seat whose harness reads its servers from a file gets that file and its whole layered settings, in JSON or TOML, and no rules file of its own", () => {
+test("a seat whose harness reads its servers from a file gets that file and its whole layered settings, in JSON or TOML, and the Seatworks block in its own instructions file", () => {
   const kit = withAgent("toml", {
     "harness.json": JSON.stringify({
       id: "toml",
@@ -135,9 +136,9 @@ test("a seat whose harness reads its servers from a file gets that file and its 
       `${id}: the kit's settings are the whole file`,
     );
     assert.equal(
-      existsSync(join(dir, "AGENTS.md")),
-      false,
-      `${id}: what it is told is in its prompt, and the project's AGENTS.md it reads where it works`,
+      readFileSync(join(dir, "AGENTS.md"), "utf-8"),
+      "## Seatworks\n\nWork through the team tools.\n",
+      `${id}: the block reaches a seat whatever copy it works in, even one made before the block was committed`,
     );
     assert.equal(readFileSync(outside, "utf-8"), "project rules that must not change", id);
     const listed = readConfig<Record<string, Record<string, Server>>>(join(dir, harness.mcp.file), {})[

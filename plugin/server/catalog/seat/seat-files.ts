@@ -7,7 +7,7 @@ import { LeftAlone, ensureLink, isLink, present, writeIfChanged } from "../../co
 import { type Json, getPath, isRecord, layered, sameJson, setPath } from "../../core/json.ts";
 import { daemonLog } from "../../core/logger.ts";
 import { expandHome } from "../../core/paths.ts";
-import { skillProblems, skillSources } from "../kit/content.ts";
+import { projectBlock, skillProblems, skillSources } from "../kit/content.ts";
 import type { HarnessSpec, Kit, McpServers, RoleSpec } from "../kit/kit.ts";
 import { harnessFileSources, roleSettingsFile } from "../kit/harness-files.ts";
 import { projectImports, stateWrites } from "./launch.ts";
@@ -204,13 +204,23 @@ export function writeMcpFile(harness: HarnessSpec, dir: string, servers: McpServ
   record.note(writeConfigIfChanged(file, next), harness.mcp.file);
 }
 
-export function writeInstructions(team: Team, roleName: string, dir: string, record: Recorder, root?: string): void {
+/**
+ * The seat's own instructions file: the kit's block for the project, which a copy made before the block was committed
+ * lacks, then what it takes in of the project's own instructions its agent misses.
+ */
+export function writeInstructions(
+  kit: Kit,
+  team: Team,
+  roleName: string,
+  dir: string,
+  record: Recorder,
+  root?: string,
+): void {
   const { harness } = team.roles[roleName]!;
-  // What the seat is told goes in its prompt; its own file only takes in the project's instructions its agent misses.
-  const imports = projectImports(harness, root);
   if (!harness.contextFile) return;
+  const text = [projectBlock(kit).trim(), projectImports(harness, root).trim()].filter(Boolean).join("\n\n");
   const contextPath = join(dir, harness.contextFile);
-  if (imports) record.note(writeIfChanged(contextPath, imports), harness.contextFile);
+  if (text) record.note(writeIfChanged(contextPath, `${text}\n`), harness.contextFile);
   else removeIfPresent(contextPath, harness.contextFile, record);
 }
 
