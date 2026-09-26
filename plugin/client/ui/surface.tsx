@@ -206,6 +206,7 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
         {tab === "flow" ? (
           <FlowSection
             following={Boolean(project)}
+            human={data.team.hitl.on}
             judgeRole={data.catalog.roles.find((role) => role.can.includes("judge"))?.label ?? "role that judges"}
             flow={flow}
             error={flowError}
@@ -225,8 +226,8 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
             }
           />
         ) : null}
-        {tab === "report" ? <ReportSection project={project} theme={theme} /> : null}
-        {tab === "orders" ? <OrdersSection project={project} theme={theme} /> : null}
+        {tab === "report" ? <ReportSection project={project} human={data.team.hitl.on} theme={theme} /> : null}
+        {tab === "orders" ? <OrdersSection project={project} human={data.team.hitl.on} theme={theme} /> : null}
         {tab === "mcp" ? (
           <ServersSection
             catalog={data.catalog}

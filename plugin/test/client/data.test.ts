@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { KEPT, type Layer } from "../../shared/settings.ts";
-import { countsInstead } from "../../client/format/flow.ts";
+import { countsInstead, leadState, seatText } from "../../client/format/flow.ts";
 import { incidentState, judgeWords } from "../../client/format/watch.ts";
 import { dropMcp, foldRoles, keptRoles, modelRow, setRole, withKey } from "../../client/model/layer.ts";
-import type { WatchIncident, WatchJudge } from "../../shared/flow-views.ts";
+import type { FlowLane, WatchIncident, WatchJudge } from "../../shared/flow-views.ts";
 
 const docs = {
   enabled: true,
@@ -146,6 +146,38 @@ test("a collapsed lane gives up its counts for a Lead that is waiting or gone", 
     "and a Lead that has gone is never news the counts may hide",
   );
   assert.equal(countsInstead(lane(null)), false);
+});
+
+test("a seat waiting on a permission names who answers it, and a landing held before the Human stepped out says so", () => {
+  const asking = {
+    id: "a1",
+    label: "Peer",
+    status: "running",
+    minutes: 2,
+    waiting: ["Write outside the working copy"],
+  };
+  assert.equal(seatText(asking, "you"), "waiting on you · Write outside the working copy");
+  assert.equal(
+    seatText(asking, "the Chief"),
+    "waiting on the Chief · Write outside the working copy",
+    "out of the loop, whoever supervises answers it, not the Human",
+  );
+  const held: FlowLane = {
+    id: "L1",
+    title: "Cart",
+    status: "open",
+    branch: "lane/l1-cart",
+    copy: "S0",
+    lead: asking,
+    kept: [],
+    tasks: [],
+    taskCount: 1,
+    running: 1,
+    open: false,
+    landApproval: { minutes: 3, approved: false, signals: ["It touches src/auth."], evidence: [] },
+  };
+  assert.equal(leadState(held, "you", true), "landing waits for your approval");
+  assert.equal(leadState(held, "the Chief", false), "landing held from while you were in the loop");
 });
 
 const incident = (over: Partial<WatchIncident>): WatchIncident => ({

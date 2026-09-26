@@ -4,8 +4,8 @@ import { SettingsCard, SettingsRow, SettingsSection, SettingsSwitch } from "@get
 import { memo, useMemo } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Empty } from "./bits.tsx";
-import type { FlowAsk, FlowLane, FlowSeat, FlowTask, FlowView } from "../../shared/flow-views.ts";
-import { countsInstead } from "../format/flow.ts";
+import type { FlowAsk, FlowLane, FlowSeat, FlowView } from "../../shared/flow-views.ts";
+import { ago, leadState, seatName, seatText, taskState, where } from "../format/flow.ts";
 import { ApprovalsCards } from "./approvals.tsx";
 import { QuestionCards } from "./questions.tsx";
 import { WatchCard } from "./watching.tsx";
@@ -15,6 +15,7 @@ type Navigation = PluginSurfaceProps["navigation"];
 
 type Props = {
   following: boolean;
+  human: boolean;
   judgeRole: string;
   flow: FlowView | null;
   error: string | null;
@@ -31,20 +32,6 @@ const NODE_H = 80;
 const COL_GAP = 44;
 const ROW_GAP = 12;
 const PAD = 16;
-
-const ago = (minutes: number): string => (minutes < 1 ? "just now" : `${minutes} min`);
-/** The whole phrase, because "just now" is not a duration and read as "handed back just now ago". */
-const since = (minutes: number): string => (minutes < 1 ? "just now" : `${minutes} min ago`);
-
-/** A seat by its role's label, as the kit names it; the desk may not know yet which role a seat has. */
-const seatName = (seat: FlowSeat | null): string => seat?.label ?? "Seat";
-
-const seatText = (seat: FlowSeat | null): string => {
-  if (!seat) return "no seat";
-  if (seat.waiting.length > 0) return `waiting on you · ${seat.waiting[0]}`;
-  if (seat.status === "gone") return seat.minutes > 0 ? `gone · last heard ${seat.minutes} min ago` : "gone";
-  return `${seat.status} · ${ago(seat.minutes)}`;
-};
 
 function useStyles(theme: PluginTheme) {
   return useMemo(
@@ -150,32 +137,11 @@ const Node = memo(function Node({
   );
 });
 
-/** Where a lane works: the Human's own checkout, or a copy of its own. */
-const where = (lane: FlowLane): string => (lane.copy ? `copy ${lane.copy}` : "your checkout");
-
-/** What a task's card says of it: why it cannot start or merge yet, what a waiting one waits for, since when a handed-back one waits, else what its seat is doing. */
-const taskState = (task: FlowTask): string => {
-  if (task.held) return `${task.status}: ${task.held}`;
-  if (task.status === "waiting") return task.after.length > 0 ? `waiting on ${task.after.join(", ")}` : "waiting";
-  if (task.handback !== null) return `${task.status} · handed back ${since(task.handback)}`;
-  return `${task.status} · ${seatText(task.peer)}`;
-};
-
-/** What a lane's Lead card says of it: the Human's part first, then a hold, a READY, and what is running. */
-const leadState = (lane: FlowLane): string => {
-  if (lane.landApproval)
-    return lane.landApproval.approved ? "landing approved, not landed yet" : "landing waits for your approval";
-  if (lane.onHold) return `on hold ${ago(lane.onHold.minutes)}: ${lane.onHold.reason}`;
-  if (lane.ready !== undefined) return `reported ready ${since(lane.ready)}`;
-  return countsInstead(lane)
-    ? `${lane.taskCount} task${lane.taskCount === 1 ? "" : "s"}, ${lane.running} running`
-    : seatText(lane.lead);
-};
-
-type LaneProps = { lane: FlowLane; theme: PluginTheme; navigation: Navigation };
+/** `answers` is who answers a permission prompt of this lane's seats; `human`, whether the Human is in the loop. */
+type LaneProps = { lane: FlowLane; answers: string; human: boolean; theme: PluginTheme; navigation: Navigation };
 
 /** A closed lane's Lead the Supervisor has not released yet, kept for more work with any copy of its own. */
-function KeptLead({ lane, theme, navigation }: LaneProps) {
+function KeptLead({ lane, answers, theme, navigation }: LaneProps) {
   const styles = useStyles(theme);
   return (
     <View style={styles.lane}>
@@ -183,7 +149,7 @@ function KeptLead({ lane, theme, navigation }: LaneProps) {
         theme={theme}
         title={`Kept ${seatName(lane.lead)} · ${lane.id} ${lane.title}`}
         hint={`${lane.landed ? "landed" : "dropped"}${lane.copy ? ` · keeps copy ${lane.copy}` : ""} · until released`}
-        state={seatText(lane.lead)}
+        state={seatText(lane.lead, answers)}
         alive={Boolean(lane.lead && lane.lead.status !== "gone")}
         onChat={chatOf(navigation, lane.lead)}
       />
@@ -192,7 +158,7 @@ function KeptLead({ lane, theme, navigation }: LaneProps) {
 }
 
 /** An open lane's seats below its Lead: each task's, then each Peer kept idle after its task until released. */
-function Peers({ lane, theme, navigation }: LaneProps) {
+function Peers({ lane, answers, theme, navigation }: LaneProps) {
   const styles = useStyles(theme);
   return (
     <>
@@ -206,7 +172,7 @@ function Peers({ lane, theme, navigation }: LaneProps) {
               theme={theme}
               title={`${task.peer ? seatName(task.peer) : task.kind} · ${task.id}${task.mode === "parallel" ? " · parallel" : ""}`}
               hint={task.copy ? `${task.copy} · ${task.title}` : task.title}
-              state={taskState(task)}
+              state={taskState(task, answers)}
               alive={task.status === "running" || task.status === "rework"}
               onChat={chatOf(navigation, task.peer)}
             />
@@ -219,7 +185,7 @@ function Peers({ lane, theme, navigation }: LaneProps) {
               theme={theme}
               title={`${seatName(seat)} · kept · ${seat.task}`}
               hint="stays until its Lead releases it"
-              state={seatText(seat)}
+              state={seatText(seat, answers)}
               alive={false}
               onChat={chatOf(navigation, seat)}
             />
@@ -230,9 +196,10 @@ function Peers({ lane, theme, navigation }: LaneProps) {
   );
 }
 
-const Lane = memo(function Lane({ lane, theme, onOpen, navigation }: LaneProps & { onOpen: (id: string) => void }) {
+const Lane = memo(function Lane(props: LaneProps & { onOpen: (id: string) => void }) {
+  const { lane, answers, human, theme, onOpen, navigation } = props;
   const styles = useStyles(theme);
-  if (lane.status === "closed") return <KeptLead lane={lane} theme={theme} navigation={navigation} />;
+  if (lane.status === "closed") return <KeptLead {...props} />;
   if (lane.status === "waiting") {
     return (
       <View style={styles.lane}>
@@ -254,7 +221,7 @@ const Lane = memo(function Lane({ lane, theme, onOpen, navigation }: LaneProps &
           theme={theme}
           title={`${seatName(lane.lead)} · ${lane.id} ${lane.title}`}
           hint={`${where(lane)} · ${lane.base ? `${lane.branch} off ${lane.base}` : `${lane.branch}, carried on in place`}`}
-          state={leadState(lane)}
+          state={leadState(lane, answers, human)}
           alive={Boolean(lane.lead && lane.lead.status !== "gone" && !lane.onHold)}
           caret={opens ? (lane.open ? "▾" : "▸") : undefined}
           onPress={opens ? () => onOpen(lane.id) : undefined}
@@ -268,9 +235,7 @@ const Lane = memo(function Lane({ lane, theme, onOpen, navigation }: LaneProps &
           />
         ) : null}
       </View>
-      {lane.open && (lane.tasks.length > 0 || lane.kept.length > 0) ? (
-        <Peers lane={lane} theme={theme} navigation={navigation} />
-      ) : null}
+      {lane.open && (lane.tasks.length > 0 || lane.kept.length > 0) ? <Peers {...props} /> : null}
     </View>
   );
 });
@@ -297,6 +262,7 @@ function AsksCard({ asks, theme }: { asks: FlowAsk[]; theme: PluginTheme }) {
 
 export function FlowSection({
   following,
+  human,
   judgeRole,
   flow,
   error,
@@ -309,6 +275,8 @@ export function FlowSection({
 }: Props) {
   const styles = useStyles(theme);
   const empty = flow !== null && flow.lanes.length === 0 && flow.supervisors.length === 0;
+  const supervisor = flow?.supervisors[0]?.label ?? "seat that supervises";
+  const answers = human ? "you" : `the ${supervisor}`;
 
   return (
     <SettingsSection
@@ -331,8 +299,22 @@ export function FlowSection({
         />
       </SettingsCard>
 
-      {flow ? <QuestionCards project={flow.project} questions={flow.questions} theme={theme} /> : null}
-      {flow ? <ApprovalsCards project={flow.project} lanes={flow.lanes} theme={theme} /> : null}
+      {flow ? (
+        <QuestionCards
+          project={flow.project}
+          questions={flow.questions}
+          decider={human ? undefined : supervisor}
+          theme={theme}
+        />
+      ) : null}
+      {flow ? (
+        <ApprovalsCards
+          project={flow.project}
+          lanes={flow.lanes}
+          decider={human ? undefined : supervisor}
+          theme={theme}
+        />
+      ) : null}
 
       {error ? (
         <SettingsCard>
@@ -375,7 +357,15 @@ export function FlowSection({
                 </View>
               ))}
               {flow.lanes.map((lane) => (
-                <Lane key={lane.id} lane={lane} theme={theme} onOpen={onOpen} navigation={navigation} />
+                <Lane
+                  key={lane.id}
+                  lane={lane}
+                  answers={answers}
+                  human={human}
+                  theme={theme}
+                  onOpen={onOpen}
+                  navigation={navigation}
+                />
               ))}
             </View>
           </ScrollView>
@@ -391,14 +381,7 @@ export function FlowSection({
         </SettingsCard>
       ) : null}
 
-      {flow ? (
-        <WatchCard
-          watch={flow.watch}
-          supervisor={flow.supervisors[0]?.label ?? "seat that supervises"}
-          judgeRole={judgeRole}
-          theme={theme}
-        />
-      ) : null}
+      {flow ? <WatchCard watch={flow.watch} supervisor={supervisor} judgeRole={judgeRole} theme={theme} /> : null}
 
       {flow && flow.asks.length > 0 ? <AsksCard asks={flow.asks} theme={theme} /> : null}
     </SettingsSection>

@@ -87,7 +87,18 @@ function Held({
   );
 }
 
-export function ApprovalsCards({ project, lanes, theme }: { project: string; lanes: FlowLane[]; theme: PluginTheme }) {
+/** `decider` names whoever lands lanes while the Human is out of the loop: a landing held before stays theirs to approve. */
+export function ApprovalsCards({
+  project,
+  lanes,
+  decider,
+  theme,
+}: {
+  project: string;
+  lanes: FlowLane[];
+  decider?: string;
+  theme: PluginTheme;
+}) {
   const land = useRpc(landDecideRpc);
   return (
     <>
@@ -100,7 +111,7 @@ export function ApprovalsCards({ project, lanes, theme }: { project: string; lan
             decide={land}
             theme={theme}
             label={`${lane.id} ${lane.title} waits for you to land it on ${lane.base ?? "its base"}`}
-            hint={`${lane.landApproval.signals.join(" ")} Waiting ${waited(lane.landApproval.minutes)}; the branch is ${lane.branch}.\n\nWhat the desk read of it:\n${lane.landApproval.evidence.map((fact) => `· ${fact}`).join("\n")}`}
+            hint={`${decider ? `Held while you were in the loop: the ${decider} lands lanes now; your word still reaches it. ` : ""}${lane.landApproval.signals.join(" ")} Waiting ${waited(lane.landApproval.minutes)}; the branch is ${lane.branch}.\n\nWhat the desk read of it:\n${lane.landApproval.evidence.map((fact) => `· ${fact}`).join("\n")}`}
             approved="It lands now, as the project lands lanes; if something stops it, it lands when the Supervisor lands it again."
             sentBack="Nothing lands; the lane stays open and its Lead gets your note."
           />

@@ -12,7 +12,8 @@ const HOMES: Record<string, string> = {
   isolate: "In a copy of their own; yours is left alone.",
 };
 
-function Orders({ orders, theme }: { orders: OrdersView; theme: PluginTheme }) {
+/** `human` is whether the Human is in the loop: out of it, no landing waits for them and the Supervisor chooses for them. */
+function Orders({ orders, human, theme }: { orders: OrdersView; human: boolean; theme: PluginTheme }) {
   const { fault, askFirst, riskRules, ownRules, laneHome, concept } = orders;
   return (
     <>
@@ -20,15 +21,17 @@ function Orders({ orders, theme }: { orders: OrdersView; theme: PluginTheme }) {
         {fault ? (
           <SettingsRow
             label="Your standing orders cannot be read"
-            error={`${fault} Until they are fixed, every landing waits for you.`}
+            error={human ? `${fault} Until they are fixed, every landing waits for you.` : fault}
           />
         ) : null}
         <SettingsRow
           label="Asked first"
           hint={
-            askFirst.length > 0
-              ? "A landing that changes any of these waits for you on Flow. Nothing else makes one wait."
-              : "Nothing: no landing waits for you."
+            !human
+              ? "While you are out of the loop no landing waits for you; these hold landings again once you are back in it."
+              : askFirst.length > 0
+                ? "A landing that changes any of these waits for you on Flow. Nothing else makes one wait."
+                : "Nothing: no landing waits for you."
           }
         />
         {askFirst.map((path) => (
@@ -51,7 +54,13 @@ function Orders({ orders, theme }: { orders: OrdersView; theme: PluginTheme }) {
       <SettingsCard>
         <SettingsRow
           label="Where lanes work"
-          hint={laneHome ? (HOMES[laneHome] ?? laneHome) : "Asked of you when your copy makes it a question."}
+          hint={
+            laneHome
+              ? (HOMES[laneHome] ?? laneHome)
+              : human
+                ? "Asked of you when your copy makes it a question."
+                : "The Supervisor chooses when your copy makes it a question."
+          }
         />
       </SettingsCard>
       <SettingsCard>
@@ -75,7 +84,7 @@ function Orders({ orders, theme }: { orders: OrdersView; theme: PluginTheme }) {
   );
 }
 
-function ProjectOrders({ project, theme }: { project: string; theme: PluginTheme }) {
+function ProjectOrders({ project, human, theme }: { project: string; human: boolean; theme: PluginTheme }) {
   const { value, error, reload } = useProjectRead(ordersRpc, project);
   if (error)
     return (
@@ -91,7 +100,7 @@ function ProjectOrders({ project, theme }: { project: string; theme: PluginTheme
     );
   return (
     <>
-      <Orders orders={value} theme={theme} />
+      <Orders orders={value} human={human} theme={theme} />
       <SettingsCard>
         <SettingsAction
           label="Read them again"
@@ -105,11 +114,11 @@ function ProjectOrders({ project, theme }: { project: string; theme: PluginTheme
 }
 
 /** What the Human settled for a project, to read: they change it by telling the Supervisor, who keeps it. */
-export function OrdersSection({ project, theme }: { project?: string; theme: PluginTheme }) {
+export function OrdersSection({ project, human, theme }: { project?: string; human: boolean; theme: PluginTheme }) {
   return (
     <SettingsSection title="Orders" info="What you asked of this project. Tell the Supervisor to change it.">
       {project ? (
-        <ProjectOrders project={project} theme={theme} />
+        <ProjectOrders project={project} human={human} theme={theme} />
       ) : (
         <SettingsCard>
           <Empty theme={theme} title="Orders are a project's" body="Open a project to read what you asked of it." />

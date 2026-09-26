@@ -29,11 +29,13 @@ function Question({
   project,
   question,
   answer,
+  decider,
   theme,
 }: {
   project: string;
   question: FlowQuestion;
   answer: Answer;
+  decider?: string;
   theme: PluginTheme;
 }) {
   const field = useRef<SettingsInputHandle>(null);
@@ -48,11 +50,14 @@ function Question({
       .finally(() => setBusy(false));
   };
   const place = question.lane ? `, for ${question.lane}` : "";
+  const now = decider
+    ? `Asked while you were in the loop: the ${decider} decides this now; your answer still reaches it. `
+    : "";
   return (
     <SettingsCard>
       <SettingsRow
         label={`${question.id} · ${question.question}`}
-        hint={`${CLASSES[question.class]}${place}; asked ${ago(question.minutes)}. ${question.why} If you stay silent: ${question.ifSilent}`}
+        hint={`${now}${CLASSES[question.class]}${place}; asked ${ago(question.minutes)}. ${question.why} If you stay silent: ${question.ifSilent}`}
       />
       {question.options.map((option) => {
         const recommended = option.label === question.recommend;
@@ -100,20 +105,30 @@ function Question({
   );
 }
 
+/** `decider` names whoever decides in the Human's place while they are out of the loop; their questions stay answerable. */
 export function QuestionCards({
   project,
   questions,
+  decider,
   theme,
 }: {
   project: string;
   questions: FlowQuestion[];
+  decider?: string;
   theme: PluginTheme;
 }) {
   const answer = useRpc(questionAnswerRpc);
   return (
     <>
       {questions.map((question) => (
-        <Question key={question.id} project={project} question={question} answer={answer} theme={theme} />
+        <Question
+          key={question.id}
+          project={project}
+          question={question}
+          answer={answer}
+          decider={decider}
+          theme={theme}
+        />
       ))}
     </>
   );

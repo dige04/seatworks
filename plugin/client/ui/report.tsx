@@ -21,7 +21,8 @@ function Part({ title, hint, items, none }: { title: string; hint: string; items
   );
 }
 
-function ProjectReport({ project, theme }: { project: string; theme: PluginTheme }) {
+/** `human` is whether the Human is in the loop: out of it, the Supervisor pushes what landed. */
+function ProjectReport({ project, human, theme }: { project: string; human: boolean; theme: PluginTheme }) {
   const { value, error, reload } = useProjectRead(reportRpc, project);
   if (error)
     return (
@@ -52,7 +53,15 @@ function ProjectReport({ project, theme }: { project: string; theme: PluginTheme
         hint="Questions you have not answered that could be undone; tell the Supervisor to turn one back."
         items={value.ahead}
       />
-      <Part title="Landed" hint="On the base in your copy; push it when you are ready." items={value.landed} />
+      <Part
+        title="Landed"
+        hint={
+          human
+            ? "On the base in your copy; push it when you are ready."
+            : "On the base in your copy; the Supervisor pushes it."
+        }
+        items={value.landed}
+      />
       <Part title="Beyond a lane" hint="What could not be undone, and what was done about it." items={value.beyond} />
       <Part
         title="Withdrawn by the Supervisor"
@@ -82,11 +91,11 @@ function ProjectReport({ project, theme }: { project: string; theme: PluginTheme
 }
 
 /** The project's last day for the Human, from its record alone: no agent writes a word of it. */
-export function ReportSection({ project, theme }: { project?: string; theme: PluginTheme }) {
+export function ReportSection({ project, human, theme }: { project?: string; human: boolean; theme: PluginTheme }) {
   return (
     <SettingsSection title="Report" info="Read from the record, not written by an agent: the last day of this project.">
       {project ? (
-        <ProjectReport project={project} theme={theme} />
+        <ProjectReport project={project} human={human} theme={theme} />
       ) : (
         <SettingsCard>
           <Empty theme={theme} title="A report is a project's" body="Open a project to read its last day." />
