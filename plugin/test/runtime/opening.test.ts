@@ -107,6 +107,14 @@ test("where a lane works is the Human's call: asked when their copy is off its b
     /^Nothing was set: to set where lanes work to isolate is the Human's while they are in the loop\. Ask them, and pass their words/,
   );
   assert.equal((await h.call(sup, "supervisor", "set_project", { laneHome: "isolate", humanSaid: said })).ok, true);
+  assert.match(
+    (await h.call(sup, "supervisor", "set_project", { riskRules: [] })).text,
+    /^Nothing was set: to drop the risk rule that running it a second time changes nothing, [^.]* is the Human's while they are in the loop\./,
+    "a risk rule is a standing order the Supervisor may only raise",
+  );
+  const rule = { paths: ["db/**"], invariant: "a second run changes nothing", reviewQuestion: "And a second run?" };
+  assert.match((await h.call(sup, "supervisor", "set_project", { riskRules: [rule] })).text, /^Nothing was set/);
+  assert.equal((await h.call(sup, "supervisor", "set_project", { riskRules: [rule], humanSaid: said })).ok, true);
   assert.match(await status(), /Lanes open in a copy of their own, as chosen for every lane \(laneHome\)\./);
   assert.equal((await open("Standing")).ok, true);
   assert.ok(h.ledger().lanes.L4!.slot);

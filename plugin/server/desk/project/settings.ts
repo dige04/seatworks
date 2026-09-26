@@ -1,3 +1,4 @@
+import type { RiskRule } from "../../catalog/kit/schema/ecosystem.ts";
 import { branchExists } from "../../core/git.ts";
 import { keptFault } from "../../core/store.ts";
 import { type Caller, type ToolReply, no, ok, str, strs } from "../context.ts";
@@ -7,11 +8,11 @@ import { recordEvent } from "../store/event-log.ts";
 import { type ProjectConfig, type ProjectFields, readProjectConfig, saveConfig } from "./project.ts";
 
 /**
- * Sets the project's standing configuration, each field left out kept as it is, refusing as open_lane does over a file it
- * could not read. While the Human is in the loop the Supervisor may only raise their standing orders.
+ * Sets the project's standing configuration, each field left out kept. While the Human is in the loop, lowering a standing
+ * order of theirs (an askFirst path, where lanes work, a risk rule) takes their own words from this chat.
  */
 export async function setProject(
-  { teamFor, roster }: Pick<DeskServices, "teamFor" | "roster">,
+  { kit, teamFor, roster }: Pick<DeskServices, "kit" | "teamFor" | "roster">,
   caller: Caller,
   args: ProjectFields & { humanSaid?: string },
 ): Promise<ToolReply> {
@@ -35,11 +36,14 @@ export async function setProject(
   };
   const dropped = config.askFirst.filter((path) => !next.askFirst.includes(path));
   const moved = next.laneHome !== config.laneHome;
-  if (teamFor(caller.project).hitl.on && (dropped.length > 0 || moved)) {
+  const kept = new Set((next.riskRules ?? kit.ecosystem.riskRules).map(ruleKey));
+  const unruled = (config.riskRules ?? kit.ecosystem.riskRules).filter((rule) => !kept.has(ruleKey(rule)));
+  if (teamFor(caller.project).hitl.on && (dropped.length > 0 || moved || unruled.length > 0)) {
     const said = await humanSaid(roster, caller.id, str(args.humanSaid));
     const lowers = [
       ...(dropped.length > 0 ? [`take ${dropped.join(", ")} out of askFirst`] : []),
       ...(moved ? [`set where lanes work to ${next.laneHome}`] : []),
+      ...unruled.map((rule) => `drop the risk rule that ${rule.invariant}`),
     ].join(" and ");
     if (!said)
       return no(
@@ -60,3 +64,6 @@ export async function setProject(
     `Base ${next.base ?? "unset"}; gate ${next.gate || "none"}, run per ${next.gateOn}; gate timeout ${next.gateTimeoutMinutes} minutes; lanes land as ${next.landAs}; ${home}; ${asked}; ${rules}.`,
   );
 }
+
+const ruleKey = (rule: RiskRule): string =>
+  JSON.stringify([rule.paths, rule.invariant, rule.reviewQuestion, rule.rehearse ?? null]);
