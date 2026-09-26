@@ -19,7 +19,6 @@ import {
 import { join } from "node:path";
 import { stateRoot } from "../core/paths.ts";
 import { type Fact, type Finding, findingsOf } from "../domain/incident.ts";
-import type { TaskMove, TaskStatus } from "../domain/task.ts";
 import type { DeskBase } from "./base.ts";
 import { ToolCalls } from "./calls/tool-calls.ts";
 import { Claims } from "./claims.ts";
@@ -32,6 +31,7 @@ import { callLetters } from "./letters/call-letters.ts";
 import type { Project } from "./project/project.ts";
 import { Agents } from "./seats/agents.ts";
 import { markGone } from "./seats/gone.ts";
+import { leadLost, peerLost } from "./seats/lost.ts";
 import { reapKept } from "./seats/kept.ts";
 import { Roster } from "./seats/roster.ts";
 import { Teardowns } from "./seats/teardown.ts";
@@ -46,7 +46,7 @@ import type { Lane } from "../domain/lane.ts";
 import type { Ledger } from "../domain/ledger.ts";
 import type { Task } from "../domain/task.ts";
 import { loadLedger } from "./store/ledger.ts";
-import { LedgerStore, type Sync } from "./store/ledger-store.ts";
+import { LedgerStore } from "./store/ledger-store.ts";
 import { tidyRecords } from "./store/records.ts";
 import { MergeQueue } from "./tasks/merge-queue.ts";
 import { openWaiting } from "./waiting/lanes.ts";
@@ -112,10 +112,6 @@ export class Desk {
     this.calls = new ToolCalls(this.services, options.tools, this.intents);
     this.projects = projects;
     this.human = new Human(this.services);
-  }
-
-  transact<T>(project: Project, decide: (ledger: Ledger) => Sync<T>): T {
-    return this.services.ledgers.transact(project, decide);
   }
 
   settled(project: Project): Promise<unknown> {
@@ -211,25 +207,20 @@ export class Desk {
     return dueAsks(this.services, project, ledger, seats, now, missingOf);
   }
 
+  peerLost(project: Project, ledger: Ledger, task: Task): Promise<void> {
+    return peerLost(this.services, project, ledger, task);
+  }
+
+  leadLost(project: Project, lane: Lane): Promise<boolean> {
+    return leadLost(this.services, project, lane);
+  }
+
   workerEnded(project: Project, ledger: Ledger, turn: WorkerTurn): Promise<void> {
     return workerEnded(this.services, project, ledger, turn);
   }
 
   recordSpend(project: Project, seats: Iterable<SeatView>): void {
     recordSpend(this.services, project, seats);
-  }
-
-  setTask(project: Project, taskId: string, change: (task: Task) => void): Task | undefined {
-    return this.services.ledgers.setTask(project, taskId, change);
-  }
-
-  moveTask(
-    project: Project,
-    taskId: string,
-    move: TaskMove,
-    change?: (task: Task) => void,
-  ): Task | TaskStatus | undefined {
-    return this.services.ledgers.moveTask(project, taskId, move, change);
   }
 
   /** The patrol's net under a close or accept that never started what waited on it; a failed start waits for more. */

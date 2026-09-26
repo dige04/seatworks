@@ -13,7 +13,6 @@ import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, activeTasks, openAsksFrom } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../../desk/store/ledger.ts";
-import { seatLetters } from "../../desk/letters/seat-letters.ts";
 import { type Project, projectOf } from "../../desk/project/project.ts";
 import { statusPage } from "../../desk/views/status.ts";
 import type { Outbox } from "../mail/outbox.ts";
@@ -244,12 +243,7 @@ export class Patrol {
     const missing = await this.missing(unlisted.map((task) => task.peer!));
     for (const task of unlisted.filter((entry) => missing.has(entry.peer!))) {
       this.lostTold.add(key(task));
-      const moved = desk.moveTask(project, task.id, "lose", (entry) => {
-        entry.peerGone = true;
-      });
-      if (typeof moved !== "object") continue;
-      const reader = await desk.readerOf(project, ledger.lanes[task.lane]);
-      await desk.post(reader.to, seatLetters.gone(task, reader.as));
+      await desk.peerLost(project, ledger, task);
     }
   }
 
@@ -264,10 +258,8 @@ export class Patrol {
     keepStanding(this.leadGoneTold, `${project.slug}:`, new Set(leadless.map(key)));
     const unlisted = leadless.filter((entry) => !this.leadGoneTold.has(key(entry)));
     const missing = await this.missing(unlisted.map((lane) => lane.lead!));
-    for (const lane of unlisted.filter((entry) => missing.has(entry.lead!))) {
-      const posted = await desk.post(await desk.supervisorFor(project, lane.opener), seatLetters.leadGone(lane));
-      if (posted !== "nobody") this.leadGoneTold.add(key(lane));
-    }
+    for (const lane of unlisted.filter((entry) => missing.has(entry.lead!)))
+      if (await desk.leadLost(project, lane)) this.leadGoneTold.add(key(lane));
   }
 
   private writeStatus(project: Project, seats: SeatMap, now: number): void {
