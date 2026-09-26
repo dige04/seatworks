@@ -249,6 +249,17 @@ test("the Report tells the last day from the record: what needs the Human, what 
     landed.landed.map((item) => [item.title, item.detail]),
     [["L1 Cart", "on main"]],
   );
+  assert.equal(landed.window.from, null, "never read, it runs over the whole record");
+
+  const until = landed.window.until;
+  assert.deepEqual(await landing.rpc(contracts.reportSeen, { project: landing.project.slug, until }), { seen: until });
+  const next = await landing.rpc(contracts.report, { project: landing.project.slug });
+  assert.ok("landed" in next);
+  assert.deepEqual([next.window.from, next.landed], [until, []], "it starts where the Human last read it");
+  await landing.rpc(contracts.reportSeen, { project: landing.project.slug, until: until - 60_000 });
+  const kept = await landing.rpc(contracts.report, { project: landing.project.slug });
+  assert.ok("window" in kept);
+  assert.equal(kept.window.from, until, "an older page marked read later never takes the window back");
 });
 
 test("the Flow tab draws the machine as the ledger and Paseo have it, and an unchanged poll costs nothing", async () => {

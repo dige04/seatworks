@@ -9,10 +9,15 @@ import type { Project } from "../project/project.ts";
 /** A question stops something now when its lane was put on hold for it, or it is irreversible: nothing it decides goes ahead. */
 const stops = (question: Question) => question.parked === true || question.class === "irreversible";
 
-/** What happened in a project over the last day, built from its record by the desk, not written by an agent. */
-export function reportView(project: Project, questionsPerDay: number, now = Date.now()): ReportView {
+/** What happened in a project since `from`, when the Human last marked it read, built from its record by the desk, not written by an agent. */
+export function reportView(
+  project: Project,
+  questionsPerDay: number,
+  from: number | null = null,
+  now = Date.now(),
+): ReportView {
   const ledger = loadLedger(project.state);
-  const since = now - DAY_MS;
+  const since = from ?? 0;
   const questions = Object.values(ledger.questions);
   const open = questions.filter((question) => question.status === "open");
   const lanes = Object.values(ledger.lanes);
@@ -25,6 +30,7 @@ export function reportView(project: Project, questionsPerDay: number, now = Date
     minutes: minutesSince(now, question.openedAt),
   });
   return {
+    window: { from, until: now },
     needs: [
       ...open.filter(stops).map(asked),
       ...waiting.map((lane) => ({
@@ -62,25 +68,29 @@ export function reportView(project: Project, questionsPerDay: number, now = Date
         detail: [incident.where, incident.label ? `marked ${incident.label}` : "not marked"].join(" · "),
         minutes: minutesSince(now, incident.opened),
       })),
-    numbers: numbers(project, questionsPerDay, since, { landed: landed.length, waiting: waiting.length, incidents }),
+    numbers: numbers(project, questionsPerDay, now - DAY_MS, {
+      landed: landed.length,
+      waiting: waiting.length,
+      incidents,
+    }),
   };
 }
 
-/** The day's counts: questions asked against the allowance, landings, and incidents by how they were marked. */
+/** Questions asked in the last day against the allowance; the window's landings, and its incidents by how they were marked. */
 function numbers(
   project: Project,
   perDay: number,
-  since: number,
-  day: { landed: number; waiting: number; incidents: Incident[] },
+  dayAgo: number,
+  window: { landed: number; waiting: number; incidents: Incident[] },
 ): ReportView["numbers"] {
-  const { landed, waiting, incidents } = day;
+  const { landed, waiting, incidents } = window;
   const marked = ["useful", "noise", "unknown"].map(
     (label) => `${incidents.filter((incident) => incident.label === label).length} ${label}`,
   );
   return [
     {
       title: "Questions today",
-      value: `${askedSince(project.state, since).length} of ${perDay}`,
+      value: `${askedSince(project.state, dayAgo).length} of ${perDay}`,
       detail: "across every project",
     },
     {

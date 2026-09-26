@@ -169,8 +169,12 @@ export type OrdersRead = z.infer<typeof OrdersRead>;
 
 const ReportItem = z.object({ title: z.string(), detail: z.string(), minutes: z.number() });
 export type ReportItem = z.infer<typeof ReportItem>;
-/** What happened in a project over the last day, built from its record with no agent's words in it. */
+/**
+ * What happened in a project since the Human last marked it read (`from`, none before they ever have) up to `until`,
+ * built from its record with no agent's words in it; what waits on them now is there whenever it started.
+ */
 const ReportView = z.object({
+  window: z.object({ from: z.number().nullable(), until: z.number() }),
   needs: z.array(ReportItem),
   ahead: z.array(ReportItem),
   landed: z.array(ReportItem),
@@ -182,6 +186,8 @@ const ReportView = z.object({
 export type ReportView = z.infer<typeof ReportView>;
 export const ReportRead = z.union([ReportView, Refused]);
 export type ReportRead = z.infer<typeof ReportRead>;
+export const ReportSeen = z.union([z.object({ seen: z.number() }), Refused]);
+export type ReportSeen = z.infer<typeof ReportSeen>;
 export const ModelsRefreshed = z.record(
   z.string(),
   z.object({ at: z.string(), error: z.string().nullable(), count: z.number() }),

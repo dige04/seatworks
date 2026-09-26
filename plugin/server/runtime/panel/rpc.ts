@@ -37,6 +37,7 @@ export interface HumanRpc {
   answer(project: string, question: string, choice: string, note: string): Out<typeof contracts.questionAnswer>;
   orders(project: string): Out<typeof contracts.orders>;
   report(project: string): Out<typeof contracts.report>;
+  reportSeen(project: string, until: number): Out<typeof contracts.reportSeen>;
 }
 
 export type Panel = { settings: SettingsRpc; projects: ProjectsRpc; upkeep: UpkeepRpc; human: HumanRpc };
@@ -76,4 +77,5 @@ export function registerRpc(handle: Serve, panel: Panel): void {
   handle(contracts.questionAnswer, (input) => human.answer(input.project, input.question, input.choice, input.note));
   handle(contracts.orders, (input) => human.orders(input.project));
   handle(contracts.report, (input) => human.report(input.project));
+  handle(contracts.reportSeen, (input) => human.reportSeen(input.project, input.until));
 }

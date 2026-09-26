@@ -13,6 +13,7 @@ import {
   QuestionAnswered,
   Removed,
   ReportRead,
+  ReportSeen,
   SettingsRead,
   StatusView,
   TeamRead,
@@ -105,6 +106,11 @@ export const reportRpc = defineRpc({
   input: z.object({ project: z.string().min(1) }),
   output: ReportRead,
 });
+export const reportSeenRpc = defineRpc({
+  name: "seatworks.report.seen",
+  input: z.object({ project: z.string().min(1), until: z.number() }),
+  output: ReportSeen,
+});
 export const modelsRpc = defineRpc({ name: "seatworks.models.refresh", input: z.object({}), output: ModelsRefreshed });
 export const contentRpc = defineRpc({
   name: "seatworks.upkeep.content",
@@ -150,6 +156,7 @@ export const contracts = {
   questionAnswer: questionAnswerRpc,
   orders: ordersRpc,
   report: reportRpc,
+  reportSeen: reportSeenRpc,
   paths: pathsRpc,
   models: modelsRpc,
   content: contentRpc,
