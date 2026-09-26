@@ -53,6 +53,27 @@ test("two projects on one daemon keep their own settings, task ids and letters",
   assert.equal(h.ledger(other).tasks["L1-T1"]!.status, "stalled");
 });
 
+test("attaching a project again with a new Seatworks block tells whoever supervises it to have AGENTS.md committed", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  const agents = join(h.root, "AGENTS.md");
+  const older = readFileSync(agents, "utf-8").replace(
+    /(seatworks:begin[^\n]*\n)[^]*?(<!-- seatworks:end)/,
+    "$1An older block.\n$2",
+  );
+  writeFileSync(agents, older);
+  h.git(h.root, "commit", "-qam", "an older kit's block");
+  const added = await h.rpc(contracts.projectsAdd, { root: h.root });
+  assert.ok("slug" in added);
+  assert.equal(added.note, "The Seatworks block changed in AGENTS.md; commit it.");
+  assert.ok(
+    h.heard(sup).some((text) => text.startsWith(`BLOCK CHANGED in ${join(added.root, "AGENTS.md")}: the desk wrote`)),
+    "uncommitted, it stops a lane working in the Human's own copy from landing, which is whoever supervises' to see to",
+  );
+  await h.rpc(contracts.projectsAdd, { root: h.root });
+  assert.equal(h.heard(sup).join("\n").split("BLOCK CHANGED").length, 2, "attached again unchanged, nobody is told");
+});
+
 test("a ledger the desk cannot read is not written over, and the seat is told why", async () => {
   const h = harness();
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");

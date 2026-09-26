@@ -23,6 +23,7 @@ type Kind =
   | "baseconflict"
   | "basemoved"
   | "beside"
+  | "blockchanged"
   | "canland"
   | "case"
   | "closed"

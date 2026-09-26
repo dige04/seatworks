@@ -1,8 +1,21 @@
+import { join } from "node:path";
 import type { Lane } from "../../domain/lane.ts";
 import { type Letter, ended, fyi, mail } from "./envelope.ts";
 
 /** What a lane's landing and closing send: it may go ahead, it waits on the Human, what they decided, it closed. */
 export const landLetters = {
+  /** Uncommitted, the block is a tracked change in the Human's own copy, which no lane working there lands past. */
+  blockChanged(root: string): Letter {
+    return fyi(
+      mail(
+        "blockchanged",
+        [root, Date.now()],
+        `BLOCK CHANGED in ${join(root, "AGENTS.md")}: the desk wrote the kit's new Seatworks block there, and it is not committed. Every seat reads the block from its own instructions already; uncommitted, it stops a lane working in that copy from landing.`,
+        "Have it committed: the Human commits it, or a lane's task does.",
+      ),
+    );
+  },
+
   canLand(lane: Lane): Letter {
     return mail(
       "canland",

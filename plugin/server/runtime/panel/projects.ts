@@ -20,6 +20,8 @@ import { listFolders } from "./folders.ts";
 import type { ProjectsRpc } from "./rpc.ts";
 import { firstUnder } from "../../core/fs.ts";
 import { writeProjectBlock } from "../../catalog/seat/project-block.ts";
+import type { Desk } from "../../desk/desk.ts";
+import { landLetters } from "../../desk/letters/land-letters.ts";
 
 export const unknownProject = (slug: string) => `No project named ${slug} has been seen on this machine.`;
 
@@ -33,6 +35,7 @@ type ProjectsDeps = {
   changed: () => void;
   reconcile: () => Promise<void>;
   adopt: (project: Project, draft: unknown) => Promise<string | undefined>;
+  desk: Pick<Desk, "post" | "supervisorFor">;
 };
 
 export class ProjectsPanel implements ProjectsRpc {
@@ -56,10 +59,10 @@ export class ProjectsPanel implements ProjectsRpc {
     // record() only logs failures; an attach whose slug cannot be found leaves every screen for it dead.
     if (!this.deps.source.named(project.slug))
       return { error: `${project.root} could not be put on record; see the daemon log.` };
-    // Uncommitted, the block stops a lane working in the Human's own copy from landing.
-    const note = writeProjectBlock(this.deps.kit, project.root)
-      ? "The Seatworks block changed in AGENTS.md; commit it."
-      : undefined;
+    const changed = writeProjectBlock(this.deps.kit, project.root);
+    const note = changed ? "The Seatworks block changed in AGENTS.md; commit it." : undefined;
+    if (changed)
+      await this.deps.desk.post(await this.deps.desk.supervisorFor(project), landLetters.blockChanged(project.root));
     const refused =
       isRecord(values) && Object.keys(values).length > 0 ? await this.deps.adopt(project, values) : undefined;
     await this.deps.reconcile();
