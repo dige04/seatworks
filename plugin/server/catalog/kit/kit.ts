@@ -123,10 +123,13 @@ function loadSensors(dir: string, stateDir?: string): Record<string, SensorSpec>
   return sensors;
 }
 
-/** The shipped file, unless the state root holds one of the same name, which replaces it: the SLP preset, or the ecosystem. */
-function chosen(shipped: string, stateDir?: string): string {
-  const own = stateDir ? join(stateDir, basename(shipped)) : undefined;
+/** The state root's copy where it has one, else the shipped file: how an arrangement of the owner's replaces the kit's. */
+export function ownOrShipped(own: string | undefined, shipped: string): string {
   return own && existsSync(own) ? own : shipped;
+}
+
+function chosen(shipped: string, stateDir?: string): string {
+  return ownOrShipped(stateDir && join(stateDir, basename(shipped)), shipped);
 }
 
 /** The kit in `dir`, with any file of the same name in `stateDir` replacing the shipped one; throws naming what is wrong. */

@@ -3,7 +3,7 @@ import { basename, isAbsolute, join } from "node:path";
 import { DESK_OWNED } from "../../core/paths.ts";
 import { harnessFile } from "./harness-files.ts";
 import { hiddenWordsIn } from "./hidden-words.ts";
-import type { Kit, RoleSpec } from "./kit.ts";
+import { type Kit, type RoleSpec, ownOrShipped } from "./kit.ts";
 
 export type PromptPaths = { guides: string; state: string };
 
@@ -123,11 +123,6 @@ export function skillSources(kit: Kit, role: RoleSpec, extra: Map<string, string
   return found;
 }
 
-function shippedOrOwn(dir: string, own: string | undefined, path: string): string {
-  const mine = own ? join(own, path) : undefined;
-  return mine && existsSync(mine) ? mine : join(dir, "content", path);
-}
-
 function ownOr(kit: Kit, path: string): string {
-  return shippedOrOwn(kit.dir, kit.own, path);
+  return ownOrShipped(kit.own && join(kit.own, path), join(kit.dir, "content", path));
 }

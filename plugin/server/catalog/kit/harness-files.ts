@@ -1,16 +1,12 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { HarnessSpec, Kit, RoleSpec } from "./kit.ts";
+import { type HarnessSpec, type Kit, type RoleSpec, ownOrShipped } from "./kit.ts";
 import { seatedAs } from "./roles.ts";
 
-/**
- * A harness's file for `role`: the state root's own copy first, as its prompts and skills are found, so a role the owner
- * adds can be seated without a fork; else the shipped one.
- */
+/** A harness's file for `role`, the state root's own copy first, so a role the owner adds seats without a fork. */
 export function harnessFile(kit: Kit, harness: string, source: string, role: RoleSpec): string {
   const path = join("harness", harness, source.replaceAll("ROLE", seatedAs(role)));
-  const mine = kit.own ? join(kit.own, path) : undefined;
-  return mine && existsSync(mine) ? mine : join(kit.dir, path);
+  return ownOrShipped(kit.own && join(kit.own, path), join(kit.dir, path));
 }
 
 export function roleSettingsFile(kit: Kit, harness: HarnessSpec, role: RoleSpec): string {
