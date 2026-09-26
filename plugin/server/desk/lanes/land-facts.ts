@@ -180,11 +180,29 @@ export async function landFacts(
     ...(await testFacts(kit, root, from, lane.branch, files)),
     ...outside,
     ...(await untrackedFacts(lane)),
+    ...(await reviewedFacts(root, ledger, lane)),
     ...(writers.length > 0
       ? [`It changed what one writer at a time may write, which open lanes may write too: ${besideText(writers)}.`]
       : []),
     ...recordFacts(project, ledger, lane),
   ];
+}
+
+/** How far the lane has moved past the commit its latest review of the whole lane read: its verdict is on that commit. */
+async function reviewedFacts(root: string, ledger: Ledger, lane: Lane): Promise<string[]> {
+  const review = tasksOf(ledger, lane.id)
+    .filter((task) => task.kind === "review" && !task.of && task.handback?.commit)
+    .sort((a, b) => a.handback!.at - b.handback!.at)
+    .at(-1);
+  const read = review?.handback?.commit;
+  if (!review || !read) return [];
+  const since = await commitsAhead(root, read, lane.branch);
+  if (since === undefined) return [`What ${lane.branch} holds past what ${review.id} read could not be read from git.`];
+  return since > 0
+    ? [
+        `The lane's latest review of the whole lane, ${review.id}, read ${lane.branch} at ${read.slice(0, 7)}; ${counted(since, "commit")} came after it.`,
+      ]
+    : [];
 }
 
 /** In the Human's own checkout, what git does not track is theirs and stops nothing, but it neither lands nor goes. */

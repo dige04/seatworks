@@ -1,4 +1,5 @@
-import { currentBranch, headSha, pristineState, uncommittedIn } from "../../core/git.ts";
+import { commitsAhead, currentBranch, headSha, pristineState, uncommittedIn } from "../../core/git.ts";
+import { plural } from "../../core/text.ts";
 import { AT_WORK, IN_QUEUE, TASK } from "../../domain/task.ts";
 import { laneTask } from "../lane-task.ts";
 import { type Args, type Caller, type ToolReply, no, ok, str } from "../context.ts";
@@ -67,7 +68,21 @@ async function queueTask(
     (task.reworks ?? 0) > task.handback.reworks
       ? " Its last hand-back came before your last rework, so what it says may not be what its branch holds."
       : "";
+  const reviewed = await reviewedSince(project, task);
   return ok(
-    `${task.id} is in the merge queue${ahead > 0 ? ` behind ${ahead}` : ""}.${older} MERGED, MERGE RED, MERGE WAITS or MERGE FAILED arrives as mail.`,
+    `${task.id} is in the merge queue${ahead > 0 ? ` behind ${ahead}` : ""}.${older}${reviewed} MERGED, MERGE RED, MERGE WAITS or MERGE FAILED arrives as mail.`,
   );
+}
+
+/** How far the task's branch has moved past the commit its latest review read, when it has. */
+async function reviewedSince(project: Project, task: Task): Promise<string> {
+  const review = Object.values(loadLedger(project.state).tasks)
+    .filter((entry) => entry.kind === "review" && entry.of === task.id && entry.handback?.commit)
+    .sort((a, b) => a.handback!.at - b.handback!.at)
+    .at(-1);
+  const read = review?.handback?.commit;
+  if (!review || !read || !task.branch) return "";
+  const since = await commitsAhead(project.root, read, task.branch);
+  if (!since) return "";
+  return ` Its latest review, ${review.id}, read it at ${read.slice(0, 7)}; its branch has ${since} ${plural(since, "commit", "commits")} since.`;
 }

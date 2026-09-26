@@ -102,7 +102,9 @@ async function settling(
 }
 
 async function workOf(kit: Kit, project: Project, ledger: Ledger, task: Task, synced?: Synced): Promise<Work> {
-  if (task.kind === "review" || !task.worktree) return { uncommitted: false, notes: [] };
+  // A review hands back its verdict on the commit it was seated to read.
+  if (task.kind === "review") return { commit: task.startSha, uncommitted: false, notes: [] };
+  if (!task.worktree) return { uncommitted: false, notes: [] };
   const lane = ledger.lanes[task.lane];
   const line =
     !synced || !lane
@@ -190,6 +192,7 @@ function reviewBody(task: Task, args: HandingBack): { outcome: string; body: str
     "",
     `Read: ${listOf(args.read).join("; ") || "not given"}`,
     `Ran: ${listOf(args.ran).join("; ") || "nothing"}`,
+    ...(task.startSha ? [`Commit reviewed: ${task.startSha.slice(0, 7)}`] : []),
   ];
   return { outcome, body: lines.join("\n") };
 }

@@ -196,7 +196,10 @@ test("a hand-back is asked about by review's own sensor, whatever reads for the 
   await review("Is it safe now?", "accept", { answer: "Safe.", ...rounds });
   for (const check of Object.keys(h.runtime.kit.checks)) catalog.add(check);
   const [ran] = of("review_ran_invariant");
-  assert.match(String(ran!.state.report), /^Verdict: accept\n\nSafe\.[^]*Ran: npm run migrate twice$/);
+  assert.match(
+    String(ran!.state.report),
+    /^Verdict: accept\n\nSafe\.[^]*Ran: npm run migrate twice\nCommit reviewed: [0-9a-f]{7}$/,
+  );
   const rule = h.runtime.kit.ecosystem.riskRules[0]!;
   assert.deepEqual(ran!.questions, {
     review_ran_invariant__1: {

@@ -348,3 +348,40 @@ test("a review reads the commit it covers in a copy of its own, where it may wri
     "a closing lane takes its reviews' copies with it",
   );
 });
+
+test("a verdict names the commit it read, and accepting or landing says how far the work has moved past it", async () => {
+  const { h, sup, lane, lead } = await opened("Rounding");
+  await h.call(lead, "lead", "add_tasks", {
+    tasks: [{ key: "t", title: "Round", goal: "g", ...scope, hints: ["a.txt"] }],
+  });
+  const peer = h.ledger().tasks["L1-T1"]!.peer!;
+  h.commit(lane.worktree!, "a.txt", "rounded\n");
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "rounded" });
+  const read = h.git(lane.worktree!, "rev-parse", "HEAD").trim();
+  await h.call(lead, "lead", "start_review", { task: "L1-T1", focus: "Is the rounding right?" });
+  await h.call(reviews(h).at(-1)!.peer!, "reviewer", "done", { verdict: "accept", answer: "Right." });
+  assert.match(h.heard(lead).join("\n"), new RegExp(`\\nCommit reviewed: ${read.slice(0, 7)}\\n`));
+
+  await h.call(lead, "lead", "rework", { task: "L1-T1", text: "Round the tax too." });
+  h.commit(lane.worktree!, "a.txt", "rounded, tax too\n");
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "and tax" });
+  await h.idle(peer);
+  assert.match(
+    (await h.call(lead, "lead", "accept", { task: "L1-T1" })).text,
+    new RegExp(`Its latest review, L1-R1, read it at ${read.slice(0, 7)}; its branch has 1 commit since\\.`),
+  );
+  await h.runtime.desk.settled(h.project);
+
+  await h.call(lead, "lead", "start_review", { focus: "Does the lane hold together?" });
+  const tip = h.git(h.root, "rev-parse", lane.branch).trim();
+  await h.call(reviews(h).at(-1)!.peer!, "reviewer", "done", { verdict: "accept", answer: "It does." });
+  h.commit(lane.worktree!, "b.txt", "after the review\n");
+  await h.call(lead, "lead", "report", { summary: "ready", ready: true });
+  assert.match(
+    h.heard(sup).join("\n"),
+    new RegExp(
+      `\\n- The lane's latest review of the whole lane, L1-R2, read ${lane.branch} at ${tip.slice(0, 7)}; 1 commit came after it\\.\\n`,
+    ),
+    "whoever lands it reads how far the lane moved past the verdict",
+  );
+});
