@@ -1,10 +1,9 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
-import { sortKeys } from "../../core/json.ts";
-import { readJson, writeJson } from "../../core/store.ts";
-import { errorText } from "../../core/errors.ts";
+import { isRecord, sortKeys } from "../../core/json.ts";
+import { readKept, writeJson } from "../../core/store.ts";
 import { KEPT, type Layer, LayerSchema } from "../../../shared/settings.ts";
 import type { LayerRead, WriteResult } from "../../../shared/views.ts";
 
@@ -15,38 +14,16 @@ function revisionOf(values: unknown): string {
     .slice(0, 16);
 }
 
-/** Only the position: V8 quotes the file's own text, which can hold pasted tokens. */
-function placeOf(error: unknown): string {
-  const said = errorText(error);
-  const where = /at position \d+(?: \(line \d+ column \d+\))?/.exec(said);
-  return where ? `, ${where[0]}` : "";
-}
-
-/** `readJson` reads a broken file as `{}`, a valid empty layer, so the next save would overwrite all the owner wrote. */
-function faultOf(file: string): string | undefined {
-  if (!existsSync(file)) return undefined;
-  let held: unknown;
-  try {
-    held = JSON.parse(readFileSync(file, "utf-8"));
-  } catch (error) {
-    return `${file} is there but is not JSON${placeOf(error)}`;
-  }
-  return !held || typeof held !== "object" || Array.isArray(held)
-    ? `${file} does not hold a settings object`
-    : undefined;
-}
-
 export function readLayer(file: string): LayerRead {
-  const fault = faultOf(file);
-  if (fault)
+  const read = readKept<unknown>(file, {}, isRecord);
+  if ("fault" in read)
     return {
       status: "invalid",
-      revision: revisionOf(readJson<unknown>(file, {})),
-      error: `${fault}\nRepair the file by hand, then read it again.`,
+      revision: revisionOf({}),
+      error: `${read.fault}\nRepair the file by hand, then read it again.`,
     };
-  const raw = readJson<unknown>(file, {});
-  const revision = revisionOf(raw);
-  const parsed = LayerSchema.safeParse(raw);
+  const revision = revisionOf(read.value);
+  const parsed = LayerSchema.safeParse(read.value);
   return parsed.success
     ? { status: "ready", revision, values: parsed.data }
     : { status: "invalid", revision, error: z.prettifyError(parsed.error) };
@@ -92,14 +69,14 @@ export function writeLayer(
   values: unknown,
   check: (values: Layer) => string[],
 ): WriteResult {
-  const fault = faultOf(file);
-  if (fault) {
+  const read = readKept<unknown>(file, {}, isRecord);
+  if ("fault" in read) {
     return {
       status: "invalid",
-      error: `${fault}, and saving over it would throw away what it holds.\nRepair the file by hand, then save again.`,
+      error: `${read.fault}, and saving over it would throw away what it holds.\nRepair the file by hand, then save again.`,
     };
   }
-  const current = readJson<unknown>(file, {});
+  const current = read.value;
   if (revisionOf(current) !== revision) {
     return {
       status: "conflict",

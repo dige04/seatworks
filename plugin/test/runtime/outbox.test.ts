@@ -124,7 +124,16 @@ test("a letter goes to its seat when the seat can take it, and until then is hel
   assert.equal(await post("quiet", "ask:A1", "a question"), "sent");
   assert.deepEqual(agents.quiet.sent, ["lane opened|a question"], "it goes with the next letter that asks");
 
-  writeFileSync(file, "{not json");
-  await assert.rejects(post("busy", "late", "held for later"), /outbox\.json is there but could not be read/);
-  assert.equal(readFileSync(file, "utf-8"), "{not json", "the letters held in it are not written over by the next one");
+  const garbled = '[{ "to": "busy", "text": words from a letter }]';
+  writeFileSync(file, garbled);
+  await assert.rejects(post("busy", "late", "held for later"), (error: Error) => {
+    assert.match(error.message, /outbox\.json is there but could not be read: it is not JSON/);
+    assert.doesNotMatch(
+      error.message,
+      /words from a letter/,
+      "a parser quotes the file, and whoever reads this is not",
+    );
+    return true;
+  });
+  assert.equal(readFileSync(file, "utf-8"), garbled, "the letters held in it are not written over by the next one");
 });
