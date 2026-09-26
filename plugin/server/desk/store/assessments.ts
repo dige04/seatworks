@@ -5,13 +5,13 @@ import type { Project } from "../project/project.ts";
 import { recordEvent } from "./event-log.ts";
 import { appendRecord } from "./records.ts";
 
-/** Where a judge's answers are kept, and the event that says one could not be asked: the watch's and review's are apart. */
+/** Where a judge's answers are kept, and the event saying one could not be asked: the watch's apart from review's. */
 export type Assessments = { log: (typeof RECORDS)[number]; unasked: "watch.unasked" | "review.unasked" };
 
 /** What an answer is kept beside: about whom and which of theirs, by which judge, and what it read. */
 type About = { subject: string; episode: string; by: string; state: Record<string, unknown> } & Record<string, unknown>;
 
-/** Whether a condition holds by its thresholds: at or above `yes` it does, at or below `no` it does not, between is unclear. */
+/** Whether a condition holds: at or above `yes` it does, at or below `no` it does not, and between is unclear. */
 export function holds(spec: { yes: number; no: number }, answer: Answer | undefined): "yes" | "no" | "unclear" {
   const yes = answer && "noul" in answer ? answer.noul : undefined;
   return yes === undefined ? "unclear" : yes >= spec.yes ? "yes" : yes <= spec.no ? "no" : "unclear";

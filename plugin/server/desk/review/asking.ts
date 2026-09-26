@@ -19,7 +19,7 @@ export type Case = {
 
 const REVIEW: Assessments = { log: "assessments", unasked: "review.unasked" };
 
-/** The sensor that asks review's checks for `project`, or why none can: no sensor, no key, or a host with no way to ask. */
+/** The sensor that asks review's checks, or why none can: no sensor, no key, or a host with no way to ask. */
 function judgeFor(
   { teamFor, sensorFor }: Pick<DeskServices, "teamFor" | "sensorFor">,
   project: Project,

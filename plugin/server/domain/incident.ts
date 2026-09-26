@@ -5,7 +5,7 @@ export type Held = "nobody";
 /** How much a fact asks of whoever watches: a page now, attention soon, or only a note on the record. */
 export type Level = "page" | "attend" | "note";
 
-/** What a watch saw that the desk books as an incident; `theirs` when its quote is only the seat's own words or command. */
+/** What a watch saw that the desk books as an incident; `theirs` when its quote is only the seat's words or command. */
 export type Finding = { kind: string; level: Exclude<Level, "note">; quote: string; facts: string[]; theirs?: true };
 
 export type Incident = {

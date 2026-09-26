@@ -65,7 +65,7 @@ async function waitedOn(
   }
 }
 
-/** Settles a Lead's ask nobody answered in time as its own to decide: the Lead is told, and so is whoever it waited on. */
+/** A Lead's ask nobody answered in time goes back to it to settle: it is told, and so is whoever it waited on. */
 async function lapse({ desk }: AskDeps, project: Project, ask: Ask, now: number): Promise<void> {
   const minutes = Math.round((now - ask.openedAt) / 60_000);
   const lapsed = desk.transact(project, (current) => {

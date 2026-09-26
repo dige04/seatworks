@@ -85,7 +85,7 @@ export const AttentionChoice = z.strictObject({
   sensor: z.string().min(1).optional(),
 });
 
-/** Which sensor asks review's checks, apart from whatever reads for the watch; the machine keeps its key under `sensor`. */
+/** Which sensor asks review's checks, apart from the watch's; the machine keeps its key under `sensor`. */
 const ReviewChoice = z.strictObject({ sensor: z.string().min(1).optional() });
 
 /** Off, only the concept is the Human's; on, questions may queue for them, at most `questionsPerDay` across this machine. */

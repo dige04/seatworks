@@ -47,7 +47,7 @@ function briefs(state: string, shown: Incident[]): string[] {
   return out.length > 0 ? ["", "What they were asked:", ...out] : [];
 }
 
-/** The incidents told to whoever supervises and not yet marked, newest first, with what the seats they are about were asked. */
+/** The incidents told to whoever supervises and not yet marked, newest first, with what their seats were asked. */
 export function listIncidents(caller: Caller, withClosed: boolean): ToolReply {
   const read = readIncidentsFile(caller.project.state);
   if ("fault" in read) return no(`${read.fault}. Only the Human can repair it or move it aside.`);
