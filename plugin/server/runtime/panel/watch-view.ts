@@ -15,7 +15,7 @@ const INCIDENTS_SHOWN = 200;
 
 export type Trouble = { kind: string; at: number; detail: string };
 
-/** Which brains read for the project and how that stands, as the last thing its assessments kept says; a line by another is not theirs. */
+/** Which brains read for the project and how that stands, as the last answer the watch kept says; a line by another is not theirs. */
 function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJudge {
   const { sensor, seat } = team.brains;
   if (!sensor && !seat) return { label: "", state: "off", minutes: null, detail: null };
@@ -23,16 +23,13 @@ function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJu
   const named = [sensor?.sensor.label, seatLabel].filter(Boolean).join(" and ");
   const label = named.charAt(0).toUpperCase() + named.slice(1);
   if (sensor && !sensor.key && !seat) return { label, state: "nokey", minutes: null, detail: sensor.sensor.key };
-  let last: { episode?: string; at?: string; by?: string; unasked?: string } | undefined;
-  // Review keeps its answers beside the watch's; only a look's are the watch's.
+  let last: { at?: string; by?: string; unasked?: string } | undefined;
   for (const kept of lastBytes(join(project.state, "assessments.log"), 16 * 1024)
     .trim()
     .split("\n")
     .reverse()) {
     try {
-      const read = JSON.parse(kept) as NonNullable<typeof last>;
-      if (read.episode !== "look") continue;
-      last = read;
+      last = JSON.parse(kept) as NonNullable<typeof last>;
       break;
     } catch {
       // A line cut mid-write says nothing of how the brains answer.

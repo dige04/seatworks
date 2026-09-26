@@ -27,7 +27,7 @@ export function paseoConfigPath(homeDir = home()): string {
   return join(paseoHome(homeDir), "config.json");
 }
 
-export const RECORDS = ["events", "attention", "assessments"] as const;
+export const RECORDS = ["events", "attention", "assessments", "reviews"] as const;
 
 export const DESK_OWNED = new Set([
   "ledger.json",

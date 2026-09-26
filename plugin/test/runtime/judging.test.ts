@@ -72,9 +72,9 @@ type Kept = {
 const everAsked = new Set<string>();
 const catalog = new Set<string>();
 
-/** What the project's assessments hold, each check it names counted towards the catalog every test file here must reach. */
+/** What review's record holds, each check it names counted towards the catalog every test file here must reach. */
 const kept = (state: string): Kept[] => {
-  const file = join(state, "assessments.log");
+  const file = join(state, "reviews.log");
   const lines = existsSync(file)
     ? readFileSync(file, "utf-8")
         .trim()
@@ -359,13 +359,13 @@ test("review records what it cannot ask as unasked, asks nothing its catalog tur
   );
   judged.fail();
 
-  rmSync(join(h.project.state, "assessments.log"));
-  mkdirSync(join(h.project.state, "assessments.log"));
+  rmSync(join(h.project.state, "reviews.log"));
+  mkdirSync(join(h.project.state, "reviews.log"));
   const said = reported(t);
   await handBack("fourth");
   assert.match(
     said(),
-    /assessments\.log write failed/,
+    /reviews\.log write failed/,
     "a record that cannot be written is reported, and the desk goes on",
   );
   judged.unmake(new Error("that key is not one this sensor takes"));

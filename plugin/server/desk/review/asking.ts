@@ -17,7 +17,7 @@ export type Case = {
   asked: Record<string, { check: string; fill?: Record<string, string> }>;
 };
 
-const REVIEW: Assessments = { log: "assessments", unasked: "review.unasked" };
+const REVIEW: Assessments = { log: "reviews", unasked: "review.unasked" };
 
 /** The sensor that asks review's checks, or why none can: no sensor, no key, or a host with no way to ask. */
 function judgeFor(
