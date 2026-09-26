@@ -6,7 +6,7 @@ import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { PaseoHost } from "../../server/adapters/paseo/host.ts";
 import { SEAT_KEY } from "../../server/catalog/kit/kit.ts";
 import { seatDir } from "../../server/catalog/seat/seats.ts";
-import { home } from "../../server/core/paths.ts";
+import { home, stateRoot } from "../../server/core/paths.ts";
 import type { AgentConfig } from "../../server/core/ports.ts";
 import { projectOf } from "../../server/desk/project/project.ts";
 import { tempDir } from "../tempdir.ts";
@@ -61,6 +61,16 @@ test("a seat as Paseo creates, opens and archives it: prompt, key, seat director
   assert.equal(open("agent-9", "create", { [SEAT_KEY]: "k9" })[SEAT_KEY], "k9");
   assert.equal(open("agent-9", "resume")[SEAT_KEY], "k9", "a resumed seat's server starts again with its key");
   assert.equal(open("agent-0", "resume")[SEAT_KEY], undefined, "a seat never given one gets none");
+  const keys = join(stateRoot(), "keys.json");
+  const bound = readFileSync(keys, "utf-8");
+  writeFileSync(keys, "{not json");
+  assert.throws(
+    () => open("agent-8", "create", { [SEAT_KEY]: "k8" }),
+    /keys\.json is there but could not be read[^]*Nothing was written over it/,
+    "a seat is refused rather than bound over every other seat's key",
+  );
+  assert.equal(readFileSync(keys, "utf-8"), "{not json");
+  writeFileSync(keys, bound);
 
   const { kit } = h.runtime;
   const lead = kit.roles.find((role) => role.role === "lead")!;
