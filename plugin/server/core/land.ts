@@ -7,7 +7,6 @@ export type LandAs = (typeof LAND_AS)[number];
 
 type LandResult = { landed: boolean; how: string };
 
-/** Why a branch was not moved: work uncommitted or unreadable where it is checked out, a move from what was read, a checkout in another copy, or git refusing the fast-forward. */
 type Unmoved = { why: "dirty" | "unknown" | "moved" | "elsewhere" | "refused"; detail?: string };
 
 /**
@@ -28,7 +27,7 @@ export async function advance(cwd: string, branch: string, from: string, tip: st
   return (await git(cwd, ["update-ref", `refs/heads/${branch}`, tip, from])).code === 0 ? undefined : { why: "moved" };
 }
 
-/** A merge of `branch` onto `onto` whose tree is `branch`'s own, made without checking anything out: `branch` already contains `onto`. */
+/** A merge of `branch` onto `onto` with `branch`'s tree, made without a checkout: `branch` already has `onto`. */
 export async function mergeCommit(
   cwd: string,
   onto: string,
@@ -42,7 +41,6 @@ export async function mergeCommit(
   return made?.code === 0 ? made.stdout.trim() : undefined;
 }
 
-/** Why a landing did not move base, as whoever lands the lane reads it. */
 function unlanded(base: string, root: string, stopped: Unmoved): string {
   if (stopped.why === "dirty") return `the main working copy on ${base} has uncommitted changes`;
   if (stopped.why === "unknown") return `git could not read the main working copy at ${root}`;
@@ -53,8 +51,8 @@ function unlanded(base: string, root: string, stopped: Unmoved): string {
 }
 
 /**
- * Lands `tested`, the head of `branch` its gate saw, on `base` as one commit, a merge commit or a fast-forward, made without
- * checking anything out. A lane that moved since its gate lands nothing: what would land is not what was tested.
+ * Lands `tested`, the head of `branch` its gate saw, on `base` as one commit, a merge commit or a fast-forward, without
+ * a checkout. A lane that moved since its gate lands nothing: what would land is not what was tested.
  */
 export async function landLane(
   root: string,

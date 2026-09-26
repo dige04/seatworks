@@ -10,7 +10,7 @@ import { besideNote } from "../letters/directive.ts";
 import { recordEvent } from "../store/event-log.ts";
 import { lanesBeside, tellBeside } from "./placement.ts";
 
-/** Changes what a lane is asked while it is open or waiting, keeping what it was asked before; its Lead is told what moved. */
+/** Changes what an open or waiting lane is asked, keeping what it was asked before; its Lead is told what moved. */
 export async function amendLane(
   { kit, ledgers, mail }: Pick<DeskServices, "kit" | "ledgers" | "mail">,
   caller: Caller,
@@ -48,7 +48,6 @@ export async function amendLane(
   if (done.lane.status === "waiting") return ok(`Lane ${lane.id} is amended; it opens as it is now.`);
   const posted = await mail.post(done.lane.lead, workLetters.amended(done.lane, done.amendment, "lead"));
   await tellBeside({ mail }, project, done.lane, done.beside);
-  // Its own Lead hears of each lane beside it as that lane's Lead hears of it.
   const lanes = loadLedger(project.state).lanes;
   for (const { lane: id, paths } of done.beside) {
     const other = lanes[id];

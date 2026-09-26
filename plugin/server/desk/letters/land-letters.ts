@@ -12,7 +12,7 @@ export const landLetters = {
     );
   },
 
-  /** The way back out of a DETOUR: the lane that waited is told, since it cannot see the other one; dropped, the way is not cleared. */
+  /** The way out of a DETOUR: the waiting lane is told, as it cannot see the other; dropped, the way is not cleared. */
   detourClosed(detour: Lane, waiting: Lane, landing: string, landed: boolean): Letter {
     if (!landed) {
       const text = `DETOUR DROPPED ${detour.id} (${detour.title}), the detour your lane ${waiting.id} was waiting on: it closed without landing, and its branch ${detour.branch} is kept.`;
@@ -36,7 +36,7 @@ export const landLetters = {
     );
   },
 
-  /** `head` is the lane's tip it was held at: a hold is told once per commit, and asks nothing of a Lead that has stopped. */
+  /** `head` is the tip it was held at: a hold is told once per commit, and asks nothing of a Lead that has stopped. */
   landHeld(lane: Lane, reason: string, head: string): Letter {
     const text = `LAND HELD ${lane.id} (${lane.title}): the Human looks at it before it lands. ${reason} Approved, it lands and the lane closes; sent back, LAND SENT BACK brings their note. A new commit means it is looked at again from the start.`;
     return fyi(
@@ -49,7 +49,7 @@ export const landLetters = {
     );
   },
 
-  /** Another lane landed on this one's base, which now conflicts with it: word ahead of the landing that would find it. */
+  /** Another lane landed on this one's base, which now conflicts with it: word ahead of the landing that finds it. */
   baseMoved(landed: Lane, lane: Lane, conflicts: string[]): Letter {
     const text = `BASE MOVED ${lane.id} (${lane.title}): ${landed.id} (${landed.title}) landed on ${lane.base}, which now conflicts with ${lane.branch} in ${conflicts.join(", ")}. Nothing was merged.`;
     return fyi(
@@ -62,7 +62,7 @@ export const landLetters = {
     );
   },
 
-  /** The base does not merge into the lane cleanly: a fact for its Lead, since who takes it in is chosen above the lane. */
+  /** The base does not merge into the lane: a fact for its Lead, since who takes it in is chosen above the lane. */
   baseConflict(lane: Lane, conflicts: string[]): Letter {
     const text = `BASE CONFLICT ${lane.id} (${lane.title}): ${lane.base} moved on, and merging it into ${lane.branch} stops on conflicts in ${conflicts.join(", ")}. Nothing was left in your working copy, and the lane does not land until it takes ${lane.base} in.`;
     return fyi(

@@ -7,15 +7,15 @@ import type { DeskBase } from "../base.ts";
 import type { Refusal } from "../refusal.ts";
 import { loadLedger } from "../store/ledger.ts";
 
-/** An open lane a lane works beside, and what both may write: one-writer paths both reach, or where their scopes meet. */
+/** An open lane a lane works beside, and what both may write: one-writer paths both reach, or where scopes meet. */
 export type Beside = { lane: string; paths: string[] };
 
 type Scoped = Pick<Lane, "id" | "writeSet" | "contracts">;
 
 /**
- * The open lanes a lane with this scope works beside, and what each may write that it does too. Never a refusal: every lane has
- * a branch of its own, so what two lanes both write meets when the second merges or lands. A lane that declares no write set
- * may write any one-writer path, on either side.
+ * The open lanes a lane with this scope works beside, and what each may write that it does too. Never a refusal: every
+ * lane has a branch of its own, so what two lanes both write meets when the second merges or lands. A lane that
+ * declares no write set may write any one-writer path, on either side.
  */
 export function lanesBeside(serial: string[], open: Scoped[], writeSet: string[], contracts: string[]): Beside[] {
   const reach = (paths: string[]) => (paths.length === 0 ? serial : serialReach(paths, serial));
@@ -42,7 +42,7 @@ export async function tellBeside(
   for (const entry of beside) await mail.post(lanes[entry.lane]?.lead, workLetters.laneBeside(lane, entry.paths));
 }
 
-/** The open lanes beside `lane` that may write these one-writer paths it changed: noted where the change merges or lands. */
+/** The open lanes beside `lane` that may write the one-writer paths it changed: noted where it merges or lands. */
 export function openWriters(ledger: Ledger, lane: string, paths: string[]): Beside[] {
   if (paths.length === 0) return [];
   return Object.values(ledger.lanes)
@@ -56,7 +56,7 @@ export function openWriters(ledger: Ledger, lane: string, paths: string[]): Besi
 
 type Placing = Pick<Lane, "onBranch" | "detourOf">;
 
-/** Where a lane opens given the ledger as it stands, or why it cannot: decided in the transaction that records or opens it. */
+/** Where a lane opens given the ledger as it is, or why not: decided in the transaction that records or opens it. */
 export function placement(
   ledger: Ledger,
   lane: Placing,
@@ -74,7 +74,7 @@ export function placement(
   // A detour must name a real open lane, or the letter back out of it has nowhere to go.
   if (lane.detourOf && !open.some((entry) => entry.id === lane.detourOf))
     return { why: `There is no open lane ${lane.detourOf} for this one to clear the way for.`, next: "" };
-  // One checkout is one branch, so whether to wait for it or take a copy is the Supervisor's call; a detour cannot wait.
+  // One checkout is one branch, so waiting for it or taking a copy is the Supervisor's call; a detour cannot wait.
   if (holder && !isolate && !lane.onBranch && !lane.detourOf) return ownCopyTaken(holder);
   return { ownCopy: !lane.onBranch && (isolate || holder !== undefined) };
 }

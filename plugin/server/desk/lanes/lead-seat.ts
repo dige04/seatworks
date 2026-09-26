@@ -32,7 +32,6 @@ export function leadSeatOf(seats: SeatView[], project: Project, lane: string): S
   );
 }
 
-/** What the Supervisor is told once a lane opens: where it works, its gate, and the issue as its Lead received it. */
 export function openedReply(
   project: Project,
   lane: Lane,
@@ -42,7 +41,7 @@ export function openedReply(
   beside: Beside[],
 ): string {
   const config = loadConfig(project.state);
-  // An empty gate is the owner's answer, not a missing one, so it is not an invitation to set one.
+  // An empty gate is the project's answer, not a missing one, so it is not an invitation to set one.
   const gate = config.gate
     ? config.gate
     : config.gate === ""
@@ -62,7 +61,7 @@ export function openedReply(
   return `Lane ${lane.id} ${on}, and its Lead ${lead} is starting. Gate: ${gate}.${besideNote(beside, "opened")} Reports and asks arrive as mail; nothing to wait for now.${issueText}`;
 }
 
-/** Seats the Lead of a lane marked seating; a failure puts back what it took, moves the lane by `failed`, and is the reason. */
+/** Seats a lane's Lead; a failure puts back what it took, moves the lane by `failed`, and is the reason. */
 export async function startLead(
   desk: DeskServices,
   project: Project,
@@ -91,7 +90,7 @@ export async function startLead(
   }
 }
 
-/** Drops the copy a lane took for a Lead that never started: it has been given back, and the lane waits or closes without it. */
+/** Drops the copy a lane took for a Lead that never started: given back, the lane waits or closes without it. */
 export function forgetPlace(lane: Lane | undefined): void {
   if (!lane) return;
   delete lane.worktree;
@@ -121,7 +120,6 @@ async function seatLead(desk: DeskServices, project: Project, lane: Lane, how: S
   }
 }
 
-/** The copy the lane works in: the project's own, on its branch or a new one, or a copy of its own. */
 function takeCopy(
   { slots, ownCopy }: Pick<DeskServices, "slots" | "ownCopy">,
   project: Project,

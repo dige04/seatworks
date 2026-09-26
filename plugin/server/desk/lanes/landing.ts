@@ -61,7 +61,6 @@ export async function landLane(
   return gateThenLand(desk, project, ledger, lane, by, over, approved);
 }
 
-/** The gate on the head that lands, the Human's hold where they asked for one, then the landing itself. */
 async function gateThenLand(
   desk: DeskServices,
   project: Project,
@@ -71,7 +70,6 @@ async function gateThenLand(
   over: OverGate,
   approved: Held | undefined,
 ): Promise<Closed | Landed> {
-  // What lands is the head its gate saw: a lane that moves after the gate lands nothing.
   const tested = await headSha(project.root, lane.branch);
   if (!tested) {
     const why = `git could not read ${lane.branch}`;
@@ -83,7 +81,7 @@ async function gateThenLand(
     };
   }
   const gate = await laneGate(desk, project, lane);
-  // A red gate stops landing unless the Supervisor passes `overGate`: the verdict is evidence, not a veto. One that never ran is no verdict.
+  // overGate passes a red gate, which is evidence, not a veto; a gate that never ran gave no verdict to pass.
   if (!gate.ok && (!gate.ran || !over.overGate)) {
     const then = gate.ran
       ? "Message its Lead, drop_lane it, or land_lane it over the gate with overGate true and your reason: that is your call."
@@ -105,7 +103,7 @@ async function gateThenLand(
   return { how: `${result.how}${gate.ok ? "" : ", over a red gate"}`, note: check.note };
 }
 
-/** Merges base into the lane in its own copy, never under a seat mid-turn there; a conflict is undone, and its Lead told. */
+/** Merges base into the lane's own copy, never under a seat mid-turn there; a conflict is undone and its Lead told. */
 async function bringBaseIn(
   { ledgers, mail, roster }: Pick<DeskServices, "ledgers" | "mail" | "roster">,
   project: Project,
@@ -137,7 +135,7 @@ async function bringBaseIn(
   };
 }
 
-/** Why base cannot be merged into the lane's copy now, or "current" when it holds base already; an unseen seat counts as writing. */
+/** Why base cannot merge into the lane's copy now, or "current" when it has base; an unseen seat counts as writing. */
 async function baseMergeBlocked(
   roster: Roster,
   ledger: Ledger,
@@ -164,7 +162,6 @@ async function baseMergeBlocked(
   };
 }
 
-/** What a lane lands under as one commit or a merge: its title, its outcome and the tasks that went into it. */
 function landMessage(ledger: Ledger, lane: Lane): string {
   const tasks = tasksOf(ledger, lane.id).filter((task) => task.kind === "code" && task.status === "merged");
   const list = tasks.length > 0 ? ["", ...tasks.map((task) => `- ${task.id} ${task.title}`)] : [];

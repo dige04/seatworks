@@ -6,7 +6,7 @@ type Run = { code: number; stdout: string; stderr: string };
 
 export function git(cwd: string, args: string[], timeout = 60_000): Promise<Run> {
   return new Promise((resolve) => {
-    // core.quotePath=false: otherwise non-ASCII paths come back quoted and octal-escaped and match no path a write set or hold names.
+    // core.quotePath=false: non-ASCII paths otherwise come back octal-escaped and match no path a write set names.
     execFile(
       "git",
       ["-C", cwd, "-c", "core.quotePath=false", ...args],
@@ -48,8 +48,8 @@ export function cleanState(cwd: string): Promise<Cleanliness> {
 }
 
 /**
- * Uncommitted and untracked paths, or undefined when git cannot say. Read NUL-separated, so a path with a space or an arrow in
- * it is itself, and a rename names where it went, not where it came from.
+ * Uncommitted and untracked paths, or undefined when git cannot say. Read NUL-separated, so a path with a space or an
+ * arrow in it is itself, and a rename names where it went, not where it came from.
  */
 export async function uncommittedPaths(cwd: string): Promise<string[] | undefined> {
   const run = await git(cwd, ["status", "--porcelain", "-z"]);
@@ -71,7 +71,7 @@ export async function pristineState(cwd: string): Promise<Cleanliness> {
   return paths === undefined ? "unknown" : paths.length > 0 ? "dirty" : "clean";
 }
 
-/** The files git tracks in `cwd`, or undefined when git cannot say: an empty list would read as a copy holding nothing. */
+/** The files git tracks in `cwd`, or undefined when git cannot say: an empty list would read as an empty copy. */
 export async function trackedFiles(cwd: string): Promise<string[] | undefined> {
   const run = await git(cwd, ["ls-files", "-z"]);
   return run.code === 0 ? run.stdout.split("\0").filter(Boolean) : undefined;
@@ -81,14 +81,14 @@ export async function branchExists(cwd: string, branch: string): Promise<boolean
   return (await git(cwd, ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`])).code === 0;
 }
 
-/** Deletes `branch` once everything on it is in `into`; false when it holds commits `into` lacks, or git could not tell, and is kept. */
+/** Deletes `branch` once all of it is in `into`; false, and it is kept, when it holds more or git could not tell. */
 export async function dropMerged(cwd: string, branch: string, into: string): Promise<boolean> {
   return (await contains(cwd, into, branch)) === true && (await git(cwd, ["branch", "-D", branch])).code === 0;
 }
 
 /**
- * Puts `cwd` on `branch`, made from `start` when it is not there yet; git's reason when it cannot. `discard` drops edits to
- * tracked files there, and `untracked` the files git does not track as well, which only a copy the desk made may lose.
+ * Puts `cwd` on `branch`, made from `start` when it is not there yet; git's reason when it cannot. `discard` drops
+ * edits to tracked files, and `untracked` untracked files too, which only a copy the desk made may lose.
  */
 export async function switchTo(
   cwd: string,
@@ -115,7 +115,7 @@ export async function commitsAhead(cwd: string, base: string, branch: string): P
   return Number.isInteger(count) ? count : undefined;
 }
 
-/** Whether everything on `branch` is already in `into`; undefined when git could not say, as a branch is deleted on this answer. */
+/** Whether all of `branch` is in `into`; undefined when git could not say, since a branch is deleted on this answer. */
 export async function contains(cwd: string, into: string, branch: string): Promise<boolean | undefined> {
   if (!(await branchExists(cwd, branch))) return undefined;
   const ahead = await commitsAhead(cwd, into, branch);
@@ -159,9 +159,9 @@ export const AS_DESK = [
 type MergeResult = { ok: true; before: string; after: string } | { ok: false; conflicts: string[]; message: string };
 
 /**
- * `leave` keeps a merge stopped on conflicts in place for the seat whose branch it is to settle and commit; anything else that
- * stops it is undone. The Human's rerere would settle conflicts unseen, their signer can wait on them, and their
- * commit hooks judge their people's commits, not the desk's merges: none of them applies.
+ * `leave` keeps a merge stopped on conflicts in place for the seat whose branch it is to settle and commit; anything
+ * else that stops it is undone. The Human's rerere would settle conflicts unseen, their signer can wait on them, and
+ * their commit hooks judge their people's commits, not the desk's merges: none of them applies.
  */
 export async function mergeBranch(
   cwd: string,
@@ -184,8 +184,8 @@ export async function mergeBranch(
 }
 
 /**
- * The files merging `onto` into `branch` would stop on, read without touching any working copy: none when it merges clean,
- * nothing when git cannot say.
+ * The files merging `onto` into `branch` would stop on, read without touching any working copy: none when it merges
+ * clean, nothing when git cannot say.
  */
 export async function conflictsWith(cwd: string, branch: string, onto: string): Promise<string[] | undefined> {
   const run = await git(cwd, ["merge-tree", "--write-tree", "--name-only", "--no-messages", branch, onto]);
@@ -197,7 +197,6 @@ export async function conflictsWith(cwd: string, branch: string, onto: string): 
   return [...new Set((end < 0 ? lines : lines.slice(0, end)).map((line) => line.trim()))];
 }
 
-/** A merge begun in the copy and neither committed nor undone. */
 export async function mergeUnderWay(cwd: string): Promise<boolean> {
   return (await git(cwd, ["rev-parse", "-q", "--verify", "MERGE_HEAD"])).code === 0;
 }
@@ -235,7 +234,6 @@ export async function mergeBase(cwd: string, base: string, branch: string): Prom
   return run.code === 0 ? run.stdout.trim() || undefined : undefined;
 }
 
-/** Whether `base` is already contained in `branch`, so landing is a fast-forward rather than a merge. */
 export async function isAncestor(root: string, base: string, branch: string): Promise<boolean> {
   return (await git(root, ["merge-base", "--is-ancestor", base, branch])).code === 0;
 }

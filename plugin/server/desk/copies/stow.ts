@@ -10,8 +10,8 @@ import { unsavedIn } from "./unsaved.ts";
 type Stowing = { land: boolean; kept: boolean; writers: string[] };
 
 /**
- * Takes a closing lane's copy where the lane leaves it, once `writers` are out of it: a task still in it left it on that task's
- * branch, which the copy comes back from and which goes once the lane has all of it. Says what it kept, and where git left the copy instead.
+ * Takes a closing lane's copy where the lane leaves it once `writers` are out, off the branch of a task still in it,
+ * which goes once the lane has it all. Says what it kept, and where git left the copy instead.
  */
 export async function stowCopy(
   desk: DeskServices,
@@ -26,9 +26,10 @@ export async function stowCopy(
     ? { branch: holder.branch!, dropBranch: holder.branch, into: lane.branch }
     : { branch: lane.branch };
   const kept: string[] = [];
-  // A branch carried on is the Human's, back on it from a task's, and a copy of the lane's own stays with a kept Lead, off a task's branch if nobody is in it.
+  // A branch carried on is the Human's: their copy goes back onto it from a task's.
   if (lane.onBranch && holder)
     await desk.teardowns.putAway({ project, restore: lane.branch, lane: lane.id, ...off }, how.writers);
+  // A copy of the lane's own stays with a kept Lead, off a task's branch once nobody is in it.
   const back = lane.slot && how.kept && holder && how.writers.length === 0 ? await leaveCopy(lane, holder) : undefined;
   if (back?.kept) kept.push(back.kept);
   if (!lane.onBranch && (!lane.slot || !how.kept)) {
@@ -47,10 +48,7 @@ export async function stowCopy(
   return { kept, note: copyNote(lane, how, Boolean(holder), stuck, unsaved) };
 }
 
-/**
- * Where the lane's copy stands once it closes: on a carried-on branch, kept with its Lead, going away, left for the work it
- * holds uncommitted, or the Human's going back; `stuck`, where git left it instead.
- */
+/** Where the lane's copy stands when closed; `stuck`, where git left it instead; `unsaved`, its uncommitted work. */
 function copyNote(lane: Lane, { kept, writers }: Stowing, held: boolean, stuck?: string, unsaved?: string): string {
   if (lane.onBranch && !held) return `The project's own copy stays on ${lane.branch}.`;
   if (lane.slot && kept)

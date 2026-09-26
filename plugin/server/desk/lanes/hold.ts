@@ -8,7 +8,6 @@ import { recordEvent } from "../store/event-log.ts";
 import { openWaiting } from "../waiting/lanes.ts";
 import { startWaiting } from "../waiting/tasks.ts";
 
-/** Why nothing may start, move or land in `lane` now: it is on hold. */
 export function holdRefusal(lane: Lane): string | undefined {
   return lane.onHold
     ? `Lane ${lane.id} is on hold: ${lane.onHold.reason}. Nothing is accepted, started or landed in it until it resumes.`
@@ -16,9 +15,8 @@ export function holdRefusal(lane: Lane): string | undefined {
 }
 
 /**
- * Puts a lane on hold for `by`: each seat still working in it but `spared`, the one whose own call brought the hold and hears
- * of it in its reply, gets HOLD past the outbox, and a landing it waited on is called off. An approval the Human already gave
- * stands: it is for the lane as it is, and nothing lands while the hold lasts.
+ * Puts a lane on hold for `by`: its seats but `spared`, whose own call it answers, get HOLD past the outbox, and a
+ * landing it waited on is called off. An approval the Human gave stands: nothing lands while the hold lasts.
  */
 export async function putOnHold(
   desk: DeskServices,
@@ -50,7 +48,6 @@ export async function putOnHold(
   return { lane: held.lane, stopped, calledOff: held.calledOff };
 }
 
-/** Stops a lane where it stands for whoever supervises it, and says who was told to stop. */
 export async function holdLane(desk: DeskServices, caller: Caller, lane: string, reason: string): Promise<ToolReply> {
   const held = await putOnHold(desk, caller.project, lane, caller.id, reason);
   if (typeof held === "string") return no(held);
@@ -60,10 +57,7 @@ export async function holdLane(desk: DeskServices, caller: Caller, lane: string,
   );
 }
 
-/**
- * Lifts a hold: each seat of the lane is told to carry on, with the mail held for it, and what waited on the lane may start.
- * A lane stopped for the Human's answer is theirs to release: it waits until they answer, decline or cancel it.
- */
+/** A lane stopped for the Human's answer is theirs to release: it waits until they answer, decline or cancel it. */
 export async function resumeLane(desk: DeskServices, caller: Caller, laneId: string, note: string): Promise<ToolReply> {
   const { project } = caller;
   const lifted = desk.ledgers.transact(project, (ledger) => {

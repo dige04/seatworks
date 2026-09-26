@@ -6,8 +6,8 @@ import { recordEvent } from "../store/event-log.ts";
 import { loadConfig } from "./project.ts";
 
 /**
- * Sends the project's base where the Human's own git would push it, with a release tag on its head when it names one: the
- * Supervisor's call while the Human is out of the loop. Never forced, and the project's own push hooks run as they would.
+ * Sends the project's base where the Human's own git would push it, with a release tag on its head when it names one.
+ * Never forced, and the project's own push hooks run as they would.
  */
 export async function pushBase(
   { teamFor }: Pick<DeskServices, "teamFor">,
@@ -55,7 +55,7 @@ async function notPushed(root: string, remote: string, base: string, stderr: str
   );
 }
 
-/** Tags base's head once base is out, and sends the tag; one that does not go out is not kept, so the release can be tried again. */
+/** Tags base's head once base is out and sends the tag; one that does not go out is dropped, to be tried again. */
 async function pushTag(
   root: string,
   remote: string,
@@ -71,7 +71,7 @@ async function pushTag(
   return `${clip(pushed.stderr.trim(), 600)} It is not kept here either; push again with it once that clears.`;
 }
 
-/** How many commits `remote` holds on `base` that the local `base` lacks, fetched into `remote`/`base` to count them. */
+/** How many commits `remote` has on `base` that the local `base` lacks, fetched into `remote`/`base` to count them. */
 async function aheadOfBase(root: string, remote: string, base: string): Promise<number> {
   const tracking = `refs/remotes/${remote}/${base}`;
   if ((await git(root, ["fetch", "--quiet", remote, `+refs/heads/${base}:${tracking}`], 300_000)).code !== 0) return 0;

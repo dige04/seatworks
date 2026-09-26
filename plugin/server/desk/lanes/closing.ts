@@ -23,10 +23,8 @@ import { openWaiting } from "../waiting/lanes.ts";
 import type { Closed } from "./land-hold.ts";
 import { type Landed, landLane } from "./landing.ts";
 
-/** A call to close a lane: land it or drop it, and why. */
 type Closing = { lane: string; land: boolean; reason?: string; overGate?: boolean };
 
-/** What closing left behind: the tasks it retired, those it cut unfinished, the Human's questions it canceled. */
 type Leftovers = { tasks: Task[]; cut: string[]; canceled: string[] };
 
 /** Closes a lane for `by`, the Supervisor that called or the one the Human's approval lands it for. */
@@ -39,7 +37,7 @@ export async function closeLane(desk: DeskServices, project: Project, by: string
   if (lane.status !== "open") return no(`Lane ${lane.id} is already closed.`);
   if (args.land && lane.onHold)
     return no(`Lane ${lane.id} is on hold: ${lane.onHold.reason}. ${whenHeld(ledger, lane)}`);
-  // One close of a lane at a time: a second landed it and retired it again, and both were told it closed.
+  // One close of a lane at a time: a second would land and retire it again, and both be told it closed.
   const key = workKey(project, lane.id);
   if (!closing.take(key))
     return no(`Lane ${lane.id} is already being closed by another call; read status once that call has answered.`);
@@ -62,7 +60,7 @@ export async function closeLane(desk: DeskServices, project: Project, by: string
   }
 }
 
-/** How a held lane comes to land: a hold the desk put on for the Human's answer lifts only once that question is settled. */
+/** How a held lane comes to land: a hold the desk put on for the Human's answer lifts once that question is settled. */
 function whenHeld(ledger: Ledger, lane: Lane): string {
   const waiting = Object.values(ledger.questions).find(
     (question) => question.lane === lane.id && question.parked && question.status === "open",
@@ -87,7 +85,7 @@ function dropWaiting({ ledgers }: Pick<DeskServices, "ledgers">, project: Projec
   return ok(`Lane ${lane.id} was waiting and is dropped; nothing had started for it.`);
 }
 
-/** Closes the lane on record and cuts what it still had going: its Peers go, its Lead stays with any copy of its own. */
+/** Closes the lane on record and cuts what it had going: its Peers go, its Lead stays with any copy of its own. */
 async function retire(
   desk: DeskServices,
   project: Project,
@@ -123,7 +121,6 @@ async function retire(
   const reason = str(args.reason);
   recordEvent(project, { kind: "lane.closed", lane: lane.id, land: args.land, landing: landed.how, reason, writers });
   const moved = args.land && !lane.onBranch ? await tellBaseMoved(desk, project, lane) : "";
-  // With the Human out of the loop, what landed goes out when the Supervisor says: the desk only reminds it.
   const read = readProjectConfig(project.state);
   const base = "config" in read ? read.config.base : undefined;
   const sends = base ? `push sends ${base}` : "push sends the project's base, once set_project names it,";
@@ -137,8 +134,8 @@ async function retire(
 }
 
 /**
- * Each lane still open on the base a landing moved hears what now conflicts with it, ahead of its own landing; between lanes
- * that is the Supervisor's, which is told which.
+ * Each lane still open on the base a landing moved hears what now conflicts with it, ahead of its own landing; between
+ * lanes that is the Supervisor's, which is told which.
  */
 async function tellBaseMoved({ mail }: Pick<DeskServices, "mail">, project: Project, landed: Lane): Promise<string> {
   const others = Object.values(loadLedger(project.state).lanes).filter(
@@ -177,7 +174,7 @@ async function leadAndWriters(
 
 /**
  * What a closing lane leaves that nobody can act on any more: its open asks answered, its open questions for the Human
- * called off, its unsettled tasks cut. Every task comes back, for its Peer to go.
+ * called off, its unsettled tasks cut.
  */
 function settleLeftovers(ledger: Ledger, lane: Lane): Leftovers {
   for (const ask of Object.values(ledger.asks))

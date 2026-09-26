@@ -15,7 +15,7 @@ import { openWriters } from "./placement.ts";
 
 type LandGate = { set: boolean; ok: boolean };
 
-/** What a lane changed, from where it left its base, or where an onBranch lane began on a branch that had history before it. */
+/** What a lane changed, from where it left base, or where an onBranch lane began on a branch with earlier history. */
 type Change = { from?: string; files?: string[] };
 
 const counted = (count: number, word: string) => `${count} ${plural(count, word, `${word}s`)}`;
@@ -24,7 +24,6 @@ const SHOWN = 5;
 
 type Reviewed = Task & { handback: NonNullable<Task["handback"]> };
 
-/** A task accepted after its own latest review did not accept it: whether it was handed back again after that review, and whether a review accepted it since. */
 type Over = { task: string; review: string; outcome: string; again: boolean; since: boolean };
 
 /** A lane's reviews as the record has them, by when each came back rather than when it was asked for. */
@@ -65,8 +64,8 @@ function reviewRecord(
 }
 
 /**
- * What a lane's reviews leave standing: no review of the whole lane, a latest review that did not accept, a task accepted
- * over its review's changes or on a later hand-back no review read. Evidence for whoever lands it, never a refusal.
+ * What a lane's reviews leave standing: no review of the whole lane, a latest review that did not accept, a task
+ * accepted over its review's changes or on a later hand-back no review read. Evidence, never a refusal.
  */
 export function reviewFacts(ledger: Ledger, lane: Lane): string[] {
   const { whole, latest, after, over } = reviewRecord(ledger, lane);
@@ -90,8 +89,8 @@ export function reviewFacts(ledger: Ledger, lane: Lane): string[] {
 }
 
 /**
- * Whether reviews asked for changes the record shows no answer to: the lane's latest review, with nothing accepted after
- * it, or a task accepted on the very hand-back its own review did not accept, with no review accepting it since.
+ * Whether reviews asked for changes the record shows no answer to: the lane's latest review, with nothing accepted
+ * after it, or a task accepted on the very hand-back its own review did not accept, with no review accepting it since.
  */
 export function changesStanding(ledger: Ledger, lane: Lane): boolean {
   const { latest, after, over } = reviewRecord(ledger, lane);
@@ -106,7 +105,7 @@ export async function changeOf(project: Project, lane: Lane): Promise<Change> {
   return { from, files: from ? await changedFiles(project.root, `${from}..${lane.branch}`) : undefined };
 }
 
-/** Why landing `change` waits for the Human: the paths it touches that they asked to be asked about first, or orders that cannot be read. */
+/** Why landing `change` waits for the Human: paths it touches they asked to be asked about first, or orders unread. */
 export function askFirstHits(project: Project, change: Change): string[] {
   const read = readProjectConfig(project.state);
   if ("fault" in read)
@@ -127,14 +126,14 @@ export function askFirstHits(project: Project, change: Change): string[] {
   });
 }
 
-/** Work closing a lane would lose: a code task not merged, or a review still reading. A review that handed back its verdict is done. */
+/** Work closing a lane would lose: a code task not merged, or a review still reading; one that handed back is done. */
 export function unfinished(task: Task): boolean {
   return !SETTLED.includes(task.status) && !(task.kind === "review" && task.status === "done");
 }
 
 /**
- * What a lane brings onto its base, read from git and the record rather than from anything a seat said: evidence for whoever
- * lands it and for the Human, never a reason to hold it. `gate` is left out where the gate's own verdict is already given.
+ * What a lane brings onto its base, read from git and the record rather than from anything a seat said: evidence for
+ * whoever lands it and the Human, never a reason to hold it. `gate` is left out where its own verdict is given.
  */
 export async function landFacts(
   kit: Kit,
@@ -201,7 +200,6 @@ async function testFacts(kit: Kit, root: string, from: string, branch: string, f
   ];
 }
 
-/** What the record says of the lane's tasks, incidents and reviews that whoever lands it should weigh. */
 function recordFacts(project: Project, ledger: Ledger, lane: Lane): string[] {
   const tasks = tasksOf(ledger, lane.id);
   const open = Object.values(loadIncidents(project.state).items).filter(

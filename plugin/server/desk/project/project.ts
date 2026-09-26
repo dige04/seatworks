@@ -16,12 +16,12 @@ export type Project = { root: string; slug: string; state: string };
 type GateOn = "lane" | "task";
 
 export const LANE_HOMES = ["onBranch", "newBranch", "isolate"] as const;
-/** Where a lane works when the call opening it does not say: the Human's standing answer to the question status asks. */
+/** Where a lane works when the call opening it does not say: the standing answer to the question status asks. */
 export type LaneHome = (typeof LANE_HOMES)[number];
 
 /**
- * `serialOnly` and `riskRules` are the project's own when it set them; without, the kit's hold, so a change to the kit reaches it.
- * `askFirst` is the Human's standing order: a landing that touches one of these paths waits for them.
+ * `serialOnly` and `riskRules` are the project's own when it set them; without, the kit's hold, so a change to the kit
+ * reaches it. `askFirst` is the Human's standing order: a landing that touches one of these paths waits for them.
  */
 export type ProjectConfig = {
   base?: string;
@@ -51,7 +51,7 @@ const ProjectFile = z.strictObject({
 /** Each field of `project.json`, as a call that sets some of them names them. */
 export type ProjectFields = z.output<typeof ProjectFile>;
 
-/** Enough for every copy a machine keeps at once: copy paths are never reused, so an unbounded cache grew for good. */
+/** Enough for every copy a machine keeps at once: copy paths are never reused, so the cache is bounded. */
 const CACHED_PROJECTS = 512;
 const cache = new Map<string, Project>();
 
@@ -82,7 +82,6 @@ export function projectOf(cwd: string, base = stateRoot(), rootOf: (cwd: string)
   return project;
 }
 
-/** What a script a package file names runs, or undefined where the file or the script cannot be read. */
 function scriptBody(file: string, name: string): string | undefined {
   try {
     const body = getPath(JSON.parse(readFileSync(file, "utf-8")) as unknown, ["scripts", name]);
@@ -98,7 +97,7 @@ function scriptIn(file: string, name: string, unset: string): boolean {
   return body !== undefined && !body.includes(unset);
 }
 
-/** The first of the ecosystem's gates whose files the project holds; one that runs a package script needs that script. */
+/** The first of the ecosystem's gates whose files the project holds; one running a package script needs the script. */
 export function detectGate(root: string, ecosystem: Ecosystem): string | undefined {
   const has = (name: string) => existsSync(join(root, name));
   for (const gate of ecosystem.gates) {
@@ -109,7 +108,7 @@ export function detectGate(root: string, ecosystem: Ecosystem): string | undefin
   return undefined;
 }
 
-/** The commands that run `gate`: the gate first, then the test runner its script starts, which is how a seat runs its own module's tests. */
+/** The commands that run `gate`: it, then the test runner its script starts, as a seat runs its own module's tests. */
 export function gateCommands(root: string, gate: string | undefined, ecosystem: Ecosystem): string[] {
   if (!gate?.trim()) return [];
   const script = new RegExp(`^(?:${ecosystem.scriptRunners.join("|")})(?: run)? ([\\w:.-]+)$`).exec(gate.trim())?.[1];
@@ -137,8 +136,8 @@ export function conceptFile(state: string): string | undefined {
 }
 
 /**
- * The project's standing orders from one read, or why they cannot be read; absent, they are every default. For the few
- * callers that go on over a fault: a landing then waits for the Human, and the watch reads the seat without them.
+ * The project's standing orders from one read, absent ones their defaults, or why they cannot be read: a landing
+ * then waits for the Human, and the watch reads the seat without them.
  */
 export function readProjectConfig(state: string): { config: ProjectConfig } | { fault: string } {
   const file = configFile(state);
@@ -150,14 +149,14 @@ export function readProjectConfig(state: string): { config: ProjectConfig } | { 
   return { fault: `${file} does not hold what the plugin keeps there: ${issue.path.join(".")}: ${issue.message}` };
 }
 
-/** The project's standing orders; ones that cannot be read throw, rather than stand in as defaults the Human never set. */
+/** The project's standing orders; ones that cannot be read throw, not stand in as defaults the Human never set. */
 export function loadConfig(state: string): ProjectConfig {
   const read = readProjectConfig(state);
   if ("fault" in read) throw keptFault(read.fault);
   return read.config;
 }
 
-/** An empty gate is the owner's decision and must survive a read: as `undefined`, `open_lane` would seed a detected gate over it. */
+/** An empty gate is the project's answer, kept by a read: undefined, open_lane would seed a detected gate over it. */
 function configOf(stored: ProjectFields): ProjectConfig {
   return {
     base: stored.base || undefined,
@@ -173,8 +172,8 @@ function configOf(stored: ProjectFields): ProjectConfig {
 }
 
 /**
- * Where the next lane works in a project whose own copy is free: as its call or the standing choice says, or else the question
- * of where, which is real only over uncommitted work or a branch that is not the base.
+ * Where the next lane works in a project whose own copy is free: as its call or the standing choice says, or else
+ * the question of where, which is real only over uncommitted work or a branch that is not the base.
  */
 export function laneHomeFor(
   asked: LaneHome | undefined,
@@ -184,7 +183,7 @@ export function laneHomeFor(
 ): LaneHome | { question: string } {
   const chosen = asked ?? config.laneHome;
   if (chosen === "onBranch" || chosen === "isolate") return chosen;
-  // A new branch here would be switched to over the Human's uncommitted work, so that choice cannot hold while there is some.
+  // A new branch here would be switched to over the Human's uncommitted work, so that choice cannot hold over some.
   if (!branch || !work || (chosen === "newBranch" && work.length === 0)) return "newBranch";
   if (work.length > 0)
     return {
@@ -196,14 +195,13 @@ export function laneHomeFor(
   };
 }
 
-/** The paths only one writer at a time may write in this project. */
 export function serialOnlyOf(project: Project, kit: Kit): string[] {
   return loadConfig(project.state).serialOnly ?? kit.ecosystem.serialOnly;
 }
 
 /**
- * The paths of `cwd` that one writer at a time may write, as git tracks them now: read before a placement is decided.
- * Where git cannot list the copy, every rule counts as if it matched, so the protection holds rather than lapses.
+ * The paths of `cwd` one writer at a time may write, as git tracks them now; where git cannot list the copy, every
+ * rule counts as matched, so the protection holds rather than lapses.
  */
 export async function serialIn(kit: Kit, project: Project, cwd: string): Promise<string[]> {
   const rules = serialOnlyOf(project, kit);

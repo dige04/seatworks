@@ -2,7 +2,6 @@ import { git } from "./git.ts";
 
 export type Counts = { src: number; test: number; docs: number; files: string[] };
 
-/** Which paths are tests and which are docs, as the ecosystem the kit holds names them. */
 export type FileKinds = { test: RegExp; docs: RegExp };
 
 export function kindOf(path: string, kinds: FileKinds): "src" | "test" | "docs" {
@@ -11,8 +10,8 @@ export function kindOf(path: string, kinds: FileKinds): "src" | "test" | "docs" 
 }
 
 /**
- * Reads `-z` output, so a rename yields both real paths, not the `src/{old.ts => new.ts}` form that matches no path a write set
- * or hold names. Lines of an `uncounted` path are left out of the counts; the path is still listed.
+ * Reads `-z` output, so a rename yields both real paths, not the `src/{old.ts => new.ts}` form that matches no path a
+ * write set or hold names. Lines of an `uncounted` path are left out of the counts; the path is still listed.
  */
 function countNumstat(numstat: string, kinds: FileKinds, uncounted: (path: string) => boolean = () => false): Counts {
   const counts: Counts = { src: 0, test: 0, docs: 0, files: [] };
@@ -52,7 +51,6 @@ export async function diffCounts(
   return run.code === 0 ? countNumstat(run.stdout, kinds, uncounted) : undefined;
 }
 
-/** The files changed across `range`, only those deleted or modified when `only` says, or undefined when git cannot say. */
 export async function changedFiles(cwd: string, range: string, only?: "D" | "M"): Promise<string[] | undefined> {
   const run = await git(cwd, ["diff", "-z", "--name-only", ...(only ? [`--diff-filter=${only}`] : []), range]);
   return run.code === 0 ? run.stdout.split("\0").filter(Boolean) : undefined;

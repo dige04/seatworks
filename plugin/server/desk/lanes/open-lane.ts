@@ -24,7 +24,6 @@ import { waitsFor } from "../waiting/rules.ts";
 import { openedReply, startLead } from "./lead-seat.ts";
 import { placement } from "./placement.ts";
 
-/** An open_lane call as the tool takes it. */
 type OpenLaneCall = {
   title: string;
   outcome: string;
@@ -46,7 +45,6 @@ type OpenLaneCall = {
 
 type Place = { base: string; onBranch: boolean; branch?: string };
 
-/** What the call comes to once checked: where the lane works, the lanes it still waits for, and a home decided for it. */
 type Plan = {
   args: OpenLaneCall;
   place: Place;
@@ -112,8 +110,8 @@ async function planOpen(project: Project, config: ProjectConfig, asked: OpenLane
 }
 
 /**
- * Where this lane works, as its call or the standing choice says. With neither, where the project's copy makes it a question
- * the lane takes a copy of its own, which leaves that copy as it is; a choice that cannot hold there is refused.
+ * Where this lane works, as its call or the standing choice says; with neither, and the project's copy making it a
+ * question, a copy of its own, which leaves that copy as it is. A choice that cannot hold there is refused.
  */
 async function homeOf(
   project: Project,
@@ -130,7 +128,7 @@ async function homeOf(
         : asked.isolate === false
           ? "newBranch"
           : undefined;
-  // A waiting lane opens into whatever the copy is by then, and one the copy is taken from takes a copy of its own or waits.
+  // A waiting lane opens into the copy as it is by then; one the copy is taken from gets a copy of its own or waits.
   if (!opensNow || ownCopyHolder(Object.values(loadLedger(project.state).lanes)))
     return { home: said ?? config.laneHome };
   const home = laneHomeFor(said, config, here, await uncommittedPaths(project.root));
@@ -145,7 +143,7 @@ async function homeOf(
   };
 }
 
-/** The gate detected once while nothing answered it: "" is the owner's own answer, no gate. The base is only set_project's. */
+/** The gate detected once while nothing answered it: "" is the project's own answer, no gate. Base is set_project's. */
 function seedGate(kit: Kit, project: Project, config: ProjectConfig): void {
   if (config.gate !== undefined) return;
   saveConfig(project.state, { ...config, gate: detectGate(project.root, kit.ecosystem) });

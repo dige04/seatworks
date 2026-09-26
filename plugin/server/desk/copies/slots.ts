@@ -58,8 +58,8 @@ export class Slots {
   }
 
   /**
-   * Returns the branch it kept because its work is not in `into` yet: `into` must be named, since `branch -d` checks against
-   * whatever is checked out. A copy holding work no commit does is never removed: it stays, off the record, for the Human.
+   * Returns the branch it kept because its work is not in `into` yet; `into` is named, as `branch -d` reads what is
+   * checked out. A copy holding work no commit does is never removed: it stays, off the record, for the Human.
    */
   async release(
     project: Project,
@@ -145,8 +145,8 @@ export class Slots {
   }
 
   /**
-   * The copy's workspace, named after the project and then the work it holds now: the sweep knows the desk's copies by that
-   * first word. A new one is filed under its project, since given a bare directory Paseo makes a project the plugin cannot remove.
+   * The copy's workspace, named after the project and then its work: the sweep knows the desk's copies by that first
+   * word. A new one is filed under its project, since a bare directory makes a Paseo project the plugin cannot remove.
    */
   private async workspaceFor(project: Project, slot: Slot, work: string): Promise<string> {
     const title = `${project.slug} ${slot.id} · ${work}`;
@@ -171,7 +171,6 @@ export class Slots {
     return workspaceId;
   }
 
-  /** What the desk opened and nothing holds any more. */
   sweep(project: Project, busy = false): Promise<void> {
     return sweepCopies(this.desk, this.workspaces, project, busy);
   }

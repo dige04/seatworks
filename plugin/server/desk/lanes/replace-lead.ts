@@ -16,7 +16,7 @@ import { leadSeatOf } from "./lead-seat.ts";
 
 type Seated = { lead: string; role: string };
 
-/** Seats a new Lead on an open lane whose Lead is gone, where the lane stands; a Lead Paseo already started is taken on. */
+/** Seats a new Lead where an open lane stands once its Lead is gone; a Lead Paseo already started is taken on. */
 export async function replaceLead(
   desk: DeskServices,
   caller: Caller,
@@ -77,7 +77,6 @@ function bind({ ledgers }: Pick<DeskServices, "ledgers">, caller: Caller, lane: 
   });
 }
 
-/** Starts a Lead in the lane's copy, told it takes over where the lane stands; or says why none can start. */
 async function takeOver(
   { kit, agents }: Pick<DeskServices, "kit" | "agents">,
   caller: Caller,

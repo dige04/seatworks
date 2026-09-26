@@ -14,7 +14,6 @@ import { recordEvent } from "../store/event-log.ts";
 import { midTurnAmong } from "../seats/writing.ts";
 import { unsavedIn } from "../copies/unsaved.ts";
 
-/** A report call as the tool takes it. */
 type ReportCall = { summary: string; ready: boolean; carried?: string[] };
 
 type Gate = Awaited<ReturnType<typeof laneGate>>;
@@ -31,7 +30,7 @@ export async function reportLane(desk: DeskServices, caller: Caller, args: Repor
   }
   const amendments = lane.amended?.length ?? 0;
   const gate = ready ? await laneGate(desk, project, lane) : undefined;
-  // Recorded on the lane as it stands now: it may have closed, had its Lead replaced, been amended or held while the gate ran.
+  // Recorded on the lane as it stands now: it may have closed, changed Lead, been amended or held while the gate ran.
   const refused = desk.ledgers.transact(project, (current): string | undefined => {
     const entry = laneOfLead(current, caller.id);
     if (entry?.id !== lane.id)
@@ -48,7 +47,7 @@ export async function reportLane(desk: DeskServices, caller: Caller, args: Repor
   return tell(desk, project, lane, args, gate);
 }
 
-/** Why READY cannot be claimed now: the lane on hold, a seat still writing in its copy, the copy on a task's branch or holding work uncommitted. */
+/** Why READY cannot be claimed now: the lane held, a seat writing in its copy, the copy on a task's branch or dirty. */
 async function readyBlocked(desk: DeskServices, project: Project, lane: Lane): Promise<string | undefined> {
   const held = holdRefusal(lane);
   if (held) return held;
@@ -92,7 +91,6 @@ async function tell(
   const posted = await desk.mail.post(to, letter);
   const text = posted === "nobody" ? letter.text : undefined;
   recordEvent(project, { kind: "lane.report", lane: lane.id, ready, gate: gate?.ok, to: to ?? null, text });
-  // With nobody supervising seated the post goes nowhere; it is kept in the event log and the Lead told so.
   if (posted === "nobody")
     return ok(
       `Nobody supervising this project is seated, so the report reached no one. It is kept in ${project.state}/events.log for whoever comes back; there is nothing to wait for until someone does.`,
@@ -110,8 +108,8 @@ async function tell(
 }
 
 /**
- * A lane that went on without the Human's answer to a costly question stops at its ready report; why, when it did. Its Lead,
- * whose report this is, is not cut off mid-call: its reply says so.
+ * A lane that went on without the Human's answer to a costly question stops at its ready report; why, when it did. Its
+ * Lead, whose report this is, is not cut off mid-call: its reply says so.
  */
 async function parkAtCheckpoint(desk: DeskServices, project: Project, lane: Lane): Promise<string | undefined> {
   if (!desk.teamFor(project).hitl.on) return undefined;

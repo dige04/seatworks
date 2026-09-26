@@ -12,7 +12,6 @@ import { recordEvent } from "../store/event-log.ts";
 /** A reply to a close, with what kept a landing from happening when something did. */
 export type Closed = ToolReply & { blocked?: string };
 
-/** The Supervisor's word on a red gate: land over it, and why. */
 export type OverGate = { overGate: boolean; reason: string };
 
 export type Held = NonNullable<Lane["landApproval"]>;
@@ -20,8 +19,8 @@ export type Held = NonNullable<Lane["landApproval"]>;
 const NOT_READY = "Its Lead has not reported it ready as it now stands: never, or the lane was amended since.";
 
 /**
- * What the Human's earlier word still stops: a hold with no commit since stands while it still touches what they asked to
- * be asked about. Out of the loop, their word stops nothing.
+ * What the Human's earlier word still stops: a hold with no commit since stands while it still touches what they asked
+ * to be asked about. Out of the loop, their word stops nothing.
  */
 export async function waitsForHuman(
   { ledgers, teamFor }: Pick<DeskServices, "ledgers" | "teamFor">,
@@ -44,8 +43,8 @@ export async function waitsForHuman(
 }
 
 /**
- * Holds a landing for the Human where they asked to be asked first, while they are in the loop; all else the desk reads of
- * it goes with it as evidence. An approval stands for what it was given: a path they are newly asked about holds it again.
+ * Holds a landing for the Human where they asked to be asked first, while they are in the loop; all else it reads goes
+ * with it as evidence. An approval stands for what it was given: a path newly asked about holds it again.
  */
 export async function checkLanding(
   { kit, ledgers, mail, teamFor }: Pick<DeskServices, "kit" | "ledgers" | "mail" | "teamFor">,

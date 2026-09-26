@@ -2,7 +2,6 @@ import { spawn, spawnSync } from "node:child_process";
 import { closeSync, mkdirSync, openSync, readSync, statSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 
-/** `stopped`: killed because `stop` fired, as the plugin stopped. */
 type GateResult = {
   ok: boolean;
   code: number | null;
@@ -22,8 +21,8 @@ function tailOf(text: string): string {
 }
 
 /**
- * Kills the gate's whole process group, or on Windows its process tree: a leftover watcher, dev server or `&` job would keep
- * writing into the lane's copy and the log.
+ * Kills the gate's whole process group, or on Windows its process tree: a leftover watcher, dev server or `&` job would
+ * keep writing into the lane's copy and the log.
  */
 function killGroup(pid: number | undefined): void {
   if (pid === undefined) return;

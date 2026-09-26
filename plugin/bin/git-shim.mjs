@@ -1,8 +1,8 @@
-// A seat's git, first on its PATH on every agent: a guard against mistakes, not a wall. It refuses what only the desk does
-// to branches and working copies however the command is spelled (-C, -c, --git-dir, an alias), and runs the rest as the
-// real git would. What git itself starts (hooks, rebase --exec, bisect run, submodule foreach) runs the real git, as does a
-// git named by its full path. Moving the branch checked out (merge, rebase, reset, cherry-pick) is left to each role's own
-// rules: a seat that may write stands on its task's branch, since none checks out or switches.
+// A seat's git, first on its PATH on every agent: a guard against mistakes, not a wall. It refuses what only the desk
+// does to branches and working copies however the command is spelled (-C, -c, --git-dir, an alias), and runs the rest
+// as the real git would. What git itself starts (hooks, rebase --exec, bisect run, submodule foreach) runs the real
+// git, as does a git named by its full path. Moving the branch checked out (merge, rebase, reset, cherry-pick) is left
+// to each role's own rules: a seat that may write stands on its task's branch, since none checks out or switches.
 // Run as: git-shim.mjs <git> <args>.
 import { spawnSync } from "node:child_process";
 
@@ -16,14 +16,16 @@ const OWN = new Set(["merge", "rebase", "reset", "cherry-pick", "add", "blame", 
 
 const DEPTH = 10;
 
-/** The options git reads before its command, the command, and what follows it. */
 function split(args) {
   let at = 0;
   while (at < args.length && args[at].startsWith("-")) at += VALUED.has(args[at]) ? 2 : 1;
   return { globals: args.slice(0, at), command: args[at], rest: args.slice(at + 1) };
 }
 
-/** Whether `arg` asks git branch to force, delete, rename or overwrite: git takes a long option cut short, as `--del`, and a value such as `-committerdate` is no cluster of flags. */
+/**
+ * Whether `arg` asks git branch to force, delete, rename or overwrite: git takes a long option cut short, as `--del`,
+ * and a value such as `-committerdate` is no cluster of flags.
+ */
 function rewritesBranch(arg) {
   if (arg.startsWith("--")) {
     const long = arg.slice(2).split("=")[0];
@@ -32,7 +34,6 @@ function rewritesBranch(arg) {
   return /^-[acCdDfhilmMqrtuv]+$/.test(arg) && /[fdDmMC]/.test(arg);
 }
 
-/** Why `command` with `rest` is the desk's to run, not a seat's; nothing when it is the seat's. */
 function refusal(command, rest) {
   if (DESKS.has(command)) return `git ${command} moves branches or working copies, and that is the desk's to do`;
   if (command === "worktree" && rest[0] !== "list") return "git worktree changes working copies, and that is the desk's to do";
@@ -41,8 +42,9 @@ function refusal(command, rest) {
 }
 
 /**
- * The words an alias stands for, read with the same options, so `git -c alias.p=push p` is read as a push; git ignores an
- * alias named for a command of its own. A shell alias comes back as its text, since what it runs cannot be read here.
+ * The words an alias stands for, read with the same options, so `git -c alias.p=push p` is read as a push; git ignores
+ * an alias named for a command of its own. A shell alias comes back as its text, since what it runs cannot be read
+ * here.
  */
 function expanded(globals, command) {
   if (OWN.has(command)) return undefined;

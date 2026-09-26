@@ -8,7 +8,7 @@ import type { Project } from "../project/project.ts";
 
 type Copy = Pick<Slot, "id" | "path">;
 
-/** Opens a working copy in each code index the project has; a copy used before is brought up to date rather than opened afresh. */
+/** Opens a copy in each code index of the project; one used before is brought up to date rather than opened afresh. */
 export function openIndexes(
   { indexesFor }: Pick<DeskBase, "indexesFor">,
   project: Project,

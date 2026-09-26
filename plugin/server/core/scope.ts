@@ -11,17 +11,15 @@ function alternatives(pattern: string): string[] {
   return brace[1]!.split(",").flatMap((choice) => alternatives(`${before}${choice}${after}`));
 }
 
-/** A plain path covers what is under it too, on a path boundary: "src/app" is not "src/apparel/secret.ts". A glob means itself. */
+/** A plain path covers what is under it, on a path boundary: "src/app" is not "src/apparel/x.ts". A glob is itself. */
 export function coverGlob(path: string): string {
   return /[*?{]/.test(path) ? path : `${normalize(path).replace(/\/$/, "")}{,/**}`;
 }
 
 export const coverOf = (path: string): RegExp => globToRegex(coverGlob(path));
 
-/** Whether one of `paths` covers `file`, read as git reads a path: a bare directory holds what is under it. */
 export const covers = (paths: string[], file: string): boolean => paths.some((path) => coverOf(path).test(file));
 
-/** The files none of `paths` covers. */
 export const uncovered = (files: string[], paths: string[]): string[] => files.filter((file) => !covers(paths, file));
 
 export function globToRegex(pattern: string): RegExp {
@@ -69,7 +67,7 @@ function segmentsMeet(a: string, b: string): boolean {
   return walk(0, 0);
 }
 
-/** Walked by segment, since sampling misses overlaps where both sides hold wildcards; lanes share a copy on this answer. */
+/** Walked by segment: sampling misses overlaps where both sides hold wildcards, and lanes share a copy on it. */
 function meet(a: string[], b: string[]): boolean {
   if (a.length === 0 || b.length === 0) {
     // Leftovers match nothing only if each is "**" or a trailing "" (a directory pattern: everything under it).
@@ -96,7 +94,7 @@ export function firstOverlap(left: string[], right: string[]): string | undefine
   return undefined;
 }
 
-/** Resolves serial-only globs against real files, since glob-vs-glob can only say "might"; a reserved directory yields itself. */
+/** Serial-only globs against real files, as glob against glob can only say "might"; a reserved directory is itself. */
 export function serialPaths(tracked: string[], serialOnly: string[]): string[] {
   const found = new Set<string>();
   for (const rule of serialOnly) {

@@ -13,7 +13,7 @@ import type { Project } from "../project/project.ts";
 import type { Slots } from "./slots.ts";
 import { recordEvent } from "../store/event-log.ts";
 
-/** The project's own checkout as a lane's copy: taken over on a new branch or the one it is on, and put back on base. */
+/** The project's own checkout as a lane's copy: taken over on a new branch or the one it is on, put back on base. */
 export class OwnCopy {
   private readonly desk: Pick<DeskBase, "log" | "indexesFor">;
   private readonly slots: Pick<Slots, "projectWorkspace">;
@@ -45,7 +45,7 @@ export class OwnCopy {
     }
   }
 
-  /** Carries on the branch the project's own copy is on, or first starts `branch` from `from` there with the uncommitted work along. */
+  /** Carries on the branch the project's own copy is on, or first starts `branch` from `from` with the work along. */
   async carryOn(project: Project, branch: string, from?: string): Promise<{ path: string; workspaceId: string }> {
     if (from) {
       const run = await git(project.root, ["switch", "-c", branch]);
@@ -61,7 +61,10 @@ export class OwnCopy {
     }
   }
 
-  /** Undoes a branch `carryOn` started: it holds no commit yet, so the copy goes back to `from` with the uncommitted work and the branch is dropped. */
+  /**
+   * Undoes a branch `carryOn` started: it holds no commit yet, so the copy goes back to `from` with the uncommitted
+   * work and the branch is dropped.
+   */
   async unstart(project: Project, from: string, branch: string): Promise<void> {
     if ((await currentBranch(project.root)) !== branch) return;
     const run = await git(project.root, ["switch", from]);
@@ -82,17 +85,16 @@ export class OwnCopy {
     return { path: project.root, workspaceId };
   }
 
-  /** Undoes what `inPlace` did to the owner's repository: a lane failing mid-open has no slot id for `openLane` to clean up through. */
+  /** Undoes what `inPlace` did to the Human's repository, for a lane failing mid-open with no slot to clean up by. */
   async giveBack(project: Project, base: string, branch: string): Promise<void> {
     if (!(await this.restore(project, base, branch))) return;
-    // Nothing committed on it: the branch is the desk's litter, and `release` keeps the other case for the Human.
     await dropMerged(project.root, branch, base);
     recordEvent(project, { kind: "lane.gaveBack", branch, base });
   }
 
   /**
-   * Puts the project's own copy back on base and says whether it is there. A copy a later lane now owns counts as done; every
-   * other failure is logged, since the caller has already dropped the parked record. `carry` takes work uncommitted along.
+   * Puts the project's own copy back on base and says whether it is: one a later lane owns counts, and any other
+   * failure is logged and false, for the caller to retry from its record. `carry` takes work uncommitted along.
    */
   async restore(project: Project, base: string, left?: string, carry = false): Promise<boolean> {
     if (left && (await currentBranch(project.root)) !== left) return true;

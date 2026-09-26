@@ -44,7 +44,7 @@ export async function decideLand(
   return landApproved(desk, project, lane, supervisor ?? lane.opener, decided.held, note, tell);
 }
 
-/** Decided where it is written: two decisions at once both acted on one hold, and it landed twice. */
+/** Decided where it is written, so two decisions at once act on one hold once. */
 function recordDecision(
   { ledgers }: Pick<DeskServices, "ledgers">,
   project: Project,

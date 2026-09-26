@@ -8,8 +8,8 @@ import { recordEvent } from "../store/event-log.ts";
 import { type ProjectConfig, type ProjectFields, readProjectConfig, saveConfig } from "./project.ts";
 
 /**
- * Sets the project's standing configuration, each field left out kept. While the Human is in the loop, lowering a standing
- * order of theirs (an askFirst path, where lanes work, a risk rule) takes their own words from this chat.
+ * Sets the project's standing configuration, each field left out kept. While the Human is in the loop, lowering a
+ * standing order of theirs (an askFirst path, where lanes work, a risk rule) takes their own words from this chat.
  */
 export async function setProject(
   { kit, teamFor, roster }: Pick<DeskServices, "kit" | "teamFor" | "roster">,
