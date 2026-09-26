@@ -400,7 +400,7 @@
               "costly",
               "irreversible"
             ],
-            "description": "reversible: the default runs now; costly: it runs until the lane reports ready; irreversible: nothing goes ahead until they answer. Touching askFirst: costly or irreversible."
+            "description": "reversible: the default runs now; costly: until the lane reports ready; irreversible: nothing it decides goes ahead until they answer. Touching askFirst: costly at least."
           }
         },
         "required": [

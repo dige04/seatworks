@@ -98,6 +98,16 @@ export const askLetters = {
     );
   },
 
+  /** A decision that cannot be undone waits for the Human: the Lead keeps off what it decides and plans the rest around it. */
+  pending(question: Question): Letter {
+    return mail(
+      "pending",
+      [question.id],
+      `DECISION PENDING ${question.id}, the Human's to make: ${firstLine(question.question)}\n\nNothing it decides goes ahead until they answer; what it does not touch goes on.`,
+      "Keep the lane off what it decides, and carry on with the rest; its answer comes as mail.",
+    );
+  },
+
   /** With the Human out of the loop, a Lead's ask nobody answered in time is its own to settle, from what it has. */
   lapsed(ask: Ask, minutes: number): Letter {
     return mail(
