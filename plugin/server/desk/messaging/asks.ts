@@ -85,9 +85,12 @@ export async function askUp(
   return ok(`Asked as ${entry.id}${owner}. End your turn; the answer arrives as a message.`);
 }
 
-/** Answers an open ask; one put to someone else may be answered by whoever supervises, and that seat is told first. */
+/**
+ * Answers an open ask; one put to someone else may be answered by whoever supervises, and that seat is told first, as is
+ * the Lead of a Peer answered past it.
+ */
 export async function answerAsk(
-  { kit, ledgers, mail }: Pick<DeskServices, "kit" | "ledgers" | "mail">,
+  { kit, ledgers, mail, roster }: Pick<DeskServices, "kit" | "ledgers" | "mail" | "roster">,
   caller: Caller,
   answered: { ask: string; text: string },
 ): Promise<ToolReply> {
@@ -116,9 +119,25 @@ export async function answerAsk(
     const by = can(waitingRole, "supervise") ? `${caller.role.label} ${caller.id}` : "the owner";
     await mail.post(waiting, askLetters.answeredFor(ask, by, can(waitingRole, "lead")));
   }
+  const lead = await leadPassed(roster, caller, ask, waiting);
+  if (lead) await mail.post(lead, askLetters.answeredFor(ask, "the owner", true, false));
   const posted = await mail.post(ask.from, askLetters.answered(ask));
-  recordEvent(caller.project, { kind: "ask.answered", ask: ask.id, by: caller.id, told: waiting ?? null });
+  recordEvent(caller.project, { kind: "ask.answered", ask: ask.id, by: caller.id, told: waiting ?? lead ?? null });
   const has = posted === "sent" ? "has it" : "reads it as soon as it can take it";
   const told = waiting ? " Whoever it was waiting on has been told what it was answered with." : "";
-  return ok(`Answered ${ask.id}; the asker ${has}.${told}`);
+  const led = lead ? " Its lane's Lead has been told what it was answered with." : "";
+  return ok(`Answered ${ask.id}; the asker ${has}.${told}${led}`);
+}
+
+/** The seated Lead of a Peer's lane that whoever supervises answered past, when the ask was put to someone other than it. */
+async function leadPassed(
+  roster: Pick<DeskServices["roster"], "seated">,
+  caller: Caller,
+  ask: Ask,
+  waiting: string | undefined,
+): Promise<string | undefined> {
+  if (!ask.task || !ask.lane || !can(caller.role, "supervise")) return undefined;
+  const lead = loadLedger(caller.project.state).lanes[ask.lane]?.lead;
+  if (!lead || lead === caller.id || lead === waiting) return undefined;
+  return (await roster.seated(lead)) ? lead : undefined;
 }
