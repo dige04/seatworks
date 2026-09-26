@@ -56,6 +56,7 @@ type Kind =
   | "report"
   | "resumed"
   | "rework"
+  | "settled"
   | "settling"
   | "silent"
   | "started"

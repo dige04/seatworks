@@ -1,5 +1,5 @@
 import type { OrdersView, ReportView } from "../../../shared/views.ts";
-import { settleQuestion } from "./questions.ts";
+import { settleQuestion, tellKeptOff } from "./questions.ts";
 import { askLetters } from "../letters/ask-letters.ts";
 import { reportView } from "../views/report.ts";
 import { decideLand } from "../lanes/land-decision.ts";
@@ -29,6 +29,7 @@ export class Human {
     if (typeof settled === "string") return { ok: false, text: settled };
     const lane = settled.lane ? loadLedger(project.state).lanes[settled.lane] : undefined;
     const to = (await roster.seated(settled.from)) ? settled.from : await roster.supervisorFor(project, lane?.opener);
+    await tellKeptOff(this.services, project, settled);
     const posted = await mail.post(to, askLetters.humanAnswered(settled, lane));
     const told =
       posted === "nobody"

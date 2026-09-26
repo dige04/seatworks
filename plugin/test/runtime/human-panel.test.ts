@@ -62,7 +62,7 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
   assert.equal(h.ledger().lanes.L1!.onHold, undefined, "only what it decides waits, not the whole lane");
   assert.match(
     h.heard(lane.lead!).join("\n"),
-    /DECISION PENDING H1, the Human's to make: Delete old invoices, or keep them archived\?\n\nNothing it decides goes ahead until they answer; what it does not touch goes on\.\n\nNext: Keep the lane off what it decides/,
+    /DECISION PENDING H1, the Human's to make: Delete old invoices, or keep them archived\?\n\nNothing it decides goes ahead until they answer; what it does not touch goes on\.\n\nNext: Keep the lane off what it decides, and carry on with the rest; you hear when it is settled, and the owner tells you how the lane goes on\./,
   );
   assert.match(
     (await h.call(sup, "supervisor", "status", {})).text,
@@ -104,8 +104,14 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
   );
   assert.match(
     h.heard(sup).join("\n"),
-    /HUMAN ANSWERED H1 \(Delete old invoices, or keep them archived\?\), on the panel: Archive\.\n\nTheir note, their own words:\nand keep a list of them\n\nNext: Carry their choice into the lane, and write it into CONTEXT\.md if it settles the concept\./,
+    /HUMAN ANSWERED H1 \(Delete old invoices, or keep them archived\?\), on the panel: Archive\.\n\nTheir note, their own words:\nand keep a list of them\n\nNext: Tell the Lead of L1 their choice and how the lane goes on, and write it into CONTEXT\.md if it settles the concept\./,
   );
+  const settled = (id: string, how: string) =>
+    new RegExp(
+      `SETTLED ${id}, the decision your lane kept off: ${how}\\.\\n\\nNext: Nothing now: the owner tells you how the lane goes on\\.`,
+    );
+  assert.match(h.heard(lane.lead!).join("\n"), settled("H1", "the Human answered it"), "its word, never their words");
+  assert.doesNotMatch(h.heard(lane.lead!).join("\n"), /keep a list/);
   assert.match((await record("H1", "decline", "archive them, please")).text, /H1 is already answered\./);
   assert.match(
     (await record("H1", "decline", "archive")).text,
@@ -114,7 +120,11 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
   );
 
   await ask({ lane: "L1", class: "irreversible" });
-  assert.match((await record("h2", "Archive", "archive them, please!")).text, /^H2 is answered: Archive\./);
+  assert.match(
+    (await record("h2", "Archive", "archive them, please!")).text,
+    /^H2 is answered: Archive\. The Lead of L1 hears only that it is settled: tell it how the lane goes on\./,
+  );
+  assert.match(h.heard(lane.lead!).join("\n"), settled("H2", "the Human answered it"));
   assert.deepEqual(
     [h.ledger().questions.H2!.answer?.by, h.ledger().questions.H2!.answer?.quote],
     ["chat", "Hmm.  Archive them,\nplease."],
@@ -132,10 +142,14 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
     h.heard(sup).join("\n"),
     /HUMAN ANSWERED H4 \(Rename the product\?\), on the panel: they took it off their queue\.\n\nNext: It is off their queue: go on without it, or ask again if it still matters\./,
   );
-  await ask({ question: "Move the database?" });
+  await ask({ question: "Move the database?", lane: "L1", class: "irreversible" });
   const withdraw = (question: string) =>
     h.call(sup, "supervisor", "withdraw_question", { question, why: "the lane no longer touches it" });
-  assert.equal((await withdraw("H5")).text, "H5 is off the Human's queue; they read why on the Report.");
+  assert.equal(
+    (await withdraw("H5")).text,
+    "H5 is off the Human's queue; they read why on the Report. The Lead of L1 hears only that it is settled: tell it how the lane goes on.",
+  );
+  assert.match(h.heard(lane.lead!).join("\n"), settled("H5", "it was withdrawn"));
   assert.match((await withdraw("H5")).text, /^H5 is already canceled\./);
   const report = await h.rpc(contracts.report, { project: h.project.slug });
   assert.ok("withdrawn" in report);

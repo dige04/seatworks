@@ -14,13 +14,25 @@ function askNext(ask: Ask): string {
   return `Decide and answer ${ask.id}; a kit or setup error goes to the Human word for word.`;
 }
 
+/** The Lead that keeps its lane off what an irreversible question decides, until whoever supervises tells it how it goes on. */
+const keptOffBy = (question: Question) =>
+  question.class === "irreversible" && question.lane ? `the Lead of ${question.lane}` : undefined;
+
 /** What the Human's word asks of whoever put the question: only a choice unlike what went ahead meanwhile turns anything round. */
 function answeredNext(question: Question): string {
-  if (question.status === "declined") return "The call is yours now: decide it and carry that where it applies";
+  const lead = keptOffBy(question);
+  if (question.status === "declined")
+    return lead
+      ? `The call is yours now: decide it, and tell ${lead} how the lane goes on`
+      : "The call is yours now: decide it and carry that where it applies";
   if (question.status === "canceled")
-    return "It is off their queue: go on without it, or ask again if it still matters";
+    return lead
+      ? `It is off their queue: tell ${lead} how the lane goes on without it, or ask again if it still matters`
+      : "It is off their queue: go on without it, or ask again if it still matters";
+  if (lead)
+    return `Tell ${lead} their choice and how the lane goes on, and write it into CONTEXT.md if it settles the concept`;
   if (question.class === "irreversible")
-    return "Carry their choice into the lane, and write it into CONTEXT.md if it settles the concept";
+    return "Carry their choice where it applies, and write it into CONTEXT.md if it settles the concept";
   if (question.answer?.choice !== question.recommend)
     return "Turn round what went ahead on your recommendation, and write their choice into CONTEXT.md if it settles the concept";
   return "Write their choice into CONTEXT.md if it settles the concept";
@@ -106,7 +118,27 @@ export const askLetters = {
       "pending",
       [question.id],
       `DECISION PENDING ${question.id}, the Human's to make: ${firstLine(question.question)}\n\nNothing it decides goes ahead until they answer; what it does not touch goes on.`,
-      "Keep the lane off what it decides, and carry on with the rest; its answer comes as mail.",
+      "Keep the lane off what it decides, and carry on with the rest; you hear when it is settled, and the owner tells you how the lane goes on.",
+    );
+  },
+
+  /** The Lead keeping its lane off a decision hears that it is settled and nothing of the Human's words, which reach it through the owner. */
+  settled(question: Question): Letter {
+    const how =
+      question.status === "answered"
+        ? "the Human answered it"
+        : question.status === "declined"
+          ? "the Human declined to decide it"
+          : question.answer?.by === "supervisor"
+            ? "it was withdrawn"
+            : "the Human took it off their queue";
+    return fyi(
+      mail(
+        "settled",
+        [question.id],
+        `SETTLED ${question.id}, the decision your lane kept off: ${how}.`,
+        "Nothing now: the owner tells you how the lane goes on.",
+      ),
     );
   },
 

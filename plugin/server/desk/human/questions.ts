@@ -173,18 +173,35 @@ export function settleQuestion(
   return recorded;
 }
 
+/**
+ * A settled question whose lane's Lead keeps off what it decides: that Lead hears it is settled, if it is there to hear,
+ * and the words for what whoever supervises is told of it; nothing when no Lead keeps off it.
+ */
+export async function tellKeptOff(
+  { mail, roster }: Pick<DeskServices, "mail" | "roster">,
+  project: Project,
+  question: Question,
+): Promise<string> {
+  if (question.class !== "irreversible" || !question.lane) return "";
+  const lead = loadLedger(project.state).lanes[question.lane]?.lead;
+  if (!lead || !(await roster.seated(lead))) return "";
+  await mail.post(lead, askLetters.settled(question));
+  return ` The Lead of ${question.lane} hears only that it is settled: tell it how the lane goes on.`;
+}
+
 /** Takes a question off the Human's queue for the Supervisor, with why, which they read on the Report. */
-export function withdrawQuestion(
-  desk: Pick<DeskServices, "ledgers">,
+export async function withdrawQuestion(
+  desk: Pick<DeskServices, "ledgers" | "mail" | "roster">,
   caller: Caller,
   args: { question: string; why: string },
-): ToolReply {
+): Promise<ToolReply> {
   const id = args.question.trim().toUpperCase();
   const withdrawn = settleQuestion(desk, caller.project, id, "cancel", { text: args.why.trim(), by: "supervisor" });
   if (typeof withdrawn === "string") return no(withdrawn);
   const lane = withdrawn.parked && withdrawn.lane ? loadLedger(caller.project.state).lanes[withdrawn.lane] : undefined;
   const held = lane?.onHold ? ` Lane ${lane.id} is still on hold for it: resume_lane it when it may go on.` : "";
-  return ok(`${id} is off the Human's queue; they read why on the Report.${held}`);
+  const told = await tellKeptOff(desk, caller.project, withdrawn);
+  return ok(`${id} is off the Human's queue; they read why on the Report.${held}${told}`);
 }
 
 /** Puts an answer the Human gave in the Supervisor's chat on record, once their own words are found there. */
@@ -212,5 +229,6 @@ export async function recordHumanAnswer(
   const held = lane?.onHold
     ? ` Lane ${lane.id} is still on hold for it: resume_lane it once the answer is carried into the lane.`
     : "";
-  return ok(`${id} is ${recorded.status}: ${choice}.${held}`);
+  const told = await tellKeptOff(desk, project, recorded);
+  return ok(`${id} is ${recorded.status}: ${choice}.${held}${told}`);
 }
