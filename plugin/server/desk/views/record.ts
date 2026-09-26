@@ -72,7 +72,6 @@ function callLine(item: Record<string, unknown>, quirks: Quirks): string {
   }
 }
 
-/** What the seat did or said in one entry of its history, or nothing for an entry that is neither. */
 function lineOf(item: Record<string, unknown>, quirks: Quirks): string | undefined {
   const quoted = (label: string, text: string, limit: number) => {
     const line = oneLine(text, limit);
@@ -112,7 +111,6 @@ async function historyOf(
   return { rows: await roster.history(seat, limit), quirks: seatOf(kit, look.provider)?.harness.timeline ?? {} };
 }
 
-/** What the desk kept of a seat that is gone. */
 function kept({ name, lane, task }: Whose): string {
   const gone = `${name} is gone, and reading its steps would start it again, so this is what the desk kept.`;
   if (!task) return `${gone} Lane ${lane.id} is ${lane.status}${lane.landed ? " and landed" : ""}.`;

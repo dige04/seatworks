@@ -11,10 +11,7 @@ const HOMES: Record<LaneHome, string> = {
   isolate: "In a copy of their own; yours is left alone.",
 };
 
-/**
- * What the Human settled for a project, for them to read: their standing orders, and its concept as the Supervisor wrote it
- * down. Orders that cannot be read show as the fault alone, never as defaults the Human did not set.
- */
+/** Orders that cannot be read show as the fault alone, never as defaults the Human did not set. */
 export function ordersView(kit: Kit, project: Project, now = Date.now()): OrdersView {
   const read = readProjectConfig(project.state);
   const config = "config" in read ? read.config : undefined;

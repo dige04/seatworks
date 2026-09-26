@@ -132,7 +132,6 @@ function asksOf(ledger: Ledger, now: number, roles: FlowRoles, labelOf: (id: str
     }));
 }
 
-/** The Human's open questions, which the panel is where they answer. */
 function questionsOf(ledger: Ledger, now: number): FlowQuestion[] {
   return Object.values(ledger.questions)
     .filter((question) => question.status === "open")
@@ -150,10 +149,7 @@ function questionsOf(ledger: Ledger, now: number): FlowQuestion[] {
     }));
 }
 
-/**
- * Every supervising seat, one per concern, named as the kit labels its role; a concern with nobody seated shows its last
- * seat as gone.
- */
+/** Every supervising seat, one per concern; a concern with nobody seated shows its last seat as gone. */
 function supervisorsOf(
   ledger: Ledger,
   seats: Map<string, SeatView>,

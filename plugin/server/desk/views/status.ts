@@ -62,10 +62,7 @@ export function statusPage(
   });
 }
 
-/**
- * The status page: the whole project, or one lane when `laneId` names it; `copy` adds the project's own checkout, `human`
- * says whether the Human is in the loop, and `quoting` gives the words of open asks, for a seat and never the Human.
- */
+/** `copy` adds the project's own checkout, and `quoting` the words of open asks, for a seat and never the Human. */
 export function statusText(
   project: Project,
   ledger: Ledger,
@@ -113,10 +110,7 @@ function heading(project: Project, config: ProjectConfig, now: number, human: bo
   return [`# Status: ${project.root}`, "", `${setup} ${asked} ${rules}`, ""];
 }
 
-/**
- * Names a choice of where lanes work only where one is real: uncommitted work, or a branch not the base, with no lane in the
- * copy. It is the Human's while they are in the loop, and the reader's otherwise.
- */
+/** A choice of where lanes work, named only where one is real: uncommitted work, or a branch not the base, and no lane. */
 function ownCopyLines(
   project: Project,
   ledger: Ledger,
@@ -169,7 +163,6 @@ function mailLines(project: Project, ledger: Ledger, seats: Seats, now: number, 
     }
     lines.push("");
   }
-  // Held for a seat that is there but has not taken it: this is where a letter going nowhere shows.
   if (queued.length > 0) {
     lines.push("## Mail waiting to be taken", "", "The seat is there and has not read these yet.", "");
     for (const letter of queued)

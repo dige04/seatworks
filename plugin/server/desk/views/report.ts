@@ -9,11 +9,7 @@ import type { Project } from "../project/project.ts";
 /** A question stops something now when its lane was put on hold for it, or it is irreversible: nothing it decides goes ahead. */
 const stops = (question: Question) => question.parked === true || question.class === "irreversible";
 
-/**
- * What happened in a project over the last day, built from its record with no agent's words in it: what needs the Human,
- * what went ahead on a recommendation they have not answered, what landed, what the Supervisor put on record from their
- * chat, what could not be undone, and the counts.
- */
+/** What happened in a project over the last day, built from its record by the desk, not written by an agent. */
 export function reportView(project: Project, questionsPerDay: number, now = Date.now()): ReportView {
   const ledger = loadLedger(project.state);
   const since = now - DAY_MS;
