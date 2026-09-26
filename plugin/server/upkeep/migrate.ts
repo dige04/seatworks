@@ -1,9 +1,9 @@
 import { join } from "node:path";
 import type { MigrateStep, MigrateView } from "../../shared/upkeep-views.ts";
 import type { Kit } from "../catalog/kit/kit.ts";
-import { digest } from "../core/fs.ts";
 import { stateRoot } from "../core/paths.ts";
 import { readJson, writeJson } from "../core/store.ts";
+import { versionOf } from "./update.ts";
 
 export type LiveSeat = { provider: string; slug: string; createdAt?: string; name: string };
 
@@ -18,9 +18,9 @@ type Stamp = { stamp: string; since: string };
 
 const stampFile = (homeDir: string) => join(stateRoot(homeDir), "kit.json");
 
-/** Which kit this machine runs, and since when: a seat started earlier runs an older one. */
+/** Which version this machine runs, and since when: a seat started earlier runs an older one. */
 export function stampKit(kit: Kit, homeDir: string, now = Date.now()): Stamp {
-  const stamp = digest(["content", "harness", "mcp", "roles.json"].map((name) => join(kit.dir, name)));
+  const stamp = versionOf(kit.dir);
   const held = readJson<Partial<Stamp>>(stampFile(homeDir), {});
   if (held.stamp === stamp && typeof held.since === "string") return { stamp, since: held.since };
   const next = { stamp, since: new Date(now).toISOString() };

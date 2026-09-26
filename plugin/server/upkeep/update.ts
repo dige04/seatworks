@@ -24,6 +24,11 @@ const paseoRange = (text: string | undefined): string | null => {
   }
 };
 
+/** The version the plugin at `dir` is, as its package names it: what a seat reads raises it. */
+export function versionOf(dir: string): string {
+  return readJson<{ version?: string }>(join(dir, "package.json"), {}).version ?? "";
+}
+
 async function out(dir: string, args: string[]): Promise<string | undefined> {
   const run = await git(dir, args);
   return run.code === 0 ? run.stdout.trim() : undefined;
@@ -32,10 +37,9 @@ async function out(dir: string, args: string[]): Promise<string | undefined> {
 /** Where this checkout stands; `fetch` asks its remote first, and without it the answer is as of the last fetch. */
 export async function checkUpdate(ctx: UpdateContext, fetch = true): Promise<UpdateView> {
   const { dir } = ctx;
-  const version = readJson<{ version?: string }>(join(dir, "package.json"), {}).version ?? "";
   const view: UpdateView = {
     dir,
-    version,
+    version: versionOf(dir),
     next: null,
     head: "",
     date: null,

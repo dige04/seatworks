@@ -12,12 +12,19 @@ function world(): MigrateContext {
   return { kit: makeKit(), home: tempDir("sw2-home-"), live: [], now: NOW };
 }
 
-test("migrate names the seats started before this kit was loaded, and changes nothing about them", () => {
+test("the seats started before this version are named, and nothing about them changes", () => {
   const ctx = world();
+  const version = (named: string) =>
+    writeFileSync(join(ctx.kit.dir, "package.json"), JSON.stringify({ version: named }));
+  version("3.0.0-dev.1");
   const { since } = stampKit(ctx.kit, ctx.home, NOW);
-  writeFileSync(join(ctx.kit.dir, "content", "prompts", "LEAD.md"), "A new brief.");
+  assert.equal(stampKit(ctx.kit, ctx.home, NOW + 30_000).since, since, "one version keeps the time it started");
+  version("3.0.0-dev.2");
   const next = stampKit(ctx.kit, ctx.home, NOW + 60_000);
-  assert.ok(next.since > since, "the kit stamp moves with its content");
+  assert.ok(
+    next.since > since,
+    "a raised version is a new one, whichever file a seat reads raised it: the git shim too",
+  );
   ctx.live.push(
     {
       provider: "sw2-lead-claude",
