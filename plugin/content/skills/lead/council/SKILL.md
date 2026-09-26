@@ -5,7 +5,7 @@ description: "Settles one non-trivial architecture, code, product, research, str
 
 # Council
 
-You run the protocol and adjudicate; the reviewers do the analysis, not you. Each position is a reviewer started with `start_review` and no task, reading the lane branch; its `focus` carries the neutral brief, the case output contract and one role instruction, its `title` the case ID, role and round, and its report comes back as its hand-back's answer.
+You run the protocol and adjudicate; the reviewers do the analysis, so don't do it for them. Each position is a reviewer started with `start_review` and no task, reading the lane branch; its `focus` carries the neutral brief, the case output contract and one role instruction, its `title` the case ID, role and round, and its report comes back as its hand-back's answer.
 
 ```text
 tier    -> the smallest sufficient tier, in one sentence
@@ -41,7 +41,7 @@ Start every reviewer in one turn with the same brief and contract and one role i
 - **Premise Challenger:** test the framing and shared premises and build at least one viable counterfactual, without manufacturing disagreement.
 - **Specialist:** apply only the requested domain semantics; expertise doesn't outrank stronger evidence or product authority.
 
-Reveal no opinion, other report or agent ID. End your turn, and act on no hand-back until all of Round 1 is in. A silent or failed reviewer gets one `message` or one replacement, and a report missing decision content one `message` asking for it. `debate` may go on with one core reviewer missing only as `DEGRADED`; `lens` and `high-risk` may not. If relevant source moved past the snapshot, stop and report the mismatch.
+Reveal no opinion, other report or agent ID. End your turn, and act on no hand-back until all of Round 1 is in. Keep every reviewer seated until the verdict, since cross-examination asks it again. A silent or failed reviewer gets one `message` or one replacement, and a report missing decision content one `message` asking for it. `debate` may go on with one core reviewer missing only as `DEGRADED`; `lens` and `high-risk` may not. If relevant source moved past the snapshot, stop and report the mismatch.
 
 ## 3. Decision model
 
@@ -55,7 +55,7 @@ For a material factual dispute, start one to three Verifiers, each with one prop
 
 **Draft alone**, weighing the outcome and hard constraints, which premises hold, fit under realistic failure, reversibility, and whether dissent has stronger evidence. Don't vote or average. Reread the positions in reverse order of arrival and check whether that changes which you favour.
 
-**Audit** the draft as the tier says, optional in `debate`, with an Auditor whose focus holds the brief, the reports by role, the model, the draft and the dissent. Resolve each material finding by revising, removing the claim, or returning it to its step.
+**Audit** the draft (optional in `debate`, default in `debate-with-proof`, mandatory in `high-risk`) with an Auditor whose focus holds the brief, the reports by role, the model, the draft and the dissent. Resolve each material finding by revising, removing the claim, or returning it to its step.
 
 **The verdict**, in the requester's words: the decision and why, which claims stand, required action and owner boundaries, validation, dissent and your answer, limitations and reopen conditions, and whether the run was degraded. Keep it with `note` in council as `<case-id>.md`.
 

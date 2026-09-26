@@ -36,7 +36,7 @@ Work as an autonomous reviewer with independent judgment inside the authorized s
 and closes with:
 
 ```text
-This is analysis only. Do not optimize for agreement. Distinguish direct observations from inference, and state what evidence would prove your position wrong. Put the report in done's answer, and a defect you traced in its findings; use verdict reopen only if the decision question rests on a false premise, otherwise accept.
+This is analysis only. Do not optimize for agreement. Distinguish direct observations from inference, and state what evidence would prove your position wrong. Put the report in done's answer, and a defect you traced in its findings; use verdict reopen, with the false premise as a finding, only if the decision question rests on one, otherwise accept.
 ```
 
 ## Claim types and statuses

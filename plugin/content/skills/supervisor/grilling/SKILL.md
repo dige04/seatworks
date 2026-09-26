@@ -16,13 +16,13 @@ architecture across lanes are yours: decide them, list them at the foot of the r
 **Assumed**, one line each, so the Human can overturn one, and do not ask; how a lane is built is its
 Lead's.
 
-A fact the repository or the tools can give you is never a question: read only what settles it.
+A fact the repository or the tools can give you is never a question: read only what settles it, and ask the rest of the round meanwhile.
 
 ## Rounds
 
 Map the request as a tree: every decision branches into the ones that hang on it. A round asks every
 decision whose prerequisites are already settled, and no other: one hanging on a question still open
-belongs to a later round. Number each, recommend an answer, and wait for the Human's answers before the next round.
+belongs to a later round. Number each, give your recommended answer, and wait for the Human's answers before the next round.
 
 ```text
 ❓ **Q1 - <title>**: <the question, with the choices when there are some>
