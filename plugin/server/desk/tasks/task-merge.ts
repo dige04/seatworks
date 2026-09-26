@@ -26,7 +26,7 @@ const MOVE_OF = { merged: "merged", conflict: "stop", red: "stop", failed: "fail
 
 type Verdict = { ok: boolean; note: string; over?: string; run?: { tail: string; logFile: string } };
 
-export type MergeDesk = Pick<DeskBase, "kit" | "ledgers" | "mail" | "log" | "stopping">;
+export type MergeDesk = Pick<DeskBase, "kit" | "ledgers" | "mail" | "log" | "stopping" | "gates">;
 
 /** Merges one accepted task into its lane: the lane brought into the task's copy, gated there, then taken as it is. */
 export class TaskMerge {

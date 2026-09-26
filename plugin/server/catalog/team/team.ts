@@ -1,3 +1,4 @@
+import { availableParallelism } from "node:os";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Layer } from "../../../shared/settings.ts";
@@ -31,6 +32,7 @@ export type Team = {
   review: ReviewJudge;
   rules: string;
   language?: string;
+  gatesAtOnce: number;
   errors: string[];
 };
 
@@ -61,6 +63,10 @@ export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, 
     on: project.hitl?.on ?? machine.hitl?.on ?? false,
     questionsPerDay: machine.hitl?.questionsPerDay ?? QUESTIONS_PER_DAY,
   };
+  if (project.gatesAtOnce !== undefined)
+    errors.push(
+      "The project settings set gatesAtOnce, which only the machine's can: every project's gates share its processors",
+    );
   if (project.language !== undefined)
     errors.push(
       "The project settings set language, which only the machine's can: the Human is the same in every project",
@@ -74,6 +80,7 @@ export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, 
     review: reviewOf(kit, layers, errors),
     rules: [machine.rules, project.rules].filter((text) => text && text.trim()).join("\n\n"),
     ...(machine.language ? { language: machine.language } : {}),
+    gatesAtOnce: machine.gatesAtOnce ?? Math.max(1, Math.floor(availableParallelism() / 2)),
     errors,
   };
 }

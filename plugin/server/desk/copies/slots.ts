@@ -29,11 +29,11 @@ import { bringIncluded } from "./worktree-include.ts";
 type Holder = { lane?: string; task?: string };
 
 export class Slots {
-  private readonly desk: Pick<DeskBase, "ledgers" | "log" | "projects" | "indexesFor" | "stopping">;
+  private readonly desk: Pick<DeskBase, "ledgers" | "log" | "projects" | "indexesFor" | "stopping" | "gates">;
   private readonly workspaces: Workspaces;
 
   constructor(
-    desk: Pick<DeskBase, "ledgers" | "log" | "projects" | "indexesFor" | "stopping">,
+    desk: Pick<DeskBase, "ledgers" | "log" | "projects" | "indexesFor" | "stopping" | "gates">,
     workspaces: Workspaces,
   ) {
     this.desk = desk;

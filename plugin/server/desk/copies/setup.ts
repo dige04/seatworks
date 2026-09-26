@@ -9,7 +9,7 @@ export type SetUp = { command: string; ok: boolean; seconds: number; failed: str
 
 /** The project's setup, run in a copy it just made before anyone works there, told which copy by its number. */
 export async function setUpCopy(
-  { log, stopping }: Pick<DeskBase, "log" | "stopping">,
+  { log, stopping, gates }: Pick<DeskBase, "log" | "stopping" | "gates">,
   project: Project,
   slot: Pick<Slot, "id" | "path">,
 ): Promise<SetUp | undefined> {
@@ -17,7 +17,7 @@ export async function setUpCopy(
   if (!setup) return undefined;
   const logFile = join(project.state, "gates", `setup-${slot.id}-${Date.now()}.log`);
   const copy = { SEATWORKS_COPY: slot.id.replace(/\D/g, "") };
-  const run = await runGate(setup, slot.path, logFile, gitTimeout(project), stopping, copy);
+  const run = await gates.run(() => runGate(setup, slot.path, logFile, gitTimeout(project), stopping, copy));
   const failed = run.stopped
     ? "was stopped as the plugin stopped"
     : run.timedOut

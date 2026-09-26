@@ -124,7 +124,7 @@ async function workOf(kit: Kit, project: Project, ledger: Ledger, task: Task, sy
 
 /** Gated at hand-back, so the Lead has the verdict before it accepts. */
 async function write(
-  desk: Pick<DeskServices, "kit" | "stopping" | "ledgers" | "log">,
+  desk: Pick<DeskServices, "kit" | "stopping" | "gates" | "ledgers" | "log">,
   project: Project,
   task: Task,
   args: HandingBack,

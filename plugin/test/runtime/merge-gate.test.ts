@@ -259,3 +259,39 @@ test("a task's red gate comes with the same gate on its lane's tip, in a copy ma
     "and the copy it ran in is gone",
   );
 });
+
+test("no more gates run at once than the machine's gatesAtOnce, the rest waiting their turn", async () => {
+  const { h, sup, lane } = await laneWithPeer();
+  const lead = lane.lead!;
+  h.machineSettings({ gatesAtOnce: 1 });
+  // Red when another gate runs beside it: the second mkdir finds the first one's folder.
+  const busy = join(tempDir("sw2-gates-at-once-"), "busy");
+  await h.call(sup, "supervisor", "set_project", {
+    gate: `mkdir '${busy}' && sleep 0.3 && rmdir '${busy}'`,
+    gateOn: "task",
+  });
+  const tasks = [];
+  for (const [title, file] of [
+    ["One", "c.txt"],
+    ["Two", "d.txt"],
+  ] as const) {
+    await h.call(lead, "lead", "add_tasks", {
+      tasks: [{ key: title, title, goal: "g", ...scope, holds: [file], parallel: true }],
+    });
+    const task = Object.values(h.ledger().tasks).find((entry) => entry.title === title)!;
+    h.commit(task.worktree!, file, `${file}\n`);
+    tasks.push(task);
+  }
+  const handed = await Promise.all(
+    tasks.map((task) => h.call(task.peer!, "peer", "done", { outcome: "complete", summary: task.title })),
+  );
+  assert.deepEqual(
+    handed.map((reply) => reply.ok),
+    [true, true],
+  );
+  assert.deepEqual(
+    tasks.map((task) => h.ledger().tasks[task.id]!.handback!.gate!.ok),
+    [true, true],
+    "each gate ran alone",
+  );
+});

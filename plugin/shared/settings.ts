@@ -127,6 +127,8 @@ export const LayerSchema = z.strictObject({
   sensor: z.record(z.string(), SensorChoice).optional(),
   /** The language whoever supervises speaks to the Human in; the rest of the team writes English, which the watch reads. */
   language: z.string().min(1).optional(),
+  /** How many gates, rehearsals and setups run at once across this machine's projects: they share its processors. */
+  gatesAtOnce: z.number().int().min(1).optional(),
 });
 
 export type Layer = z.infer<typeof LayerSchema>;

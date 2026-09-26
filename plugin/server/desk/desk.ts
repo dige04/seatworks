@@ -1,6 +1,7 @@
 import type { Kit, SensorSpec } from "../catalog/kit/kit.ts";
 import type { Team } from "../catalog/team/team.ts";
 import { KeyedQueue } from "../core/keyed-queue.ts";
+import { Limiter } from "../core/limiter.ts";
 import { daemonLog } from "../core/logger.ts";
 import { midTurn } from "../core/paseo.ts";
 import { join } from "node:path";
@@ -85,6 +86,7 @@ export class Desk {
       seating: new Claims(),
       closing: new Claims(),
       landings: new KeyedQueue(),
+      gates: new Limiter(() => options.teamFor().gatesAtOnce),
       stopping: this.stop.signal,
     };
     this.intents = new Intents(join(stateRoot(), "intents.json"));

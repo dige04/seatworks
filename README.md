@@ -84,6 +84,10 @@ permission profile, which needs a Codex recent enough to have them (0.154 has).
 The Supervisor speaks to you in the language set as the Human's language in the machine settings
 (`language`), on every agent; every other seat writes English, which the watch reads best.
 
+Gates, rehearsals and each copy's setup command share your machine's processors: at most half as
+many run at once as it has, the rest waiting their turn, unless the machine settings say otherwise
+(`gatesAtOnce`).
+
 ## Install
 
 You need:

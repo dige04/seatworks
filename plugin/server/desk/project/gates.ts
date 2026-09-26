@@ -35,7 +35,7 @@ function rehearsals(project: Project, kit: Kit, files: string[] | undefined): St
  * all of them, or up to the first that fails when `stopAtRed`.
  */
 async function runSteps(
-  { stopping }: Pick<DeskBase, "stopping">,
+  { stopping, gates }: Pick<DeskBase, "stopping" | "gates">,
   project: Project,
   id: string,
   cwd: string,
@@ -47,7 +47,7 @@ async function runSteps(
   const runs: StepRun[] = [];
   for (const [index, step] of steps.entries()) {
     const logFile = join(project.state, "gates", `${id}-${at}${index > 0 ? `-${index}` : ""}.log`);
-    const result = await runGate(step.command, cwd, logFile, minutes * 60_000, stopping);
+    const result = await gates.run(() => runGate(step.command, cwd, logFile, minutes * 60_000, stopping));
     const failed = result.stopped
       ? "was stopped as the plugin stopped"
       : result.timedOut
@@ -61,7 +61,7 @@ async function runSteps(
 
 /** The project's gate on the lane, then each rehearsal its change reaches, every one run: red in any is a red gate. */
 export async function laneGate(
-  desk: Pick<DeskBase, "kit" | "stopping">,
+  desk: Pick<DeskBase, "kit" | "stopping" | "gates">,
   project: Project,
   lane: Lane,
 ): Promise<GateVerdict> {
@@ -95,7 +95,7 @@ type GateRun = { ok: boolean; note: string; tail: string; logFile: string };
  * that fails. Undefined when this project does not gate tasks.
  */
 export async function taskGate(
-  desk: Pick<DeskBase, "kit" | "stopping" | "ledgers" | "log">,
+  desk: Pick<DeskBase, "kit" | "stopping" | "gates" | "ledgers" | "log">,
   project: Project,
   task: { id: string; lane: string },
   cwd: string,
@@ -124,7 +124,7 @@ export async function taskGate(
  * each tip: a red task on a red lane is not the task's doing alone, which the Lead weighs before overGate.
  */
 async function onLaneTip(
-  desk: Pick<DeskBase, "stopping" | "ledgers" | "log">,
+  desk: Pick<DeskBase, "stopping" | "gates" | "ledgers" | "log">,
   project: Project,
   lane: Lane,
   command: string,
