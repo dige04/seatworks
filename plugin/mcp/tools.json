@@ -889,7 +889,7 @@
                   "items": {
                     "type": "string"
                   },
-                  "description": "With parallel: the paths or globs it writes while others run beside it, as coarse as the work allows. Nobody else writes them meanwhile."
+                  "description": "With parallel: the paths or globs it writes meanwhile, as narrow as you know them, else their folder. Nobody else writes them meanwhile."
                 },
                 "outOfScope": {
                   "type": "array",

@@ -106,7 +106,7 @@ export function readPlan(ledger: Ledger, lane: Lane, listed: Args[]): Planned[] 
       return `The key ${task.key} is already a task of this project; pick keys that are not task ids.`;
     keys.add(task.key);
     if (task.parallel && task.holds.length === 0)
-      return `${task.key} runs beside others but holds nothing: name the paths it writes meanwhile, as coarse as the work allows.`;
+      return `${task.key} runs beside others but holds nothing: name the paths it writes meanwhile, as narrow as you know them, or the folder where you do not: what it holds nobody beside it writes.`;
   }
   for (const task of tasks) {
     const outside = task.after.filter((id) => !keys.has(id));
