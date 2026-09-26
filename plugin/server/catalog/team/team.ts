@@ -34,7 +34,13 @@ export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, 
   });
   const mcp = resolveMcp(kit, layers, errors);
   const roles = resolveRoles(kit, layers, mcp, errors);
-  const attention = { ...kit.attention, ...stripUndefined(machine.attention), ...stripUndefined(project.attention) };
+  // A signal turned on for the machine stays on in a project that says nothing of it: each is its own choice.
+  const attention = {
+    ...kit.attention,
+    ...stripUndefined(machine.attention),
+    ...stripUndefined(project.attention),
+    signals: { ...kit.attention.signals, ...machine.attention?.signals, ...project.attention?.signals },
+  };
   // Questions are counted across every project, so only the machine can say how many a day the Human takes.
   if (project.hitl?.questionsPerDay !== undefined)
     errors.push(

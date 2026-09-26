@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { allSignals } from "./noticed.ts";
 import { harness } from "./harness.ts";
 
 test("an idle Lead with nothing running, asked or reported ready wakes whoever supervises, and one waiting on it or on the Human does not", async () => {
   const h = harness();
-  h.projectSettings({ hitl: { on: true }, attention: { watch: true, incidentsPerLane: 10 } });
+  h.projectSettings({ hitl: { on: true }, attention: { signals: allSignals, incidentsPerLane: 10 } });
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   const scope = { outcome: "x", acceptance: ["a"], outOfScope: ["the rest"] };
   await h.call(sup, "supervisor", "set_project", { askFirst: ["b.txt"] });

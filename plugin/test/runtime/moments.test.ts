@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { setTimeout as sleep } from "node:timers/promises";
 import { test } from "node:test";
 import { laneWithPeer } from "./harness.ts";
-import { book } from "./noticed.ts";
+import { allSignals, book } from "./noticed.ts";
 
 const parser = {
   key: "s",
@@ -14,7 +14,7 @@ const parser = {
   parallel: true,
 };
 
-const watching = { attention: { watch: true, incidentsPerLane: 10 } };
+const watching = { attention: { signals: allSignals, incidentsPerLane: 10 } };
 
 test("a Lead widening what a task beside others holds, or turning a task to another goal, is W's to tell whoever supervises; less than that is not", async () => {
   const { h, sup, lane } = await laneWithPeer(watching);

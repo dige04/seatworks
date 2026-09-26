@@ -5,16 +5,16 @@ import { test } from "node:test";
 import { saveIncidents } from "../../server/desk/store/incidents.ts";
 import { projectOf } from "../../server/desk/project/project.ts";
 import { laneWithPeer, repo } from "./harness.ts";
-import { book, notice } from "./noticed.ts";
+import { allSignals, book, notice } from "./noticed.ts";
 
 test("what was held because nobody could read it is told once somebody can, and never to the seat it is about", async () => {
-  const { h, sup, lane, peer } = await laneWithPeer({ attention: { watch: true } });
+  const { h, sup, lane, peer } = await laneWithPeer({ attention: { signals: allSignals } });
   const seated = (yes: boolean) => void (h.agents.get(sup)!.archivedAt = yes ? null : new Date().toISOString());
   const told = (id: string) => h.heard(sup).filter((text) => text.includes(`INCIDENT ${id} `));
   const second = repo();
   const other = projectOf(second.root);
   mkdirSync(other.state, { recursive: true });
-  writeFileSync(join(other.state, "settings.json"), JSON.stringify({ attention: { watch: true } }));
+  writeFileSync(join(other.state, "settings.json"), JSON.stringify({ attention: { signals: allSignals } }));
   const supB = h.add("sw2-supervisor-claude/claude-opus-5", second.root, "sup-b");
 
   seated(false);
@@ -104,7 +104,7 @@ test("a lane's own record raises an incident about its Lead once, held while the
   );
   assert.doesNotMatch(h.heard(sup).join("\n"), /INCIDENT/);
 
-  writeFileSync(join(h.project.state, "settings.json"), JSON.stringify({ attention: { watch: true } }));
+  writeFileSync(join(h.project.state, "settings.json"), JSON.stringify({ attention: { signals: allSignals } }));
   await h.tick();
   const told = h.heard(sup).join("\n");
   const [first] = loops();

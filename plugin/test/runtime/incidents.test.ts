@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { flowRpc } from "../../shared/rpc.ts";
 import { saveIncidents } from "../../server/desk/store/incidents.ts";
 import { laneWithPeer } from "./harness.ts";
-import { book, hookAgent, notice } from "./noticed.ts";
+import { allSignals, book, hookAgent, notice } from "./noticed.ts";
 
 test("an incident's life: seen, routed, listed, marked, closed", async () => {
   const { h, sup, lane, peer } = await laneWithPeer({ attention: { incidentsPerLane: 20 } });
@@ -47,7 +47,7 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
 
   writeFileSync(
     join(h.project.state, "settings.json"),
-    JSON.stringify({ attention: { watch: true, incidentsPerLane: 20 } }),
+    JSON.stringify({ attention: { signals: allSignals, incidentsPerLane: 20 } }),
   );
   await notice(h, peer, "test-weakened");
   await notice(h, lead, "long-turn");
@@ -152,7 +152,7 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
 });
 
 test("a kind most of whose last ten marks were noise is held on probation, and a page never is", async () => {
-  const { h, sup } = await laneWithPeer({ attention: { watch: true } });
+  const { h, sup } = await laneWithPeer({ attention: { signals: allSignals } });
   const seat = (n: number) => ({ id: `peer-${n}`, title: "Peer", provider: "sw2-peer-claude/claude-opus-5" });
   const marks = (useful: number, count = 10, unknown = 0) => {
     const marked = (kind: string, level: "attend" | "page", n: number) => ({
@@ -206,4 +206,21 @@ test("a kind most of whose last ten marks were noise is held on probation, and a
   marks(0, 9);
   await notice(h, seat(4), "stuck");
   assert.ok(told(4), "nine marks judge nothing");
+});
+
+test("each signal is told to whoever supervises only once it is turned on; the rest are recorded in shadow, and a page always goes", async () => {
+  const { h, sup, peer } = await laneWithPeer({ attention: { signals: { stuck: "on" } } });
+  await notice(h, peer, "stuck", "attend", "the same action failing 3 times");
+  await notice(h, peer, "suppressed", "attend", "adds @ts-ignore");
+  await notice(h, peer, "destructive", "page", "rm -rf build");
+  assert.deepEqual(
+    Object.values(book(h)).map((item) => [item.kind, item.told !== undefined, item.held ?? null]),
+    [
+      ["stuck", true, null],
+      ["suppressed", false, "shadow"],
+      ["destructive", true, null],
+    ],
+  );
+  await h.idle(sup);
+  assert.doesNotMatch(h.heard(sup).join("\n"), /\(suppressed, attend\)/);
 });

@@ -27,10 +27,13 @@ export type Noticed = { id: string; provider: string; title?: string | null };
 
 type Placed = { where: string; lane?: Lane; task?: Task };
 
-/** A page is irreversible and often done already, so it reaches whoever supervises whatever the switch, the marks or the budget say. */
+/**
+ * A page is irreversible and often done already, so it reaches whoever supervises whatever the marks or the budget say. A
+ * signal worth attention is recorded only, in shadow, until its labels have it turned on.
+ */
 function holdFor(incident: Incident, incidents: Incidents, attention: Attention, now: number): Held | undefined {
   if (incident.level === "page") return undefined;
-  if (!attention.watch) return "shadow";
+  if (attention.signals[incident.kind] !== "on") return "shadow";
   if (onProbation(incidents, incident.kind)) return "probation";
   if (spentToday(incidents, incident.lane, now) >= attention.incidentsPerLane) return "budget";
   return undefined;
@@ -171,12 +174,16 @@ async function deliver(
 
 export async function retell(services: DeskServices, project: Project, now = Date.now()): Promise<string[]> {
   const { incidents, teamFor } = services;
-  const { watch } = teamFor(project).attention;
+  const { signals } = teamFor(project).attention;
   const told: string[] = [];
   const nobody = incidents.transact(project, (incidents) =>
     Object.values(incidents.items)
       .filter(
-        (item) => item.open && item.held === "nobody" && item.told === undefined && (watch || item.level === "page"),
+        (item) =>
+          item.open &&
+          item.held === "nobody" &&
+          item.told === undefined &&
+          (item.level === "page" || signals[item.kind] === "on"),
       )
       .map((item) => ({ ...item })),
   );

@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { reported } from "../console.ts";
 import { settle } from "./fake-timeline.ts";
 import { laneWithPeer } from "./harness.ts";
-import { hookAgent, noticesOf } from "./noticed.ts";
+import { allSignals, hookAgent, noticesOf } from "./noticed.ts";
 
 test("a seat is followed once while it is seated and watched, let go when it goes, and followed again after a failed join or a lost stream", async (t) => {
   const said = reported(t);
@@ -51,7 +51,9 @@ test("a seat is followed once while it is seated and watched, let go when it goe
 });
 
 test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
-  const { h, sup, lane, peer, timeline } = await laneWithPeer({ attention: { watch: true, incidentsPerLane: 3 } });
+  const { h, sup, lane, peer, timeline } = await laneWithPeer({
+    attention: { signals: allSignals, incidentsPerLane: 3 },
+  });
   const lead = lane.lead!;
   await h.call(sup, "supervisor", "set_project", { gate: "npm test", gateOn: "lane" });
   const noticed = noticesOf(h, t);

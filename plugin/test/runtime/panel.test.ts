@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { allSignals } from "./noticed.ts";
 import { stateRoot } from "../../server/core/paths.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { settle } from "./fake-timeline.ts";
@@ -87,7 +88,7 @@ test("with mail off a page still reaches whoever supervises, the rest is recorde
 });
 
 test("a lane's budget for the day holds back what is only worth attention, however many arrive at once, lane by lane, and never what is irreversible", async () => {
-  const { h, sup, peer } = await laneWithPeer({ attention: { watch: true, incidentsPerLane: 1 } });
+  const { h, sup, peer } = await laneWithPeer({ attention: { signals: allSignals, incidentsPerLane: 1 } });
   const seat = (id: string) => ({ id, provider: "sw2-peer-claude/claude-opus-5", title: id });
   const attend = (kind: string, quote: string) => [{ kind, level: "attend" as const, quote, facts: [kind] }];
   await Promise.all([
@@ -125,7 +126,7 @@ test("a lane's budget for the day holds back what is only worth attention, howev
   const saved = await h.rpc(contracts.settingsWrite, {
     project: h.project.slug,
     revision: read.revision,
-    values: { attention: { watch: false } },
+    values: { attention: { signals: {} } },
   });
   assert.equal(saved.status, "saved", JSON.stringify(saved));
   const [again] = spent;

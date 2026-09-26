@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { KEPT, type Layer } from "../../shared/settings.ts";
 import { countsInstead } from "../../client/format/flow.ts";
 import { incidentState, judgeWords } from "../../client/format/watch.ts";
-import { dropMcp, foldRoles, keptRoles, modelRow, setAttention, setRole, withKey } from "../../client/model/layer.ts";
+import { dropMcp, foldRoles, keptRoles, modelRow, setRole, setSignal, withKey } from "../../client/model/layer.ts";
 import type { WatchIncident, WatchJudge } from "../../shared/flow-views.ts";
 
 const docs = {
@@ -16,7 +16,7 @@ const lead = { harness: "claude", model: "opus", thinking: "high", rules: "Never
 const held: Layer = {
   rules: "Keep diffs small.",
   roles: { lead },
-  attention: { longTurnMinutes: 30, watch: false },
+  attention: { longTurnMinutes: 30, signals: { stuck: "shadow" } },
   mcp: { docs },
   sensor: { other: { key: KEPT } },
 };
@@ -33,9 +33,9 @@ const EDITS: [string, (layer: Layer) => Layer, Layer][] = [
     { ...held, roles: { lead: { ...lead, model: "other" } } },
   ],
   [
-    "switching the watch on keeps the rest of the tuning",
-    (layer) => setAttention(layer, { watch: true }),
-    { ...held, attention: { longTurnMinutes: 30, watch: true } },
+    "turning a signal on keeps the rest of the tuning",
+    (layer) => setSignal(layer, "long-turn", "on"),
+    { ...held, attention: { longTurnMinutes: 30, signals: { stuck: "shadow", "long-turn": "on" } } },
   ],
   [
     "removing a server this layer added forgets it, token and all, rather than keeping it marked removed",

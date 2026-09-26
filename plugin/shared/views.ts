@@ -63,7 +63,7 @@ const Attention = z.object({
   leadIdleMinutes: z.number(),
   askRemindMinutes: z.number(),
   maxReminders: z.number(),
-  watch: z.boolean(),
+  signals: z.record(z.string(), z.enum(["shadow", "on"])),
   destructive: z.string(),
   testPath: z.string(),
   repeatsAt: z.number(),
@@ -84,6 +84,8 @@ export const TeamView = z.object({
   project: z.string().nullable(),
   errors: z.array(z.string()),
   attention: Attention,
+  /** The signals worth attention the watch can raise, each with its title, to turn on or leave in shadow. */
+  signals: z.array(z.object({ kind: z.string(), title: z.string() })),
   hitl: Hitl,
   rules: z.string(),
   mcp: z.record(

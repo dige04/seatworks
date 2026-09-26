@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
+import { allSignals } from "./noticed.ts";
 import { tempDir } from "../tempdir.ts";
 import { settle } from "./fake-timeline.ts";
 import { harness, laneWithPeer } from "./harness.ts";
@@ -150,7 +151,7 @@ test("what git shows of a lane goes with its landing as evidence, and holds noth
 });
 
 test("what the record holds of a lane goes to whoever lands it, and never to the Lead it is about", async () => {
-  const { h, sup, lane, peer, timeline } = await laneWithPeer({ attention: { watch: true } }, undefined, {
+  const { h, sup, lane, peer, timeline } = await laneWithPeer({ attention: { signals: allSignals } }, undefined, {
     holds: ["a.txt"],
     parallel: true,
   });

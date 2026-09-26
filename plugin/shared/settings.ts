@@ -53,7 +53,8 @@ export const AttentionChoice = z.strictObject({
   leadIdleMinutes: z.number().int().min(1).optional(),
   askRemindMinutes: z.number().int().min(1).optional(),
   maxReminders: z.number().int().min(0).optional(),
-  watch: z.boolean().optional(),
+  /** Each attention signal the watch raises, told to whoever supervises (on) or only recorded (shadow, the default). */
+  signals: z.record(z.string(), z.enum(["shadow", "on"])).optional(),
   destructive: Pattern.optional(),
   testPath: Pattern.optional(),
   repeatsAt: z.number().int().min(2).optional(),

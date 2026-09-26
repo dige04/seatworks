@@ -8,7 +8,7 @@ import { sourceLabel } from "./bits.tsx";
 import type { Layer, RoleChoice } from "../../shared/settings.ts";
 import type { CatalogView, ModelsRefreshed, TeamView } from "../../shared/views.ts";
 import { message } from "../format/error.ts";
-import { modelRow, setAttention, setHitl, setRole, sourceOf } from "../model/layer.ts";
+import { modelRow, setHitl, setRole, setSignal, sourceOf } from "../model/layer.ts";
 import { JudgeCard } from "./judge.tsx";
 import { ModelPicker } from "./model-picker.tsx";
 import { TabBar } from "./tabs.tsx";
@@ -123,17 +123,21 @@ function roleRows({ catalog, team, values, machine, layer, theme, disabled, save
   return rows;
 }
 
-/** On the Supervisor's chip, since what pages and what is about a Lead goes to it: whether what the code notices is mailed at all. */
-function IncidentMailCard({ team, values, machine, layer, disabled, save }: Props) {
+/** On the Supervisor's chip, since it alone hears the watch: each signal told to it, or only recorded until labels show it is worth that. */
+function SignalsCard({ team, values, machine, layer, disabled, save }: Props) {
   return (
     <SettingsCard>
-      <SettingsSwitch
-        label="Mail incidents"
-        hint={`What the code notices about a Lead or a Peer goes to the Supervisor alone; never to a Lead or the seat itself. Pages reach the Supervisor with this off too. ${sourceLabel(sourceOf(values, machine, (entry) => entry.attention?.watch, layer), layer)}.`}
-        value={team.attention.watch}
-        onValueChange={(next) => void save((current) => setAttention(current, { watch: next }))}
-        disabled={disabled}
-      />
+      <SettingsRow label="What the watch tells the Supervisor" hint="Pages always reach it. Each signal here is only recorded, in shadow, until you turn it on; none ever reaches a Lead or the seat it is about." />
+      {team.signals.map((signal) => (
+        <SettingsSwitch
+          key={signal.kind}
+          label={signal.title}
+          hint={`${signal.kind}. ${sourceLabel(sourceOf(values, machine, (entry) => entry.attention?.signals?.[signal.kind], layer), layer)}.`}
+          value={team.attention.signals[signal.kind] === "on"}
+          onValueChange={(next) => void save((current) => setSignal(current, signal.kind, next ? "on" : "shadow"))}
+          disabled={disabled}
+        />
+      ))}
     </SettingsCard>
   );
 }
@@ -162,7 +166,7 @@ export function TeamSection(props: Props) {
       <TabBar theme={theme} active={role.id} disabled={disabled} onPick={onActive} tabs={catalog.roles.map((entry) => ({ id: entry.id, label: entry.label }))} />
       {role.can.includes("judge") ? <JudgeCard {...props} role={role} rows={roleRows({ ...props, role })} /> : <SettingsCard>{roleRows({ ...props, role })}</SettingsCard>}
       {role.can.includes("supervise") ? <HitlCard {...props} /> : null}
-      {role.can.includes("supervise") ? <IncidentMailCard {...props} /> : null}
+      {role.can.includes("supervise") ? <SignalsCard {...props} /> : null}
       <ModelsCard catalog={props.catalog} disabled={props.disabled} reload={props.reload} />
     </SettingsSection>
   );

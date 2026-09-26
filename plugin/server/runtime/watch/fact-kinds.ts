@@ -43,6 +43,11 @@ export const fact = (kind: FactKind, quote: string): Fact => ({
   ...("theirs" in FACTS[kind] ? { theirs: true as const } : {}),
 });
 
+/** The signals worth attention the book can hold, each with its title: what the Team tab turns on or leaves in shadow. */
+export const SIGNALS: { kind: string; title: string }[] = Object.entries(FACTS).flatMap(([kind, spec]) =>
+  spec.level === "attend" && "title" in spec ? [{ kind, title: spec.title }] : [],
+);
+
 /** The title of a kind the incident book holds, which may be one this code no longer raises. */
 export function factTitle(kind: string): string | undefined {
   return (FACTS as Record<string, { title?: string }>)[kind]?.title;
