@@ -58,11 +58,12 @@ test("where a lane works is carried by open_lane or laneHome; with neither, a co
   writeFileSync(join(h.root, "a.txt"), "edited\n");
   h.agents.get(h.ledger().lanes.L1!.lead!)!.status = "idle";
   assert.equal((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).ok, true);
-  const held = h.ledger().lanes.L2!;
-  assert.equal(held.status, "waiting");
+  const then = h.ledger().lanes.L2!;
+  assert.deepEqual([then.status, Boolean(then.slot)], ["open", true], "a lane that waited opens as one opened now");
+  await h.idle(sup);
   assert.match(
-    held.held?.why ?? "",
-    /the project's own working copy has uncommitted changes, so a lane cannot take it over; they stay until the Human commits or stashes them, and isolate true opens the lane in a copy of its own/,
+    h.heard(sup).join("\n"),
+    new RegExp(`OPENED L2 \\(Then\\)[^]*${decided.source}a new branch that takes the uncommitted work along`),
   );
   assert.equal(branch(), "fix/login");
   assert.equal(readFileSync(join(h.root, "a.txt"), "utf-8"), "edited\n");
@@ -129,7 +130,7 @@ test("where a lane works is carried by open_lane or laneHome; with neither, a co
     ["main", true, "fix/login"],
   );
   assert.equal((await open("After it", { after: ["L5"] })).ok, true);
-  assert.equal(h.ledger().lanes.L7!.opening?.isolate, true);
+  assert.equal(h.ledger().lanes.L7!.opening?.home, "isolate");
   await h.call(sup, "supervisor", "set_project", { laneHome: "onBranch", humanSaid: said });
   assert.equal((await open("Carry on")).ok, true);
   assert.deepEqual([h.ledger().lanes.L8!.onBranch, h.ledger().lanes.L8!.branch], [true, "fix/login"]);

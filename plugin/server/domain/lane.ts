@@ -43,7 +43,7 @@ export type Lane = {
   opener: string;
   status: LaneStatus;
   after?: string[];
-  opening?: { isolate?: boolean; role?: string };
+  opening?: { home?: "newBranch" | "isolate"; role?: string };
   held?: { why: string; tried?: boolean };
   onHold?: { at: number; by: string; reason: string };
   ready?: { at: number };

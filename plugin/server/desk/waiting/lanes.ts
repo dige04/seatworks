@@ -1,4 +1,4 @@
-import { branchExists, currentBranch } from "../../core/git.ts";
+import { branchExists, currentBranch, uncommittedPaths } from "../../core/git.ts";
 import { LANE } from "../../domain/lane.ts";
 import { workKey } from "../claims.ts";
 import { issueOf } from "../../core/issues.ts";
@@ -9,7 +9,8 @@ import { workLetters } from "../letters/work-letters.ts";
 import { seatLetters } from "../letters/seat-letters.ts";
 import { forgetPlace, leadSeatOf, openedReply, startLead } from "../lanes/lead-seat.ts";
 import { placement } from "../lanes/placement.ts";
-import type { Project } from "../project/project.ts";
+import { type Project, laneHomeFor, loadConfig } from "../project/project.ts";
+import { decidedApart } from "../lanes/open-lane.ts";
 import type { Refusal } from "../refusal.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
@@ -40,12 +41,13 @@ export async function openWaiting(desk: DeskServices, project: Project, retryHel
 async function tryOpen(desk: DeskServices, project: Project, lane: Lane): Promise<Holding | undefined> {
   const { ledgers, seating, mail, roster } = desk;
   const moved = await branchMoved(project, lane);
+  const home = moved ? undefined : await homeNow(project, lane);
   const placed =
     moved ??
     ledgers.transact(project, (ledger): { claimed: Lane; ownCopy: boolean } | Refusal | undefined => {
       const entry = ledger.lanes[lane.id];
       if (!entry || entry.onHold || !LANE.may(entry.status, "open")) return undefined;
-      const where = placement(ledger, entry, entry.opening?.isolate === true, entry.id);
+      const where = placement(ledger, entry, home?.isolate === true, entry.id);
       if ("why" in where) return where;
       LANE.move(entry, "open");
       seating.take(workKey(project, lane.id));
@@ -65,9 +67,24 @@ async function tryOpen(desk: DeskServices, project: Project, lane: Lane): Promis
   ledgers.setLane(project, lane.id, (entry) => {
     delete entry.held;
   });
-  const reply = openedReply(project, claimed, started.slot, started.lead, issue, started.beside);
+  const reply = `${openedReply(project, claimed, started.slot, started.lead, issue, started.beside)}${home?.decided ?? ""}`;
   await mail.post(await roster.supervisorFor(project, claimed.opener), workLetters.opened(claimed, reply));
   return undefined;
+}
+
+/**
+ * Where a waiting lane opens now: as chosen when it was opened, or, with nothing chosen, as a lane opened now would,
+ * in a copy of its own when the project's own copy makes that a question.
+ */
+async function homeNow(project: Project, lane: Lane): Promise<{ isolate: boolean; decided?: string }> {
+  const chosen = lane.opening?.home;
+  if (chosen || lane.onBranch) return { isolate: chosen === "isolate" };
+  const config = loadConfig(project.state);
+  const here = await currentBranch(project.root);
+  const home = laneHomeFor(undefined, config, here, await uncommittedPaths(project.root, false));
+  return typeof home === "object"
+    ? { isolate: true, decided: decidedApart(home.question) }
+    : { isolate: home === "isolate" };
 }
 
 async function branchMoved(project: Project, lane: Lane): Promise<string | undefined> {

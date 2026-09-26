@@ -52,6 +52,7 @@ type Plan = {
   pending: Lane[];
   newBranch: string;
   here?: string;
+  home?: LaneHome;
   decided?: string;
 };
 
@@ -105,6 +106,7 @@ async function planOpen(project: Project, config: ProjectConfig, asked: OpenLane
     pending,
     newBranch,
     here,
+    home,
     decided,
   };
 }
@@ -139,9 +141,13 @@ async function homeOf(
     };
   return {
     home: "isolate",
-    decided: `\n\nNothing on record chose where it works, so it opened in a copy of its own, which leaves the project's own copy as it is: decided for you. The choices were to ${home.question}; set_project laneHome keeps a choice for every lane.`,
+    decided: decidedApart(home.question),
   };
 }
+
+/** What the Supervisor is told when nothing chose where a lane works and it opened in a copy of its own. */
+export const decidedApart = (question: string) =>
+  `\n\nNothing on record chose where it works, so it opened in a copy of its own, which leaves the project's own copy as it is: decided for you. The choices were to ${question}; set_project laneHome keeps a choice for every lane.`;
 
 /** The gate detected once while nothing answered it: "" is the project's own answer, no gate. Base is set_project's. */
 function seedGate(kit: Kit, project: Project, config: ProjectConfig): void {
@@ -153,7 +159,7 @@ async function waitToOpen(desk: DeskServices, caller: Caller, plan: Plan): Promi
   const { project } = caller;
   const { issue } = await readIssue(desk.kit, plan.args, project);
   const lane = desk.ledgers.transact(project, (ledger) => {
-    const entry = laneOf(ledger, caller, plan.args, plan.place, issue, plan.after);
+    const entry = laneOf(ledger, caller, plan, issue, plan.after);
     ledger.lanes[entry.id] = entry;
     return { ...entry };
   });
@@ -202,7 +208,7 @@ function recordOpen(
   issue: Issue | undefined,
 ): { lane: Lane; ownCopy: boolean } | Refusal {
   return desk.ledgers.transact(caller.project, (ledger) => {
-    const lane = laneOf(ledger, caller, plan.args, plan.place, issue);
+    const lane = laneOf(ledger, caller, plan, issue);
     const placed = placement(ledger, lane, plan.args.isolate === true);
     if ("why" in placed) return placed;
     ledger.lanes[lane.id] = lane;
@@ -217,8 +223,7 @@ const detourOf = (args: OpenLaneCall): string | undefined => str(args.detourOf).
 function laneOf(
   ledger: Ledger,
   caller: Caller,
-  args: OpenLaneCall,
-  place: Place,
+  { args, place, home }: Pick<Plan, "args" | "place" | "home">,
   issue: Issue | undefined,
   after?: string[],
 ): Lane {
@@ -226,10 +231,8 @@ function laneOf(
   const id = nextLaneId(ledger);
   const role = str(args.role);
   // What decides how it opens, kept for when it does: the call that asked for it is long gone by then.
-  const opening =
-    after && (args.isolate === true || role)
-      ? { isolate: args.isolate === true || undefined, role: role || undefined }
-      : undefined;
+  const kept = home === "onBranch" ? undefined : home;
+  const opening = after && (kept || role) ? { home: kept, role: role || undefined } : undefined;
   return {
     id,
     title,
