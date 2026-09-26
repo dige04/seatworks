@@ -50,6 +50,11 @@ test("a task beside others hands back what its lane would become: the lane broug
   assert.match(heard(h, lead), new RegExp(`HANDBACK L1-T2 \\(Side\\) from ${side!.peer}`), "the agent its Lead reads");
   assert.match(handback, new RegExp(`\\nBrought up to date with ${lane.branch} at [0-9a-f]{7}\\.\\n`));
   assert.match(handback, /\nChanged: c\.txt\n/, "only what the task changed, not what came in with the lane");
+  assert.match(
+    handback,
+    /\nAcceptance:\n- a\nChecks: not given\n/,
+    "each acceptance line beside the proof offered for it",
+  );
   assert.doesNotMatch(handback, /Note:/, "shared.txt moved on the lane, not in this task's copy");
   assert.match(handback, /Gate: test -f shared\.txt passed/, "the gate ran on what the lane would become");
   h.git(side!.worktree!, "merge-base", "--is-ancestor", lane.branch, "HEAD");

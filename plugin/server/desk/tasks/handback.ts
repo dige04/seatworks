@@ -14,6 +14,7 @@ import { type Ledger, taskOfPeer } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { workLetters } from "../letters/work-letters.ts";
+import { list } from "../letters/envelope.ts";
 import { type Project, gitTimeout, serialIn } from "../project/project.ts";
 import { reachNotes } from "./reach.ts";
 import type { DeskServices } from "../services.ts";
@@ -129,7 +130,7 @@ async function write(
   args: HandingBack,
   work: Work,
 ): Promise<Written> {
-  const { outcome, body } = task.kind === "review" ? reviewBody(task, args) : taskBody(args, work);
+  const { outcome, body } = task.kind === "review" ? reviewBody(task, args) : taskBody(task, args, work);
   const run =
     task.kind !== "review" && task.worktree
       ? await taskGate(desk, project, task, task.worktree, work.changed)
@@ -144,7 +145,9 @@ async function write(
   return { file, outcome, body: gated, ...(run ? { gate: { ok: run.ok, note: run.note } } : {}) };
 }
 
+/** The task's acceptance lines sit just above the Peer's checks, so its Lead weighs the proof line by line. */
 function taskBody(
+  task: Task,
   args: HandingBack,
   { commit, uncommitted, synced, changed, notes }: Work,
 ): { outcome: string; body: string } {
@@ -156,6 +159,8 @@ function taskBody(
     "",
     args.summary?.trim() || "No summary given.",
     "",
+    "Acceptance:",
+    list(task.acceptance),
     `Checks: ${args.checks?.trim() || "not given"}`,
     `Left undone: ${args.leftUndone?.trim() || "nothing"}`,
     `Discovered: ${args.discovered?.trim() || "nothing"}`,
