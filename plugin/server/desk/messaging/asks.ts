@@ -139,13 +139,12 @@ export async function answerAsk(
 
 /** The seated Lead of a Peer's lane that whoever supervises answered past, when the ask was put to someone other than it. */
 async function leadPassed(
-  roster: Pick<DeskServices["roster"], "seated">,
+  roster: Pick<DeskServices["roster"], "seatedLead">,
   caller: Caller,
   ask: Ask,
   waiting: string | undefined,
 ): Promise<string | undefined> {
   if (!ask.task || !ask.lane || !can(caller.role, "supervise")) return undefined;
-  const lead = loadLedger(caller.project.state).lanes[ask.lane]?.lead;
-  if (!lead || lead === caller.id || lead === waiting) return undefined;
-  return (await roster.seated(lead)) ? lead : undefined;
+  const lead = await roster.seatedLead(loadLedger(caller.project.state).lanes[ask.lane]);
+  return lead === caller.id || lead === waiting ? undefined : lead;
 }

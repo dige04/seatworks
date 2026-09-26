@@ -34,6 +34,7 @@ test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and wha
   const lead = build!.lead!;
   await h.call(lead, "lead", "add_tasks", { tasks: [task("Clean build")] });
   const peer = h.ledger().tasks["L1-T1"]!.peer!;
+  await h.call(lead, "lead", "add_tasks", { tasks: [{ ...task("Docs"), key: "d" }] });
   // A Watcher has no ask: told to use one, it was pointed at a tool it cannot call.
   const watcher = h.add("sw2-watcher-claude/claude-opus-5", h.root, "watcher");
   let turns = 0;
@@ -123,6 +124,9 @@ test("a seat's trouble reaches whoever owns it, named as Paseo shows it, and wha
     heard(h, architecture),
     /HANDBACK L1-T1 \(Clean build\) from [^]*Next: Its Lead is gone: replace_lead puts a new Lead on the lane, this hand-back included/,
   );
+  await h.tick();
+  assert.match(h.ledger().tasks["L1-T2"]!.held?.why ?? "", /L1-T1 has handed back/);
+  assert.deepEqual(h.runtime.outbox.pending(lead), [], "why a task still waits is no letter for a Lead that is gone");
 });
 
 test("with the Human out of the loop, the Supervisor asks them directly, and no other seat stops its turn on a question", async () => {

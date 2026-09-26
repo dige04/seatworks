@@ -48,6 +48,11 @@ export class Roster {
     return { to: await this.supervisorFor(project, lane?.opener), as: "supervisor" };
   }
 
+  /** A lane's Lead while it is seated: what is written for that Lead alone waits for nobody once it is gone. */
+  async seatedLead(lane: Lane | undefined): Promise<string | undefined> {
+    return lane?.lead && (await this.seated(lane.lead)) ? lane.lead : undefined;
+  }
+
   /** Sends past the outbox, cutting a running turn short; a seat that is gone is left so, since a send would start it again. */
   async interrupt(agentId: string, letter: { key: string; text: string }): Promise<boolean> {
     if (!(await this.seated(agentId))) return false;

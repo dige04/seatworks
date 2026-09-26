@@ -31,6 +31,8 @@ export async function noteHeld(
     task ? { kind: "task.held", task: entry.id, reason: why } : { kind: "lane.held", lane: entry.id, reason: why },
   );
   if (!tell) return;
-  const to = task ? ledgers.read(project).lanes[entry.lane]?.lead : await roster.supervisorFor(project, entry.opener);
+  const to = task
+    ? await roster.seatedLead(ledgers.read(project).lanes[entry.lane])
+    : await roster.supervisorFor(project, entry.opener);
   await mail.post(to, workLetters.held(entry, holding.why, holding.next));
 }

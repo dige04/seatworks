@@ -70,7 +70,8 @@ export async function askHuman(desk: DeskServices, caller: Caller, args: AskHuma
   // Held by the desk, not the Supervisor: only the Human's word lifts what waits for it.
   const parked = opened.parked ? await putOnHold(desk, project, opened.lane!, "desk", why) : undefined;
   const lane = opened.lane ? loadLedger(project.state).lanes[opened.lane] : undefined;
-  if (opened.class === "irreversible" && lane) await desk.mail.post(lane.lead, askLetters.pending(opened));
+  if (opened.class === "irreversible")
+    await desk.mail.post(await desk.roster.seatedLead(lane), askLetters.pending(opened));
   const held =
     parked === undefined
       ? ""
@@ -193,8 +194,8 @@ export async function tellKeptOff(
   question: Question,
 ): Promise<string> {
   if (question.class !== "irreversible" || !question.lane) return "";
-  const lead = loadLedger(project.state).lanes[question.lane]?.lead;
-  if (!lead || !(await roster.seated(lead))) return "";
+  const lead = await roster.seatedLead(loadLedger(project.state).lanes[question.lane]);
+  if (!lead) return "";
   await mail.post(lead, askLetters.settled(question));
   return ` The Lead of ${question.lane} hears only that it is settled: tell it how the lane goes on.`;
 }

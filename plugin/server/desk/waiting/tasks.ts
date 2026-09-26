@@ -132,6 +132,9 @@ async function putBackHalfStarted(desk: DeskServices, project: Project): Promise
     if (slot) await slots.release(project, slot, task.branch, into);
     recordEvent(project, { kind: "task.halfStarted", task: task.id, now: task.status });
     if (task.status === "cut")
-      await mail.post(loadLedger(project.state).lanes[task.lane]?.lead, seatLetters.notStarted(task));
+      await mail.post(
+        await roster.seatedLead(loadLedger(project.state).lanes[task.lane]),
+        seatLetters.notStarted(task),
+      );
   }
 }
