@@ -7,7 +7,7 @@ import { projectOf } from "../../server/desk/project/project.ts";
 import { laneWithPeer, repo } from "./harness.ts";
 import { allSignals, book, notice } from "./noticed.ts";
 
-test("what was held because nobody could read it is told once somebody can, and never to the seat it is about", async () => {
+test("what was held because nobody could read it is told once somebody can, and never to the seat it is about", async (t) => {
   const { h, sup, lane, peer } = await laneWithPeer({ attention: { signals: allSignals } });
   const seated = (yes: boolean) => void (h.agents.get(sup)!.archivedAt = yes ? null : new Date().toISOString());
   const told = (id: string) => h.heard(sup).filter((text) => text.includes(`INCIDENT ${id} `));
@@ -83,6 +83,14 @@ test("what was held because nobody could read it is told once somebody can, and 
     /INCIDENT I1 \(destructive, page\)/,
     "the second project's owner is told of its own I1, not dropped as a repeat of the first's",
   );
+
+  t.mock.method(h.runtime.outbox, "post", () => Promise.reject(new Error("the outbox could not be written")), {
+    times: 1,
+  });
+  await notice(h, lane.lead!, "destructive", "page", "rm -rf data");
+  assert.equal(book(h).I6!.held, "nobody", "a letter that never left is not a page told");
+  await h.tick();
+  assert.match(told("I6").join("\n"), /rm -rf data/, "the round tells it again");
 });
 
 test("a lane's own record raises an incident about its Lead once, held while the watch is off, never about a Lead that is gone", async () => {

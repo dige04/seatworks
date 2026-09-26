@@ -152,6 +152,12 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   );
   writeFileSync(join(h.project.state, "incidents.json"), "{ not json");
   await assert.rejects(notice(h, peer, "stuck"), /could not be read: [\s\S]*Nothing was written over it/);
+  await assert.rejects(notice(h, peer, "destructive", "page", "rm -rf /srv/data"));
+  assert.match(
+    h.heard(sup).join("\n"),
+    /rm -rf \/srv\/data[^]*incident book could not be read/,
+    "a page reaches whoever supervises though the book cannot keep it",
+  );
   assert.equal(
     (await h.call(sup, "supervisor", "incidents", {})).ok,
     false,

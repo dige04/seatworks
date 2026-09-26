@@ -71,9 +71,33 @@ export async function notice(
       facts: finding.facts,
     });
   }
-  const { opened, sending } = openIncidents(services, project, seat, place, findings, now);
+  let booked: { opened: Incident[]; sending: Incident[] };
+  try {
+    booked = openIncidents(services, project, seat, place, findings, now);
+  } catch (error) {
+    await pageUnbooked(services, project, seat, place, findings, errorText(error));
+    throw error;
+  }
+  const { opened, sending } = booked;
   const sent = sending.length > 0 ? await deliver(services, project, seat, place, sending, now) : [];
   return { opened, sent, place };
+}
+
+/** A page reaches whoever supervises whatever the book can keep: with none to read, it goes unbooked. */
+async function pageUnbooked(
+  { roster, mail, teamFor }: Pick<DeskServices, "roster" | "mail" | "teamFor">,
+  project: Project,
+  seat: Noticed,
+  place: Placed,
+  findings: Finding[],
+  fault: string,
+): Promise<void> {
+  const pages = findings.filter((finding) => finding.level === "page");
+  if (pages.length === 0) return;
+  const to = await roster.supervisorFor(project, place.lane?.opener).catch(() => undefined);
+  if (!to || to === seat.id) return;
+  const human = teamFor(project).hitl.on;
+  for (const page of pages) await mail.post(to, watchLetters.unbooked(page, place, seat.id, fault, { human }));
 }
 
 /** Opens or sights an incident for each finding not settled as noise, and holds it where attention says so, else tells it. */
@@ -147,26 +171,40 @@ async function deliver(
     recordEvent(project, { kind: "incident.lookup-failed", error: errorText(error) });
   }
   if (!to || to === seat.id) {
-    incidents.transact(project, (book) => {
-      for (const sent of sending) {
-        const incident = book.items[sent.id];
-        if (incident?.told === now) unheard(incident);
-      }
-    });
+    unheardAll(
+      incidents,
+      project,
+      sending.map((sent) => sent.id),
+      now,
+    );
     for (const sent of sending) recordEvent(project, { kind: "incident.held", id: sent.id, held: "nobody" });
     return [];
   }
   const pagesFirst = [...sending].sort((a, b) => Number(a.level !== "page") - Number(b.level !== "page"));
+  const told: string[] = [];
+  const failed: string[] = [];
   for (const incident of pagesFirst) {
     try {
       await mail.post(to, watchLetters.incident(incident, place, { steers, human }));
+      told.push(incident.id);
     } catch (error) {
+      failed.push(incident.id);
       recordEvent(project, { kind: "incident.post-failed", id: incident.id, error: errorText(error) });
     }
   }
-  const ids = pagesFirst.map((incident) => incident.id);
-  recordEvent(project, { kind: "incident.told", ids, to });
-  return ids;
+  // A letter that never left told nobody: the incident waits, as for nobody seated, and a later round tells it.
+  if (failed.length > 0) unheardAll(incidents, project, failed, now);
+  recordEvent(project, { kind: "incident.told", ids: told, to });
+  return told;
+}
+
+function unheardAll(incidents: DeskServices["incidents"], project: Project, ids: string[], now: number): void {
+  incidents.transact(project, (book) => {
+    for (const id of ids) {
+      const incident = book.items[id];
+      if (incident?.told === now) unheard(incident);
+    }
+  });
 }
 
 export async function retell(services: DeskServices, project: Project, now = Date.now()): Promise<string[]> {
