@@ -14,7 +14,6 @@ export class Lifecycle<Status extends string, Move extends string> {
     return this.moves[move].from.includes(status);
   }
 
-  /** Makes `move` when the table lets it leave the status `entry` has now; false leaves `entry` as it was. */
   move(entry: { status: Status }, move: Move): boolean {
     if (!this.may(entry.status, move)) return false;
     entry.status = this.moves[move].to;

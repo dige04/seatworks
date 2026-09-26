@@ -9,7 +9,6 @@ import type { Slots } from "./copies/slots.ts";
 import type { Teardowns } from "./seats/teardown.ts";
 import type { Watcher } from "./watch/watcher.ts";
 
-/** The desk's services; a function takes only those it uses. */
 export type DeskServices = DeskBase & {
   roster: Roster;
   slots: Slots;
@@ -21,7 +20,7 @@ export type DeskServices = DeskBase & {
 };
 
 /**
- * A tool as the desk serves it: `input` is what its handler reads, and it must be the schema the calling seat was shown;
+ * A tool as the desk serves it: `input` is what its handler reads, and must be the schema the calling seat was shown;
  * `speaks` when a call to it says something to another seat, which a call that only reads does not.
  */
 export type ToolDef = {

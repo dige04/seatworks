@@ -2,10 +2,13 @@ import { Lifecycle } from "./lifecycle.ts";
 
 type QuestionStatus = "open" | "answered" | "declined" | "canceled";
 
-/** What goes ahead while the Human is silent: the default at once, the default up to the lane's next checkpoint, or nothing. */
+/** What goes ahead while the Human is silent: the default at once, up to the lane's next checkpoint, or nothing. */
 export type QuestionClass = "reversible" | "costly" | "irreversible";
 
-/** A decision only the Human can make, as the Supervisor put it to them: a no and a not now are kept apart from an answer. */
+/**
+ * A decision only the Human can make, as the Supervisor put it: a no and a not now are kept apart from an answer, and
+ * one the Supervisor withdrew keeps why in its answer's `text`, which the Human reads on the Report.
+ */
 export type Question = {
   id: string;
   from: string;
@@ -19,9 +22,7 @@ export type Question = {
   class: QuestionClass;
   status: QuestionStatus;
   openedAt: number;
-  /** Its lane was put on hold for it, and stays so until whoever supervises resumes it. */
   parked?: boolean;
-  /** `by` supervisor: withdrawn by it, with why in `text`, which the Human reads on the Report. */
   answer?: { choice: string; text?: string; by: "panel" | "chat" | "desk" | "supervisor"; quote?: string; at: number };
 };
 

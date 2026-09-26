@@ -12,7 +12,6 @@ import type { LedgerStore } from "./store/ledger-store.ts";
 /** How the desk mails a seat; "nobody" when there is nobody to read it. */
 type Mail = { post(to: string | undefined, letter: Letter): Promise<Posted | "nobody"> };
 
-/** What every part of the desk is built from: the kit, the stores, the mail, what the host provides and the work in hand. */
 export type DeskBase = {
   kit: Kit;
   projects: Map<string, Project>;

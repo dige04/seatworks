@@ -21,7 +21,7 @@ export const strs = (value: unknown): string[] =>
     : typeof value === "string" && value.trim()
       ? [value.trim()]
       : [];
-/** Only the fields the call names, read as text or as a list: an amendment changes what it is given and nothing else. */
+/** Only the fields the call names, as text or a list: an amendment changes what it is given and nothing else. */
 export const given = (args: Args, texts: string[], lists: string[]): Record<string, string | string[]> => {
   const fields: [string, string | string[]][] = [
     ...texts.map((key): [string, string] => [key, str(args[key])]),

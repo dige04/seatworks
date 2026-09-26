@@ -1,13 +1,11 @@
 import type { Project } from "./project/project.ts";
 
-/** The key a lane or task is claimed under in its project. */
 export const workKey = (project: Project, id: string): string => `${project.slug}:${id}`;
 
-/** Work a call in this process has in hand, such as a lane being closed; a restart loses it, and the patrol repairs what it left. */
+/** Work a call in this process has in hand, such as a lane closing; a restart loses it, and the patrol repairs it. */
 export class Claims {
   private readonly held = new Set<string>();
 
-  /** Takes `key` for the caller; false when another call holds it. */
   take(key: string): boolean {
     if (this.held.has(key)) return false;
     this.held.add(key);

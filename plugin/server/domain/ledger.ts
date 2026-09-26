@@ -6,7 +6,6 @@ import { ACTIVE, SETTLED, type Task } from "./task.ts";
 /** A teardown waiting on the seats still writing in the copy. On the record, so a restart does not lose it. */
 type Releasing = { writers: string[]; dropBranch?: string; into?: string };
 
-/** A working copy the desk made, and the lane or task it is for. */
 export type Slot = {
   id: string;
   path: string;
@@ -17,7 +16,6 @@ export type Slot = {
   releasing?: Releasing;
 };
 
-/** A seat's binding: its role, the lane or task it works on, and when it was last heard from. */
 export type AgentRef = {
   id: string;
   role: string;
@@ -28,7 +26,6 @@ export type AgentRef = {
   spokeAt?: number;
 };
 
-/** A project's whole record of work: every lane, task, ask, question, seat binding and copy, and the id sequences. */
 export type Ledger = {
   seq: { lane: number; ask: number; slot?: number; question?: number };
   lanes: Record<string, Lane>;
@@ -89,7 +86,7 @@ export function laneOfLead(ledger: Ledger, agentId: string): Lane | undefined {
   return Object.values(ledger.lanes).find((lane) => lane.lead === agentId && lane.status === "open");
 }
 
-/** The lane a seat leads by its binding, closed ones included: a Lead kept after its lane closed still answers for it. */
+/** The lane a seat leads by its binding, closed ones included: a Lead kept after its lane closed answers for it. */
 export function leadLaneOf(ledger: Ledger, agentId: string): Lane | undefined {
   const lane = ledger.lanes[ledger.agents[agentId]?.lane ?? ""];
   return lane?.lead === agentId ? lane : undefined;
@@ -117,7 +114,7 @@ export function openAsksFrom(ledger: Ledger, agentId: string): Ask[] {
   return Object.values(ledger.asks).filter((ask) => ask.status === "open" && ask.from === agentId);
 }
 
-/** The lane in the project's own copy: an open one without a copy of its own, or a closed one whose Lead is still ending a turn there. */
+/** The lane in the project's own copy: open with no copy of its own, or closed while its Lead ends a turn there. */
 export function ownCopyHolder(lanes: Lane[]): Lane | undefined {
   return lanes.find((lane) => lane.status === "open" && !lane.slot) ?? lanes.find((lane) => lane.restoring);
 }
@@ -126,7 +123,6 @@ export function tasksOf(ledger: Ledger, laneId: string): Task[] {
   return Object.values(ledger.tasks).filter((task) => task.lane === laneId);
 }
 
-/** The tasks of `task`'s lane other than it still to be merged or cut. */
 export function othersLeft(ledger: Ledger, task: Task): Task[] {
   return tasksOf(ledger, task.lane).filter((entry) => entry.id !== task.id && !SETTLED.includes(entry.status));
 }
@@ -146,7 +142,7 @@ function waitsOn(ledger: Ledger, task: Task, on: string, seen = new Set<string>(
   });
 }
 
-/** The lane's code tasks written beside `task`, or about to be: for one in the lane's copy, only those in copies of their own. */
+/** The lane's code tasks written beside `task`, or soon to be: for a task in the lane's copy, those in their own. */
 export function besideOf(ledger: Ledger, task: Task): Task[] {
   return Object.values(ledger.tasks).filter(
     (other) =>

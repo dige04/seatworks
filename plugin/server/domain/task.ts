@@ -10,14 +10,12 @@ const MOVES = {
   start: { from: ["waiting"], to: "running" },
   wait: { from: ["running"], to: "waiting" },
   handBack: { from: IN_HAND, to: "done" },
-  // An accepted task goes back to the Peer kept on it: it is that Peer's ticket until its Lead releases it.
   rework: { from: [...IN_HAND, "merged"], to: "rework" },
   queue: { from: IN_HAND, to: "queued" },
   merge: { from: ["queued"], to: "merging" },
   requeue: { from: ["merging"], to: "queued" },
   merged: { from: ["merging"], to: "merged" },
-  // Stopped on conflicts left in its copy, or red with its lane brought in: the lane branch stays as it was, and the task is
-  // its Lead's again, to send back, accept over the gate, or cut.
+  // Stopped on conflicts or red with its lane brought in: the lane branch is unchanged, and the task its Lead's again.
   stop: { from: ["merging"], to: "done" },
   fail: { from: ["queued", "merging"], to: "failed" },
   stall: { from: ["running", "rework"], to: "stalled" },
@@ -57,14 +55,12 @@ type Handback = {
   gate?: { ok: boolean; note: string; sha?: string; over?: string };
 };
 
-/** A task on the record: its brief, where its Peer works, and how far it has got. */
 export type Task = {
   id: string;
   lane: string;
   kind: "code" | "review";
   mode: "lane" | "parallel";
   of?: string;
-  /** A review's questions from the risk rules its change reaches: its verdict answers each, in order. */
   asked?: string[];
   title: string;
   goal: string;

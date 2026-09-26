@@ -56,7 +56,7 @@ type DeskOptions = {
   sensor?: (spec: SensorSpec, key: string) => Judge;
 };
 
-/** The desk: it builds the services every tool and flow shares, and is what the runtime, its hooks and the panel call. */
+/** The desk: it builds the services every tool and flow shares, and is what the runtime, hooks and panel call. */
 export class Desk {
   readonly projects: Map<string, Project>;
   readonly human: Human;
@@ -116,13 +116,12 @@ export class Desk {
     return notice(this.services, project, seat, findings);
   }
 
-  /** A moment of a seat's turn asked about as review's evidence, in shadow: what the code saw, and the instruction behind it. */
+  /** A moment of a seat's turn asked about as review's evidence: what the code saw, and the instruction behind it. */
   evidence(project: Project, seat: Noticed, moment: Moment): void {
     for (const found of momentCases(this.services.kit, placeOf(project, seat), moment))
       void judge(this.services, project, found);
   }
 
-  /** What one look of the watch's eye read of a seat, for its brains. */
   async look(project: Project, seat: Noticed, look: Look): Promise<void> {
     try {
       await readLook(this.services, project, seat, look);
@@ -135,7 +134,6 @@ export class Desk {
     return retell(this.services, project);
   }
 
-  /** Paseo archived a seat: its binding is let go, and a watched seat's incidents close with it. */
   archived(project: Project, seat: string, watched: boolean): void {
     markGone(this.services, project, seat);
     if (watched) closeIncidentsOf(this.services, project, seat);
@@ -161,7 +159,6 @@ export class Desk {
     return this.services.roster.archiving(agentId);
   }
 
-  /** A seat's turn ended: finish the teardown its own writing was holding up. */
   stopped(agentId: string): Promise<void> {
     return turnsEnded(this.services, (id) => id === agentId);
   }
@@ -179,12 +176,10 @@ export class Desk {
     }
   }
 
-  /** The first round after a start: what the merge queue held when the plugin stopped goes through. */
   resumeMerges(project: Project): Promise<void> {
     return this.services.merges.resume(project);
   }
 
-  /** In the round: finish a teardown whose writers are not seats any more, and put away a copy kept for a Lead that is gone. */
   reapSlots(project: Project, live: Set<string>): Promise<void> {
     return reapKept(this.services, project, live);
   }
@@ -202,7 +197,7 @@ export class Desk {
     return this.services.ledgers.moveTask(project, taskId, move, change);
   }
 
-  /** The patrol's net under a close or an acceptance that never got to start what waited on it; one whose start failed waits for the next. */
+  /** The patrol's net under a close or accept that never started what waited on it; a failed start waits for more. */
   async openWaiting(project: Project): Promise<void> {
     await openWaiting(this.services, project, false);
     await startWaiting(this.services, project, false);
