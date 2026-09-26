@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { setTimeout as sleep } from "node:timers/promises";
 import { spawnSync } from "node:child_process";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { harness } from "./harness.ts";
@@ -239,4 +239,34 @@ test("a landing tells each lane still open on its base what now conflicts with i
     "a lane the landing does not touch hears nothing",
   );
   assert.equal(h.git(second!.worktree!, "status", "--porcelain"), "", "and no copy was touched");
+});
+
+test("a base that git says conflicts with a lane without naming a file is a conflict too, told as git words it", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  await h.call(sup, "supervisor", "set_project", { gate: "true" });
+  mkdirSync(join(h.root, "d"));
+  writeFileSync(join(h.root, "d", "a.txt"), "a\n");
+  h.commit(h.root, "d/b.txt", "b\n");
+  const open = (title: string) =>
+    h.call(sup, "supervisor", "open_lane", { title, outcome: "x", ...scope, writeSet: ["**"], isolate: true });
+  await open("Adds");
+  await open("Splits");
+  const [adds, splits] = ["L1", "L2"].map((id) => h.ledger().lanes[id]!);
+  h.commit(adds!.worktree!, "d/c.txt", "c\n");
+  const copy = splits!.worktree!;
+  mkdirSync(join(copy, "x"));
+  mkdirSync(join(copy, "y"));
+  h.git(copy, "mv", "d/a.txt", "x/a.txt");
+  h.git(copy, "mv", "d/b.txt", "y/b.txt");
+  h.git(copy, "commit", "-qm", "split d in two");
+  await h.call(adds!.lead!, "lead", "report", { summary: "done", ready: true });
+  h.agents.get(adds!.lead!)!.status = "idle";
+  const landed = await h.call(sup, "supervisor", "land_lane", { lane: "L1" });
+  assert.equal(landed.ok, true, landed.text);
+  assert.match(landed.text, /main now conflicts with lanes still open: L2 \(CONFLICT \(directory rename split\)/);
+  assert.match(
+    h.heard(splits!.lead!).join("\n"),
+    /BASE MOVED L2 \(Splits\): L1 \(Adds\) landed on main, which now conflicts with lane\/l2-splits in CONFLICT \(directory rename split\): Unclear where to rename d to/,
+  );
 });

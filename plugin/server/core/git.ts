@@ -185,16 +185,20 @@ export async function mergeBranch(
 
 /**
  * The files merging `onto` into `branch` would stop on, read without touching any working copy: none when it merges
- * clean, nothing when git cannot say.
+ * clean, nothing when git cannot say. A conflict git names no file for, such as a directory renamed two ways, is given
+ * in git's own words.
  */
 export async function conflictsWith(cwd: string, branch: string, onto: string): Promise<string[] | undefined> {
-  const run = await git(cwd, ["merge-tree", "--write-tree", "--name-only", "--no-messages", branch, onto]);
+  const run = await git(cwd, ["merge-tree", "--write-tree", "--name-only", branch, onto]);
   if (run.code === 0) return [];
   if (run.code !== 1) return undefined;
-  // The tree comes first, then each conflicted file up to a blank line.
+  // The tree comes first, then each conflicted file up to a blank line, then git's messages.
   const lines = run.stdout.split("\n").slice(1);
   const end = lines.findIndex((line) => !line.trim());
-  return [...new Set((end < 0 ? lines : lines.slice(0, end)).map((line) => line.trim()))];
+  const files = [...new Set((end < 0 ? lines : lines.slice(0, end)).map((line) => line.trim()))];
+  if (files.length > 0) return files;
+  const said = lines.slice(end + 1).filter((line) => line.startsWith("CONFLICT"));
+  return said.length > 0 ? said : ["a conflict git does not name a file for"];
 }
 
 export async function mergeUnderWay(cwd: string): Promise<boolean> {
