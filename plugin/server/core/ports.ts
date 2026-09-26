@@ -218,3 +218,17 @@ export type Judgement = {
 };
 
 export type Judge = { ask(state: Record<string, unknown>, questions: Record<string, Question>): Promise<Judgement> };
+
+/** A project's code index as a seat's IDE tools reach it: opened for a copy, kept in step, closed with it. */
+export type CodeIndex = {
+  id: string;
+  gitExclude: string[];
+  open(path: string): Promise<{ ok: boolean; text: string }>;
+  sync(path: string): Promise<{ ok: boolean; text: string }>;
+  close(path: string): Promise<{ ok: boolean; text: string }>;
+};
+
+/** "duplicate": dropped as a repeat of a letter already sent. */
+export type Posted = "sent" | "held" | "duplicate";
+
+export type Mailer = { post(letter: { to: string; key: string; text: string; wakes?: false }): Promise<Posted> };

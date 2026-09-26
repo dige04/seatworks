@@ -4,7 +4,16 @@ import { KeyedQueue } from "../core/keyed-queue.ts";
 import { recordSpend } from "./seats/spend.ts";
 import { Limiter } from "../core/limiter.ts";
 import { daemonLog } from "../core/logger.ts";
-import { type Judge, type SeatView, type Seats, type Workspaces, midTurn } from "../core/ports.ts";
+import {
+  type CodeIndex,
+  type Judge,
+  type Mailer,
+  type Posted,
+  type SeatView,
+  type Seats,
+  type Workspaces,
+  midTurn,
+} from "../core/ports.ts";
 import { join } from "node:path";
 import { stateRoot } from "../core/paths.ts";
 import { type Fact, type Finding, findingsOf } from "../domain/incident.ts";
@@ -12,7 +21,7 @@ import type { TaskMove, TaskStatus } from "../domain/task.ts";
 import type { DeskBase } from "./base.ts";
 import { ToolCalls } from "./calls/tool-calls.ts";
 import { Claims } from "./claims.ts";
-import type { CodeIndex, Mailer, Posted, ToolReply, ToolRequest } from "./context.ts";
+import type { ToolReply, ToolRequest } from "./context.ts";
 import { OwnCopy } from "./copies/own-copy.ts";
 import { Slots } from "./copies/slots.ts";
 import { Human } from "./human/human.ts";

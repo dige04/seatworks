@@ -1,11 +1,10 @@
 import { KeyedQueue } from "../../core/keyed-queue.ts";
-import { type SeatLook, type Seats, midTurn } from "../../core/ports.ts";
+import { type Posted, type SeatLook, type Seats, midTurn } from "../../core/ports.ts";
 import { isRecord } from "../../core/json.ts";
 import { daemonLog } from "../../core/logger.ts";
 import { keptFault, readKept, writeJson } from "../../core/store.ts";
 
 export type Letter = { id: string; to: string; key: string; text: string; at: number; wakes?: false };
-type Posted = "sent" | "held" | "duplicate";
 
 const isLetter = (value: unknown): value is Letter =>
   isRecord(value) && typeof value.to === "string" && typeof value.at === "number";

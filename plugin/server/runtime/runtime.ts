@@ -9,6 +9,7 @@ import { daemonLog } from "../core/logger.ts";
 import { deskSocket, home, nodeBin, stateRoot } from "../core/paths.ts";
 import type {
   AgentConfig,
+  CodeIndex,
   HookAgent,
   Host,
   HostHooks,
@@ -18,7 +19,6 @@ import type {
   TurnEnded,
   Workspaces,
 } from "../core/ports.ts";
-import type { CodeIndex } from "../desk/context.ts";
 import { Desk } from "../desk/desk.ts";
 import { type Project, projectOf } from "../desk/project/project.ts";
 import { appendRecord } from "../desk/store/records.ts";
