@@ -54,6 +54,11 @@ test("a task that goes red with its lane brought in stays out until its Lead acc
 
   assert.equal((await accept(h, lead, "L1-T3")).ok, true);
   assert.equal(h.ledger().tasks["L1-T3"]!.status, "done", "back with its Lead, not merged");
+  assert.deepEqual(
+    h.events("merge.red").map((event) => event.task),
+    ["L1-T3"],
+    "the record says the gate stopped it",
+  );
   assert.throws(() => h.git(lane.worktree!, "show", `${lane.branch}:y.txt`), "the lane branch never took the red tree");
   assert.equal(h.git(why.worktree!, "show", "HEAD:x.txt"), "x.txt\n", "its copy holds the tree the lane would become");
   assert.match(

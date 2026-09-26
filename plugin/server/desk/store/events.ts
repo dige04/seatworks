@@ -52,7 +52,7 @@ export type DeskEvent =
   | { kind: "task.cut"; task: string; reason: string; kept: string | undefined }
   | { kind: "task.silent"; task: string; denied: string | null; refused: boolean }
   | { kind: "turn.silent"; task: string; denied: string | null; refused: boolean; lastCall: string }
-  | { kind: `merge.${TaskStatus}`; task: string }
+  | { kind: "merge.merged" | "merge.conflict" | "merge.red" | "merge.failed"; task: string }
   | { kind: "review.started"; task: string; of: string | null; reviewer: string }
   | { kind: "ask.opened"; ask: string; from: string; to: string }
   | { kind: "ask.answered"; ask: string; by: string; told: string | null }

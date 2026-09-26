@@ -117,6 +117,11 @@ test("the merge queue hands a conflict to its Peer, merges nothing as nothing, w
   assert.doesNotMatch(h.heard(first.peer!).join("\n"), /MERGE CONFLICT|REWORK/);
   assert.equal(h.git(copy, "show", "HEAD:b.txt"), "lane side\n");
   assert.ok(underWay(h, first.worktree!));
+  assert.deepEqual(
+    h.events("merge.conflict").map((event) => event.task),
+    ["L1-T1"],
+    "the record says a conflict stopped it",
+  );
   await h.idle(lead);
   assert.match(
     h.agents.get(lead)!.sent.join("\n"),

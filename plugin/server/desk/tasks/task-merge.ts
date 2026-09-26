@@ -6,7 +6,7 @@ import { TASK } from "../../domain/task.ts";
 import type { DeskBase } from "../base.ts";
 import { gateNote, taskGate } from "../project/gates.ts";
 import type { Lane } from "../../domain/lane.ts";
-import type { Task } from "../../domain/task.ts";
+import type { Task, TaskMove } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { othersLeft } from "../../domain/ledger.ts";
 import type { Letter } from "../letters/envelope.ts";
@@ -16,7 +16,13 @@ import { reachNotes } from "./reach.ts";
 import { recordEvent } from "../store/event-log.ts";
 import { backOnLane, bringLaneIn, mergeSubject } from "../copies/sync.ts";
 
-type Outcome = "merged" | "stop" | "fail";
+/** How a merge ended, as the record keeps it: conflicts and red both give the task back to its Lead. */
+type Outcome = "merged" | "conflict" | "red" | "failed";
+
+const MOVE_OF = { merged: "merged", conflict: "stop", red: "stop", failed: "fail" } as const satisfies Record<
+  Outcome,
+  TaskMove
+>;
 
 type Verdict = { ok: boolean; note: string; over?: string; run?: { tail: string; logFile: string } };
 
@@ -101,7 +107,7 @@ export class TaskMerge {
     const synced = await bringLaneIn(task, lane, gitTimeout(project));
     if ("conflicts" in synced) {
       const letter = mergeLetters.conflict(task, synced.conflicts, lane.branch, "left", synced.by);
-      await this.finish(project, task, lane, "stop", letter);
+      await this.finish(project, task, lane, "conflict", letter);
       return undefined;
     }
     if ("not" in synced) {
@@ -110,7 +116,7 @@ export class TaskMerge {
     }
     const verdict = await this.verdict(project, task, lane);
     if (verdict?.ok === false && verdict.over === undefined) {
-      await this.finish(project, task, lane, "stop", mergeLetters.red(task, lane.branch, verdict.note, verdict.run));
+      await this.finish(project, task, lane, "red", mergeLetters.red(task, lane.branch, verdict.note, verdict.run));
       return undefined;
     }
     if (verdict?.over !== undefined) {
@@ -183,14 +189,14 @@ export class TaskMerge {
   }
 
   fail(project: Project, task: Task, lane: Lane, reason: string): Promise<void> {
-    return this.finish(project, task, lane, "fail", mergeLetters.mergeFailed(task, reason, ""));
+    return this.finish(project, task, lane, "failed", mergeLetters.mergeFailed(task, reason, ""));
   }
 
-  private async finish(project: Project, task: Task, lane: Lane, move: Outcome, letter: Letter): Promise<void> {
-    const moved = this.desk.ledgers.moveTask(project, task.id, move, (entry) => delete entry.held);
+  private async finish(project: Project, task: Task, lane: Lane, outcome: Outcome, letter: Letter): Promise<void> {
+    const moved = this.desk.ledgers.moveTask(project, task.id, MOVE_OF[outcome], (entry) => delete entry.held);
     if (typeof moved !== "object") return;
     await this.desk.mail.post(lane.lead, letter);
-    recordEvent(project, { kind: `merge.${moved.status}`, task: task.id });
+    recordEvent(project, { kind: `merge.${outcome}`, task: task.id });
     if (moved.status === "merged") await this.merged(project);
   }
 }
