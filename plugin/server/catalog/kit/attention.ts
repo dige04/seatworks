@@ -16,6 +16,7 @@ export const ATTENTION: Omit<Attention, "destructive" | "testPath" | "suppressed
   probationMarks: 10,
   probationUseful: 0.5,
   incidentsKept: 500,
+  watcherAnswerMinutes: 15,
   brain: "off",
   sensor: "",
 };

@@ -11,10 +11,9 @@ import type { Letter } from "../letters/envelope.ts";
 import { type Project, projectOf } from "../project/project.ts";
 import type { Roster } from "../seats/roster.ts";
 
-const ANSWER_WITHIN_MINUTES = 15;
-
 type Waiting = {
   project: string;
+  within: number;
   model: string;
   questions: Record<string, Question>;
   sent?: { seat: string; at: number };
@@ -70,8 +69,9 @@ export class Watcher {
     questions: Record<string, Question>,
   ): Promise<Judgement> {
     const id = `C${this.stamp}${++this.count}`;
+    const within = this.desk.teamFor(project).attention.watcherAnswerMinutes;
     const answer = new Promise<Judgement>((answered, failed) =>
-      this.waiting.set(id, { project: project.slug, model: role, questions, answered, failed }),
+      this.waiting.set(id, { project: project.slug, within, model: role, questions, answered, failed }),
     );
     try {
       const seat = await this.deliver(project, role, caseLetters.case(id, subject, state, questions));
@@ -115,7 +115,7 @@ export class Watcher {
   answer(caller: string, id: string, said: Said[]): string | undefined {
     const entry = this.waiting.get(id);
     if (!entry)
-      return `${id} is not waiting for an answer: it was answered, it waited past ${ANSWER_WITHIN_MINUTES} minutes, or the desk started again since it was sent.`;
+      return `${id} is not waiting for an answer: it was answered, it waited past the time it had, or the desk started again since it was sent.`;
     if (entry.sent && entry.sent.seat !== caller) return `${id} was sent to another Watcher.`;
     const asked = (name: string) => (Object.hasOwn(entry.questions, name) ? entry.questions[name] : undefined);
     const words = said.map((one) => ({
@@ -152,11 +152,9 @@ export class Watcher {
       if (entry.project !== project.slug || !entry.sent) continue;
       // Only a listing read after the case was sent can say its Watcher is gone.
       const gone = entry.sent.at < now && !open.has(entry.sent.seat);
-      if (!gone && now - entry.sent.at < ANSWER_WITHIN_MINUTES * 60_000) continue;
+      if (!gone && now - entry.sent.at < entry.within * 60_000) continue;
       this.waiting.delete(id);
-      entry.failed(
-        new Error(gone ? "the Watcher it was sent to is gone" : `no answer within ${ANSWER_WITHIN_MINUTES} minutes`),
-      );
+      entry.failed(new Error(gone ? "the Watcher it was sent to is gone" : `no answer within ${entry.within} minutes`));
     }
     const judged = this.desk.teamFor(project).brains.seat !== undefined;
     if (judged && Object.values(loadLedger(project.state).lanes).some((lane) => lane.status === "open")) return;

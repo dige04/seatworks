@@ -134,14 +134,15 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
     "unsure is the middle",
   );
 
+  h.projectSettings({ attention: { watcherAnswerMinutes: 5 } });
   thinks("Rounded, third time.");
   await until(() => /third time/.test(mailed()), "the third case is sent");
-  await h.tick(Date.now() + 16 * 60_000);
+  await h.tick(Date.now() + 6 * 60_000);
   await settle();
   assert.equal(
     kept(h.project.state).at(-1)!.unasked,
-    "no answer within 15 minutes",
-    "a case left unanswered is given up",
+    "no answer within 5 minutes",
+    "a case left unanswered past the owner's time is given up",
   );
   assert.equal(watcher!.archivedAt, null, "while a lane is open and the watch is judged by it, the Watcher stays");
 
