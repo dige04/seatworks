@@ -1,4 +1,4 @@
-import { can, seatOf } from "../../catalog/kit/roles.ts";
+import { can, roleNamed, seatOf } from "../../catalog/kit/roles.ts";
 import { type Quirks, exitOf, pseudo } from "../../catalog/kit/timeline.ts";
 import { errorText } from "../../core/errors.ts";
 import type { StreamRow } from "../../core/ports.ts";
@@ -16,13 +16,15 @@ const STEPS = 40;
 type Whose = { seat: string; name: string; lane: Lane; task?: Task };
 
 /** Whose record `of` names, if the caller may read it: a lane's Lead for whoever supervises or judges, a task's worker for its lane's Lead too. */
-function whose(ledger: Ledger, caller: Caller, of: string): Whose | string {
+function whose(ledger: Ledger, caller: Caller, of: string, labelOf: (seat: string) => string): Whose | string {
   const id = of.trim().toUpperCase();
   const supervises = can(caller.role, "supervise") || can(caller.role, "judge");
   const lane = ledger.lanes[id];
   if (lane) {
     if (!supervises) return `${lane.id} is a lane; name a task of yours.`;
-    return lane.lead ? { seat: lane.lead, name: `Lane ${lane.id}'s Lead`, lane } : `Lane ${lane.id} has had no Lead.`;
+    return lane.lead
+      ? { seat: lane.lead, name: `Lane ${lane.id}'s ${labelOf(lane.lead)}`, lane }
+      : `Lane ${lane.id} has had no Lead.`;
   }
   const task = ledger.tasks[id];
   if (!task || !(supervises || laneOfLead(ledger, caller.id)?.id === task.lane)) {
@@ -31,7 +33,7 @@ function whose(ledger: Ledger, caller: Caller, of: string): Whose | string {
   if (!task.peer) return `Nobody has worked ${task.id} yet: it is ${task.status}.`;
   return {
     seat: task.peer,
-    name: `${task.id} ${task.title}'s ${task.kind === "review" ? "reviewer" : "Peer"}`,
+    name: `${task.id} ${task.title}'s ${labelOf(task.peer)}`,
     lane: ledger.lanes[task.lane]!,
     task,
   };
@@ -131,7 +133,9 @@ export async function readRecord(
   caller: Caller,
   asked: { of: string; limit?: number },
 ): Promise<ToolReply> {
-  const found = whose(loadLedger(caller.project.state), caller, asked.of);
+  const ledger = loadLedger(caller.project.state);
+  const labelOf = (seat: string) => roleNamed(desk.kit, ledger.agents[seat]?.role)?.label ?? "seat";
+  const found = whose(ledger, caller, asked.of, labelOf);
   if (typeof found === "string") return no(found);
   const limit = asked.limit ?? STEPS;
   // Twice as many entries as steps: some are not the seat's doing, and a page of history cannot be counted in steps.

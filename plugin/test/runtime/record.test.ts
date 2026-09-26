@@ -65,6 +65,12 @@ test("a Lead reads its lane and its Peers' records and keeps its own pages, and 
     /^L1-T1 Clean build's Peer has done nothing yet\.$/,
     "and any task",
   );
+  assert.equal((await h.call(lead, "lead", "start_review", { focus: "Does the lane meet it?" })).ok, true);
+  assert.match(
+    await say(sup, "supervisor", "record", { of: "L1-R1" }),
+    /^L1-R1 [^\n]*'s Reviewer has done nothing yet\.$/,
+    "its seat named as the kit labels its role",
+  );
   assert.match(await say(sup, "supervisor", "record", { of: "L9" }), /There is no lane or task L9 in this project\./);
   assert.match(await say(other, "lead", "record", { of: "L1-T1" }), /L1-T1 is not a task in your lane\./);
   assert.match(await say(lead, "lead", "record", { of: "L1" }), /L1 is a lane; name a task of yours\./);
