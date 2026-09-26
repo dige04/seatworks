@@ -8,7 +8,7 @@ import { workKey } from "../claims.ts";
 import { besideNote, directiveFor } from "../letters/directive.ts";
 import { workLetters } from "../letters/work-letters.ts";
 import type { Beside } from "./placement.ts";
-import type { Issue } from "../../core/github.ts";
+import type { Issue } from "../../core/issues.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { seatTitle } from "../seats/names.ts";
 import { type Project, loadConfig } from "../project/project.ts";
@@ -47,7 +47,7 @@ export function openedReply(
       ? "none set, by this project's own choice"
       : "none; call set_project with the project's test command";
   const issueText = issue
-    ? `\n\nIssue #${issue.number} as the Lead received it: ${outside("issue", issue.title, 200)} (${outside("issue", issue.url, 300)})\n<issue>\n${outside("issue", issue.body, 4000)}\n</issue>`
+    ? `\n\nThe issue as the Lead received it: ${outside("issue", issue.title, 200)} (${outside("issue", issue.url, 300)})\n<issue>\n${outside("issue", issue.body, 4000)}\n</issue>`
     : "";
   const where = slot.id ? `in working copy ${slot.id}` : "in the project's own working copy";
   const onBase =

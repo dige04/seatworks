@@ -46,7 +46,7 @@
           },
           "issue": {
             "type": "string",
-            "description": "Optional GitHub issue: #12, owner/repo#12 or a URL."
+            "description": "Optional issue the lane comes from, as the tracker names it: #12, owner/repo#12, a URL."
           },
           "isolate": {
             "type": "boolean",

@@ -4,7 +4,7 @@ import { keptFault } from "../../core/store.ts";
 import { clip, slugify } from "../../core/text.ts";
 import { workKey } from "../claims.ts";
 import { type Caller, type ToolReply, no, ok, str, strs } from "../context.ts";
-import { type Issue, fetchIssue } from "../../core/github.ts";
+import { type Issue, fetchIssue } from "../../core/issues.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, nextLaneId, ownCopyHolder } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
@@ -132,7 +132,7 @@ function seedConfig(kit: Kit, project: Project, config: ProjectConfig, plan: Pla
 
 async function waitToOpen(desk: DeskServices, caller: Caller, plan: Plan): Promise<ToolReply> {
   const { project } = caller;
-  const { issue } = await readIssue(plan.args, project);
+  const { issue } = await readIssue(desk.kit, plan.args, project);
   const lane = desk.ledgers.transact(project, (ledger) => {
     const entry = laneOf(ledger, caller, plan.args, plan.place, issue, plan.after);
     ledger.lanes[entry.id] = entry;
@@ -152,7 +152,7 @@ async function openNow(desk: DeskServices, caller: Caller, plan: Plan): Promise<
   const asked = { onBranch: place.onBranch, detourOf: detourOf(args) };
   const early = placement(loadLedger(project.state), asked, args.isolate === true);
   if ("why" in early) return no(`${early.why} ${early.next}`.trim());
-  const { issue, unread } = await readIssue(args, project);
+  const { issue, unread } = await readIssue(desk.kit, args, project);
   const placed = recordOpen(desk, caller, plan, issue);
   if ("why" in placed) return no(`${placed.why} ${placed.next}`.trim());
   const { lane } = placed;
@@ -168,7 +168,7 @@ async function openNow(desk: DeskServices, caller: Caller, plan: Plan): Promise<
   const started = await startLead(desk, project, lane, how);
   if (typeof started === "string") return no(started);
   const note = unread
-    ? `\n\nThe issue was not read into the lane: ${clip(unread, 300)}. The Lead has the outcome and the checks; give it the issue yourself if it needs one.`
+    ? `\n\nThe issue was not read into the lane: ${clip(unread, 300)}. The Lead has it as given, with the outcome and the checks; give it the issue yourself if it cannot read it.`
     : "";
   return ok(`${openedReply(project, lane, started.slot, started.lead, issue, started.beside)}${note}`);
 }
@@ -217,7 +217,8 @@ function laneOf(
     appetite: str(args.appetite) || undefined,
     deadline: str(args.deadline) || undefined,
     outOfScope: strs(args.outOfScope),
-    issue: issue?.url,
+    // Kept as given when it could not be read, so the Lead can still reach it itself.
+    issue: issue?.url || str(args.issue) || undefined,
     base: place.base,
     branch: place.branch ?? `lane/${id.toLowerCase()}-${slugify(title, 24)}`,
     detourOf: detourOf(args),
@@ -234,9 +235,9 @@ function laneOf(
 }
 
 /** An unreadable issue ref is a note on the lane, never a reason to refuse opening it. */
-async function readIssue(args: OpenLaneCall, project: Project): Promise<{ issue?: Issue; unread?: string }> {
+async function readIssue(kit: Kit, args: OpenLaneCall, project: Project): Promise<{ issue?: Issue; unread?: string }> {
   const ref = str(args.issue);
   if (!ref) return {};
-  const fetched = await fetchIssue(ref, project.root);
+  const fetched = await fetchIssue(kit.ecosystem.issues, ref, project.root);
   return "error" in fetched ? { unread: `${ref} could not be read: ${fetched.error}` } : { issue: fetched };
 }

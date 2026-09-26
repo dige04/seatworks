@@ -87,7 +87,8 @@ You need:
 - Node.js 24 or newer; there is no build step
 - `git` and `jq`
 - the CLI of each agent you use, signed in
-- optionally `gh`, to open a lane from an issue, and `uv`, for code search
+- optionally `gh` (or the tracker `catalog/ecosystem.json` names under `issues`), to open a lane
+  from an issue, and `uv`, for code search
 
 ```bash
 cd plugin

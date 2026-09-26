@@ -1,7 +1,7 @@
 import { branchExists, currentBranch } from "../../core/git.ts";
 import { LANE } from "../../domain/lane.ts";
 import { workKey } from "../claims.ts";
-import { fetchIssue } from "../../core/github.ts";
+import { issueOf } from "../../core/issues.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
@@ -56,8 +56,7 @@ async function tryOpen(desk: DeskServices, project: Project, lane: Lane): Promis
     return { why, next: "It opens by itself once that clears; amend it, or close it to drop it." };
   }
   const { claimed, ownCopy } = placed;
-  const fetched = claimed.issue ? await fetchIssue(claimed.issue, project.root) : undefined;
-  const issue = fetched && !("error" in fetched) ? fetched : undefined;
+  const issue = await issueOf(desk.kit.ecosystem.issues, claimed.issue, project.root);
   const how = { ownCopy, failed: "wait" as const, role: claimed.opening?.role, parent: claimed.opener, issue };
   const started = await startLead(desk, project, claimed, how);
   if (typeof started === "string")
