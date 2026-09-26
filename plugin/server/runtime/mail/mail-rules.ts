@@ -1,5 +1,5 @@
 import type { Kit } from "../../catalog/kit/kit.ts";
-import { seatOf } from "../../catalog/kit/roles.ts";
+import { can, seatOf } from "../../catalog/kit/roles.ts";
 import { daemonLog } from "../../core/logger.ts";
 import type { SeatLook } from "../../core/ports.ts";
 import { HOUR_MS } from "../../core/time.ts";
@@ -30,6 +30,9 @@ export function mailRules(kit: Kit, calling: (agentId: string) => boolean): Rule
       ),
     steers: (seat) => seatOf(kit, seat.provider)?.harness.steers === true,
     calling,
-    holding: (seat) => Boolean(seat.cwd && holdOn(projectOf(seat.cwd).state, seat.id)),
+    holding: (seat) =>
+      Boolean(
+        seat.cwd && holdOn(projectOf(seat.cwd).state, seat.id, can(seatOf(kit, seat.provider)?.role, "supervise")),
+      ),
   };
 }

@@ -108,6 +108,15 @@ test("a lane on hold stops its seats, keeps their mail, refuses every move, and 
     String(answered.response.message),
     /The desk's record cannot be read[^]*Do nothing more until you are told/,
   );
+  // Whoever supervises is never held by it, so it can still tell the Human.
+  const asked = { id: "req-3", kind: "tool", name: "Bash", title: "ls" };
+  h.agents.get(sup)!.pending.push(asked);
+  await h.permission(sup, asked);
+  assert.equal(
+    h.agents.get(sup)!.answered.some((one) => one.response.behavior === "deny"),
+    false,
+    "the Supervisor's own permission waits for its answer",
+  );
   writeFileSync(record, kept);
   assert.equal((await h.call(lead, "lead", "accept", { task: "L1-T1" })).ok, true);
   assert.match((await h.call(sup, "supervisor", "resume_lane", { lane: "L1" })).text, /Lane L1 is not on hold\./);

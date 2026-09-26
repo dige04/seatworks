@@ -54,12 +54,16 @@ export function readLedger(state: string): Ledger {
   return ledger;
 }
 
-/** Why this seat is held: its lane's hold, or a ledger that cannot be read, which cannot say its lane is free. */
-export function holdOn(state: string, agentId: string): string | undefined {
+/**
+ * Why this seat is held: its lane's hold, or a ledger that cannot be read, which cannot say its lane is free. A seat that
+ * `supervises` has no lane to hold and must still reach the Human, so nothing unread holds it.
+ */
+export function holdOn(state: string, agentId: string, supervises: boolean): string | undefined {
   let ledger: Ledger;
   try {
     ledger = loadLedger(state);
   } catch (error) {
+    if (supervises) return undefined;
     return `The desk's record cannot be read, so whether your lane is on hold is not known: ${errorText(error)}`;
   }
   const lane = ledger.lanes[ledger.agents[agentId]?.lane ?? ""];

@@ -76,7 +76,7 @@ export class TurnRules {
     const role = seatOf(this.deps.kit, agent.provider)?.role;
     if (!role?.tools) return;
     const project = projectOf(agent.cwd);
-    const hold = holdOn(project.state, agent.id);
+    const hold = holdOn(project.state, agent.id, can(role, "supervise"));
     if (hold && request.id) {
       await this.deps.seats.respond(agent.id, request.id, {
         behavior: "deny",
