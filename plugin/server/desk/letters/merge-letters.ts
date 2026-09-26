@@ -17,8 +17,6 @@ export const mergeLetters = {
     ];
     const notes: string[] = [];
     if (counts && counts.src === 0 && counts.test + counts.docs > 0) notes.push("Note: no source lines changed.");
-    if (counts && counts.src > 0 && counts.test > counts.src * 1.5)
-      notes.push(`Note: test lines are ${(counts.test / counts.src).toFixed(1)} times source lines.`);
     for (const note of reach) notes.push(`Note: ${note}.`);
     const letter = (next: string) => mail("merge", [task.id, Date.now()], [...lines, ...notes].join("\n"), next);
     if (last)

@@ -258,6 +258,18 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     next(workLetters.handback(task, "/h.md", "Outcome: complete", "agent-7", "lead")),
     /^Judge it by what the work did/,
   );
+  const testHeavy = mergeLetters.merged(
+    task,
+    { src: 1, test: 5, docs: 0, files: ["src/pricing.js"] },
+    [],
+    "passed",
+    false,
+  );
+  assert.deepEqual(
+    [next(testHeavy), testHeavy.wakes],
+    ["Nothing now: the next hand-back arrives as mail.", false],
+    "how many test lines a merge brings beside its source is W's to weigh, not a note that wakes the Lead",
+  );
   // An open question or a correction is weighed by whoever it reaches, never taken as an order.
   assert.match(
     next(messageLetters.message("your lead", "why X?", sending, "worker")),
