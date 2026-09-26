@@ -16,7 +16,6 @@ import type { Intents } from "../store/intents.ts";
 /** How long a harness waits on one call before it gives up; the desk answers first. */
 export const ANSWER_WITHIN_MS = 240_000;
 
-/** A seat's tool calls: who is calling, whether the call fits what the seat was shown, and its reply in time or as mail. */
 export class ToolCalls {
   private readonly running = new Map<string, { reply: Promise<ToolReply>; started: number }>();
   private readonly desk: DeskServices;
@@ -35,8 +34,8 @@ export class ToolCalls {
   }
 
   /**
-   * A harness waits minutes for a call but a gate may run thirty: a call that runs long is answered with what is happening
-   * and its result mailed, and the same call again while it runs joins it. One its caller gives up on is mailed too.
+   * A harness waits minutes for a call but a gate may run thirty: a call that runs long is answered with what is
+   * happening and its result mailed; the same call again while it runs joins it, and one its caller gives up on mails.
    */
   answer(
     request: ToolRequest,
@@ -81,7 +80,6 @@ export class ToolCalls {
     return reply;
   }
 
-  /** The tool's reply, or why it was not carried out: a tool the seat was not shown, args that miss its schema, a crash. */
   private async run(caller: Caller, request: ToolRequest): Promise<{ reply: ToolReply; speaks?: true }> {
     const shown = schemaOf(this.desk.kit, caller.role, request.tool);
     const tool = shown ? servedBy(this.tools, request.tool, shown) : undefined;
@@ -151,7 +149,10 @@ function shapeKey(owner: object, schema: () => unknown): string {
   return shape;
 }
 
-/** The tool that serves `name` as `shown` describes it: tools of one name differ by what they take, and a role's tool set picks which it is shown. */
+/**
+ * The tool that serves `name` as `shown` describes it: tools of one name differ by what they take, and a role's tool
+ * set picks which it is shown.
+ */
 export function servedBy(tools: ToolDef[], name: string, shown: ArgSchema): ToolDef | undefined {
   const wanted = shapeKey(shown, () => shown);
   return tools.find(

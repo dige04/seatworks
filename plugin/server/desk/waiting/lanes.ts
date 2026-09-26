@@ -18,7 +18,8 @@ import { waitsFor } from "./rules.ts";
 
 /**
  * Opens each waiting lane whose lanes have all landed; one that cannot, or waits on a lane dropped, is told once per
- * reason. A lane whose start failed is tried again only when `retryHeld`: a closing lane frees what held it, a round does not.
+ * reason. A lane whose start failed is tried again only when `retryHeld`: a closing lane frees what held it, a round
+ * does not.
  */
 export async function openWaiting(desk: DeskServices, project: Project, retryHeld: boolean): Promise<void> {
   await putBackHalfOpen(desk, project);
@@ -35,7 +36,7 @@ export async function openWaiting(desk: DeskServices, project: Project, retryHel
   }
 }
 
-/** Placed and claimed in one transaction, so a round can ask every time and nothing opens it twice or beside another in one copy. */
+/** Placed and claimed in one transaction: a round can ask every time, and nothing opens it twice or in a taken copy. */
 async function tryOpen(desk: DeskServices, project: Project, lane: Lane): Promise<Holding | undefined> {
   const { ledgers, seating, mail, roster } = desk;
   const moved = await branchMoved(project, lane);
@@ -69,7 +70,6 @@ async function tryOpen(desk: DeskServices, project: Project, lane: Lane): Promis
   return undefined;
 }
 
-/** Why the branch a waiting lane was to open on is not where it was: moved off, or its base gone. */
 async function branchMoved(project: Project, lane: Lane): Promise<string | undefined> {
   const here = await currentBranch(project.root);
   if (lane.onBranch && here !== lane.branch)

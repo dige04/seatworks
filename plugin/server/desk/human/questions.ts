@@ -17,7 +17,6 @@ import { type Project, loadConfig } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 
-/** An ask_human call as the tool takes it. */
 type AskHumanCall = {
   question: string;
   why: string;
@@ -29,7 +28,6 @@ type AskHumanCall = {
   class: QuestionClass;
 };
 
-/** What goes ahead while the Human is silent on a question that names no lane. */
 const WHILE_SILENT_ALONE: Record<QuestionClass, string> = {
   reversible:
     "Nothing waits for it: what it decides goes ahead as you said it would if they are silent, and they can overturn that.",
@@ -47,7 +45,6 @@ const WHILE_SILENT: Record<QuestionClass, string> = {
     "Nothing it decides goes ahead until they answer: its Lead is told to keep off it and carry on with the rest. Holding the whole lane is yours, with hold_lane.",
 };
 
-/** Puts a decision only the Human can make on their question queue, with what happens while they are silent. */
 export async function askHuman(desk: DeskServices, caller: Caller, args: AskHumanCall): Promise<ToolReply> {
   const { project } = caller;
   if (!desk.teamFor(project).hitl.on)
@@ -60,7 +57,7 @@ export async function askHuman(desk: DeskServices, caller: Caller, args: AskHuma
   // The Supervisor may only raise a question's class above what the Human's standing orders make it.
   const floor =
     named && named.status !== "closed" && args.class === "reversible" ? await askFirstOf(project, named) : undefined;
-  // What cannot be undone, or what their standing orders raised, is never the Supervisor's to take: it queues past the limit.
+  // What cannot be undone, or what their standing orders raised, is never the Supervisor's: it queues past the limit.
   const over = args.class === "irreversible" || floor ? undefined : overBudget(desk, project);
   if (over) return no(over);
   const opened = recordQuestion(desk, caller, args, floor ? "costly" : args.class);
@@ -117,7 +114,7 @@ function recordQuestion(
     const lane = args.lane ? findLane(ledger, args.lane) : undefined;
     if (args.lane && (!lane || lane.status === "closed")) return `There is no open or waiting lane ${str(args.lane)}.`;
     // A costly question stops its lane at the ready report; asked once the lane has reported ready, that is now. An
-    // irreversible one stops only what it decides: the lane's Lead keeps off it, and holding more is the Supervisor's call.
+    // irreversible one stops only what it decides: the Lead keeps off it, and holding more is the Supervisor's call.
     const parked = lane !== undefined && kind === "costly" && lane.ready !== undefined;
     const question: Question = {
       id: nextQuestionId(ledger),
@@ -139,7 +136,7 @@ function recordQuestion(
   });
 }
 
-/** Why a question about `lane` stops it at its ready report at least: it writes where the Human asked to be asked first. */
+/** Why a question about `lane` stops it at its ready report at least: it writes where the Human asked to be asked. */
 async function askFirstOf(project: Project, lane: Lane): Promise<string | undefined> {
   const declared = loadConfig(project.state).askFirst.find((path) => firstOverlap(lane.writeSet, [coverGlob(path)]));
   if (declared) return `Lane ${lane.id} may write under ${declared}, which the Human asked to be asked about first.`;
@@ -147,7 +144,7 @@ async function askFirstOf(project: Project, lane: Lane): Promise<string | undefi
   return hit && `Lane ${lane.id}: ${hit}`;
 }
 
-/** The questions put to the Human since `since` across every project on this machine: the Human has one attention for them all. */
+/** The questions put to the Human since `since` in every project on this machine: they have one attention for all. */
 export function askedSince(state: string, since: number): Question[] {
   const projects = dirname(state);
   return readdirSync(projects).flatMap((slug) => {
@@ -160,7 +157,7 @@ export function askedSince(state: string, since: number): Question[] {
   });
 }
 
-/** The Human's word on question `id`, from the chat or the panel: an option, decline, or cancel; the record now, or why not. */
+/** The Human's word on question `id`, from chat or panel: an option, decline, or cancel; the record, or why not. */
 export function settleQuestion(
   { ledgers }: Pick<DeskBase, "ledgers">,
   project: Project,
@@ -185,8 +182,8 @@ export function settleQuestion(
 }
 
 /**
- * A settled question whose lane's Lead keeps off what it decides: that Lead hears it is settled, if it is there to hear,
- * and the words for what whoever supervises is told of it; nothing when no Lead keeps off it.
+ * A settled question whose lane's Lead keeps off what it decides: that Lead hears it is settled, if it is there, and
+ * the words for what whoever supervises is told of it; nothing when no Lead keeps off it.
  */
 export async function tellKeptOff(
   { mail, roster }: Pick<DeskServices, "mail" | "roster">,
@@ -200,7 +197,6 @@ export async function tellKeptOff(
   return ` The Lead of ${question.lane} hears only that it is settled: tell it how the lane goes on.`;
 }
 
-/** Takes a question off the Human's queue for the Supervisor, with why, which they read on the Report. */
 export async function withdrawQuestion(
   desk: Pick<DeskServices, "ledgers" | "mail" | "roster">,
   caller: Caller,
@@ -215,7 +211,6 @@ export async function withdrawQuestion(
   return ok(`${id} is off the Human's queue; they read why on the Report.${held}${told}`);
 }
 
-/** Puts an answer the Human gave in the Supervisor's chat on record, once their own words are found there. */
 export async function recordHumanAnswer(
   desk: DeskServices,
   caller: Caller,

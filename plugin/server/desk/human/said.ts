@@ -1,7 +1,6 @@
 import { sentBy } from "../../core/sent-by.ts";
 import type { Roster } from "../seats/roster.ts";
 
-/** Words as a quote is checked: spacing, a closing stop and case do not count. */
 const flat = (text: string) =>
   text
     .replace(/\s+/g, " ")
@@ -13,8 +12,8 @@ const flat = (text: string) =>
 const SHORTEST = 20;
 
 /**
- * The Human's own message in `seat`'s chat that `quote` is: the whole of it, or twenty characters and more of it. Nothing
- * when no message they wrote there holds it, as far back as the desk reads.
+ * The Human's own message in `seat`'s chat that `quote` is: the whole of it, or twenty characters and more of it.
+ * Nothing when no message they wrote there holds it, as far back as the desk reads.
  */
 export async function humanSaid(
   roster: Pick<Roster, "history">,

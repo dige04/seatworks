@@ -45,7 +45,7 @@ export function inTime(
       : `The desk is still working on ${request.tool} — a gate can take as long as the project allows it. The answer arrives as mail. End your turn now; do not call ${request.tool} again.`;
     const timer = setTimeout(() => mailed(long, false), how.within);
     timer.unref?.();
-    // A call stopped while it waited to be carried out was stopped before this listens, and the listener would never hear it.
+    // A call stopped while it waited to be carried out was stopped before this listens: the listener would never hear.
     const stopped = () => mailed(`${request.tool} was stopped on the seat's side.`, true);
     if (how.cancelled?.aborted) stopped();
     else how.cancelled?.addEventListener("abort", stopped, { once: true });

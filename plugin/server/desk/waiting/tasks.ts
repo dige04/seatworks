@@ -19,8 +19,8 @@ import { type Holding, noteHeld } from "./held.ts";
 import { taskWaitsFor } from "./rules.ts";
 
 /**
- * Starts each waiting task in an open lane once what it waits for is merged; a merged or cut task frees what held one, a
- * round does not. Tasks in `answered` belong to the call running this, whose reply already says what became of each.
+ * Starts each waiting task in an open lane once what it waits for is merged; a merged or cut task frees what held one,
+ * a round does not. Tasks in `answered` belong to the call running this, whose reply already says what became of each.
  */
 export async function startWaiting(
   desk: DeskServices,
@@ -46,7 +46,7 @@ export async function startWaiting(
   }
 }
 
-/** Placed and claimed in one transaction, and back to waiting if its Peer cannot start; every task gets a Peer of its own. */
+/** Placed and claimed in one transaction, and back to waiting if its Peer cannot start; each task gets its own Peer. */
 async function tryStart(
   desk: DeskServices,
   project: Project,
@@ -83,7 +83,7 @@ async function tryStart(
       lane.lead,
       workLetters.started(claimed, `Started ${task.id} ${started.where} with Peer ${started.peer}.`),
     );
-  // The lane's copy has one writer, briefed before this task held anything: what it holds is news to that Peer, now if at work.
+  // The lane's copy has one writer, briefed before this task held anything: what it holds is news to that Peer.
   const writer = parallel ? holderOf(loadLedger(project.state), lane) : undefined;
   if (writer?.peer)
     await mail.post(
@@ -94,8 +94,8 @@ async function tryStart(
 }
 
 /**
- * A task running with no Peer that nothing is seating was left so by a stop. A Peer Paseo had already started is taken
- * on; otherwise a task that waited goes back to waiting and starts again, and one started outright is cut, its Lead told.
+ * A task running with no Peer that nothing is seating was left so by a stop. A Peer Paseo had already started is
+ * taken on; otherwise a task that waited goes back to waiting and starts again, and one started outright is cut.
  */
 async function putBackHalfStarted(desk: DeskServices, project: Project): Promise<void> {
   const { ledgers, mail, seating, slots, roster } = desk;

@@ -67,7 +67,7 @@ function problems(schema: ArgSchema, args: Record<string, unknown>, missing: (va
   return found;
 }
 
-/** Why `args` miss the schema the seat was shown; empty when they fit. Some harnesses never validate their own tool calls. */
+/** Why `args` miss the schema the seat was shown; empty when they fit. Some harnesses never check their own calls. */
 export function argsProblems(schema: ArgSchema, args: Record<string, unknown>): string[] {
   return problems(schema, args, blank);
 }
@@ -87,7 +87,6 @@ export function withoutNulls(args: Record<string, unknown>): Record<string, unkn
   );
 }
 
-/** What a tool takes, as a seat reads it back: its required fields, then the rest. */
 export function shapeOf(schema: ArgSchema): string {
   const required = schema.required ?? [];
   const optional = Object.keys(schema.properties ?? {}).filter((name) => !required.includes(name));

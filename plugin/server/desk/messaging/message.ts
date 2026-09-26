@@ -11,7 +11,7 @@ import { messageLetters } from "../letters/message-letters.ts";
 import { leadOf } from "../letters/next.ts";
 import type { DeskServices } from "../services.ts";
 
-/** Gives `text` to a seat as mail it reads once it can; one stopped on a permission reads nothing until that is answered. */
+/** A seat stopped on a permission reads nothing until that is answered, and the reply says so. */
 async function handTo(
   { mail, roster }: Pick<DeskServices, "mail" | "roster">,
   to: { target: string; from: string; who: string; reader: "worker" | "lead" },
@@ -29,8 +29,8 @@ async function handTo(
 const unread = (who: string) => `${who} is not seated any more, so a message would wait for nobody.`;
 
 /**
- * Why a settled task takes no message: a merged one's Peer in the lane's copy is kept only to take rework, since a message
- * would wake it in a copy it no longer holds; rework is its Lead's to send, which `by` says when whoever supervises asks.
+ * Why a settled task takes no message: a merged one's Peer in the lane's copy is kept only to take rework, since a
+ * message would wake it in a copy it no longer holds; rework is its Lead's, as `by` says when whoever supervises asks.
  */
 const settled = (task: Task, by: "lead" | "owner") =>
   task.status === "merged" && task.mode !== "parallel"
@@ -39,7 +39,6 @@ const settled = (task: Task, by: "lead" | "owner") =>
       ? `${task.id} is ${task.status}, and its Peer went with it.`
       : undefined;
 
-/** Whoever supervises reaches a lane's Lead, or a task's Peer with its Lead told first. */
 async function fromOwner(
   desk: DeskServices,
   caller: Caller,
@@ -108,7 +107,6 @@ async function toPeer(
   return ok(`${handed} Its Lead has been told what reached it and what is still its own.`);
 }
 
-/** A message from whoever supervises to a lane's Lead or a task's Peer, or from a Lead to a Peer of its own lane. */
 export async function sendMessage(
   desk: DeskServices,
   caller: Caller,

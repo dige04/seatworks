@@ -10,7 +10,6 @@ import type { DeskServices } from "../services.ts";
 
 type Said = { ok: boolean; text: string };
 
-/** What the Human does and reads on the panel for a project: their word on a held landing or on a question, their standing orders, the last day. */
 export class Human {
   private readonly services: DeskServices;
 
@@ -22,7 +21,6 @@ export class Human {
     return decideLand(this.services, project, lane, approve, note);
   }
 
-  /** Their choice among a question's options, a decline, or taking it off their queue, and whoever asked is told. */
   async answer(project: Project, id: string, choice: string, note: string): Promise<Said> {
     const { mail, roster } = this.services;
     const settled = settleQuestion(this.services, project, id, choice, { text: note || undefined, by: "panel" });

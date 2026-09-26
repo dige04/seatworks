@@ -8,8 +8,8 @@ import { loadLedger } from "../store/ledger.ts";
 type PermitCall = { from: string; request: string; allow: boolean; why: string };
 
 /**
- * Answers a Lead's or Peer's permission for the Human while they are out of the loop, by the task or lane its seat works;
- * a Peer's Lead is told, since the owner reached past it.
+ * Answers a Lead's or Peer's permission for the Human while they are out of the loop, by the task or lane its seat
+ * works; a Peer's Lead is told, since the owner reached past it.
  */
 export async function permit(
   { teamFor, roster, mail }: Pick<DeskServices, "teamFor" | "roster" | "mail">,

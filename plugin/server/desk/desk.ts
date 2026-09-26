@@ -213,7 +213,6 @@ export class Desk {
     if (dropped.length > 0) recordEvent(project, { kind: "records.tidied", files: dropped.length });
   }
 
-  /** Whether a call from this seat is still being worked on — which is not silence. */
   inFlight(agentId: string): boolean {
     return this.calls.inFlight(agentId);
   }

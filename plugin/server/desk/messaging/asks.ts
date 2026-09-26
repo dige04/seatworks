@@ -12,7 +12,6 @@ import { recordEvent } from "../store/event-log.ts";
 
 type Asking = Pick<Ask, "from" | "fromRole" | "to" | "lane" | "task" | "kind" | "text" | "default">;
 
-/** A new open ask, numbered in `ledger`. */
 function newAsk(ledger: Ledger, asking: Asking): Ask {
   return { id: nextAskId(ledger), ...asking, status: "open", openedAt: Date.now(), reminders: 0 };
 }
@@ -47,7 +46,7 @@ export async function askOwner(
   return ok(`Asked as ${entry.id}. Keep working on your default where you can; the answer arrives as mail.`);
 }
 
-/** A Peer or reviewer asks up: its Lead, or the level above when the Lead is gone; a Peer's best guess is its default. */
+/** A Peer or reviewer asks up: its Lead, or the level above when the Lead is gone; a best guess is its default. */
 export async function askUp(
   { ledgers, mail, roster }: Pick<DeskServices, "ledgers" | "mail" | "roster">,
   caller: Caller,
@@ -60,7 +59,7 @@ export async function askUp(
   if (!task || !lane?.lead) return no("Nobody is assigned to answer you; end your turn with the question.");
   // A gone Lead would never answer; it goes up a level instead, and the Peer is told so.
   const reader = (await roster.seated(lane.lead)) ? lane.lead : await roster.supervisorFor(project, lane.opener);
-  // With nobody above seated it waits on the gone Lead, and the round hands it to whoever supervises once one sits down.
+  // With nobody above seated it waits on the gone Lead, and the round hands it to whoever supervises once seated.
   const to = reader ?? lane.lead;
   const text = asked.tried ? `${asked.question}\n\nTried: ${asked.tried}` : asked.question;
   // Opened for the task the caller still holds, merged and kept included: it may have been cut meanwhile.
@@ -86,8 +85,8 @@ export async function askUp(
 }
 
 /**
- * Answers an open ask; one put to someone else may be answered by whoever supervises, and that seat is told first, as is
- * the Lead of a Peer answered past it.
+ * Answers an open ask; one put to someone else may be answered by whoever supervises, and that seat is told first, as
+ * is the Lead of a Peer answered past it.
  */
 export async function answerAsk(
   { kit, ledgers, mail, roster }: Pick<DeskServices, "kit" | "ledgers" | "mail" | "roster">,
@@ -120,7 +119,6 @@ export async function answerAsk(
   });
   if (typeof result === "string") return no(result);
   const { ask } = result;
-  // Answering an ask put to someone else is allowed (the round escalates them), but that seat is told first.
   const waiting = ask.to === caller.id ? undefined : ask.to;
   const waitingRole = roleNamed(kit, result.waitingRole ?? "");
   if (waiting) {
@@ -137,7 +135,7 @@ export async function answerAsk(
   return ok(`Answered ${ask.id}; the asker ${has}.${told}${led}`);
 }
 
-/** The seated Lead of a Peer's lane that whoever supervises answered past, when the ask was put to someone other than it. */
+/** The seated Lead of a Peer's lane that whoever supervises answered past, when the ask was put to another. */
 async function leadPassed(
   roster: Pick<DeskServices["roster"], "seatedLead">,
   caller: Caller,

@@ -6,10 +6,9 @@ import type { Refusal } from "../refusal.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 
-/** Why a lane or task cannot start yet, and what can be done; `tried` when its start failed rather than was never tried. */
+/** Why a lane or task cannot start yet, and what can be done; `tried` when its start failed, not never tried. */
 export type Holding = Refusal & { tried?: true };
 
-/** Keeps why a lane or task still waits, and tells whoever asked for it, once per reason, unless it was told already. */
 export async function noteHeld(
   { ledgers, roster, mail }: Pick<DeskServices, "ledgers" | "roster" | "mail">,
   project: Project,

@@ -2,7 +2,7 @@ import type { Lane } from "../../domain/lane.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 
-/** The one rule for `after`, lanes and tasks alike: each must exist, one done counts, one dropped holds, the rest are waited for. */
+/** One rule for `after`, for lanes and tasks: each must exist, one done counts, a dropped one holds, others wait. */
 function awaiting<T extends { id: string }>(
   after: string[],
   find: (id: string) => T | undefined,
@@ -18,7 +18,6 @@ function awaiting<T extends { id: string }>(
   return found.filter((entry) => !done(entry!)) as T[];
 }
 
-/** Why a lane cannot wait on these, or the lanes of them still to land. */
 export function waitsFor(ledger: Ledger, after: string[], onBranch: boolean): Lane[] | string {
   const pending = awaiting(
     after,
