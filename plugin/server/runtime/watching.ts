@@ -11,13 +11,14 @@ import { loadLedger } from "../desk/store/ledger.ts";
 import { type Project, gateCommands, projectOf, readProjectConfig } from "../desk/project/project.ts";
 import type { TeamSource } from "./team-source.ts";
 import { malformed } from "./timeline.ts";
-import type { Trouble } from "./panel/watch-view.ts";
 import { type Fact, findingsOf } from "../domain/incident.ts";
 import { callsTo } from "./watch/facts.ts";
 import type { SeatContext, SeatLook, SeatWatch, WatchedSeat, Watches } from "./watch/watches.ts";
 import { daemonLog } from "../core/logger.ts";
 
 const TROUBLES = 10;
+
+export type Trouble = { kind: string; at: number; detail: string };
 
 type WatchingDeps = { kit: Kit; source: TeamSource; desk: Desk; watches: () => Watches };
 

@@ -6,8 +6,7 @@ import type { Team } from "../../catalog/team/team.ts";
 import { lastBytes } from "../../core/gate.ts";
 import { loadIncidents } from "../../desk/store/incidents.ts";
 import type { Project } from "../../desk/project/project.ts";
-
-export type Trouble = { kind: string; at: number; detail: string };
+import type { Trouble } from "../watching.ts";
 
 /** Which brains read for the project and how that stands, as the last answer the watch kept says; a line by another is not theirs. */
 function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJudge {
