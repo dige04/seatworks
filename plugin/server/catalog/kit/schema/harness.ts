@@ -13,7 +13,14 @@ export const HarnessFile = z
     contextFile: text.optional(),
     skillsDir: text,
     steers: z.boolean().optional(),
-    stateWrites: z.strictObject({ path: text, delivery: z.enum(["launch", "file"]) }).optional(),
+    /** `profile`: where a role's settings name a permission profile (`key`), each path is granted `value` in it (`at`). */
+    stateWrites: z
+      .strictObject({
+        path: text,
+        delivery: z.enum(["launch", "file"]),
+        profile: z.strictObject({ key: text, at: text.includes("PROFILE"), value: text }).optional(),
+      })
+      .optional(),
     projectContextOption: text.optional(),
     projectInstructions: z
       .strictObject({

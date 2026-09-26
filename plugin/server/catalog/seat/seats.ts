@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { errorText } from "../../core/errors.ts";
-import { type Json, layered } from "../../core/json.ts";
 import { expandHome, guidesDir, home } from "../../core/paths.ts";
 import {
   type PromptPaths,
@@ -17,7 +16,6 @@ import {
   linkShared,
   linkSkills,
   recorder,
-  stateWritesSetting,
   writeFiles,
   writeInstructions,
   writeMcpFile,
@@ -79,10 +77,8 @@ export function materialize(
   if (problems.length > 0) throw new Error(problems.join("; "));
   const record = recorder();
   mkdirSync(dir, { recursive: true });
-  const built = { dir, homeDir };
-  const catalog = writeModelCatalog(seat.harness, dir, record);
-  const extra = layered(catalog, stateWritesSetting(team, roleName, project?.state)) as Json;
-  writeRoleSettings(kit, seat.harness, seat.role, built, record, extra);
+  const built = { dir, homeDir, state: project?.state };
+  writeRoleSettings(kit, seat.harness, seat.role, built, record, writeModelCatalog(seat.harness, dir, record));
   writeFiles(kit, seat.harness, seat.role, dir, record);
   linkShared(seat.harness, dir, homeDir, record);
   writeMcpFile(seat.harness, dir, servers, record);

@@ -69,9 +69,9 @@ export function writeRoleSettings(
   kit: Kit,
   harness: HarnessSpec,
   role: RoleSpec,
-  seat: { dir: string; homeDir: string },
+  seat: { dir: string; homeDir: string; state?: string },
   record: Recorder,
-  extra: Json,
+  catalog: Json,
 ): void {
   const { file, source } = harness.settings;
   const roleFile = roleSettingsFile(kit, harness, role);
@@ -80,7 +80,8 @@ export function writeRoleSettings(
   const kitSettings = layered(
     readConfigStrict<Json>(join(kit.dir, "harness", harness.id, source)),
     readConfigStrict<Json>(roleFile),
-  );
+  ) as Json;
+  const extra = layered(catalog, stateWritesSetting(harness, role, seat.state, kitSettings)) as Json;
   const wanted = layered(layered(inherited(harness, seat.homeDir), kitSettings), extra) as Json;
   record.note(writeConfigIfChanged(join(seat.dir, file), wanted), file);
 }
@@ -126,11 +127,24 @@ export function writeModelCatalog(harness: HarnessSpec, dir: string, record: Rec
   return setting;
 }
 
-export function stateWritesSetting(team: Team, roleName: string, state: string | undefined): Json {
-  const { role, harness } = team.roles[roleName]!;
-  if (harness.stateWrites?.delivery !== "file" || !state) return {};
+/**
+ * What the role writes under the project's state, where its harness takes it in the seat's settings: a list of roots, and
+ * where the role's own settings name a permission profile, a grant in that profile too, since a profile reads no roots.
+ */
+function stateWritesSetting(harness: HarnessSpec, role: RoleSpec, state: string | undefined, settings: Json): Json {
+  const spec = harness.stateWrites;
+  if (spec?.delivery !== "file" || !state) return {};
+  const paths = stateWrites(role, state);
   const setting: Json = {};
-  setPath(setting, harness.stateWrites.path.split("."), stateWrites(role, state));
+  setPath(setting, spec.path.split("."), paths);
+  const profile = spec.profile && settings[spec.profile.key];
+  if (spec.profile && typeof profile === "string" && !profile.startsWith(":"))
+    // Paths hold dots, so they are keys set whole rather than dot paths.
+    setPath(
+      setting,
+      spec.profile.at.replace("PROFILE", profile).split("."),
+      Object.fromEntries(paths.map((path) => [path, spec.profile!.value])),
+    );
   return setting;
 }
 

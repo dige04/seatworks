@@ -66,8 +66,6 @@ The plugin **serves** SLP so it works better with Paseo. It must **never constra
 **Where the code is not there yet.**
 - Every watch signal and pattern ships in shadow, told to no one until labels turn it on.
 - The `old-is-gone-test` pattern is missing: it needs the names of the tests a diff removes.
-- A Codex Lead can still write the project's files: Codex's workspace sandbox always lets a seat
-  write where it works.
 
 ## What the plugin may decide
 

@@ -1,0 +1,9 @@
+default_permissions = "lead"
+
+[permissions.lead.filesystem]
+":root" = "read"
+":tmpdir" = "write"
+":slash_tmp" = "write"
+
+[permissions.lead.network]
+enabled = true

@@ -177,6 +177,20 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         !searches,
         `${where}: searches the web only where the role may`,
       );
+      const profile = at(settings, "default_permissions");
+      if (as === "lead") {
+        const rules = (at(settings, `permissions.${String(profile)}.filesystem`) ?? {}) as Record<string, string>;
+        assert.deepEqual(
+          [rules[":root"], rules[":cwd"], rules[":workspace_roots"]],
+          ["read", undefined, undefined],
+          `${where}: reads the project and writes nothing in it, as a Lead on every other agent`,
+        );
+        assert.deepEqual(
+          stateWrites(role, project.state).filter((path) => rules[path] !== "write"),
+          [],
+          `${where}: still writes its own pages under the project's state`,
+        );
+      } else assert.equal(profile, undefined, `${where}: its sandbox is its mode's`);
       const catalog =
         readConfig<{ models?: Record<string, unknown>[] }>(String(at(settings, "model_catalog_json")), {}).models ?? [];
       assert.ok(

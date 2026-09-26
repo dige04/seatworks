@@ -38,7 +38,12 @@
   },
   "stateWrites": {
     "path": "sandbox_workspace_write.writable_roots",
-    "delivery": "file"
+    "delivery": "file",
+    "profile": {
+      "key": "default_permissions",
+      "at": "permissions.PROFILE.filesystem",
+      "value": "write"
+    }
   },
   "files": {
     "rules/seatworks.rules": [
