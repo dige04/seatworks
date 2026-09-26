@@ -10,8 +10,8 @@ type Scoped = Pick<Lane, "id" | "writeSet" | "contracts">;
 
 /**
  * The open lanes a lane with this scope works beside, and what each may write that it does too. Never a refusal: every lane has
- * a copy and a branch of its own, so what two lanes both write meets when the second merges or lands, where its Lead settles
- * it. A lane that declares no write set may write any one-writer path, on either side.
+ * a branch of its own, so what two lanes both write meets when the second merges or lands. A lane that declares no write set
+ * may write any one-writer path, on either side.
  */
 export function lanesBeside(serial: string[], open: Scoped[], writeSet: string[], contracts: string[]): Beside[] {
   const reach = (paths: string[]) => (paths.length === 0 ? serial : serialReach(paths, serial));

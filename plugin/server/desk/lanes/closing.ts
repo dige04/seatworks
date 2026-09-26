@@ -142,7 +142,7 @@ async function tellBaseMoved({ mail }: Pick<DeskServices, "mail">, project: Proj
     hit.push(`${other.id} (${conflicts.join(", ")})`);
   }
   return hit.length > 0
-    ? `\n\n${landed.base} now conflicts with lanes still open: ${hit.join("; ")}. Their Leads are told; between lanes it is yours.`
+    ? `\n\n${landed.base} now conflicts with lanes still open: ${hit.join("; ")}. Their Leads have the facts; who takes ${landed.base} in for each is yours to choose.`
     : "";
 }
 

@@ -50,19 +50,21 @@ export const landLetters = {
         "basemoved",
         [lane.id, landed.id],
         text,
-        `Nothing now: before the lane lands, a task takes ${lane.base} in on its own branch; sooner if the lane's work needs it.`,
+        `Nothing now: who takes ${lane.base} in before the lane lands is chosen by whoever supervises; ask if your lane's work needs it sooner.`,
       ),
     );
   },
 
-  /** The base does not merge into the lane cleanly: a task takes it in on its own branch, as the Lead lays out. */
+  /** The base does not merge into the lane cleanly: a fact for its Lead, since who takes it in is chosen above the lane. */
   baseConflict(lane: Lane, conflicts: string[]): Letter {
     const text = `BASE CONFLICT ${lane.id} (${lane.title}): ${lane.base} moved on, and merging it into ${lane.branch} stops on conflicts in ${conflicts.join(", ")}. Nothing was left in your working copy, and the lane does not land until it takes ${lane.base} in.`;
-    return mail(
-      "baseconflict",
-      [lane.id, conflicts.join(",")],
-      text,
-      `add_tasks a task whose Peer runs git merge ${lane.base} on its own branch, settles those files and commits; once it is merged, report ready again.`,
+    return fyi(
+      mail(
+        "baseconflict",
+        [lane.id, conflicts.join(",")],
+        text,
+        `Nothing now: who takes ${lane.base} in is chosen by whoever supervises, who tells you if it is this lane.`,
+      ),
     );
   },
 

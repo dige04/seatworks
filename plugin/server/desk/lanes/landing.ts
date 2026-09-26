@@ -86,7 +86,7 @@ async function gateThenLand(
   return { how: `${result.how}${gate.ok ? "" : ", over a red gate"}`, note: check.note };
 }
 
-/** Merges base into the lane in its own copy, never under a seat mid-turn there; conflicts stay there for its Lead. */
+/** Merges base into the lane in its own copy, never under a seat mid-turn there; a conflict is undone, and its Lead told. */
 async function bringBaseIn(
   { ledgers, mail, roster }: Pick<DeskServices, "ledgers" | "mail" | "roster">,
   project: Project,
@@ -114,7 +114,7 @@ async function bringBaseIn(
   await mail.post(lane.lead, landLetters.baseConflict(lane, merged.conflicts));
   return {
     why: `${lane.base} has moved on and conflicts with ${lane.branch} in ${merged.conflicts.join(", ")}`,
-    then: `Nothing was left in the lane's copy, and its Lead has a letter to have a task take ${lane.base} in; ${SETTLE}`,
+    then: `Nothing was left in the lane's copy, and its Lead has the facts. Who takes ${lane.base} in is yours to choose: message its Lead to have a task take it in on its own branch, or open a lane whose task does; ${SETTLE}`,
   };
 }
 

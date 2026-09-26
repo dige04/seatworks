@@ -192,6 +192,6 @@ test("a one-writer path a lane changed is noted where an open lane beside it may
   const landed = await h.call(sup, "supervisor", "land_lane", { lane: "L1" });
   assert.match(
     landed.text,
-    /It changed what one writer at a time may write, which open lanes may write too: L2 \(package-lock\.json\)\. Whichever lands second settles it\./,
+    /It changed what one writer at a time may write, which open lanes may write too: L2 \(package-lock\.json\)\.(?! Whichever)/,
   );
 });

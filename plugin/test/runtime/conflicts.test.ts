@@ -12,7 +12,7 @@ const scope = { acceptance: ["a"], outOfScope: ["the rest"] };
 const underWay = (h: Harness, copy: string) =>
   existsSync(join(h.git(copy, "rev-parse", "--absolute-git-dir").trim(), "MERGE_HEAD"));
 
-test("a base that conflicts with a lane leaves nothing in its copy: a task takes the base in on its own branch, and the lane lands once that is merged", async () => {
+test("a base that conflicts with a lane leaves nothing in its copy, its Lead has the facts and the Supervisor chooses who takes the base in, and the lane lands once a task has", async () => {
   const h = harness();
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   const land = (lane: string) => h.call(sup, "supervisor", "land_lane", { lane });
@@ -41,15 +41,16 @@ test("a base that conflicts with a lane leaves nothing in its copy: a task takes
   assert.equal(refused.ok, false, refused.text);
   assert.match(
     refused.text,
-    /Lane L1 was not closed: main has moved on and conflicts with lane\/l1-cart in a\.txt\. Nothing was left in the lane's copy, and its Lead has a letter to have a task take main in/,
+    /^Lane L1 was not closed: main has moved on and conflicts with lane\/l1-cart in a\.txt\. Nothing was left in the lane's copy, and its Lead has the facts\. Who takes main in is yours to choose: message its Lead to have a task take it in on its own branch, or open a lane whose task does; land_lane it again once the Lead reports it ready, or drop_lane it\.$/,
   );
   assert.equal(underWay(h, cart.worktree!), false);
   assert.equal(h.git(cart.worktree!, "status", "--porcelain"), "");
   assert.equal(h.ledger().lanes.L1!.ready, undefined);
   await h.idle(cart.lead!);
+  assert.doesNotMatch(h.agents.get(cart.lead!)!.sent.join("\n"), /BASE CONFLICT/, "a fact wakes nobody");
   assert.match(
-    h.agents.get(cart.lead!)!.sent.join("\n"),
-    /BASE CONFLICT L1 \(Cart\): main moved on, and merging it into lane\/l1-cart stops on conflicts in a\.txt\. Nothing was left in your working copy[^]*\n\nNext: add_tasks a task whose Peer runs git merge main on its own branch, settles those files and commits/,
+    h.heard(cart.lead!).join("\n"),
+    /BASE CONFLICT L1 \(Cart\): main moved on, and merging it into lane\/l1-cart stops on conflicts in a\.txt\. Nothing was left in your working copy[^]*\n\nNext: Nothing now: who takes main in is chosen by whoever supervises, who tells you if it is this lane\./,
   );
 
   assert.match((await land("L2")).text, /conflicts with lane\/l2-bees in b\.txt/);
@@ -216,11 +217,11 @@ test("a landing tells each lane still open on its base what now conflicts with i
   assert.equal(landed.ok, true, landed.text);
   assert.match(
     landed.text,
-    /main now conflicts with lanes still open: L2 \(a\.txt\)\. Their Leads are told; between lanes it is yours\./,
+    /main now conflicts with lanes still open: L2 \(a\.txt\)\. Their Leads have the facts; who takes main in for each is yours to choose\./,
   );
   assert.match(
     h.heard(second!.lead!).join("\n"),
-    /BASE MOVED L2 \(Second\): L1 \(First\) landed on main, which now conflicts with lane\/l2-second in a\.txt\. Nothing was merged\./,
+    /BASE MOVED L2 \(Second\): L1 \(First\) landed on main, which now conflicts with lane\/l2-second in a\.txt\. Nothing was merged\.\n\nNext: Nothing now: who takes main in before the lane lands is chosen by whoever supervises; ask if your lane's work needs it sooner\./,
   );
   assert.doesNotMatch(
     h.heard(third!.lead!).join("\n"),

@@ -175,9 +175,7 @@ export async function landFacts(
     ...(await testFacts(kit, root, from, lane.branch, files)),
     ...outside,
     ...(writers.length > 0
-      ? [
-          `It changed what one writer at a time may write, which open lanes may write too: ${besideText(writers)}. Whichever lands second settles it.`,
-        ]
+      ? [`It changed what one writer at a time may write, which open lanes may write too: ${besideText(writers)}.`]
       : []),
     ...recordFacts(project, ledger, lane),
   ];
