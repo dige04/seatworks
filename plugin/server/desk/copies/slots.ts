@@ -23,6 +23,7 @@ import { type Project, gitTimeout } from "../project/project.ts";
 import { errorText } from "../../core/errors.ts";
 import { firstUnder } from "../../core/fs.ts";
 import { unsavedIn } from "./unsaved.ts";
+import { bringIncluded } from "./worktree-include.ts";
 
 type Holder = { lane?: string; task?: string };
 
@@ -42,6 +43,8 @@ export class Slots {
     try {
       const reused = await this.checkOut(project, picked, branch, base);
       checkedOut = true;
+      const missed = await bringIncluded(project.root, picked.path);
+      if (missed) this.desk.log(project, `working copy ${picked.id}: ${missed}`);
       await lockWorktree(
         project.root,
         picked.path,

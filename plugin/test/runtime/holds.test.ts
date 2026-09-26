@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { settle } from "./fake-timeline.ts";
@@ -235,4 +235,23 @@ test("a copy the desk made is locked in git, marked as the desk's, while its wor
   await h.call(lead, "lead", "cut", { task: "L1-T1", reason: "not now" });
   await h.tick();
   assert.equal(listed(), undefined, "and it goes with its work");
+});
+
+test("a copy the desk makes brings along the ignored files the project's .worktreeinclude names, and no others", async () => {
+  const { h, lead } = await laneWriting(["src/**"]);
+  writeFileSync(join(h.root, ".gitignore"), ".env\nconfig/local.json\nbuild/\n");
+  writeFileSync(join(h.root, ".worktreeinclude"), ".env\nconfig/local.json\n");
+  h.git(h.root, "add", ".gitignore", ".worktreeinclude");
+  h.git(h.root, "commit", "-qm", "what copies take along");
+  writeFileSync(join(h.root, ".env"), "KEY=local\n");
+  mkdirSync(join(h.root, "config"));
+  writeFileSync(join(h.root, "config", "local.json"), "{}\n");
+  mkdirSync(join(h.root, "build"));
+  writeFileSync(join(h.root, "build", "out.js"), "built\n");
+  await h.call(lead, "lead", "add_tasks", { tasks: [planned("a", "A", { holds: ["src/**"], parallel: true })] });
+  const copy = h.ledger().tasks["L1-T1"]!.worktree!;
+  assert.equal(readFileSync(join(copy, ".env"), "utf-8"), "KEY=local\n");
+  assert.equal(readFileSync(join(copy, "config", "local.json"), "utf-8"), "{}\n");
+  assert.equal(existsSync(join(copy, "build")), false, "an ignored file it does not name stays behind");
+  assert.equal(h.git(copy, "status", "--porcelain"), "", "and what it brings is ignored there too");
 });
