@@ -14,21 +14,10 @@ test("a Lead reads its lane and its Peers' records and keeps its own pages, and 
 
   // The page is stamped to the minute, and these calls must not straddle one.
   t.mock.timers.enable({ apis: ["Date"], now: Date.now() });
-  assert.match(await say(lead, "lead", "status", {}), /L1-T1/);
-  assert.equal(
-    await say(lead, "lead", "status", {}),
-    "Nothing has changed since you last asked. Open lanes: L1; waiting: none; tasks not settled: L1-T1 running; open asks: 0. End your turn: mail wakes you when something does.",
-    "with the picture in a line, for a seat whose context was compacted since",
-  );
-  assert.match(
-    await say(sup, "supervisor", "status", {}),
-    /Lane L1/,
-    "each seat is judged by what it was shown itself",
-  );
-  await h.call(lead, "lead", "add_tasks", {
-    tasks: [{ key: "t", title: "Receipt", goal: "g", ...scope, holds: ["c.txt"], parallel: true }],
-  });
-  assert.match(await say(lead, "lead", "status", {}), /L1-T2/, "a new task is a change");
+  const first = await say(lead, "lead", "status", {});
+  assert.match(first, /L1-T1/);
+  assert.equal(await say(lead, "lead", "status", {}), first, "asked again, the whole page again, whatever it held");
+  assert.match(await say(sup, "supervisor", "status", {}), /Lane L1/);
   t.mock.timers.reset();
 
   const note = (args: Record<string, unknown>) => say(lead, "lead", "note", args);
