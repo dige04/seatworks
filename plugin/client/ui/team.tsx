@@ -15,7 +15,7 @@ import { sourceLabel } from "./bits.tsx";
 import type { Layer, RoleChoice } from "../../shared/settings.ts";
 import type { CatalogView, ModelsRefreshed, TeamView } from "../../shared/views.ts";
 import { message } from "../format/error.ts";
-import { modelRow, setHitl, setRole, setSignal, sourceOf } from "../model/layer.ts";
+import { modelRow, setHitl, setRole, sourceOf } from "../model/layer.ts";
 import { JudgeCard } from "./judge.tsx";
 import { ModelPicker } from "./model-picker.tsx";
 import { TabBar } from "./tabs.tsx";
@@ -149,31 +149,6 @@ function roleRows({
   return rows;
 }
 
-/** On the Supervisor's chip, since it alone hears the watch: each signal told to it, or only recorded until labels show it is worth that. */
-function SignalsCard({ team, values, machine, layer, disabled, save }: Props) {
-  return (
-    <SettingsCard>
-      <SettingsRow
-        label="What the watch tells the Supervisor"
-        hint="Pages always reach it. Each signal here is only recorded, in shadow, until you turn it on; none ever reaches a Lead or the seat it is about."
-      />
-      {team.signals.map((signal) => (
-        <SettingsSwitch
-          key={signal.kind}
-          label={signal.title}
-          hint={`${signal.kind}. ${sourceLabel(
-            sourceOf(values, machine, (entry) => entry.attention?.signals?.[signal.kind], layer),
-            layer,
-          )}.`}
-          value={team.attention.signals[signal.kind] === "on"}
-          onValueChange={(next) => void save((current) => setSignal(current, signal.kind, next ? "on" : "shadow"))}
-          disabled={disabled}
-        />
-      ))}
-    </SettingsCard>
-  );
-}
-
 /** On the Supervisor's chip, since it is who decides for the Human when they are out of the loop. */
 function HitlCard({ team, values, machine, layer, disabled, save }: Props) {
   return (
@@ -211,7 +186,6 @@ export function TeamSection(props: Props) {
         <SettingsCard>{roleRows({ ...props, role })}</SettingsCard>
       )}
       {role.can.includes("supervise") ? <HitlCard {...props} /> : null}
-      {role.can.includes("supervise") ? <SignalsCard {...props} /> : null}
       <ModelsCard catalog={props.catalog} disabled={props.disabled} reload={props.reload} />
     </SettingsSection>
   );

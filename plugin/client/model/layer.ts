@@ -94,10 +94,6 @@ export function setAttention(values: Layer, choice: AttentionChoice): Layer {
   return { ...values, attention: { ...values.attention, ...choice } };
 }
 
-export function setSignal(values: Layer, kind: string, mode: "on" | "shadow"): Layer {
-  return { ...values, attention: { ...values.attention, signals: { ...values.attention?.signals, [kind]: mode } } };
-}
-
 export function setHitl(values: Layer, choice: HitlChoice): Layer {
   return { ...values, hitl: { ...values.hitl, ...choice } };
 }

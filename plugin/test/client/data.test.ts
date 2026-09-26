@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { KEPT, type Layer } from "../../shared/settings.ts";
 import { countsInstead } from "../../client/format/flow.ts";
 import { incidentState, judgeWords } from "../../client/format/watch.ts";
-import { dropMcp, foldRoles, keptRoles, modelRow, setRole, setSignal, withKey } from "../../client/model/layer.ts";
+import { dropMcp, foldRoles, keptRoles, modelRow, setRole, withKey } from "../../client/model/layer.ts";
 import type { WatchIncident, WatchJudge } from "../../shared/flow-views.ts";
 
 const docs = {
@@ -31,11 +31,6 @@ const EDITS: [string, (layer: Layer) => Layer, Layer][] = [
     "changing its model keeps the rest of its choice",
     (layer) => setRole(layer, "lead", { model: "other" }),
     { ...held, roles: { lead: { ...lead, model: "other" } } },
-  ],
-  [
-    "turning a signal on keeps the rest of the tuning",
-    (layer) => setSignal(layer, "long-turn", "on"),
-    { ...held, attention: { longTurnMinutes: 30, signals: { stuck: "shadow", "long-turn": "on" } } },
   ],
   [
     "removing a server this layer added forgets it, token and all, rather than keeping it marked removed",
