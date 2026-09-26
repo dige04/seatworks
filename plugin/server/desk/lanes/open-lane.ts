@@ -16,7 +16,6 @@ import {
   laneHomeFor,
   readProjectConfig,
   saveConfig,
-  serialIn,
 } from "../project/project.ts";
 import type { Refusal } from "../refusal.ts";
 import type { DeskServices } from "../services.ts";
@@ -140,18 +139,12 @@ async function waitToOpen(desk: DeskServices, caller: Caller, plan: Plan): Promi
 async function openNow(desk: DeskServices, caller: Caller, plan: Plan): Promise<ToolReply> {
   const { project } = caller;
   const { args, place } = plan;
-  const serial = await serialIn(desk.kit, project, project.root);
   // Asked before the issue is fetched, which a refusal would waste; recording the lane asks again.
-  const asked = {
-    onBranch: place.onBranch,
-    writeSet: strs(args.writeSet),
-    contracts: strs(args.contracts),
-    detourOf: detourOf(args),
-  };
-  const early = placement(loadLedger(project.state), asked, args.isolate === true, serial);
+  const asked = { onBranch: place.onBranch, detourOf: detourOf(args) };
+  const early = placement(loadLedger(project.state), asked, args.isolate === true);
   if ("why" in early) return no(`${early.why} ${early.next}`.trim());
   const { issue, unread } = await readIssue(args, project);
-  const placed = recordOpen(desk, caller, plan, issue, serial);
+  const placed = recordOpen(desk, caller, plan, issue);
   if ("why" in placed) return no(`${placed.why} ${placed.next}`.trim());
   const { lane } = placed;
   const from = plan.newBranch ? plan.here : undefined;
@@ -168,7 +161,7 @@ async function openNow(desk: DeskServices, caller: Caller, plan: Plan): Promise<
   const note = unread
     ? `\n\nThe issue was not read into the lane: ${clip(unread, 300)}. The Lead has the outcome and the checks; give it the issue yourself if it needs one.`
     : "";
-  return ok(`${openedReply(project, lane, started.slot, started.lead, issue, started.elsewhere)}${note}`);
+  return ok(`${openedReply(project, lane, started.slot, started.lead, issue, started.beside)}${note}`);
 }
 
 /** Placed where it is recorded: two lanes opened at once would otherwise both find the project's own copy free. */
@@ -177,11 +170,10 @@ function recordOpen(
   caller: Caller,
   plan: Plan,
   issue: Issue | undefined,
-  serial: string[],
 ): { lane: Lane; ownCopy: boolean } | Refusal {
   return desk.ledgers.transact(caller.project, (ledger) => {
     const lane = laneOf(ledger, caller, plan.args, plan.place, issue);
-    const placed = placement(ledger, lane, plan.args.isolate === true, serial);
+    const placed = placement(ledger, lane, plan.args.isolate === true);
     if ("why" in placed) return placed;
     ledger.lanes[lane.id] = lane;
     desk.seating.take(workKey(caller.project, lane.id));

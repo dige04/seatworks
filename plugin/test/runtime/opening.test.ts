@@ -126,8 +126,6 @@ test("a lane takes the project's own copy while it is free; one that finds it ta
   assert.equal(h.git(h.root, "branch", "--show-current").trim(), first.branch);
   assert.notEqual(h.workspaces.get(second.workspaceId!), h.root);
   assert.equal(h.workspaceProjects.get(second.workspaceId!), h.workspaceProjects.get(first.workspaceId!));
-  assert.match((await open("Sessions", { writeSet: ["src/auth/session.ts"], isolate: true })).text, /overlaps lane L2/);
-  assert.equal(Object.keys(h.ledger().lanes).length, 2);
 
   assert.equal((await h.call(sup, "supervisor", "drop_lane", { lane: "L1", reason: "wrong outcome" })).ok, true);
   assert.deepEqual(h.ledger().lanes.L1!.restoring!.writers, [first.lead!]);
@@ -299,7 +297,7 @@ test("a Lead's directive says what its lane writes, depends on and keeps to one 
   const build = directive("L2");
   assert.match(
     build,
-    /^Writes: a\.txt, package-lock\.json\. A change outside these is flagged at hand-back and at landing; if the work needs more, ask with kind need\.$/m,
+    /^Writes: a\.txt, package-lock\.json\. A change outside these is noted at hand-back and at landing; if the work needs more, ask with kind need\.$/m,
   );
   assert.match(build, /^Depends on: b\.txt, which this lane uses and does not write\.$/m);
   assert.match(
@@ -325,13 +323,18 @@ test("a Lead's directive says what its lane writes, depends on and keeps to one 
   assert.equal(loose.ok, true, loose.text);
   assert.match(
     loose.text,
-    /It declared no write set, so it opened beside lanes that may be writing what only one lane at a time may write: L2 \(package-lock\.json\)\. Its Lead is told to leave those to them; amend_lane can give it a write set\./,
+    /It opened beside lanes that may write what it does: L2 \(package-lock\.json\)\. Their Leads and its own are told/,
   );
+  assert.match(directive("L4"), /^Writes: not declared\.$/m);
   assert.match(
     directive("L4"),
-    /^Writes: not declared, so lanes opened after this one are kept off every path this project keeps to one writer\. Lanes already open may be writing what only one lane at a time may write: L2 \(package-lock\.json\)\. Leave those to them until they land, or ask with kind need\.$/m,
+    /^Open beside it and may write the same: L2 \(package-lock\.json\)\. What both write meets when the second of you merges or lands; settling it in this lane is yours\.$/m,
   );
-  assert.doesNotMatch(directive("L3"), /Lanes already open/);
+  assert.match(
+    h.heard(h.ledger().lanes.L2!.lead!).join("\n"),
+    /LANE BESIDE L4 \(Loose\) works beside your lane and may write what yours does: package-lock\.json\./,
+  );
+  assert.doesNotMatch(directive("L3"), /Open beside it/);
 
   const concept = join(h.project.state, "CONTEXT.md");
   assert.equal(existsSync(concept), false);

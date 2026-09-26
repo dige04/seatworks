@@ -1,4 +1,4 @@
-import { clip, hash } from "../../core/text.ts";
+import { capped, clip, hash } from "../../core/text.ts";
 import type { Amendment } from "../../domain/amendment.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
@@ -143,6 +143,18 @@ export const workLetters = {
       [started.id],
       `BESIDE ${started.id} (${started.title}) now runs beside you in a copy of its own and holds ${started.holds.join(", ")}.`,
       "Leave that to it, and ask your Lead if your goal needs it.",
+    );
+  },
+
+  /** A lane that works beside this Lead's and may write what its own does: word only, since what both write meets at merge or landing. */
+  laneBeside(other: Lane, paths: string[]): Letter {
+    return fyi(
+      mail(
+        "lanebeside",
+        [other.id, hash(paths.join("\n"))],
+        `LANE BESIDE ${other.id} (${other.title}) works beside your lane and may write what yours does: ${capped(paths, 8)}.`,
+        "Nothing now: what both lanes write meets when the second merges or lands, and settling it in your lane is yours.",
+      ),
     );
   },
 

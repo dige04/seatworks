@@ -112,17 +112,20 @@ test("a waiting lane held at its turn is told why once, retried by each close an
 
   assert.match(now().L3!.held?.why ?? "", /its Lead is still ending a turn in the project's own copy/);
   assert.equal(branch(), first.branch);
-  assert.match(now().L4!.held?.why ?? "", /overlaps lane L2 at b\.txt/);
   const letters = h
     .heard(sup)
     .flatMap((text) => text.split("\n\n---\n\n"))
-    .filter((text) => text.includes("WAITING L4"));
+    .filter((text) => text.includes("WAITING L3"));
   assert.equal(letters.length, 1);
   assert.match(
     letters[0]!,
-    /overlaps lane L2 at b\.txt\.\n\nNext: It opens by itself once that clears; amend it, or close it to drop it\./,
+    /its Lead is still ending a turn in the project's own copy[^]*\n\nNext: It opens by itself once that clears; amend it, or close it to drop it\./,
   );
-  assert.doesNotMatch(letters[0]!, /open it after L\d+ lands/);
+  assert.equal(now().L4!.status, "open");
+  assert.match(
+    h.heard(now().L2!.lead!).join("\n"),
+    /LANE BESIDE L4 \(Overlap\) works beside your lane and may write what yours does: b\.txt\./,
+  );
   assert.match(now().L5!.held?.why ?? "", /can lead a lane/);
   assert.match(now().L6!.held?.why ?? "", /its base branch gone-base no longer exists/);
   const taken = () => h.events("slot.taken").length;
@@ -131,8 +134,8 @@ test("a waiting lane held at its turn is told why once, retried by each close an
   await h.tick(Date.now());
   assert.equal(taken(), before);
   assert.deepEqual(
-    ["L3", "L4", "L5", "L6"].map((id) => now()[id]!.status),
-    ["waiting", "waiting", "waiting", "waiting"],
+    ["L3", "L5", "L6"].map((id) => now()[id]!.status),
+    ["waiting", "waiting", "waiting"],
   );
 
   h.agents.get(first.lead!)!.status = "idle";
@@ -145,14 +148,18 @@ test("a waiting lane held at its turn is told why once, retried by each close an
   assert.deepEqual([now().L6!.status, now().L6!.held], ["open", undefined]);
   assert.equal(taken(), before + 1);
 
-  await open("Aside", { writeSet: [".idea/misc.xml"], isolate: true });
-  h.agents.get(now().L7!.lead!)!.status = "idle";
-  await h.call(sup, "supervisor", "drop_lane", { lane: "L7", reason: "no longer wanted" });
-  assert.equal(now().L4!.status, "waiting");
-  assert.equal(h.events("lane.held").filter((event) => event.lane === "L4").length, 1);
-  h.agents.get(now().L2!.lead!)!.status = "idle";
-  await h.call(sup, "supervisor", "drop_lane", { lane: "L2", reason: "no longer wanted" });
-  assert.deepEqual([now().L4!.status, now().L4!.held], ["open", undefined]);
+  await open("Mine", { after: ["L6"] });
+  await open("Aside", { isolate: true });
+  h.agents.get(now().L6!.lead!)!.status = "idle";
+  assert.equal((await h.call(sup, "supervisor", "land_lane", { lane: "L6" })).ok, true);
+  assert.match(now().L7!.held?.why ?? "", /Lane L3 is working in the project's own copy/);
+  h.agents.get(now().L8!.lead!)!.status = "idle";
+  await h.call(sup, "supervisor", "drop_lane", { lane: "L8", reason: "no longer wanted" });
+  assert.equal(now().L7!.status, "waiting");
+  assert.equal(h.events("lane.held").filter((event) => event.lane === "L7").length, 1);
+  h.agents.get(now().L3!.lead!)!.status = "idle";
+  await h.call(sup, "supervisor", "drop_lane", { lane: "L3", reason: "no longer wanted" });
+  assert.deepEqual([now().L7!.status, now().L7!.held], ["open", undefined]);
   assert.equal(now().L5!.status, "waiting");
 });
 
@@ -299,7 +306,15 @@ test("an amendment changes what a lane is asked and keeps what it was; its Lead 
   await h.call(sup, "supervisor", "open_lane", lane("Bees", { writeSet: ["b.txt"], isolate: true }));
   assert.match(
     (await amend({ why: "x", writeSet: ["a.txt", "src/**", "b.txt"] })).text,
-    /overlaps lane L2 at b\.txt[^]*Leave those paths out of this lane/,
+    /It now works beside lanes that may write what it does: L2 \(b\.txt\)\. Their Leads and its own are told/,
+  );
+  assert.match(
+    h.heard(h.ledger().lanes.L2!.lead!).join("\n"),
+    /LANE BESIDE L1 \(Cart\) works beside your lane and may write what yours does: b\.txt\./,
+  );
+  assert.match(
+    h.heard(cart.lead!).join("\n"),
+    /LANE BESIDE L2 \(Bees\) works beside your lane and may write what yours does: b\.txt\./,
   );
   const landed = await land();
   assert.equal(landed.ok, true, landed.text);
