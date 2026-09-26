@@ -113,7 +113,7 @@ async function tellMoments(
       desk,
       caller.project,
       caller.id,
-      "turning",
+      "goal-turned",
       `${task.id} changed what it is for, because ${why}; was: ${was.goal}; now: ${task.goal}`,
     );
 }

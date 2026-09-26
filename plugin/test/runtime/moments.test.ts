@@ -35,16 +35,16 @@ test("a Lead widening what a task beside others holds, or turning a task to anot
   );
   assert.match(
     said,
-    /INCIDENT I\d+ \(turning, attend\) on the Lead of L1[^]*What was seen: L1-T2 changed what it is for, because the parser lives there; was: g; now: parse the header instead/,
+    /INCIDENT I\d+ \(goal-turned, attend\) on the Lead of L1[^]*What was seen: L1-T2 changed what it is for, because the parser lives there; was: g; now: parse the header instead/,
   );
   assert.equal(
-    said.match(/\((architecture|turning), attend\)/g)!.length,
+    said.match(/\((architecture|goal-turned), attend\)/g)!.length,
     2,
     "new acceptance, holding less, or where to start reading is the Lead's own business",
   );
 });
 
-test("a task gone quiet until it stalls, or stopped on a refused call, is a struggle W tells whoever supervises once", async () => {
+test("a task gone quiet until it stalls, or stopped on a refused call, is a stall W tells whoever supervises once, under a name of its own and not the struggling pattern's", async () => {
   const { h, sup, lane, peer } = await laneWithPeer();
   const said = () => h.heard(sup).join("\n");
   for (const round of [1, 2, 3]) {
@@ -53,8 +53,8 @@ test("a task gone quiet until it stalls, or stopped on a refused call, is a stru
   }
   assert.doesNotMatch(
     said(),
-    /\(struggling, attend\)/,
-    "sent back again is what W's rework count reads, not a struggle",
+    /\((stalled|struggling), attend\)/,
+    "sent back again is what W's rework count reads, not a stall",
   );
   // A turn counts the Peer as heard from when its last record is no older than the turn: this one starts after it.
   const heard = h.ledger().agents[peer]!;
@@ -66,12 +66,12 @@ test("a task gone quiet until it stalls, or stopped on a refused call, is a stru
   assert.equal(h.ledger().tasks["L1-T1"]!.status, "stalled");
   assert.match(
     said(),
-    /INCIDENT I\d+ \(struggling, attend\) on the Peer on L1-T1 \(Clean build\)[^]*What was seen: its Peer ended 2 turns without a hand-back or an ask/,
+    /INCIDENT I\d+ \(stalled, attend\) on the Peer on L1-T1 \(Clean build\)[^]*What was seen: its Peer ended 2 turns without a hand-back or an ask/,
   );
   assert.equal(
-    said().match(/\(struggling, attend\) on the Peer on L1-T1/g)!.length,
+    said().match(/\(stalled, attend\) on the Peer on L1-T1/g)!.length,
     1,
-    "a turn quiet after it stalled is the same struggle",
+    "a turn quiet after it stalled is the same stall",
   );
   assert.match(
     (await h.call(lane.lead!, "lead", "accept", { task: "L1-T1" })).text,
@@ -99,6 +99,6 @@ test("a task gone quiet until it stalls, or stopped on a refused call, is a stru
   );
   assert.match(
     said(),
-    /\(struggling, attend\) on the Peer on L1-T2 \(Parser\)[^]*What was seen: its Peer's last call was refused: Bash: git log/,
+    /\(stalled, attend\) on the Peer on L1-T2 \(Parser\)[^]*What was seen: its Peer's last call was refused: Bash: git log/,
   );
 });

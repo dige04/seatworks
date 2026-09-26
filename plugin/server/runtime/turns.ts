@@ -235,7 +235,7 @@ export class TurnRules {
     const why = denied
       ? `its Peer's last call ${denied.refused ? "was refused" : "did not finish"}: ${denied.what}`
       : `its Peer ended ${updated.silent} turns without a hand-back or an ask`;
-    const struggling = { kind: "struggling", level: "attend" as const, quote: why, facts: ["struggling"] };
-    await desk.notice(project, { id: agent.id, provider: agent.provider, title: agent.title }, [struggling]);
+    const stalled = { kind: "stalled", level: "attend" as const, quote: why, facts: ["stalled"] };
+    await desk.notice(project, { id: agent.id, provider: agent.provider, title: agent.title }, [stalled]);
   }
 }

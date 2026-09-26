@@ -52,9 +52,9 @@ const FACTS = {
   "reviews-unconverged": { level: "attend", title: "Reviews piling up with nothing accepted" },
   "certainty-only": { level: "attend", title: "A review told to report only certainties" },
   "brief-prewritten": { level: "attend", title: "A brief that writes the answer out" },
-  struggling: {
+  stalled: {
     level: "attend",
-    title: "A task struggling",
+    title: "A task stalled: quiet, or stopped on a refused call",
     next: "Nothing, if its record shows it climbing out; else send its Lead one open question carrying where it stuck. Then mark_incident it.",
   },
   architecture: {
@@ -62,7 +62,7 @@ const FACTS = {
     title: "A task's reach widened: structure settling",
     next: "A reach past what a task was given is structure settling. Nothing, if the directive foresaw it; else ask its Lead why. Then mark_incident it.",
   },
-  turning: {
+  "goal-turned": {
     level: "attend",
     title: "A task's goal turned sharply",
     next: "A turn this sharp often has a reason nobody wrote down. Nothing, if its record gives one; else ask its Lead whether the outcome holds. Then mark_incident it.",

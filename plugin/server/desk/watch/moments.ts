@@ -2,7 +2,7 @@ import type { DeskServices } from "../services.ts";
 import type { Project } from "../project/project.ts";
 import { notice } from "./notice.ts";
 
-type MomentKind = "struggling" | "architecture" | "turning";
+type MomentKind = "architecture" | "goal-turned";
 
 /** A moment about `seat` as a code fact of W's: an incident opened or sighted and told to whoever supervises. */
 export async function tellMoment(
