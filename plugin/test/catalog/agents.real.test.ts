@@ -100,6 +100,11 @@ test("every role builds on every agent the kit ships, each in that agent's own t
     const dir = seatDir(kit, role, harness, home, project);
     const settings = readConfig<unknown>(join(dir, harness.settings.file), {});
     if (harness.id === "claude") {
+      assert.equal(
+        at(settings, "language"),
+        role.role === "supervisor" ? "vietnamese" : undefined,
+        `${where}: only the Supervisor speaks the Human's language; the rest write English, which the watch reads best`,
+      );
       const deny = list(at(settings, "permissions.deny"));
       for (const command of DESK_GIT)
         assert.ok(

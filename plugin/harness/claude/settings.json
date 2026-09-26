@@ -122,7 +122,6 @@
   "env": {
     "BASH_DEFAULT_TIMEOUT_MS": "300000"
   },
-  "language": "vietnamese",
   "autoMemoryEnabled": false,
   "attribution": {
     "commit": "",
