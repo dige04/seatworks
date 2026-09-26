@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { test } from "node:test";
 import { laneWithPeer } from "./harness.ts";
 
@@ -93,6 +95,20 @@ test("a lane on hold stops its seats, keeps their mail, refuses every move, and 
     h.agents.get(peer)!.sent.join("\n"),
     /RESUMED: the work on L1-T1 goes on\.\n\nThe Human backed it up; go on\.\n\nNext: Carry on from where you stopped\./,
   );
+  // A record that cannot be read does not say the lane is free: its seats are held until it can be read again.
+  const record = join(h.project.state, "ledger.json");
+  const kept = readFileSync(record, "utf-8");
+  writeFileSync(record, "{not json");
+  const unread = { id: "req-2", kind: "tool", name: "Bash", title: "rm -rf data" };
+  h.agents.get(peer)!.pending.push(unread);
+  await h.permission(peer, unread);
+  const answered = h.agents.get(peer)!.answered.at(-1)!;
+  assert.equal(answered.response.behavior, "deny");
+  assert.match(
+    String(answered.response.message),
+    /The desk's record cannot be read[^]*Do nothing more until you are told/,
+  );
+  writeFileSync(record, kept);
   assert.equal((await h.call(lead, "lead", "accept", { task: "L1-T1" })).ok, true);
   assert.match((await h.call(sup, "supervisor", "resume_lane", { lane: "L1" })).text, /Lane L1 is not on hold\./);
 

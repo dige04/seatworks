@@ -5,7 +5,7 @@ import type { Lane } from "../domain/lane.ts";
 import { DECIDED, TASK, type Task } from "../domain/task.ts";
 import type { Desk } from "../desk/desk.ts";
 import { type Ledger, laneOfLead, leadLaneOf, taskOfPeer } from "../domain/ledger.ts";
-import { laneOnHold, loadLedger } from "../desk/store/ledger.ts";
+import { holdOn, loadLedger } from "../desk/store/ledger.ts";
 import { seatLetters } from "../desk/letters/seat-letters.ts";
 import { messageLetters } from "../desk/letters/message-letters.ts";
 import { watchLetters } from "../desk/letters/watch-letters.ts";
@@ -74,11 +74,11 @@ export class TurnRules {
     const role = seatOf(this.deps.kit, agent.provider)?.role;
     if (!role?.tools) return;
     const project = projectOf(agent.cwd);
-    const hold = laneOnHold(project.state, agent.id);
+    const hold = holdOn(project.state, agent.id);
     if (hold && request.id) {
       await this.deps.seats.respond(agent.id, request.id, {
         behavior: "deny",
-        message: `Lane ${hold.id} is on hold: ${hold.onHold!.reason}. Do nothing more until you are told it resumes.`,
+        message: `${hold}. Do nothing more until you are told it resumes.`,
       });
       return;
     }

@@ -1,8 +1,8 @@
 import { statSync } from "node:fs";
 import { join } from "node:path";
+import { errorText } from "../../core/errors.ts";
 import { isRecord } from "../../core/json.ts";
 import { readJsonFile, writeJson } from "../../core/store.ts";
-import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, emptyLedger } from "../../domain/ledger.ts";
 
 function ledgerFile(state: string): string {
@@ -51,14 +51,17 @@ export function readLedger(state: string): Ledger {
   return ledger;
 }
 
-/** The lane on hold that this seat works in, as its Lead, a Peer or a reviewer; none where the ledger cannot be read. */
-export function laneOnHold(state: string, agentId: string): Lane | undefined {
+/**
+ * Why this seat is held, as its Lead, a Peer or a reviewer: its lane's hold, or a ledger that cannot be read, which cannot say
+ * the lane is free and so holds it too.
+ */
+export function holdOn(state: string, agentId: string): string | undefined {
   let ledger: Ledger;
   try {
     ledger = loadLedger(state);
-  } catch {
-    return undefined;
+  } catch (error) {
+    return `The desk's record cannot be read, so whether your lane is on hold is not known: ${errorText(error)}`;
   }
   const lane = ledger.lanes[ledger.agents[agentId]?.lane ?? ""];
-  return lane?.onHold && lane.status !== "closed" ? lane : undefined;
+  return lane?.onHold && lane.status !== "closed" ? `Lane ${lane.id} is on hold: ${lane.onHold.reason}` : undefined;
 }

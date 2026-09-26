@@ -16,7 +16,7 @@ type Fake = {
   pending: Pending[];
   answered: {
     requestId: string;
-    response: { behavior: string; updatedInput?: { answers?: Record<string, string> } };
+    response: { behavior: string; message?: string; updatedInput?: { answers?: Record<string, string> } };
   }[];
   prompt?: string;
   promptId?: string;
