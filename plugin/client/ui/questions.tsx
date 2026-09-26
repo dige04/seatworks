@@ -82,6 +82,13 @@ function Question({
         onPress={() => send("decline")}
         disabled={busy}
       />
+      <SettingsAction
+        label="Withdraw"
+        hint="The question no longer stands and leaves your queue: the Supervisor is told, and goes on without it or asks again."
+        actionLabel="Withdraw"
+        onPress={() => send("cancel")}
+        disabled={busy}
+      />
       {said ? (
         <Text
           style={{ color: "error" in said ? theme.colors.statusWarning : theme.colors.foregroundMuted, fontSize: 12 }}
