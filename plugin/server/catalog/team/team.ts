@@ -32,7 +32,7 @@ const QUESTIONS_PER_DAY = 3;
 
 /** `unread` layers are reported, since resolving to nothing looked like a complete team the owner never wrote. */
 export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, unread: string[] = []): Team {
-  const errors: string[] = [...unread];
+  const errors: string[] = [...kit.problems, ...unread];
   const layers = [machine, project];
   layers.forEach((layer, index) => {
     const where = index === 0 ? "The machine settings" : "The project settings";

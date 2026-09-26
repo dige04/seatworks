@@ -6,6 +6,7 @@ import { renderPrompt } from "../../server/catalog/kit/content.ts";
 import { can, roleNamed, roleThatCan, rolesThatCan, toolsOf } from "../../server/catalog/kit/roles.ts";
 import { supportsRole } from "../../server/catalog/kit/harness-files.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
+import { resolveTeam } from "../../server/catalog/team/team.ts";
 import { tempDir } from "../tempdir.ts";
 
 const shipped = (name: string): unknown =>
@@ -205,11 +206,6 @@ const REFUSED: [string, unknown, RegExp][] = [
     { drift: { ...struggling, instructions: "Does the agent drift?" } },
     /^patterns\.json is not as the kit reads it:\n✖ .*`text`.*\n {2}→ at drift\.instructions$/,
   ],
-  [
-    "catalog/patterns.json",
-    { drift: { ...struggling, watches: ["lead"] } },
-    /^pattern drift watches what can lead, and no watched role can$/,
-  ],
 ];
 
 test("a kit file that breaks its contract is refused as the kit loads, naming the file and what is wrong, and one that keeps it loads", () => {
@@ -254,7 +250,10 @@ test("a roles or refused file in the state root replaces the shipped one, and a 
   put(mine, "refused.json", { hub: "the forge's" });
   const [first] = Object.keys(checks);
   put(mine, "checks.json", { [first!]: checks[first!] });
-  put(mine, "patterns.json", {});
+  put(mine, "patterns.json", {
+    drift: { ...struggling, watches: ["lead"] },
+    wander: { ...struggling, watches: ["lead", "write"] },
+  });
   put(mine, "sensor/judge.json", { ...sensor, model: "judge-2" });
   const own = loadKit(dir, mine);
   assert.deepEqual(
@@ -263,9 +262,23 @@ test("a roles or refused file in the state root replaces the shipped one, and a 
     "and that arrangement is the one that runs",
   );
   assert.deepEqual(
-    [own.refused, Object.keys(own.checks), own.patterns, own.sensors.judge?.model],
-    [{ hub: "the forge's" }, [first], {}, "judge-2"],
-    "and so do the watch's questions, patterns and sensors",
+    [own.refused, Object.keys(own.checks), own.sensors.judge?.model],
+    [{ hub: "the forge's" }, [first], "judge-2"],
+    "and so do the watch's questions and sensors",
+  );
+  assert.deepEqual(
+    Object.keys(own.patterns),
+    [],
+    "a pattern that watches nobody this arrangement watches reads nothing, and it does not stop the kit loading",
+  );
+  assert.deepEqual(
+    resolveTeam(own).errors.filter((error) => /^The pattern/.test(error)),
+    [
+      "The pattern drift watches what can lead, and no watched role in this kit can, so it is left out",
+      "The pattern wander watches what can lead, and no watched role in this kit can, so it is left out",
+      "The pattern wander watches what can write, and no watched role in this kit can, so it is left out",
+    ],
+    "and whoever reads the team's errors is told",
   );
   assert.match(
     renderPrompt(own, own.roles[0]!, "claude", { guides: "/g", state: "/s" }),

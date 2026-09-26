@@ -46,6 +46,7 @@ export type Kit = {
   sensors: Record<string, SensorSpec>;
   checks: Record<string, CheckSpec>;
   patterns: Record<string, PatternSpec>;
+  problems: string[];
 };
 
 function subdirs(root: string): string[] {
@@ -136,8 +137,12 @@ export function loadKit(dir: string, stateDir?: string): Kit {
   const roles = loadRoles(raw.roles, harnesses);
   const refused = parsed(RefusedFile, chosen(join(dir, "catalog", "refused.json"), stateDir), "refused.json");
   checkRefused(refused, harnesses);
-  const patterns = parsed(PatternsFile, chosen(join(dir, "catalog", "patterns.json"), stateDir), "patterns.json");
-  checkPatterns(patterns, roles);
+  const problems: string[] = [];
+  const patterns = watchedPatterns(
+    parsed(PatternsFile, chosen(join(dir, "catalog", "patterns.json"), stateDir), "patterns.json"),
+    roles,
+    problems,
+  );
   const { watch } = ecosystem;
   return {
     dir,
@@ -160,16 +165,31 @@ export function loadKit(dir: string, stateDir?: string): Kit {
     sensors: loadSensors(dir, stateDir),
     checks: parsed(ChecksFile, chosen(join(dir, "catalog", "checks.json"), stateDir), "checks.json"),
     patterns,
+    problems,
   };
 }
 
-/** A pattern watches seats by what they can do: one naming what no watched role can is a pattern that never reads anything. */
-function checkPatterns(patterns: Record<string, PatternSpec>, roles: RoleSpec[]): void {
+/**
+ * A pattern watches seats by what they can do, and an arrangement of other roles may watch none of it: what no watched role
+ * can is reported, and a pattern left watching nothing is left out.
+ */
+function watchedPatterns(
+  patterns: Record<string, PatternSpec>,
+  roles: RoleSpec[],
+  problems: string[],
+): Record<string, PatternSpec> {
   const watched = roles.filter((role) => role.can?.includes("watched"));
-  for (const [id, pattern] of Object.entries(patterns))
-    for (const capability of pattern.watches)
-      if (!watched.some((role) => role.can?.includes(capability)))
-        throw new Error(`pattern ${id} watches what can ${capability}, and no watched role can`);
+  const kept: Record<string, PatternSpec> = {};
+  for (const [id, pattern] of Object.entries(patterns)) {
+    const unwatched = pattern.watches.filter((capability) => !watched.some((role) => role.can?.includes(capability)));
+    const idle = unwatched.length === pattern.watches.length;
+    for (const capability of unwatched)
+      problems.push(
+        `The pattern ${id} watches what can ${capability}, and no watched role in this kit can${idle ? ", so it is left out" : ""}`,
+      );
+    if (!idle) kept[id] = pattern;
+  }
+  return kept;
 }
 
 function loadHarnesses(dir: string): Record<string, HarnessSpec> {
