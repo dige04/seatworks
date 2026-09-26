@@ -6,6 +6,7 @@ import { Client, SdkErrorCode, StreamableHTTPClientTransport } from "@modelconte
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { McpServer, fromJsonSchema } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
+import { ticker, unchecked } from "./progress.mjs";
 
 const config = JSON.parse(process.argv[2] ?? "{}");
 const label = config.label ?? config.name ?? "The code server";
@@ -14,8 +15,6 @@ const backend = config.backend ?? {};
 const pin = config.pin;
 const CALL_MS = (config.timeoutSeconds ?? 180) * 1000;
 const LIST_MS = (config.listSeconds ?? (backend.type === "stdio" ? 20 : 3)) * 1000;
-// A harness that asked for progress hears that often that a call, or the opening or indexing it waits on, still runs.
-const PROGRESS_MS = Number(process.env.SEATWORKS_PROGRESS_MS ?? 20_000);
 const { version } = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf-8"));
 
 function gitOut(args, cwd = process.cwd()) {
@@ -32,8 +31,6 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const replyText = (result) => (result?.content ?? []).map((part) => part.text ?? "").join("\n");
 const failed = (pattern, result) => Boolean(pattern && result?.isError) && new RegExp(pattern, "i").test(replyText(result));
 const pinned = (args = {}, path = root) => (pin ? { ...args, [pin]: path } : { ...args });
-// The model is shown each schema as the backend writes it; the backend checks what it is sent.
-const unchecked = { getValidator: () => (input) => ({ valid: true, data: input, errorMessage: undefined }) };
 const within = (promise, ms) => Promise.race([promise, sleep(ms).then(() => Promise.reject(Object.assign(new Error("no answer in time"), { name: "TimeoutError" })))]);
 
 function withRoot(value, path) {
@@ -143,12 +140,9 @@ function routeOf(result, route) {
 
 /** Progress for a harness that asked: ticks of its own while a call runs, and what the backend says of its work. */
 function progressOf(ctx, name) {
-  const token = ctx?.mcpReq._meta?.progressToken;
-  if (token === undefined) return { stop: () => {} };
-  let beat = 0;
-  const say = (message) => void ctx.mcpReq.notify({ method: "notifications/progress", params: { progressToken: token, progress: ++beat, message } }).catch(() => {});
-  const timer = setInterval(() => say(`${label} is still working on ${name}.`), PROGRESS_MS);
-  return { forward: (update) => say(update.message ?? `${label} is working on ${name}.`), stop: () => clearInterval(timer) };
+  const ticking = ticker(ctx, `${label} is still working on ${name}.`);
+  if (!ticking) return { stop: () => {} };
+  return { forward: (update) => ticking.say(update.message ?? `${label} is working on ${name}.`), stop: ticking.stop };
 }
 
 async function openHere(ctx, progress) {

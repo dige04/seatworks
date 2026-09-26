@@ -5,6 +5,7 @@ import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { McpServer, fromJsonSchema } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
+import { ticker, unchecked } from "./progress.mjs";
 
 const [role = "", toolSet = "", socket = ""] = process.argv.slice(2);
 const here = dirname(fileURLToPath(import.meta.url));
@@ -12,15 +13,10 @@ const read = (file) => JSON.parse(readFileSync(join(here, file), "utf-8"));
 const tools = read("tools.json")[toolSet] ?? [];
 const instructions = read("instructions.json")[toolSet];
 const { version } = read("../package.json");
-// A harness that asked for progress hears that often that a call still runs, which also keeps one that counts idle time waiting.
-const PROGRESS_MS = Number(process.env.SEATWORKS_PROGRESS_MS ?? 20_000);
 // A dropped line is tried again that soon. A harness's first list waits that long for the desk's choices, well inside the
 // second Codex gives a server to start; choices that come later reach it as a changed list, and the desk checks values anyway.
 const RETRY_MS = 2_000;
 const WELCOME_MS = 300;
-
-/** The model is shown each schema as the kit writes it; the desk checks the arguments and says what is wrong in its own words. */
-const unchecked = { getValidator: () => (input) => ({ valid: true, data: input, errorMessage: undefined }) };
 
 /** A copy of `schema` where each field the desk named a fixed set for takes it as its enum, however deep the field sits. */
 function offered(schema, fields) {
@@ -86,13 +82,11 @@ class Desk {
       if (this.#waiting.delete(id)) this.#write({ type: "cancel", id });
       settle(undefined);
     };
-    const { signal, _meta: meta, notify } = ctx.mcpReq;
+    const { signal } = ctx.mcpReq;
     signal.addEventListener("abort", stop, { once: true });
-    let beat = 0;
-    const token = meta?.progressToken;
-    const progress = token === undefined ? undefined : setInterval(() => void notify({ method: "notifications/progress", params: { progressToken: token, progress: ++beat, message: `The desk is still working on ${tool}.` } }).catch(() => {}), PROGRESS_MS);
+    const progress = ticker(ctx, `The desk is still working on ${tool}.`);
     const reply = await answered;
-    clearInterval(progress);
+    progress?.stop();
     signal.removeEventListener("abort", stop);
     if (reply) this.#write({ type: "taken", id });
     return reply ?? { ok: false, text: `The line to the team desk dropped while ${tool} ran, so its answer did not come back here. If the desk took the call, its answer comes as mail: look before calling ${tool} again, since a second call may do it twice.` };

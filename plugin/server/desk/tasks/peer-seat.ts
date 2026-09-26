@@ -31,7 +31,7 @@ export async function startPeer(
       parent: how.parent,
       title: seatTitle.of(task, roleNamed(kit, how.role)!),
       prompt: taskBrief(task, lane, besideOf(loadLedger(project.state), task)),
-      labels: { "seatworks.lane": lane.id, "seatworks.task": task.id, "seatworks.role": how.role },
+      labels: { "seatworks.lane": lane.id, "seatworks.task": task.id },
     });
     ledgers.transact(project, (ledger) => {
       const entry = ledger.tasks[task.id];
