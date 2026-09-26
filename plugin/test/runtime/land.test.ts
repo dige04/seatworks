@@ -303,7 +303,7 @@ test("two lanes landed at once each stay on the base: the second waits for the f
   );
 });
 
-test("with the Human out of the loop, getting what landed out is the Supervisor's: push sends the base and a release tag, never forced", async () => {
+test("with the Human out of the loop, getting what landed out is the Supervisor's: push sends the base where git would, and a release tag, never forced", async () => {
   const { h, sup, land } = await laneWith({ "a.txt": "cart\n" });
   const remote = tempDir("sw2-remote-");
   h.git(remote, "init", "-q", "--bare");
@@ -315,6 +315,13 @@ test("with the Human out of the loop, getting what landed out is the Supervisor'
     /Getting it out is yours while the Human is out of the loop: push sends main to its remote/,
   );
   const push = (args: Record<string, unknown> = {}) => h.call(sup, "supervisor", "push", args);
+  assert.match(
+    (await push()).text,
+    /^Nothing was pushed: main names no remote to push to, as git reads it/,
+    "a remote that is only there is not where the Human's own git would push",
+  );
+  h.git(h.root, "config", "branch.main.remote", "origin");
+  h.git(h.root, "config", "branch.main.merge", "refs/heads/main");
   assert.match((await push()).text, /^Pushed main to origin\.$/);
   const head = () => h.git(h.root, "rev-parse", "main").trim();
   assert.equal(h.git(remote, "rev-parse", "main").trim(), head());
@@ -325,11 +332,26 @@ test("with the Human out of the loop, getting what landed out is the Supervisor'
   assert.equal(h.git(remote, "rev-parse", "v1.0.0^{commit}").trim(), head());
   assert.match((await push({ tag: "bad..tag" })).text, /bad\.\.tag is not a name git takes for a tag/);
 
+  const fork = tempDir("sw2-fork-");
+  h.git(fork, "init", "-q", "--bare");
+  h.git(h.root, "remote", "add", "fork", fork);
+  h.git(h.root, "config", "remote.pushDefault", "fork");
+  assert.match((await push()).text, /^Pushed main to fork\.$/, "where the Human pushes, not where they fetch from");
+  assert.equal(h.git(fork, "rev-parse", "main").trim(), head());
+  h.git(h.root, "config", "--unset", "remote.pushDefault");
+
   const elsewhere = tempDir("sw2-elsewhere-");
   h.git(elsewhere, "clone", "-q", remote, ".");
   h.git(elsewhere, "commit", "-q", "--allow-empty", "-m", "elsewhere");
   h.git(elsewhere, "push", "-q", "origin", "main");
   h.git(h.root, "commit", "-q", "--allow-empty", "-m", "here");
+  for (let again = 0; again < 2; again++)
+    assert.match(
+      (await push({ tag: "v1.1.0" })).text,
+      /^Nothing was pushed: origin has 1 commit on main that main here lacks/,
+      "a tag for a push that failed is not left behind to refuse the next try",
+    );
+  assert.equal(h.git(h.root, "tag", "--list", "v1.1.0").trim(), "");
   assert.match(
     (await push()).text,
     /^Nothing was pushed: origin has 1 commit on main that main here lacks, and a push is never forced\. Taking it in is a lane's work: open_lane with a task whose Peer merges origin\/main, fetched now, into its own branch/,
