@@ -2,6 +2,7 @@ import { KeyedQueue } from "../../core/keyed-queue.ts";
 import { midTurn } from "../../core/paseo.ts";
 import type { SeatLook, Seats } from "../../core/ports.ts";
 import { isRecord } from "../../core/json.ts";
+import { daemonLog } from "../../core/logger.ts";
 import { keptFault, readKept, writeJson } from "../../core/store.ts";
 
 export type Letter = { id: string; to: string; key: string; text: string; at: number; wakes?: false };
@@ -149,12 +150,14 @@ export class Outbox {
       // Word that asks nothing of an idle seat now waits for a letter that does, or for a turn it is already in.
       if (!steer && mine.every((letter) => letter.wakes === false)) return new Set<string>();
       const text = await this.compose(to, mine);
-      await this.seats.send(
-        to,
-        text,
-        [...new Set(mine.map((letter) => letter.key.split(":")[0]!))],
-        steer ? "steer" : undefined,
-      );
+      const kinds = [...new Set(mine.map((letter) => letter.key.split(":")[0]!))];
+      try {
+        await this.seats.send(to, text, kinds, steer ? "steer" : undefined);
+      } catch (error) {
+        // Kept for the next pump: what posted it has already happened, and a retry would do it twice.
+        daemonLog.error(`mail for ${to} was not taken:`, error);
+        return new Set<string>();
+      }
       const now = Date.now();
       this.awaiting.set(to, now);
       const ids = new Set(mine.map((letter) => letter.id));
