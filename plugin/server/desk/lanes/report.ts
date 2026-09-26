@@ -85,9 +85,10 @@ async function tell(
 ): Promise<ToolReply> {
   const ready = args.ready === true;
   const to = await desk.roster.supervisorFor(project, lane.opener);
-  const parked = ready ? await parkAtCheckpoint(desk, project, lane.id) : undefined;
+  const parked = ready ? await parkAtCheckpoint(desk, project, lane) : undefined;
   const ahead = ready ? await readAhead(desk, project, lane) : { asks: [], facts: [], changes: false };
-  const letter = workLetters.report(lane, str(args.summary), ready, strs(args.carried), { gate, parked, ...ahead });
+  const found = { gate, parked: parked && `It is on hold: ${parked}.`, ...ahead };
+  const letter = workLetters.report(lane, str(args.summary), ready, strs(args.carried), found);
   const posted = await desk.mail.post(to, letter);
   const text = posted === "nobody" ? letter.text : undefined;
   recordEvent(project, { kind: "lane.report", lane: lane.id, ready, gate: gate?.ok, to: to ?? null, text });
@@ -100,25 +101,31 @@ async function tell(
   const reviews = ready ? reviewFacts(loadLedger(project.state), lane) : [];
   const also =
     reviews.length > 0 ? ` It also carries what the record has of the lane's reviews: ${reviews.join(" ")}` : "";
+  const held = parked
+    ? ` The lane is on hold: ${parked}; nothing starts in it and nothing lands until it resumes.`
+    : "";
   return ok(
-    `Reported to ${to}${gate && !gate.ok ? ", with what the gate did in it" : ""}.${also} Stay quiet until mail arrives.`,
+    `Reported to ${to}${gate && !gate.ok ? ", with what the gate did in it" : ""}.${also}${held} Stay quiet until mail arrives.`,
   );
 }
 
-/** A lane that went on without the Human's answer to a costly question stops at its ready report; says which, when it did. */
-async function parkAtCheckpoint(desk: DeskServices, project: Project, lane: string): Promise<string | undefined> {
+/**
+ * A lane that went on without the Human's answer to a costly question stops at its ready report; why, when it did. Its Lead,
+ * whose report this is, is not cut off mid-call: its reply says so.
+ */
+async function parkAtCheckpoint(desk: DeskServices, project: Project, lane: Lane): Promise<string | undefined> {
   if (!desk.teamFor(project).hitl.on) return undefined;
   const waiting = desk.ledgers.transact(project, (ledger) => {
     const open = Object.values(ledger.questions).filter(
-      (question) => question.lane === lane && question.status === "open" && question.class === "costly",
+      (question) => question.lane === lane.id && question.status === "open" && question.class === "costly",
     );
     for (const question of open) question.parked = true;
     return open.map((question) => question.id);
   });
   if (waiting.length === 0) return undefined;
   const reason = `it went on without the Human's answer to ${waiting.join(", ")}, and stops at its ready report until they answer`;
-  const held = await putOnHold(desk, project, lane, "desk", reason);
-  return typeof held === "string" ? undefined : `It is on hold: ${reason}.`;
+  const held = await putOnHold(desk, project, lane.id, "desk", reason, lane.lead);
+  return typeof held === "string" ? undefined : reason;
 }
 
 /** What landing a lane reported ready would bring and wait for, read before whoever lands it decides to. */

@@ -16,8 +16,9 @@ export function holdRefusal(lane: Lane): string | undefined {
 }
 
 /**
- * Puts a lane on hold for `by`: each seat still working in it gets HOLD past the outbox, and a landing it waited on is called
- * off. An approval the Human already gave stands: it is for the lane as it is, and nothing lands while the hold lasts.
+ * Puts a lane on hold for `by`: each seat still working in it but `spared`, the one whose own call brought the hold and hears
+ * of it in its reply, gets HOLD past the outbox, and a landing it waited on is called off. An approval the Human already gave
+ * stands: it is for the lane as it is, and nothing lands while the hold lasts.
  */
 export async function putOnHold(
   desk: DeskServices,
@@ -25,6 +26,7 @@ export async function putOnHold(
   laneId: string,
   by: string,
   reason: string,
+  spared?: string,
 ): Promise<{ lane: Lane; stopped: string[]; calledOff: boolean } | string> {
   const { ledgers, roster } = desk;
   const held = ledgers.transact(project, (ledger) => {
@@ -42,7 +44,7 @@ export async function putOnHold(
   });
   if (typeof held === "string") return held;
   const stopped: string[] = [];
-  for (const { seat, task } of held.seats)
+  for (const { seat, task } of held.seats.filter((entry) => entry.seat !== spared))
     if (await roster.interrupt(seat, workLetters.onHold(held.lane, reason, task))) stopped.push(seat);
   recordEvent(project, { kind: "lane.onHold", lane: held.lane.id, by, reason, stopped });
   return { lane: held.lane, stopped, calledOff: held.calledOff };

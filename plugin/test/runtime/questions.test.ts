@@ -40,10 +40,15 @@ test("a question's class decides what waits on it: an irreversible one holds its
     /stops at its next report of ready if they have not answered by then\./,
   );
   assert.equal(h.ledger().lanes.L1!.onHold, undefined);
-  await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  const reported = await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
   assert.match(
     h.ledger().lanes.L1!.onHold?.reason ?? "",
     /went on without the Human's answer to H1, and stops at its ready report until they answer/,
+  );
+  assert.deepEqual(h.agents.get(lane.lead!)!.interrupted, [], "the Lead is not cut off inside its own report");
+  assert.match(
+    reported.text,
+    /The lane is on hold: it went on without the Human's answer to H1[^]*nothing starts in it and nothing lands until it resumes\./,
   );
   await h.idle(sup);
   assert.match(
