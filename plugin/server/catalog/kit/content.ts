@@ -104,13 +104,15 @@ function contentPath(kit: Kit, path: string): string {
   return isAbsolute(path) ? path : ownOr(kit, path);
 }
 
+/** A role's skill set is the shipped one and the state root's of the same name together, so an owner may add a skill to it. */
 export function skillSources(kit: Kit, role: RoleSpec, extra: Map<string, string> = new Map()): Map<string, string> {
-  const root = join(kit.dir, "content", "skills");
   const found = new Map<string, string>();
-  if (role.skills) {
-    const own = isAbsolute(role.skills) ? role.skills : join(root, role.skills);
-    for (const name of skillDirs(own))
-      found.set(name, isAbsolute(role.skills) ? join(own, name) : ownOr(kit, `skills/${role.skills}/${name}`));
+  if (role.skills && isAbsolute(role.skills))
+    for (const name of skillDirs(role.skills)) found.set(name, join(role.skills, name));
+  else if (role.skills) {
+    const set = join("skills", role.skills);
+    const names = [...(kit.own ? skillDirs(join(kit.own, set)) : []), ...skillDirs(join(kit.dir, "content", set))];
+    for (const name of names) found.set(name, ownOr(kit, join(set, name)));
   }
   for (const extra of role.extraSkills ?? []) {
     const [set, name] = extra.split(":") as [string, string];

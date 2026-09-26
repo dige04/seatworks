@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { renderPrompt } from "../../server/catalog/kit/content.ts";
+import { renderPrompt, skillSources } from "../../server/catalog/kit/content.ts";
 import { can, roleNamed, roleThatCan, rolesThatCan, toolsOf } from "../../server/catalog/kit/roles.ts";
 import { supportsRole } from "../../server/catalog/kit/harness-files.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
@@ -246,7 +246,13 @@ test("a roles or refused file in the state root replaces the shipped one, and a 
   const mine = tempDir("sw2-preset-mine-");
   const prompt = join(mine, "DRIVER.md");
   writeFileSync(prompt, "# Driver\n\nYou drive.\n");
-  put(mine, "roles.json", { providerPrefix: "sw2-", roles: [{ ...lead, role: "driver", label: "Driver", prompt }] });
+  put(mine, "roles.json", {
+    providerPrefix: "sw2-",
+    roles: [
+      { ...lead, role: "driver", label: "Driver", prompt, skills: "driving" },
+      { ...lead, role: "navigator", label: "Navigator", prompt, skills: "routes" },
+    ],
+  });
   put(mine, "refused.json", { hub: "the forge's" });
   const [first] = Object.keys(checks);
   put(mine, "checks.json", { [first!]: checks[first!] });
@@ -258,7 +264,7 @@ test("a roles or refused file in the state root replaces the shipped one, and a 
   const own = loadKit(dir, mine);
   assert.deepEqual(
     own.roles.map((role) => role.role),
-    ["driver"],
+    ["driver", "navigator"],
     "and that arrangement is the one that runs",
   );
   assert.deepEqual(
@@ -284,6 +290,16 @@ test("a roles or refused file in the state root replaces the shipped one, and a 
     renderPrompt(own, own.roles[0]!, "claude", { guides: "/g", state: "/s" }),
     /You drive\./,
     "its prompt is read from where it says, not from inside the package",
+  );
+  const skill = (root: string, set: string, name: string) =>
+    put(root, `${set}/${name}/SKILL.md`, `---\nname: ${name}\ndescription: ${name}\n---\n`);
+  skill(join(dir, "content", "skills"), "routes", "plan-route");
+  skill(join(mine, "own", "skills"), "routes", "avoid-tolls");
+  skill(join(mine, "own", "skills"), "driving", "park");
+  assert.deepEqual(
+    own.roles.map((role) => [...skillSources(own, role).keys()].sort()),
+    [["park"], ["avoid-tolls", "plan-route"]],
+    "a skill set of its own, and a skill of its own in a shipped set, are found where the owner keeps them",
   );
   const acme = own.harnesses.acme!;
   assert.equal(supportsRole(own, acme, own.roles[0]!), false, "a role of its own needs its sandbox on each harness");
