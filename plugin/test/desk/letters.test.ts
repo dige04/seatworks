@@ -214,7 +214,11 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
   delete need.task;
   delete need.answer;
   delete need.default;
-  assert.match(next(askLetters.askTo(need, "the Lead of L1", "supervisor")), /^Decide and answer A1/);
+  assert.match(
+    next(askLetters.askTo(need, "the Lead of L1", "supervisor")),
+    /^Decide and answer A1; what only the Human can give \(access, a key, spending\) or a kit or setup error goes to them/,
+    "a key for the API is the Human's external commitment, never the Supervisor's to decide",
+  );
   const question = { ...need, kind: "question" as const };
   assert.match(
     next(askLetters.askTo(question, "the Lead of L1", "supervisor")),

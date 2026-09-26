@@ -11,7 +11,7 @@ function askNext(ask: Ask): string {
     return `Its Lead is gone: answer ${ask.id} if you can; replace_lead puts a new Lead on the lane where it stands.`;
   if (ask.kind === "question")
     return `If CONTEXT.md settles it, answer ${ask.id}; if it is what the project does, ask the Human and write it into CONTEXT.md; else decide. The Lead runs on its default.`;
-  return `Decide and answer ${ask.id}; a kit or setup error goes to the Human word for word.`;
+  return `Decide and answer ${ask.id}; what only the Human can give (access, a key, spending) or a kit or setup error goes to them word for word.`;
 }
 
 /** The Lead that keeps its lane off what an irreversible question decides, until whoever supervises tells it how it goes on. */
