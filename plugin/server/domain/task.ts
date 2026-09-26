@@ -16,10 +16,9 @@ const MOVES = {
   merge: { from: ["queued"], to: "merging" },
   requeue: { from: ["merging"], to: "queued" },
   merged: { from: ["merging"], to: "merged" },
-  // Stopped on conflicts left in its copy: like a red one, its Lead's to send back to its Peer to settle, or to cut.
-  conflict: { from: ["merging"], to: "done" },
-  // Red with its lane brought in: the lane branch stays as it was, and the task is its Lead's to send back or accept over the gate.
-  red: { from: ["merging"], to: "done" },
+  // Stopped on conflicts left in its copy, or red with its lane brought in: the lane branch stays as it was, and the task is
+  // its Lead's again, to send back, accept over the gate, or cut.
+  stop: { from: ["merging"], to: "done" },
   fail: { from: ["queued", "merging"], to: "failed" },
   stall: { from: ["running", "rework"], to: "stalled" },
   lose: { from: ["running", "rework"], to: "stalled" },

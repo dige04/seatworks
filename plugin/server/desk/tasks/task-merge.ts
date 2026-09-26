@@ -16,7 +16,7 @@ import { reachNotes } from "./reach.ts";
 import { recordEvent } from "../store/event-log.ts";
 import { backOnLane, bringLaneIn } from "../copies/sync.ts";
 
-type Outcome = "merged" | "conflict" | "red" | "fail";
+type Outcome = "merged" | "stop" | "fail";
 
 /** A gate verdict on a task's branch, with the failing run's tail when this merge ran it. */
 type Verdict = { ok: boolean; note: string; over?: string; run?: { tail: string; logFile: string } };
@@ -103,7 +103,7 @@ export class TaskMerge {
     const synced = await bringLaneIn(task, lane);
     if ("conflicts" in synced) {
       const letter = mergeLetters.conflict(task, synced.conflicts, lane.branch, "left", synced.by);
-      await this.finish(project, task, lane, "conflict", letter);
+      await this.finish(project, task, lane, "stop", letter);
       return undefined;
     }
     if ("not" in synced) {
@@ -112,7 +112,7 @@ export class TaskMerge {
     }
     const verdict = await this.verdict(project, task, lane);
     if (verdict?.ok === false && verdict.over === undefined) {
-      await this.finish(project, task, lane, "red", mergeLetters.red(task, lane.branch, verdict.note, verdict.run));
+      await this.finish(project, task, lane, "stop", mergeLetters.red(task, lane.branch, verdict.note, verdict.run));
       return undefined;
     }
     if (verdict?.over !== undefined) {
