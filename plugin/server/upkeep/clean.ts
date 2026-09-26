@@ -83,7 +83,6 @@ function seats(ctx: CleanContext): Found[] {
   return found;
 }
 
-/** A working copy the desk holds no slot for, and every copy of a project that is not attached. */
 async function copies(ctx: CleanContext): Promise<Found[]> {
   const root = worktreeRoot(ctx.home);
   const attached = new Map(ctx.known.map((project) => [project.slug, project]));

@@ -8,7 +8,6 @@ interface Logger {
 
 const PREFIX = `${PLUGIN_ID}:`;
 
-/** The one place the plugin writes to the console. */
 export const daemonLog: Logger = {
   error(message, cause) {
     if (cause === undefined) console.error(`${PREFIX} ${message}`);

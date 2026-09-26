@@ -34,7 +34,6 @@ export function readConfig<T>(path: string, fallback: T): T {
   return "value" in read ? (read.value as T) : fallback;
 }
 
-/** A config file's value; one that cannot be read throws, naming it, rather than stand in as empty. */
 export function readConfigStrict<T>(path: string): T {
   const read = readFile(path);
   if ("value" in read) return read.value as T;
@@ -57,7 +56,6 @@ export function writeConfigAtomic(path: string, text: string, mode = 0o600): voi
     writeFileSync(staging, text, { mode });
     renameSync(staging, path);
   } catch (error) {
-    // A full disk stops this between the two lines; the half-written file is not left beside the real one.
     rmSync(staging, { force: true });
     throw error;
   }

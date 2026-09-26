@@ -106,7 +106,6 @@ async function readCheckout(dir: string, view: UpdateView): Promise<{ remote: st
   return { remote };
 }
 
-/** What the remote branch brings, set on `view`: how far apart they are, its commits, a package change and its versions. */
 async function readIncoming(dir: string, view: UpdateView): Promise<void> {
   const [ahead, behind] = ((await out(dir, ["rev-list", "--left-right", "--count", "HEAD...@{u}"])) ?? "0\t0")
     .split(/\s+/)
@@ -127,7 +126,6 @@ async function readIncoming(dir: string, view: UpdateView): Promise<void> {
   view.paseo = next !== now ? next : null;
 }
 
-/** Moves the checkout forward only, installs what its packages now ask for, and reloads the plugin. */
 export async function applyUpdate(ctx: UpdateContext): Promise<UpdateView> {
   const view = await checkUpdate(ctx);
   if (view.blocked || view.behind === 0) return view;

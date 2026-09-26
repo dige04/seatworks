@@ -1,5 +1,3 @@
-/** JSON values: records, a stable order for comparing them, dot paths, and one layered over another. */
-
 export type Json = Record<string, unknown>;
 
 export const isRecord = (value: unknown): value is Json =>
@@ -19,7 +17,6 @@ export function sameJson(a: unknown, b: unknown): boolean {
   return JSON.stringify(sortKeys(a)) === JSON.stringify(sortKeys(b));
 }
 
-/** What `path` reaches through nested records, or undefined where one is missing. */
 export function getPath(value: unknown, path: string[]): unknown {
   let cursor = value;
   for (const part of path) cursor = isRecord(cursor) ? cursor[part] : undefined;

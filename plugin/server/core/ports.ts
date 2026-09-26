@@ -71,10 +71,8 @@ export type Workspaces = {
   archive(workspace: string): Promise<void>;
 };
 
-/** An agent as a Paseo hook names it, so far as the plugin reads it. */
 export type HookAgent = { id: string; provider: string; cwd: string; title?: string | null };
 
-/** A timeline item as the plugin reads it: its kind, and fields that are checked before they are trusted. */
 export type TimelineItem = {
   readonly type: string;
   readonly text?: unknown;
@@ -115,7 +113,6 @@ export type SessionOpen = {
   env: Record<string, string>;
 };
 
-/** What the plugin does on each Paseo hook. */
 export type HostHooks = {
   create(config: AgentConfig, env: Record<string, string>): { config: AgentConfig; env: Record<string, string> };
   sessionOpen(request: SessionOpen): SessionOpen;
@@ -126,7 +123,6 @@ export type HostHooks = {
   archived(agent: HookAgent): Promise<void>;
 };
 
-/** An agent's models as Paseo lists them. */
 export type ModelList = {
   models?: {
     id: string;

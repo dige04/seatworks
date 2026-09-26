@@ -53,7 +53,6 @@ export function ensureLink(path: string, target: string): boolean {
   return true;
 }
 
-/** Writes `text` as a real file, replacing a link there; false when the file already held it. */
 export function writeIfChanged(path: string, text: string): boolean {
   if (isLink(path)) unlinkSync(path);
   if (present(path) && readFileSync(path, "utf-8") === text) return false;

@@ -28,10 +28,8 @@ export function clip(text: string, limit: number): string {
   return text.length <= limit ? text : `${text.slice(0, limit).trimEnd()}\n[… ${text.length - limit} more characters]`;
 }
 
-/** `one` for a count of one, else `many`. */
 export const plural = (count: number, one: string, many: string): string => (count === 1 ? one : many);
 
-/** The first `limit` of a list, and how many more there are. */
 export const capped = (items: string[], limit: number): string =>
   items.length > limit ? `${items.slice(0, limit).join(", ")} and ${items.length - limit} more` : items.join(", ");
 
@@ -42,7 +40,6 @@ export function within(text: string, limit: number): string {
   return /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
 }
 
-/** Text quoted from a seat's own record on one line, its secrets masked. */
 export const oneLine = (text: string, limit = 200): string => within(mask(text).replace(/\s+/g, " ").trim(), limit);
 
 /** Cut between words when a title runs past `max`, so a branch never ends in half a word. */

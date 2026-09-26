@@ -1,12 +1,10 @@
 import { execFile } from "node:child_process";
 
-/** An issue as a Lead is given it: what it is called, where it lives, and what it says. */
 export type Issue = { title: string; url: string; body: string };
 
 /** One way to read an issue: a reference `match`es it, and `run`, given `$1`… for what the match caught, prints it as JSON. */
 type IssueForm = { match: string; run: string[] };
 
-/** The command that reads `ref`, from the first form it matches; none when no form does. */
 function issueCommand(forms: IssueForm[], ref: string): string[] | undefined {
   const text = ref.trim();
   for (const form of forms) {

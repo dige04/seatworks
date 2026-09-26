@@ -62,7 +62,6 @@ async function pack(plain: string): Promise<void> {
   }
 }
 
-/** Newest first, rolled files are kept while their sizes on disk add up to `keepBytes`. */
 function prune(roll: Rolling): void {
   const names = readdirSync(roll.dir);
   let total = 0;

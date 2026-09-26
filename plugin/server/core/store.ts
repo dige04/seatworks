@@ -36,7 +36,6 @@ export function readKept<T>(
   return holds(read.value) ? { value: read.value } : { fault: `${path} does not hold what the plugin keeps there` };
 }
 
-/** Why a kept file that cannot be read stops what would have written it. */
 export function keptFault(fault: string): Error {
   return new Error(`${fault}. Nothing was written over it. Only the Human can repair it or move it aside.`);
 }

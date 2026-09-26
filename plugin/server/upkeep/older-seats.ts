@@ -45,7 +45,6 @@ function olderBySlug(ctx: OlderContext, since: string): OlderSeats[] {
   }));
 }
 
-/** The seats of each project started before the version this machine runs. */
 export function olderSeats(ctx: OlderContext): OlderSeatsView {
   const stamp = stampKit(ctx.kit, ctx.home, ctx.now);
   return { ...stamp, projects: olderBySlug(ctx, stamp.since) };

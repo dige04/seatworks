@@ -25,7 +25,7 @@ const files = (dir: string) =>
 const dirs = (dir: string) =>
   existsSync(dir) ? readdirSync(dir).filter((name) => statSync(join(dir, name)).isDirectory()) : [];
 
-/** Every unit the kit ships now, with a hash of what it holds. A skill is one unit, its folder whole. */
+/** A skill is one unit, its folder whole. */
 function shippedUnits(kit: Kit): Record<string, string> {
   const content = join(kit.dir, "content");
   const units: Record<string, string> = {};
@@ -39,7 +39,6 @@ function shippedUnits(kit: Kit): Record<string, string> {
 
 const isTaken = (value: unknown): value is Taken => isRecord(value) && isRecord(value.units);
 
-/** What the owner last took in of the kit's content, or null before the first reading; one that cannot be read throws. */
 function takenOf(stateDir: string): Taken | null {
   const read = readKept<Taken | null>(takenFile(stateDir), null, isTaken);
   if ("fault" in read) throw keptFault(read.fault);

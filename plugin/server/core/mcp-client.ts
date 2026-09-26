@@ -13,7 +13,6 @@ async function withServer<T>(url: string, timeoutMs: number, use: (client: Clien
   }
 }
 
-/** A tool's answer as text, and whether it went through; a server that cannot be reached is a failed call that says why. */
 export async function callTool(
   url: string,
   name: string,
@@ -31,7 +30,6 @@ export async function callTool(
   }
 }
 
-/** The names of the tools a server offers, or why it could not say. */
 export async function toolNames(url: string, timeoutMs: number): Promise<{ names?: string[]; error?: string }> {
   try {
     return {
@@ -44,7 +42,6 @@ export async function toolNames(url: string, timeoutMs: number): Promise<{ names
   }
 }
 
-/** Whether an MCP server answers its handshake, or why not. */
 export async function reaches(url: string, timeoutMs: number): Promise<{ ok: boolean; error?: string }> {
   try {
     await withServer(url, timeoutMs, async () => undefined);
