@@ -59,7 +59,7 @@ test("a letter goes to its seat when the seat can take it, and until then is hel
   // Whether a seat's harness takes mail into a running turn is its own: here, by the seat.
   const steering = new Set(["lead", "fresh", "unseen", "stopped"]);
   const file = join(tempDir(), "outbox.json");
-  const outbox = new Outbox(file, (_to, list) => list.map((letter) => letter.text).join("|"), fakeSeats(agents), {
+  const outbox = new Outbox(file, (_seat, list) => list.map((letter) => letter.text).join("|"), fakeSeats(agents), {
     steers: (seat) => steering.has(seat.id),
   });
   const post = (to: string, key: string, text: string, wakes?: false) =>
@@ -146,7 +146,7 @@ test("a letter Paseo will not take is kept for the next try, and the post that w
   let refusing = true;
   const outbox = new Outbox(
     join(tempDir(), "outbox.json"),
-    (_to, list) => list.map((letter) => letter.text).join("|"),
+    (_seat, list) => list.map((letter) => letter.text).join("|"),
     {
       look: seats.look,
       async send(id, text, kinds, into) {

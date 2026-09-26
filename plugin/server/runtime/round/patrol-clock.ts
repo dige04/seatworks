@@ -23,7 +23,7 @@ export class PatrolClock {
           () => this.offline.clear(),
           (error) => this.failed(error),
         );
-      this.timer = setTimeout(round, Math.max(5, source.teamFor().attention.tickSeconds) * 1000);
+      this.timer = setTimeout(round, source.teamFor().attention.tickSeconds * 1000);
     };
     this.timer = setTimeout(round, source.teamFor().attention.tickSeconds * 1000);
   }

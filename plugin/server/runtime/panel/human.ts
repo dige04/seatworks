@@ -1,6 +1,7 @@
 import type { Human } from "../../desk/human/human.ts";
 import type { Project } from "../../desk/project/project.ts";
 import type { LandDecided, OrdersRead, QuestionAnswered, ReportRead } from "../../../shared/views.ts";
+import { unknownProject } from "./projects.ts";
 import type { HumanRpc } from "./rpc.ts";
 import type { TeamSource } from "../team-source.ts";
 
@@ -17,7 +18,7 @@ export class HumanPanel implements HumanRpc {
   }
 
   private project(slug: string): Project | Refused {
-    return this.source.named(slug) ?? { error: `No project named ${slug} has been seen on this machine.` };
+    return this.source.named(slug) ?? { error: unknownProject(slug) };
   }
 
   /** Their word on a held landing, from the panel, the one place it comes from: landing is already the Supervisor's call. */

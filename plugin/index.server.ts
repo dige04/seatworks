@@ -17,7 +17,7 @@ export default function contribute(server: PluginServerContext) {
   try {
     const kit = loadKit(dir, stateRoot());
     applyModels(kit, readModels(stateRoot()));
-    runtime = new Runtime(kit, host, { sensor: (spec, key) => decisionsJudge(spec, key) });
+    runtime = new Runtime(kit, host, { sensor: decisionsJudge });
   } catch (error) {
     return refused(server, `the kit in ${dir} failed to load: ${errorText(error)}`, error);
   }

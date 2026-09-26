@@ -10,7 +10,7 @@ type Posted = "sent" | "held" | "duplicate";
 
 const isLetter = (value: unknown): value is Letter =>
   isRecord(value) && typeof value.to === "string" && typeof value.at === "number";
-type Compose = (to: string, letters: Letter[]) => string | Promise<string>;
+type Compose = (seat: SeatLook, letters: Letter[]) => string;
 /**
  * What the outbox asks of the desk. `dropped` is told when a letter is given up on, so it is not lost quietly; `steers`, whether
  * the seat's harness takes a text into a running turn rather than replacing the turn; `calling`, whether the seat waits on a
@@ -69,6 +69,7 @@ export class Outbox {
       if (now - letter.at < KEEP_MS) kept.push(letter);
       else this.rules.dropped?.(letter, now);
     }
+    for (const agent of this.gone) if (!kept.some((letter) => letter.to === agent)) this.gone.delete(agent);
     return kept;
   }
 
@@ -149,7 +150,7 @@ export class Outbox {
       if (!steer && (midTurn(seat.status) || waiting)) return new Set<string>();
       // Word that asks nothing of an idle seat now waits for a letter that does, or for a turn it is already in.
       if (!steer && mine.every((letter) => letter.wakes === false)) return new Set<string>();
-      const text = await this.compose(to, mine);
+      const text = this.compose(seat, mine);
       const kinds = [...new Set(mine.map((letter) => letter.key.split(":")[0]!))];
       try {
         await this.seats.send(to, text, kinds, steer ? "steer" : undefined);

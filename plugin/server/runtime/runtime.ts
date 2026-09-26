@@ -77,8 +77,7 @@ export class Runtime implements HostHooks {
     this.source = new TeamSource(kit);
     this.seating = new Seating(kit, this.source, { node: nodeBin(), socket: deskSocket() });
     const rules = mailRules(kit, (agentId) => this.socket.calling(agentId));
-    const compose = (to: string, list: Parameters<typeof composeMail>[2]) => composeMail(host.seats, to, list);
-    this.outbox = new Outbox(options.outboxFile ?? join(stateRoot(), "outbox.json"), compose, host.seats, rules);
+    this.outbox = new Outbox(options.outboxFile ?? join(stateRoot(), "outbox.json"), composeMail, host.seats, rules);
     const log = (project: Project, line: string) => this.log(project, line);
     const remember = (project: Project) => this.remember(project);
     this.desk = new Desk({
