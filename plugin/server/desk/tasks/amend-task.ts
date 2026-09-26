@@ -2,6 +2,7 @@ import { DECIDED } from "../../domain/task.ts";
 import { laneTask } from "../access.ts";
 import { type Args, type Caller, type ToolReply, given, no, ok, str } from "../context.ts";
 import { type Amendment, amend } from "../../domain/amendment.ts";
+import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { workLetters } from "../letters/work-letters.ts";
@@ -66,7 +67,7 @@ function record(
     const found = laneTask(ledger, caller, str(args.task));
     if (typeof found === "string") return found;
     const { lane, task } = found;
-    if (DECIDED.includes(task.status)) return `${task.id} is ${task.status}; start a task for what is asked now.`;
+    if (DECIDED.includes(task.status)) return decided(ledger, task);
     const { set, hinted } = asAsked(task, changes);
     // Checked as a start is, where it is written: holding more, a task beside others could hold what another does.
     const holds = set.holds as string[] | undefined;
@@ -81,6 +82,14 @@ function record(
     const note = hinted ? hintedNote(task.id, hinted) : holds && outsideNote(lane, task.id, holds);
     return { task: { ...task }, amendment, note };
   });
+}
+
+/** Why a task past its hand-back takes no amendment: a merged one whose Peer is kept takes what changes as rework. */
+function decided(ledger: Ledger, task: Task): string {
+  const bound = ledger.agents[task.peer ?? ""];
+  if (task.status === "merged" && bound && !bound.gone && bound.task === task.id)
+    return `${task.id} is merged, and its Peer is kept on it: send what changes with rework.`;
+  return `${task.id} is ${task.status}; start a task for what is asked now.`;
 }
 
 /** A Lead widening a task past what it held settles structure; one changing what it is for turns sharply: W notes both. */

@@ -77,6 +77,10 @@ test("a Peer whose task is accepted is kept for rework until its Lead releases i
     /^L1-T1 is merged, and its Peer is kept only to take rework: ask its Lead to send rework if its work must change\./,
     "whoever supervises holds no rework of its own",
   );
+  assert.match(
+    await say("amend_task", { task: "L1-T1", why: "totals move to cents", goal: "totals in cents" }),
+    /^L1-T1 is merged, and its Peer is kept on it: send what changes with rework\./,
+  );
   assert.match(await say("rework", { task: "L1-T1", text: "x" }), /L1-T2 holds the lane's working copy/);
   assert.equal(h.ledger().tasks["L1-T1"]!.status, "merged", "and nothing moved");
 
@@ -114,6 +118,10 @@ test("a Peer whose task is accepted is kept for rework until its Lead releases i
   assert.match(released.text, /The Peer kept from L1-T1 is released\./);
   assert.ok(h.agents.get(peer)!.archivedAt);
   assert.match(await say("release", { task: "L1-T1" }), /The Peer kept from L1-T1 is gone already\./);
+  assert.match(
+    await say("amend_task", { task: "L1-T1", why: "totals move to cents", goal: "totals in cents" }),
+    /^L1-T1 is merged; start a task for what is asked now\./,
+  );
 
   assert.match(await status(), kept("L1-T2", second.peer!));
   h.agents.get(second.peer!)!.status = "running";
