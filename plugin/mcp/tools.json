@@ -695,7 +695,7 @@
           },
           "humanSaid": {
             "type": "string",
-            "description": "With the Human in the loop, their words from this chat asking to drop an askFirst path or change laneHome."
+            "description": "With the Human in the loop, their words from this chat asking to drop an askFirst path or a risk rule, or change laneHome."
           }
         }
       }
