@@ -150,8 +150,8 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       );
       assert.equal(
         deny.includes("Edit(./**)"),
-        ["supervisor", "lead", "reviewer"].includes(as),
-        `${where}: an Edit deny binds the sandbox too, so its shell writes nothing in the working copy, as on Codex; its pages under the state and $TMPDIR lie outside it`,
+        ["supervisor", "lead"].includes(as),
+        `${where}: an Edit deny binds the sandbox too, so its shell writes nothing in the working copy, as on Codex; its pages under the state and $TMPDIR lie outside it, and a Reviewer's copy is its own, thrown away with its review`,
       );
       assert.equal(
         deny.includes("Bash(sleep *)"),
@@ -206,11 +206,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         false,
         `${where}: only the role's skills, as on every other agent`,
       );
-      assert.equal(
-        at(settings, "sandbox_mode"),
-        ["reviewer", "watcher"].includes(as) ? "read-only" : "workspace-write",
-        where,
-      );
+      assert.equal(at(settings, "sandbox_mode"), as === "watcher" ? "read-only" : "workspace-write", where);
       assert.equal(
         at(settings, "web_search") === "disabled",
         !searches,

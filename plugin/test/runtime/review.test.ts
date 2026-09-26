@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { harness } from "./harness.ts";
@@ -117,7 +117,7 @@ test("a review hands back a verdict and its findings, answers what the project's
 
   // A lane put on hold while its review is being set up gets none: it is read again where the review is written.
   const count = reviews(h).length;
-  const gate = heldGit("symbolic-ref");
+  const gate = heldGit("rev-parse");
   t.after(gate.release);
   const asking = h.call(lead, "lead", "start_review", { focus: "Anything left?" });
   await gate.reached;
@@ -269,51 +269,64 @@ test("a review's changes stand until a hand-back after them or a review acceptin
   assert.match((await ready()).next, /^land_lane it if acceptance is met/, "its own review accepted it since");
 });
 
-test("a review reads a task where its work is: in the task's own copy until it merges, and in the merge on the lane once it has", async () => {
-  const { h, lane, lead } = await opened("Reviewed", { writeSet: ["a.txt", "b.txt"] });
+test("a review reads the commit it covers in a copy of its own, where it may write, which goes with the review", async () => {
+  const { h, sup, lane, lead } = await opened("Reviewed", { writeSet: ["a.txt", "b.txt"] });
   const beside = async (title: string, file: string) => {
     await h.call(lead, "lead", "add_tasks", {
       tasks: [{ key: "t", title, goal: "g", ...scope, holds: [file], parallel: true }],
     });
     return Object.values(h.ledger().tasks).find((entry) => entry.title === title)!;
   };
+  const head = (where: string) => h.git(where, "rev-parse", "HEAD").trim();
   const task = await beside("A", "a.txt");
   h.commit(task.worktree!, "a.txt", "A\n");
   await h.call(task.peer!, "peer", "done", { outcome: "complete", summary: "a" });
   assert.equal((await h.call(lead, "lead", "rework", { task: "L1-T1", text: "Say more." })).ok, true);
+  const committed = head(task.worktree!);
   assert.equal((await h.call(lead, "lead", "start_review", { task: "L1-T1", focus: "Is this right?" })).ok, true);
   const first = reviews(h).at(-1)!;
-  assert.equal(first.slot, task.slot, "the reviewer reads the task's commits in that task's own copy");
+  assert.notEqual(first.slot, task.slot, "not in the copy its Peer works in");
+  assert.equal(h.agents.get(first.peer!)!.cwd, first.worktree, "seated in its own copy");
+  assert.equal(
+    head(first.worktree!),
+    committed,
+    "at the commit it reviews: sent back, as far as its Peer has committed",
+  );
   assert.match(
     h.agents.get(first.peer!)!.prompt ?? "",
-    new RegExp(`see it with git diff ${lane.branch}\\.\\.\\.HEAD\\.`),
-    "sent back, it is read as far as its Peer has committed, not at the hand-back it replaces",
+    new RegExp(
+      `Your working copy holds ${task.branch} at ${committed.slice(0, 7)}; see it with git diff ${lane.branch}\\.\\.\\.${committed}\\.`,
+    ),
   );
   h.commit(task.worktree!, "a.txt", "A\nmore\n");
+  assert.equal(head(first.worktree!), committed, "what its Peer commits after does not move under it");
+  writeFileSync(join(first.worktree!, "coverage.out"), "what a check it ran left behind\n");
+  assert.equal((await h.call(lead, "lead", "cut", { task: first.id, reason: "read" })).ok, true);
+  assert.equal(existsSync(first.worktree!), false, "cut, its copy goes, with whatever it wrote there");
+  assert.equal(h.ledger().slots[first.slot!], undefined);
+  assert.ok(existsSync(task.worktree!), "and the task's own copy stays");
+
   await h.call(task.peer!, "peer", "done", { outcome: "complete", summary: "a, and more" });
   await h.idle(task.peer!);
   assert.equal((await h.call(lead, "lead", "accept", { task: "L1-T1" })).ok, true);
   await h.runtime.desk.settled(h.project);
   assert.equal(h.ledger().tasks["L1-T1"]!.status, "merged");
-  assert.ok(existsSync(first.worktree!), "the reviewer is mid-turn, and its verdict is what the Lead waits for");
-  h.agents.get(first.peer!)!.status = "idle";
-  await h.endTurn(first.peer!, "verdict sent");
-  assert.ok(
-    existsSync(first.worktree!),
-    "once it stops, the copy stays with the task's Peer until its Lead releases it",
-  );
-  assert.equal(h.ledger().slots[task.slot!]?.task, "L1-T1", "and holds nothing the lane lacks");
-
   assert.equal((await h.call(lead, "lead", "start_review", { task: "L1-T1", focus: "At the boundary?" })).ok, true);
   const late = reviews(h).at(-1)!;
   const merge = h.ledger().tasks["L1-T1"]!.mergeSha!;
   const brief = h.agents.get(late.peer!)!.prompt!;
-  assert.match(brief, new RegExp(`The change is in ${lane.branch}, as the merge ${merge.slice(0, 7)}`));
+  assert.match(brief, new RegExp(`Your working copy holds ${lane.branch} at the merge ${merge.slice(0, 7)}`));
   assert.match(brief, new RegExp(`git diff ${merge}\\^1\\.\\.${merge}`), "a range that shows nothing reviews nothing");
-  assert.equal(h.git(lane.worktree!, "diff", "--name-only", `${merge}^1..${merge}`).trim(), "a.txt");
-  assert.equal(h.agents.get(late.peer!)!.cwd, lane.worktree, "read from the lane's copy");
-  assert.notEqual(late.worktree, task.worktree, "not from the copy its Peer keeps");
+  assert.equal(head(late.worktree!), merge);
 
+  assert.equal((await h.call(lead, "lead", "start_review", { focus: "Does the lane hold together?" })).ok, true);
+  const whole = reviews(h).at(-1)!;
+  const tip = h.git(h.root, "rev-parse", lane.branch).trim();
+  assert.equal(head(whole.worktree!), tip);
+  assert.match(
+    h.agents.get(whole.peer!)!.prompt!,
+    new RegExp(`Your working copy holds ${lane.branch} at ${tip.slice(0, 7)}\\.`),
+  );
   // A task cut before it committed leaves neither a copy nor a branch, and there is nothing to read.
   const empty = await beside("B", "b.txt");
   const cut = await h.call(lead, "lead", "cut", { task: empty.id, reason: "wrong shape" });
@@ -322,4 +335,16 @@ test("a review reads a task where its work is: in the task's own copy until it m
   const nothing = await h.call(lead, "lead", "start_review", { task: empty.id, focus: "anything?" });
   assert.equal(nothing.ok, false);
   assert.match(nothing.text, /neither a merge nor a branch is left to read it from/);
+
+  assert.equal((await h.call(sup, "supervisor", "drop_lane", { lane: lane.id, reason: "read enough" })).ok, true);
+  assert.ok(existsSync(whole.worktree!), "not under a reviewer still in its turn");
+  for (const review of [late, whole]) {
+    h.agents.get(review.peer!)!.status = "idle";
+    await h.endTurn(review.peer!, "verdict sent");
+  }
+  assert.deepEqual(
+    [late, whole].map((review) => existsSync(review.worktree!)),
+    [false, false],
+    "a closing lane takes its reviews' copies with it",
+  );
 });

@@ -24,10 +24,12 @@ test("a task in the lane's copy works on a branch of its own, and the lane branc
   assert.match(own, /^task\/l1-t1-/);
   assert.equal(onBranch(h, copy), own);
   await h.call(lead, "lead", "start_review", { focus: "Is the lane sound?" });
+  const tip = h.git(h.root, "rev-parse", "--short=7", lane.branch).trim();
   assert.ok(
     brief("L1-R1").includes(
-      `\n\nYour working copy is on ${own}, where L1-T1 is at work, not ${lane.branch}: read ${lane.branch} itself with git (git show ${lane.branch}:<path>, git log ${lane.branch}). Read whatever the question needs.\n`,
+      `\n\nYour working copy holds ${lane.branch} at ${tip}. Read whatever the question needs.\n`,
     ),
+    "the lane as its branch has it, not the task at work in the lane's copy",
   );
   await h.call(lead, "lead", "cut", { task: "L1-R1", reason: "not now" });
   assert.equal(
@@ -79,9 +81,6 @@ test("a task in the lane's copy works on a branch of its own, and the lane branc
   assert.equal(h.git(copy, "log", "-1", "--format=%s", lane.branch).trim(), "Merge L1-T1: Clean build");
   assert.equal(onBranch(h, copy), lane.branch);
   assert.equal(h.git(copy, "status", "--porcelain").trim(), "");
-  await h.call(lead, "lead", "start_review", { focus: "Is the lane sound?" });
-  assert.ok(brief("L1-R2").includes(`\n\nYour working copy is on ${lane.branch}. Read whatever the question needs.\n`));
-  await h.call(lead, "lead", "cut", { task: "L1-R2", reason: "not now" });
 
   assert.equal((await h.call(lead, "lead", "cut", { task: "L1-T1", reason: "late" })).text, "L1-T1 is already merged.");
   assert.equal(

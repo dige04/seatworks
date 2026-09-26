@@ -60,7 +60,12 @@ async function peerCopy(
   task: Task,
 ): Promise<Copy> {
   if (task.mode === "parallel") {
-    const slot = await slots.acquire(project, task.branch!, lane.branch, { task: task.id }, `${task.id} ${task.title}`);
+    const slot = await slots.acquire(
+      project,
+      { branch: task.branch!, from: lane.branch },
+      { task: task.id },
+      `${task.id} ${task.title}`,
+    );
     ledgers.setTask(project, task.id, (entry) => Object.assign(entry, { slot: slot.id, worktree: slot.path }));
     return slot;
   }

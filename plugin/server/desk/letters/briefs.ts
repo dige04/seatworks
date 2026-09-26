@@ -107,6 +107,9 @@ export function reviewBrief(
       "The project asks every review of a change like this, answered in order in answers:",
       ...review.asked.map((question, index) => `${index + 1}. ${question}`),
     );
-  lines.push("", "Read only: don't edit files or commit. When finished, call done with your verdict and findings.");
+  lines.push(
+    "",
+    "Your copy is yours to run checks in, and goes with this review: don't edit the change or commit. When finished, call done with your verdict and findings.",
+  );
   return lines.join("\n");
 }

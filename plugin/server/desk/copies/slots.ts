@@ -2,6 +2,7 @@ import { recordEvent } from "../store/event-log.ts";
 import { existsSync, mkdirSync, readdirSync, rmSync, rmdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
+  addDetached,
   addWorktree,
   branchExists,
   currentBranch,
@@ -26,7 +27,10 @@ import { firstUnder } from "../../core/fs.ts";
 import { unsavedIn } from "./unsaved.ts";
 import { bringIncluded } from "./worktree-include.ts";
 
-type Holder = { lane?: string; task?: string };
+/** `throwaway` marks a copy nobody's work lives in, such as a review's: it goes whole, whatever was left in it. */
+type Holder = { lane?: string; task?: string; throwaway?: true };
+
+type At = { branch: string; from: string } | { commit: string };
 
 export class Slots {
   private readonly desk: Pick<DeskBase, "ledgers" | "log" | "projects" | "indexesFor" | "stopping" | "gates">;
@@ -40,18 +44,18 @@ export class Slots {
     this.workspaces = workspaces;
   }
 
-  /** `work` is what the copy is taken for, as its workspace is named: a lane or a task, its id and title. */
-  async acquire(
-    project: Project,
-    branch: string,
-    base: string,
-    holder: Holder,
-    work: string,
-  ): Promise<Slot & { setUp?: SetUp }> {
+  /**
+   * `work` is what the copy is taken for, as its workspace is named: a lane or a task, its id and title. `at` is a new
+   * branch made from another, or a commit it holds on no branch.
+   */
+  async acquire(project: Project, at: At, holder: Holder, work: string): Promise<Slot & { setUp?: SetUp }> {
     const picked = this.reserve(project, holder);
+    const [branch, base] = "commit" in at ? [undefined, at.commit] : [at.branch, at.from];
     let checkedOut = false;
     try {
-      const reused = await this.checkOut(project, picked, branch, base);
+      const reused = branch
+        ? await this.checkOut(project, picked, branch, base)
+        : await this.checkOutAt(project, picked, base);
       checkedOut = true;
       const missed = await bringIncluded(project.root, picked.path);
       if (missed) this.desk.log(project, `working copy ${picked.id}: ${missed}`);
@@ -62,7 +66,7 @@ export class Slots {
         `seatworks: the working copy of ${work}, which the desk removes itself`,
       );
       const workspaceId = await this.workspaceFor(project, picked, work);
-      recordEvent(project, { kind: "slot.taken", slot: picked.id, branch, ...holder });
+      recordEvent(project, { kind: "slot.taken", slot: picked.id, branch: branch ?? base, ...holder });
       openIndexes(this.desk, project, picked, reused);
       return { ...picked, workspaceId, setUp };
     } catch (error) {
@@ -91,7 +95,7 @@ export class Slots {
     if (!slotId) return undefined;
     const slot = loadLedger(project.state).slots[slotId];
     let kept: string | undefined;
-    const unsaved = slot && existsSync(slot.path) ? await unsavedIn(slot.path) : undefined;
+    const unsaved = slot && !slot.throwaway && existsSync(slot.path) ? await unsavedIn(slot.path) : undefined;
     // Its work is over: a copy kept for the Human is theirs to move or remove as git lets them.
     if (slot && unsaved) await unlockWorktree(project.root, slot.path);
     if (slot) {
@@ -166,6 +170,21 @@ export class Slots {
     return false;
   }
 
+  /** The copy at `commit` on no branch: a copy left free is moved there, else one is made. */
+  private async checkOutAt(project: Project, slot: Slot, commit: string): Promise<boolean> {
+    if (existsSync(join(slot.path, ".git"))) {
+      if ((await pristineState(slot.path)) !== "clean")
+        throw new Error(`working copy ${slot.id} has uncommitted changes, or git could not read it`);
+      const run = await git(slot.path, ["switch", "--detach", commit]);
+      if (run.code !== 0) throw new Error(run.stderr.trim() || "git switch failed");
+      return true;
+    }
+    mkdirSync(dirname(slot.path), { recursive: true });
+    if (!(await addDetached(project.root, slot.path, commit, gitTimeout(project))))
+      throw new Error(`git could not make a copy at ${commit.slice(0, 7)}`);
+    return false;
+  }
+
   /**
    * The copy's workspace, named after the project and then its work: the sweep knows the desk's copies by that first
    * word. A new one is filed under its project, since a bare directory makes a Paseo project the plugin cannot remove.
@@ -215,6 +234,7 @@ export class Slots {
       if (entry) {
         delete entry.lane;
         delete entry.task;
+        delete entry.throwaway;
       }
     });
   }

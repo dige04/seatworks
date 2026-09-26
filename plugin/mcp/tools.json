@@ -941,7 +941,7 @@
     {
       "name": "start_review",
       "title": "Start a review",
-      "description": "Start a read-only reviewer with clean context in the working copy of the work under review. With task: it reviews that task's commits. Without task: it answers the open question on your lane branch, which is how a council seat, a scout or an audit reader starts.",
+      "description": "Start a reviewer with clean context in a copy of its own at the commit it reads, which goes when you cut it. With task: it reviews that task's commits. Without task: it answers the open question on your lane branch, which is how a council seat, a scout or an audit reader starts.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,

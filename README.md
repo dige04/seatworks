@@ -54,7 +54,7 @@ yours.
 | Supervisor | Your intent, across lanes: opens, lands and drops them, answers Leads, and is the only seat that asks you anything | You start it | Claude Code · `claude-opus-5` · high |
 | Lead | One lane: its tasks, their order, and what is accepted | Started with its lane; stays after the lane closes until the Supervisor releases it | Claude Code · `claude-opus-5` · medium |
 | Peer | One task, and the engineering judgement inside it | Started with its task; stays after the task is accepted until its Lead releases it or the lane closes, and never takes another | Claude Code · `claude-opus-5` · medium |
-| Reviewer | A read-only review of one change | Started with its review; ends when its Lead cuts the review or the lane closes | Claude Code · `claude-opus-5` · medium |
+| Reviewer | A review of one change, in a copy of its own at the commit it reads | Started with its review; ends when its Lead cuts the review or the lane closes | Claude Code · `claude-opus-5` · medium |
 | Watcher | The watch's questions, one case at a time, when you choose a seat to answer them | Started when a case first needs it; let go once no lane is open | The Peer's, until you set its own |
 
 Roles are data in `plugin/roles.json`, not code, and each has the tool set it names in

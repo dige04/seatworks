@@ -129,7 +129,13 @@ function takeCopy(
   how: Seating,
 ): Promise<Copy> {
   if (lane.onBranch) return ownCopy.carryOn(project, lane.branch, how.from);
-  if (how.ownCopy) return slots.acquire(project, lane.branch, lane.base, { lane: lane.id }, `${lane.id} ${lane.title}`);
+  if (how.ownCopy)
+    return slots.acquire(
+      project,
+      { branch: lane.branch, from: lane.base },
+      { lane: lane.id },
+      `${lane.id} ${lane.title}`,
+    );
   return ownCopy.inPlace(project, lane.branch, lane.base);
 }
 

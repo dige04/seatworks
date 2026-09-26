@@ -6,7 +6,6 @@ import type { DeskBase } from "../base.ts";
 import { letGo } from "./gone.ts";
 import type { Slot } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
-import { loadLedger } from "../store/ledger.ts";
 import type { Project } from "../project/project.ts";
 import type { Roster } from "./roster.ts";
 import type { Slots } from "../copies/slots.ts";
@@ -115,7 +114,8 @@ export class Agents {
   /** `into` is the branch the task's work was to land in: its own branch goes only once it is in there. */
   async retire(project: Project, task: Task, into?: string): Promise<string | undefined> {
     await letGo(this.desk, this.roster, project, task.peer);
-    if (task.kind !== "code") return undefined;
+    const writing = [task.peer].filter((id): id is string => typeof id === "string" && this.roster.archiving(id));
+    if (task.kind !== "code") return this.teardowns.putAway({ project, slot: task.slot }, writing);
     // A task in the lane's copy leaves only its branch: dropped once `into` holds all of it, kept and named while not.
     if (task.mode !== "parallel")
       return task.branch &&
@@ -124,16 +124,6 @@ export class Agents {
         (await contains(project.root, into, task.branch)) === false
         ? task.branch
         : undefined;
-    // Everyone sharing the copy, not only this Peer: a reviewer reads from it too, and removing it loses the verdict.
-    const sharing = task.slot
-      ? Object.values(loadLedger(project.state).tasks).filter(
-          (other) => other.id !== task.id && other.slot === task.slot && other.status === "running",
-        )
-      : [];
-    for (const other of sharing) await letGo(this.desk, this.roster, project, other.peer);
-    const writing = [task.peer, ...sharing.map((other) => other.peer)].filter(
-      (id): id is string => typeof id === "string" && this.roster.archiving(id),
-    );
     return this.teardowns.putAway({ project, slot: task.slot, dropBranch: task.branch, into }, writing);
   }
 }

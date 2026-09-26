@@ -114,12 +114,6 @@ export async function releaseKeptPeer(desk: DeskServices, caller: Caller, args: 
     return no(`${task.id} is ${task.status}: accept it first, or cut it, which stops its Peer.`);
   const peer = task.peer!;
   if (!(await roster.seated(peer))) return no(`The Peer kept from ${task.id} is gone already.`);
-  const reading = Object.values(ledger.tasks).find(
-    (other) =>
-      other.kind === "review" && other.of === task.id && other.slot === task.slot && other.status === "running",
-  );
-  if (task.mode === "parallel" && reading)
-    return no(`${reading.id} still reviews ${task.id} in its copy: cut it first.`);
   if (task.mode === "parallel") await agents.retire(project, task, lane.branch);
   else await letGo(desk, roster, project, peer);
   recordEvent(project, { kind: "seat.released", seat: peer, of: task.id });

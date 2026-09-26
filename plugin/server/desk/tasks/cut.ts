@@ -23,6 +23,8 @@ export async function cutTask(desk: DeskServices, caller: Caller, args: Args): P
     );
   if (typeof updated === "string") return no(`${task.id} is already ${updated}.`);
   await letGo(desk, roster, project, task.peer, true);
+  // A review's copy is its own, made to be thrown away with it.
+  if (task.kind !== "code") await slots.release(project, task.slot);
   const left =
     task.kind !== "code"
       ? undefined

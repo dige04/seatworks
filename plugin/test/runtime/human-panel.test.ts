@@ -388,7 +388,7 @@ test("the Flow tab draws the machine as the ledger and Paseo have it, and an unc
   const apart = { outcome: "x", ...scope, isolate: true };
   await h.call(sup, "supervisor", "open_lane", { title: "Apart", ...apart });
   await h.call(sup, "supervisor", "open_lane", { title: "After", ...apart, after: ["L2"] });
-  assert.equal((await drawn(h)).lanes.find((lane) => lane.id === "L2")!.copy, "S1");
+  assert.equal((await drawn(h)).lanes.find((lane) => lane.id === "L2")!.copy, "S2", "S1 is L1-R1's own");
   await h.call(sup, "supervisor", "drop_lane", { lane: "L2", reason: "not now" });
   const after = (await drawn(h)).lanes.find((lane) => lane.id === "L3")!;
   assert.deepEqual([after.status, after.after, after.lead], ["waiting", ["L2"], null]);

@@ -84,7 +84,7 @@
     {
       "role": "reviewer",
       "label": "Reviewer",
-      "description": "Read-only Peer that reviews a task branch with clean context",
+      "description": "Peer that reviews a commit with clean context, in a copy of its own that goes with the review",
       "defaults": {
         "harness": "claude",
         "model": "claude-opus-5",

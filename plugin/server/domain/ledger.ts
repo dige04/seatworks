@@ -12,6 +12,7 @@ export type Slot = {
   workspaceId?: string;
   lane?: string;
   task?: string;
+  throwaway?: true;
   createdAt: number;
   releasing?: Releasing;
 };
