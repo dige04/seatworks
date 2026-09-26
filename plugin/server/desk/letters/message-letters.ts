@@ -45,13 +45,13 @@ export const messageLetters = {
     );
   },
 
-  message(from: string, text: string, sending: Sending): Letter {
-    return mail(
-      "message",
-      sendingIds(sending, text),
-      [`MESSAGE from ${from}`, "", text].join("\n"),
-      "Weigh it against your task or lane: answer what it asks, act on what holds, and say with evidence where it does not.",
-    );
+  /** `reader` answers only through its own tools: words it says in its turn reach nobody. */
+  message(from: string, text: string, sending: Sending, reader: "worker" | "lead"): Letter {
+    const next =
+      reader === "worker"
+        ? "Weigh it against your task: act on what holds, say with evidence where it does not, and answer in your hand-back, or with ask if a reply cannot wait."
+        : "Weigh it against your lane: act on what holds, say with evidence where it does not, and answer with report, or with ask if you need a decision back first.";
+    return mail("message", sendingIds(sending, text), [`MESSAGE from ${from}`, "", text].join("\n"), next);
   },
 
   /** The Supervisor may reach a Peer directly but never out of the Lead's sight: this carries what the Lead needs to put its picture right. */

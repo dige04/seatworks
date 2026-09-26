@@ -106,7 +106,7 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     }),
     workLetters.rework(task, "fix it"),
     seatLetters.nudge(task, "done"),
-    messageLetters.message("your lead", "hi", sending),
+    messageLetters.message("your lead", "hi", sending, "worker"),
     workLetters.amended(task, amendment, "worker"),
     workLetters.onHold(lane, "the migration drops a table", task),
     workLetters.resumed(lane, "go on", task),
@@ -155,7 +155,7 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     workLetters.held(task, "L1-T1 is not accepted yet.", "It starts by itself."),
     workLetters.started(task, "Started."),
     messageLetters.reconciled(lane, task, "agent-9", "stop using the old client", sending),
-    messageLetters.message("the owner", "hi", sending),
+    messageLetters.message("the owner", "hi", sending, "lead"),
     askLetters.answered({ ...ask, fromRole: "lead" }),
     askLetters.answeredFor(ask, "the owner"),
     askLetters.askTo({ ...ask, status: "open" }, "the Peer on L1-T1", "lead"),
@@ -254,7 +254,15 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     /^Judge it by what the work did/,
   );
   // An open question or a correction is weighed by whoever it reaches, never taken as an order.
-  assert.match(next(messageLetters.message("the owner", "why X?", sending)), /^Weigh it against your task or lane/);
+  assert.match(
+    next(messageLetters.message("your lead", "why X?", sending, "worker")),
+    /^Weigh it against your task: act on what holds, say with evidence where it does not, and answer in your hand-back, or with ask if a reply cannot wait\./,
+    "a Peer answers only through what its tools carry: a reply in its own words reaches no one",
+  );
+  assert.match(
+    next(messageLetters.message("the owner", "why X?", sending, "lead")),
+    /^Weigh it against your lane: act on what holds, say with evidence where it does not, and answer with report, or with ask if you need a decision back first\./,
+  );
   assert.match(next(workLetters.rework(task, "fix it")), /or say with evidence why not/);
   const page = { ...incident, level: "page" as const };
   assert.match(
