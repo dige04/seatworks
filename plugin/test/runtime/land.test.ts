@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { allSignals } from "./noticed.ts";
@@ -94,6 +94,37 @@ test("a red gate or a red rehearsal holds a landing until the Supervisor lands o
   });
   assert.equal(over.ok, true, over.text);
   assert.ok(onMain("src/db/001.sql"));
+});
+
+test("work nobody committed in a lane's copy never lands, over the gate or not, and the desk never deletes it: READY waits for it, landing stops, a drop keeps the copy", async () => {
+  const { h, sup, lane, land, onMain } = await laneWith({ "a.txt": "cart\n" }, [], { isolate: true });
+  const copy = lane.worktree!;
+  writeFileSync(join(copy, "notes.txt"), "half a thought\n");
+  const ready = await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  assert.equal(ready.ok, false, ready.text);
+  assert.match(ready.text, /working copy has work uncommitted \(\?\? notes\.txt\)/);
+  const over = await h.call(sup, "supervisor", "land_lane", { lane: "L1", overGate: true, reason: "judged safe" });
+  assert.equal(over.ok, false, over.text);
+  assert.match(
+    over.text,
+    /^Lane L1 was not closed: its working copy has work uncommitted \(\?\? notes\.txt\)\. Only what is committed lands, so overGate does not pass it/,
+  );
+  assert.equal(onMain("a.txt"), true, "main keeps its own a.txt");
+  assert.equal(h.git(h.root, "show", "main:a.txt"), "one\ntwo\nthree\n");
+  assert.equal((await land()).ok, false);
+
+  h.agents.get(lane.lead!)!.status = "closed";
+  Object.assign(h.agents.get(lane.lead!)!, { archivedAt: new Date().toISOString() });
+  const dropped = await h.call(sup, "supervisor", "drop_lane", { lane: "L1", reason: "not wanted" });
+  assert.equal(dropped.ok, true, dropped.text);
+  assert.match(
+    dropped.text,
+    new RegExp(
+      `Its working copy S\\d+ holds work nobody committed, so it stays at ${copy.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+    ),
+  );
+  await h.tick();
+  assert.equal(readFileSync(join(copy, "notes.txt"), "utf-8"), "half a thought\n", "the desk never deletes work");
 });
 
 test("what git shows of a lane goes with its landing as evidence, and holds nothing back", async () => {

@@ -8,6 +8,7 @@ import { worktreeRoot } from "../../core/paths.ts";
 import type { DeskBase } from "../base.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { Project } from "../project/project.ts";
+import { unsavedIn } from "./unsaved.ts";
 
 /** What the desk opened and nothing holds any more. Liveness is read under the ledger lock when used: `reserve` writes its row before `git worktree add`. */
 export async function sweepCopies(
@@ -44,6 +45,8 @@ export async function sweepCopies(
   for (const path of strays) {
     // Asked again just before, for a row reserved for a path from before ids stopped being reused.
     if (live(ledgers.read(project)).has(path)) continue;
+    // Work no commit holds is the Human's to keep or throw away: Clean shows such a copy and never takes it.
+    if (existsSync(join(path, ".git")) && (await unsavedIn(path))) continue;
     await removeWorktree(project.root, path);
     try {
       rmSync(path, { recursive: true, force: true });
