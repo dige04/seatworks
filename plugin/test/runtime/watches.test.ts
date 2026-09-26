@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { reported } from "../console.ts";
 import { settle } from "./fake-timeline.ts";
 import { laneWithPeer } from "./harness.ts";
-import { allSignals, hookAgent, noticesOf } from "./noticed.ts";
+import { allSignals, book, hookAgent, noticesOf } from "./noticed.ts";
 
 test("a seat is followed once while it is seated and watched, let go when it goes, and followed again after a failed join or a lost stream", async (t) => {
   const said = reported(t);
@@ -132,9 +132,18 @@ test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
   timeline.beat("turn_completed", "t1");
   await settle();
   await noticed();
-  const listed = (await h.call(sup, "supervisor", "incidents", {})).text;
-  const idOf = (kind: string) => Number(new RegExp(`- I(\\d+) \\[[^\\n]*: ${kind} `).exec(listed)?.[1]);
-  assert.ok(idOf("stuck") < idOf("unverified"), "the loop is ranked above the unchecked claim, so it opens first");
-  assert.match(listed, /- I\d+ \[attend, told [^\]]*\][^\n]*: stuck /, "and takes the lane's last slot for the day");
-  assert.match(listed, /- I\d+ \[attend, not sent: its lane's limit for today is reached\][^\n]*: unverified /);
+  const [stuck, unchecked] = ["stuck", "unverified"].map((kind) =>
+    Object.values(book(h)).find((item) => item.kind === kind)!,
+  );
+  assert.ok(
+    Number(stuck!.id.slice(1)) < Number(unchecked!.id.slice(1)),
+    "the loop is ranked above the unchecked claim, so it opens first",
+  );
+  assert.ok(stuck!.told !== undefined, "and takes the lane's last slot for the day");
+  assert.equal(unchecked!.held, "budget");
+  assert.doesNotMatch(
+    (await h.call(sup, "supervisor", "incidents", {})).text,
+    /unverified/,
+    "held back, it is not listed",
+  );
 });

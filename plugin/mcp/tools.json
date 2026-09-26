@@ -717,7 +717,7 @@
     {
       "name": "incidents",
       "title": "Open incidents",
-      "description": "What the desk has noticed about the Leads and Peers working in this project, latest first: every incident not yet marked, with the seat, what was seen, and who was told or why it was held back. These are signals to look at, never verdicts.",
+      "description": "What the watch told you about the Leads and Peers of this project, latest first: every incident not yet marked, with the seat and what was seen. What it held back is the owner's to label. Signals to look at, never verdicts.",
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": false

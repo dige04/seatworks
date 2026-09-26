@@ -195,10 +195,12 @@ test("a kind most of whose last ten marks were noise is held on probation, and a
       ["destructive", null, true],
     ],
   );
-  assert.match(
-    (await h.call(sup, "supervisor", "incidents", {})).text,
-    /\[attend, not sent: most of its kind's last ten marks were noise\] Peer \(peer-1\)/,
-    "the book says why",
+  const listed = (await h.call(sup, "supervisor", "incidents", {})).text;
+  assert.match(listed, /\[page, told [^\]]*\] Peer \(peer-2\)/);
+  assert.doesNotMatch(
+    listed,
+    /peer-1/,
+    "what the book held back is the owner's to label, not the Supervisor's to read",
   );
   marks(5, 10, 3);
   await notice(h, seat(3), "stuck");

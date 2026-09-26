@@ -1,6 +1,6 @@
 import { mask } from "../../core/mask.ts";
 import { clip } from "../../core/text.ts";
-import { type Held, close } from "../../domain/incident.ts";
+import { close } from "../../domain/incident.ts";
 import { type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { type Incident, readIncidentsFile } from "../store/incidents.ts";
 import { loadLedger } from "../store/ledger.ts";
@@ -11,18 +11,10 @@ type Verdict = NonNullable<Incident["label"]>;
 
 const at = (ms: number) => new Date(ms).toISOString().slice(0, 16).replace("T", " ");
 
-const HELD: Record<Held, string> = {
-  shadow: "shadow",
-  probation: "most of its kind's last ten marks were noise",
-  budget: "its lane's limit for today is reached",
-  nobody: "nobody was seated to tell",
-};
-
+/** One incident told to whoever supervises, as its list shows it. */
 function line(item: Incident): string {
-  const sent = item.told !== undefined ? `told ${at(item.told)}` : item.held ? `not sent: ${HELD[item.held]}` : "";
-  const state = item.open
-    ? sent || "open"
-    : ["closed", sent, item.label ? `marked ${item.label}` : "not marked"].filter(Boolean).join(", ");
+  const sent = `told ${at(item.told ?? item.last)}`;
+  const state = item.open ? sent : ["closed", sent, item.label ? `marked ${item.label}` : "not marked"].join(", ");
   const seen = item.count > 1 ? ` (seen ${item.count} times, last ${at(item.last)})` : "";
   const later =
     item.later !== undefined ? `; seen after you were told: ${clip(item.later.replace(/\s+/g, " "), 200)}` : "";
@@ -56,11 +48,14 @@ function briefs(state: string, shown: Incident[]): string[] {
   return out.length > 0 ? ["", "What they were asked:", ...out] : [];
 }
 
-/** The incidents whoever supervises may mark, newest first, with what the seats they are about were asked. */
+/**
+ * The incidents told to whoever supervises and not yet marked, newest first, with what the seats they are about were asked.
+ * What the book held back, in shadow or past a budget, is the owner's to label, and stays out of the Supervisor's context.
+ */
 export function listIncidents(caller: Caller, withClosed: boolean): ToolReply {
   const read = readIncidentsFile(caller.project.state);
   if ("fault" in read) return no(`${read.fault}. Only the Human can repair it or move it aside.`);
-  const all = Object.values(read.incidents.items);
+  const all = Object.values(read.incidents.items).filter((item) => item.told !== undefined);
   const waiting = all.filter((item) => item.open || !item.label).sort((a, b) => b.last - a.last);
   const shown = waiting.slice(0, 50);
   const lines = [waiting.length > 0 ? `${waiting.length} not yet marked:` : "Nothing waiting to be marked."];
@@ -95,13 +90,16 @@ export function markIncident(
   const now = Date.now();
   const done = incidents.transact(caller.project, (held) => {
     const item = held.items[id];
-    if (!item) return undefined;
+    if (!item || item.told === undefined) return undefined;
     item.label = verdict;
     if (note) item.note = note;
     close(item, now);
     return { ...item };
   });
-  if (!done) return no(`There is no incident ${id} here for you to mark. incidents lists the ones there are.`);
+  if (!done)
+    return no(
+      `There is no incident ${id} told to you to mark: incidents lists those; what was held back is the owner's to label.`,
+    );
   recordEvent(caller.project, {
     kind: "incident.ack",
     id,
