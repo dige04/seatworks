@@ -401,7 +401,7 @@ test("a Lead's directive says what its lane writes, depends on and keeps to one 
   assert.match(directive("L4"), /^Writes: not declared\.$/m);
   assert.match(
     directive("L4"),
-    /^Open beside it and may write the same: L2 \(package-lock\.json\)\. What both write meets when the second of you merges or lands; settling it in this lane is yours\.$/m,
+    /^Open beside it and may write the same: L2 \(package-lock\.json\)\. What both write meets when the second of you merges or lands, and the Supervisor chooses who settles it then\.$/m,
   );
   assert.match(
     h.heard(h.ledger().lanes.L2!.lead!).join("\n"),

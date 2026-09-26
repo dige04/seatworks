@@ -16,7 +16,7 @@ export const besideText = (beside: Beside[]): string =>
 /** What the Supervisor hears of the open lanes a lane `how` beside that may write what it does; nothing when none. */
 export const besideNote = (beside: Beside[], how: "opened" | "now works"): string =>
   beside.length > 0
-    ? ` It ${how} beside lanes that may write what it does: ${besideText(beside)}. Their Leads and its own are told; ${BOTH_MEET}, where its Lead settles it, and between lanes it is yours.`
+    ? ` It ${how} beside lanes that may write what it does: ${besideText(beside)}. Their Leads and its own are told; ${BOTH_MEET}, and who settles it then is yours to choose.`
     : "";
 
 /** `copy` is the lane's working copy, whose files decide which paths only one writer at a time may write. */
@@ -109,7 +109,7 @@ function writes(lane: Lane, serial: string[], beside: Beside[]): string[] {
       : []),
     ...(beside.length > 0
       ? [
-          `Open beside it and may write the same: ${besideText(beside)}. What both write meets when the second of you merges or lands; settling it in this lane is yours.`,
+          `Open beside it and may write the same: ${besideText(beside)}. What both write meets when the second of you merges or lands, and the Supervisor chooses who settles it then.`,
         ]
       : []),
   ];

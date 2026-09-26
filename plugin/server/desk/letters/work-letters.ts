@@ -162,7 +162,7 @@ export const workLetters = {
         "lanebeside",
         [other.id, hash(paths.join("\n"))],
         `LANE BESIDE ${other.id} (${other.title}) works beside your lane and may write what yours does: ${capped(paths, 8)}.`,
-        `Nothing now: ${BOTH_MEET}, and settling it in your lane is yours.`,
+        `Nothing now: ${BOTH_MEET}, and the Supervisor chooses who settles it then.`,
       ),
     );
   },
