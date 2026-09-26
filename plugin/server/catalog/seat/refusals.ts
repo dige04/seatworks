@@ -19,6 +19,7 @@ const REPLACING = [
   "roles.json",
   "ecosystem.json",
   "refused.json",
+  "attention.json",
   "patterns.json",
   "checks.json",
   "paseo.json",

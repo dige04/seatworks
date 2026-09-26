@@ -205,6 +205,7 @@ test("every seat's own rules refuse starting any agent the kit ships and any com
     "Bash(paseo)",
     `Edit(${state}/roles.json)`,
     `Edit(${state}/refused.json)`,
+    `Edit(${state}/attention.json)`,
     `Edit(${state}/own/**)`,
     `Edit(${state}/sensor/**)`,
     `Edit(${state}/keys.json)`,
