@@ -1,6 +1,12 @@
 import type { PluginTheme, RpcInput } from "@getpaseo/plugin";
 import { useRpc } from "@getpaseo/plugin/client";
-import { SettingsAction, SettingsCard, SettingsInput, type SettingsInputHandle, SettingsRow } from "@getpaseo/plugin/client/ui";
+import {
+  SettingsAction,
+  SettingsCard,
+  SettingsInput,
+  type SettingsInputHandle,
+  SettingsRow,
+} from "@getpaseo/plugin/client/ui";
 import { useRef, useState } from "react";
 import { Text } from "react-native";
 import { questionAnswerRpc } from "../../shared/rpc.ts";
@@ -19,7 +25,17 @@ const CLASSES: Record<FlowQuestion["class"], string> = {
 const ago = (minutes: number): string => (minutes < 1 ? "just now" : `${minutes} min ago`);
 
 /** One question the Supervisor put to the Human, answered here: an option, or decline, with a note that goes with it. */
-function Question({ project, question, answer, theme }: { project: string; question: FlowQuestion; answer: Answer; theme: PluginTheme }) {
+function Question({
+  project,
+  question,
+  answer,
+  theme,
+}: {
+  project: string;
+  question: FlowQuestion;
+  answer: Answer;
+  theme: PluginTheme;
+}) {
   const field = useRef<SettingsInputHandle>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -34,7 +50,10 @@ function Question({ project, question, answer, theme }: { project: string; quest
   const place = question.lane ? `, for ${question.lane}` : "";
   return (
     <SettingsCard>
-      <SettingsRow label={`${question.id} · ${question.question}`} hint={`${CLASSES[question.class]}${place}; asked ${ago(question.minutes)}. ${question.why} If you stay silent: ${question.ifSilent}`} />
+      <SettingsRow
+        label={`${question.id} · ${question.question}`}
+        hint={`${CLASSES[question.class]}${place}; asked ${ago(question.minutes)}. ${question.why} If you stay silent: ${question.ifSilent}`}
+      />
       {question.options.map((option) => {
         const recommended = option.label === question.recommend;
         return (
@@ -48,14 +67,41 @@ function Question({ project, question, answer, theme }: { project: string; quest
           />
         );
       })}
-      <SettingsInput ref={field} label="Note" hint="Goes to the Supervisor with your choice; optional." placeholder="Anything they should know" onChangeText={setNote} disabled={busy} />
-      <SettingsAction label="Decline" hint="You will not decide this one: the Supervisor is told, and decides what is theirs or asks another way." actionLabel="Decline" onPress={() => send("decline")} disabled={busy} />
-      {said ? <Text style={{ color: "error" in said ? theme.colors.statusWarning : theme.colors.foregroundMuted, fontSize: 12 }}>{"error" in said ? said.error : said.answered}</Text> : null}
+      <SettingsInput
+        ref={field}
+        label="Note"
+        hint="Goes to the Supervisor with your choice; optional."
+        placeholder="Anything they should know"
+        onChangeText={setNote}
+        disabled={busy}
+      />
+      <SettingsAction
+        label="Decline"
+        hint="You will not decide this one: the Supervisor is told, and decides what is theirs or asks another way."
+        actionLabel="Decline"
+        onPress={() => send("decline")}
+        disabled={busy}
+      />
+      {said ? (
+        <Text
+          style={{ color: "error" in said ? theme.colors.statusWarning : theme.colors.foregroundMuted, fontSize: 12 }}
+        >
+          {"error" in said ? said.error : said.answered}
+        </Text>
+      ) : null}
     </SettingsCard>
   );
 }
 
-export function QuestionCards({ project, questions, theme }: { project: string; questions: FlowQuestion[]; theme: PluginTheme }) {
+export function QuestionCards({
+  project,
+  questions,
+  theme,
+}: {
+  project: string;
+  questions: FlowQuestion[];
+  theme: PluginTheme;
+}) {
   const answer = useRpc(questionAnswerRpc);
   return (
     <>

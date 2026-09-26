@@ -4,7 +4,11 @@ import { flowRpc } from "../../shared/rpc.ts";
 import type { FlowView } from "../../shared/flow-views.ts";
 import { message } from "../format/error.ts";
 
-export function useFlow(project: string | undefined, everyMs = 5000, openKey = ""): { flow: FlowView | null; error: string | null } {
+export function useFlow(
+  project: string | undefined,
+  everyMs = 5000,
+  openKey = "",
+): { flow: FlowView | null; error: string | null } {
   const call = useRpc(flowRpc);
   const latest = useRef(call);
   latest.current = call;

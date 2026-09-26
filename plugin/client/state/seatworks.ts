@@ -1,6 +1,20 @@
 import { useRpc, usePaseo } from "@getpaseo/plugin/client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { catalogRpc, doctorRpc, flowRpc, mcpParseRpc, pathsRpc, projectsAddRpc, projectsCandidatesRpc, projectsRemoveRpc, projectsRpc, settingsReadRpc, settingsWriteRpc, statusRpc, teamRpc } from "../../shared/rpc.ts";
+import {
+  catalogRpc,
+  doctorRpc,
+  flowRpc,
+  mcpParseRpc,
+  pathsRpc,
+  projectsAddRpc,
+  projectsCandidatesRpc,
+  projectsRemoveRpc,
+  projectsRpc,
+  settingsReadRpc,
+  settingsWriteRpc,
+  statusRpc,
+  teamRpc,
+} from "../../shared/rpc.ts";
 import type { Layer } from "../../shared/settings.ts";
 import type { CatalogView, ProjectRow, TeamView } from "../../shared/views.ts";
 import { message } from "../format/error.ts";
@@ -28,9 +42,14 @@ type Data =
 /** The projects Paseo itself knows, which a setup screen offers; none when Paseo cannot say. */
 async function paseoProjects(paseo: ReturnType<typeof usePaseo>): Promise<PaseoProject[]> {
   try {
-    const listed = (await paseo.projects.list()) as { projects?: { projectDisplayName?: string; projectRootPath?: string }[] };
+    const listed = (await paseo.projects.list()) as {
+      projects?: { projectDisplayName?: string; projectRootPath?: string }[];
+    };
     return (listed.projects ?? [])
-      .filter((entry): entry is { projectDisplayName?: string; projectRootPath: string } => typeof entry.projectRootPath === "string")
+      .filter(
+        (entry): entry is { projectDisplayName?: string; projectRootPath: string } =>
+          typeof entry.projectRootPath === "string",
+      )
       .map((entry) => ({ name: entry.projectDisplayName ?? entry.projectRootPath, root: entry.projectRootPath }));
   } catch {
     return [];
@@ -65,7 +84,10 @@ export function useSeatworks(project?: string) {
   // A ref, so a callback built on an earlier render still tags the screen open now.
   const here = useRef(project ?? "");
   here.current = project ?? "";
-  const setSaveError = useCallback((text: string | null) => setRefusal(text === null ? null : { of: here.current, text }), []);
+  const setSaveError = useCallback(
+    (text: string | null) => setRefusal(text === null ? null : { of: here.current, text }),
+    [],
+  );
   const saveError = refusal?.of === (project ?? "") ? refusal.text : null;
   // Whether the last write went; inferring it from no error here read another screen's refusal as success.
   const [saved, setSaved] = useState<boolean | null>(null);
@@ -82,7 +104,9 @@ export function useSeatworks(project?: string) {
         call.settings({ project }),
         paseoProjects(paseo),
       ]);
-      const offerable = new Set(known.length > 0 ? await call.candidates({ roots: known.map((entry) => entry.root) }) : []);
+      const offerable = new Set(
+        known.length > 0 ? await call.candidates({ roots: known.map((entry) => entry.root) }) : [],
+      );
       if (!alive) return;
       if ("error" in team) throw new Error(team.error);
       if (settling.current) {
@@ -125,7 +149,7 @@ export function useSeatworks(project?: string) {
    * unlocking earlier let a click built on the pre-save view silently undo the save.
    */
   const writing = useCallback(
-    async <T,>(run: () => Promise<T>, failed: T): Promise<T> => {
+    async <T>(run: () => Promise<T>, failed: T): Promise<T> => {
       setSaving(true);
       setSaveError(null);
       try {
@@ -239,14 +263,18 @@ export function useSeatworks(project?: string) {
         }
         const id = parsed.id.trim();
         if (!id) {
-          setSaveError("That snippet does not name the server; paste it as {\"mcp\": {\"name\": { … }}}.");
+          setSaveError('That snippet does not name the server; paste it as {"mcp": {"name": { … }}}.');
           return null;
         }
         // Only to roles whose agent can reach it: otherwise it was refused, and the narrowing control appears only once saved.
         if (data.status !== "ready") return null;
         const harnessOf = (role: InForce) => harnessInForce(role, data.values, data.machine);
         const reachable = data.catalog.roles
-          .filter((role) => (data.catalog.harnesses.find((entry) => entry.id === harnessOf(role))?.transports ?? []).includes(parsed.connect.type))
+          .filter((role) =>
+            (data.catalog.harnesses.find((entry) => entry.id === harnessOf(role))?.transports ?? []).includes(
+              parsed.connect.type,
+            ),
+          )
           .map((role) => role.id);
         if (reachable.length === 0) {
           setSaveError(`No role's agent can reach a ${parsed.connect.type} server, so there is nobody to give it to.`);
@@ -256,10 +284,20 @@ export function useSeatworks(project?: string) {
         const narrowed = data.values.mcp?.[id]?.roles;
         const roles = keptRoles(narrowed, reachable);
         if (narrowed?.length && roles.length === 0) {
-          setSaveError(`This server is given to ${narrowed.join(", ")}, and no agent of theirs can reach a ${parsed.connect.type} server. Widen the roles on its own tab first.`);
+          setSaveError(
+            `This server is given to ${narrowed.join(", ")}, and no agent of theirs can reach a ${parsed.connect.type} server. Widen the roles on its own tab first.`,
+          );
           return null;
         }
-        const saved = await save((values) => setMcp(values, id, { enabled: true, label: parsed.label || id, connect: parsed.connect, removed: false, roles }));
+        const saved = await save((values) =>
+          setMcp(values, id, {
+            enabled: true,
+            label: parsed.label || id,
+            connect: parsed.connect,
+            removed: false,
+            roles,
+          }),
+        );
         // The snippet is the owner's only copy of what they pasted; it is not thrown away on a refusal.
         return saved ? id : null;
       } catch (error) {
@@ -275,5 +313,20 @@ export function useSeatworks(project?: string) {
   const readStatus = useCallback((slug: string) => latest.current.status({ project: slug }), []);
   // The setup screen needs the layers of the project it is pointed at, which is not the one open here.
   const readSettings = useCallback((slug: string) => latest.current.settings({ project: slug }), []);
-  return { data, save, reload, saving, saved, saveError, addProject, addServer, attach, detach, listFolders, runDoctor, readStatus, readSettings };
+  return {
+    data,
+    save,
+    reload,
+    saving,
+    saved,
+    saveError,
+    addProject,
+    addServer,
+    attach,
+    detach,
+    listFolders,
+    runDoctor,
+    readStatus,
+    readSettings,
+  };
 }

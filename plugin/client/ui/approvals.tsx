@@ -1,6 +1,12 @@
 import type { PluginTheme, RpcInput } from "@getpaseo/plugin";
 import { useRpc } from "@getpaseo/plugin/client";
-import { SettingsAction, SettingsCard, SettingsInput, type SettingsInputHandle, SettingsRow } from "@getpaseo/plugin/client/ui";
+import {
+  SettingsAction,
+  SettingsCard,
+  SettingsInput,
+  type SettingsInputHandle,
+  SettingsRow,
+} from "@getpaseo/plugin/client/ui";
 import { useRef, useState } from "react";
 import { Text } from "react-native";
 import { landDecideRpc } from "../../shared/rpc.ts";
@@ -12,7 +18,25 @@ type Decide = (input: RpcInput<typeof landDecideRpc>) => Promise<LandDecided>;
 const waited = (minutes: number) => (minutes < 1 ? "since just now" : `${minutes} min`);
 
 /** Something held for the Human: their word comes from here and nowhere else, since no seat may give it for them. */
-function Held({ project, lane, decide, label, hint, approved, sentBack, theme }: { project: string; lane: string; decide: Decide; label: string; hint: string; approved: string; sentBack: string; theme: PluginTheme }) {
+function Held({
+  project,
+  lane,
+  decide,
+  label,
+  hint,
+  approved,
+  sentBack,
+  theme,
+}: {
+  project: string;
+  lane: string;
+  decide: Decide;
+  label: string;
+  hint: string;
+  approved: string;
+  sentBack: string;
+  theme: PluginTheme;
+}) {
   const field = useRef<SettingsInputHandle>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -30,10 +54,35 @@ function Held({ project, lane, decide, label, hint, approved, sentBack, theme }:
   return (
     <SettingsCard>
       <SettingsRow label={label} hint={hint} />
-      <SettingsInput ref={field} label="Note" hint="Sent back, it goes to the Lead as what to change; approved, it goes to the Supervisor with the landing." placeholder="What should change, or anything to know" onChangeText={setNote} disabled={busy} />
-      <SettingsAction label="Approve" hint={approved} actionLabel="Approve" onPress={() => send(true)} disabled={busy} />
-      <SettingsAction label="Send back" hint={sentBack} actionLabel="Send back" onPress={() => send(false)} disabled={busy} />
-      {said ? <Text style={{ color: "error" in said ? theme.colors.statusWarning : theme.colors.foregroundMuted, fontSize: 12 }}>{"error" in said ? said.error : said.decided}</Text> : null}
+      <SettingsInput
+        ref={field}
+        label="Note"
+        hint="Sent back, it goes to the Lead as what to change; approved, it goes to the Supervisor with the landing."
+        placeholder="What should change, or anything to know"
+        onChangeText={setNote}
+        disabled={busy}
+      />
+      <SettingsAction
+        label="Approve"
+        hint={approved}
+        actionLabel="Approve"
+        onPress={() => send(true)}
+        disabled={busy}
+      />
+      <SettingsAction
+        label="Send back"
+        hint={sentBack}
+        actionLabel="Send back"
+        onPress={() => send(false)}
+        disabled={busy}
+      />
+      {said ? (
+        <Text
+          style={{ color: "error" in said ? theme.colors.statusWarning : theme.colors.foregroundMuted, fontSize: 12 }}
+        >
+          {"error" in said ? said.error : said.decided}
+        </Text>
+      ) : null}
     </SettingsCard>
   );
 }

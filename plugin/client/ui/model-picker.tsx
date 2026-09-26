@@ -14,7 +14,7 @@ type Props = {
   options: Option[];
   theme: PluginTheme;
   disabled?: boolean;
-  onValueChange(value: string): void;
+  onValueChange: (value: string) => void;
 };
 
 /** Matches the name or the id, so `glm` finds `zai/glm-5.3` and `sonnet` finds `Claude Sonnet 5`. */
@@ -68,9 +68,28 @@ export function ModelPicker({ label, hint, value, options, theme, disabled, onVa
         shadowOffset: { width: 0, height: 8 },
         elevation: 12,
       },
-      search: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, paddingHorizontal: 12, borderBottomWidth: 1, borderColor: theme.colors.border },
-      input: { flex: 1, paddingVertical: 11, color: theme.colors.foreground, fontSize: CONTROL.font, outlineStyle: "none" as never },
-      row: { flexDirection: "row" as const, alignItems: "baseline" as const, gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
+      search: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 8,
+        paddingHorizontal: 12,
+        borderBottomWidth: 1,
+        borderColor: theme.colors.border,
+      },
+      input: {
+        flex: 1,
+        paddingVertical: 11,
+        color: theme.colors.foreground,
+        fontSize: CONTROL.font,
+        outlineStyle: "none" as never,
+      },
+      row: {
+        flexDirection: "row" as const,
+        alignItems: "baseline" as const,
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+      },
       picked: { backgroundColor: theme.colors.surface2 },
       name: { flexShrink: 0, maxWidth: "70%" as const, color: theme.colors.foreground, fontSize: CONTROL.font },
       id: { flexShrink: 1, color: theme.colors.foregroundMuted, fontSize: 12 },
@@ -96,7 +115,9 @@ export function ModelPicker({ label, hint, value, options, theme, disabled, onVa
   const place = at
     ? {
         left: Math.max(BOX.margin, Math.min(at.x + at.width - BOX.width, window.width - BOX.width - BOX.margin)),
-        ...(window.height - (at.y + at.height) >= BOX.height + BOX.margin ? { top: at.y + at.height + BOX.gap } : { bottom: window.height - at.y + BOX.gap }),
+        ...(window.height - (at.y + at.height) >= BOX.height + BOX.margin
+          ? { top: at.y + at.height + BOX.gap }
+          : { bottom: window.height - at.y + BOX.gap }),
       }
     : null;
 
@@ -130,7 +151,7 @@ export function ModelPicker({ label, hint, value, options, theme, disabled, onVa
                 placeholder="Search models…"
                 placeholderTextColor={theme.colors.foregroundMuted}
                 style={styles.input}
-                onSubmitEditing={() => shown.length > 0 && pick(shown[0]!.value)}
+                onSubmitEditing={() => shown.length > 0 && pick(shown[0].value)}
               />
             </View>
             <FlatList
@@ -140,7 +161,11 @@ export function ModelPicker({ label, hint, value, options, theme, disabled, onVa
               initialNumToRender={30}
               ListEmptyComponent={<Text style={styles.none}>{`No model matches “${query.trim()}”.`}</Text>}
               renderItem={({ item }) => (
-                <Pressable accessibilityRole="button" onPress={() => pick(item.value)} style={({ pressed }) => [styles.row, item.value === value || pressed ? styles.picked : null]}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => pick(item.value)}
+                  style={({ pressed }) => [styles.row, item.value === value || pressed ? styles.picked : null]}
+                >
                   <Text style={styles.name} numberOfLines={1}>
                     {item.label}
                   </Text>

@@ -11,14 +11,15 @@ type Props = {
   theme: PluginTheme;
   checks: Check[] | null;
   stale: boolean;
-  onChecks(checks: Check[]): void;
-  runDoctor(): Promise<Check[]>;
-  readStatus(slug: string): Promise<{ text: string; error?: string }>;
+  onChecks: (checks: Check[]) => void;
+  runDoctor: () => Promise<Check[]>;
+  readStatus: (slug: string) => Promise<{ text: string; error?: string }>;
 };
 
 const GROUPS = ["This machine", "Agents", "Servers"] as const;
 
-const groupOf = (id: string): (typeof GROUPS)[number] => (id.startsWith("harness:") ? "Agents" : id.startsWith("mcp:") ? "Servers" : "This machine");
+const groupOf = (id: string): (typeof GROUPS)[number] =>
+  id.startsWith("harness:") ? "Agents" : id.startsWith("mcp:") ? "Servers" : "This machine";
 
 export function HealthSection({ project, theme, checks, stale, onChecks, runDoctor, readStatus }: Props) {
   const [status, setStatus] = useState("");

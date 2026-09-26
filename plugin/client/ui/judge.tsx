@@ -1,5 +1,11 @@
 import type { PluginTheme } from "@getpaseo/plugin";
-import { SettingsAction, SettingsCard, SettingsInput, type SettingsInputHandle, SettingsRow } from "@getpaseo/plugin/client/ui";
+import {
+  SettingsAction,
+  SettingsCard,
+  SettingsInput,
+  type SettingsInputHandle,
+  SettingsRow,
+} from "@getpaseo/plugin/client/ui";
 import { type ReactElement, type RefObject, useRef, useState } from "react";
 import { Text } from "react-native";
 import { KEPT, type Layer } from "../../shared/settings.ts";
@@ -19,15 +25,26 @@ type Props = {
   disabled: boolean;
   role: CatalogView["roles"][number];
   rows: ReactElement[];
-  save(change: (values: Layer) => Layer): Promise<boolean>;
+  save: (change: (values: Layer) => Layer) => Promise<boolean>;
 };
 
 type Sensor = CatalogView["sensors"][number];
 
-type Draft = { typed: string; setDraft(text: string): void; field: RefObject<SettingsInputHandle | null> };
+type Draft = { typed: string; setDraft: (text: string) => void; field: RefObject<SettingsInputHandle | null> };
 
 /** Rows, not a component, since the card borders each child it gets: a sensor's key typed and saved, replaced or forgotten on the machine, or on a project's screen only whether there is one. */
-function keyRows({ sensor, values, machine, layer, theme, disabled, save }: Omit<Props, "catalog" | "team" | "role" | "rows"> & { sensor: Sensor }, { typed, setDraft, field }: Draft): ReactElement[] {
+function keyRows(
+  {
+    sensor,
+    values,
+    machine,
+    layer,
+    theme,
+    disabled,
+    save,
+  }: Omit<Props, "catalog" | "team" | "role" | "rows"> & { sensor: Sensor },
+  { typed, setDraft, field }: Draft,
+): ReactElement[] {
   const kept = values.sensor?.[sensor.id]?.key === KEPT || machine.sensor?.[sensor.id]?.key === KEPT;
   const write = (key: string | null) => {
     void save((current) => withKey(current, sensor.id, key)).then((saved) => {
@@ -44,8 +61,14 @@ function keyRows({ sensor, values, machine, layer, theme, disabled, save }: Omit
   );
   if (layer === "project") {
     return [
-      <SettingsRow key="key" label={sensor.key} hint="Kept on this machine for every project. Add, replace or forget it under Machine defaults, on the Watcher.">
-        <Text style={{ color: kept ? theme.colors.foreground : theme.colors.statusWarning, fontSize: 14 }}>{kept ? "set" : "not set"}</Text>
+      <SettingsRow
+        key="key"
+        label={sensor.key}
+        hint="Kept on this machine for every project. Add, replace or forget it under Machine defaults, on the Watcher."
+      >
+        <Text style={{ color: kept ? theme.colors.foreground : theme.colors.statusWarning, fontSize: 14 }}>
+          {kept ? "set" : "not set"}
+        </Text>
       </SettingsRow>,
       model,
     ];
@@ -55,13 +78,35 @@ function keyRows({ sensor, values, machine, layer, theme, disabled, save }: Omit
       key="key"
       ref={field}
       label={sensor.key}
-      hint={kept ? "Kept on this machine and never shown again. Type another to replace it." : `${sensor.label} asks nothing without one.`}
+      hint={
+        kept
+          ? "Kept on this machine and never shown again. Type another to replace it."
+          : `${sensor.label} asks nothing without one.`
+      }
       secureTextEntry
       onChangeText={setDraft}
       disabled={disabled}
     />,
-    <SettingsAction key="save" label={kept ? "Replace the key" : "Save the key"} hint="A key starts paid calls, one at each moment the watch asks about." actionLabel="Save key" onPress={() => write(typed)} disabled={disabled || typed.length === 0} />,
-    ...(kept ? [<SettingsAction key="forget" label="Forget the key" hint={`${sensor.label} asks nothing more until there is a key again.`} actionLabel="Forget key" onPress={() => write(null)} disabled={disabled} />] : []),
+    <SettingsAction
+      key="save"
+      label={kept ? "Replace the key" : "Save the key"}
+      hint="A key starts paid calls, one at each moment the watch asks about."
+      actionLabel="Save key"
+      onPress={() => write(typed)}
+      disabled={disabled || typed.length === 0}
+    />,
+    ...(kept
+      ? [
+          <SettingsAction
+            key="forget"
+            label="Forget the key"
+            hint={`${sensor.label} asks nothing more until there is a key again.`}
+            actionLabel="Forget key"
+            onPress={() => write(null)}
+            disabled={disabled}
+          />,
+        ]
+      : []),
     model,
   ];
 }
@@ -88,8 +133,20 @@ export function JudgeCard(props: Props) {
   return (
     <>
       <SettingsCard>
-        <SettingsRow label="Brains" hint={`Which brains read what the watch's eye sees. Both: ${named} sifts, the ${role.label} judges. A signal they raise is recorded in shadow until you turn it on for the Supervisor. ${sourceLabel(sourceOf(values, machine, (entry) => entry.attention?.brain, layer), layer)}.`}>
-          <TabBar theme={theme} active={brain} disabled={disabled} onPick={(next) => void save((current) => setAttention(current, { brain: next as typeof brain }))} tabs={options} />
+        <SettingsRow
+          label="Brains"
+          hint={`Which brains read what the watch's eye sees. Both: ${named} sifts, the ${role.label} judges. A signal they raise is recorded in shadow until you turn it on for the Supervisor. ${sourceLabel(
+            sourceOf(values, machine, (entry) => entry.attention?.brain, layer),
+            layer,
+          )}.`}
+        >
+          <TabBar
+            theme={theme}
+            active={brain}
+            disabled={disabled}
+            onPick={(next) => void save((current) => setAttention(current, { brain: next as typeof brain }))}
+            tabs={options}
+          />
         </SettingsRow>
         {reads && sensor ? keyRows({ ...props, sensor }, { typed: draft.trim(), setDraft, field }) : null}
         {judges ? rows : null}

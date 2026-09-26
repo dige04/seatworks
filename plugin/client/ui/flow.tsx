@@ -20,8 +20,8 @@ type Props = {
   live: boolean;
   theme: PluginTheme;
   disabled: boolean;
-  onLive(live: boolean): void;
-  onOpen(lane: string): void;
+  onLive: (live: boolean) => void;
+  onOpen: (lane: string) => void;
   navigation: Navigation;
 };
 
@@ -45,8 +45,24 @@ const seatText = (seat: FlowSeat | null): string => {
 function useStyles(theme: PluginTheme) {
   return useMemo(
     () => ({
-      canvas: { borderRadius: 8, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface0, overflow: "hidden" as const },
-      node: { width: NODE_W, height: NODE_H, gap: 4, paddingHorizontal: 12, paddingVertical: 12, borderRadius: 6, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface2 },
+      canvas: {
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface0,
+        overflow: "hidden" as const,
+      },
+      node: {
+        width: NODE_W,
+        height: NODE_H,
+        gap: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface2,
+      },
       head: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8 },
       title: { flex: 1, color: theme.colors.foreground, fontSize: 14, fontWeight: "500" as const },
       caret: { color: theme.colors.foregroundMuted, fontSize: 12 },
@@ -59,7 +75,13 @@ function useStyles(theme: PluginTheme) {
       rail: { width: 1, backgroundColor: theme.colors.border },
       link: { width: COL_GAP / 2, height: 1, backgroundColor: theme.colors.border },
       spine: { width: COL_GAP / 2, height: 1, backgroundColor: theme.colors.border, alignSelf: "center" as const },
-      row: { flexDirection: "row" as const, alignItems: "center" as const, gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
+      row: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+      },
       labels: { flex: 1, gap: 4 },
     }),
     [theme],
@@ -67,9 +89,19 @@ function useStyles(theme: PluginTheme) {
 }
 
 /** A seat's chat in Paseo, where the Human answers it themselves; nothing when the seat is gone or the host cannot open one. */
-const chatOf = (navigation: Navigation, seat: FlowSeat | null) => (navigation && seat && seat.status !== "gone" ? () => navigation.openAgent({ agentId: seat.id }) : undefined);
+const chatOf = (navigation: Navigation, seat: FlowSeat | null) =>
+  navigation && seat && seat.status !== "gone" ? () => navigation.openAgent({ agentId: seat.id }) : undefined;
 
-const Node = memo(function Node({ title, hint, state, alive, caret, theme, onPress, onChat }: {
+const Node = memo(function Node({
+  title,
+  hint,
+  state,
+  alive,
+  caret,
+  theme,
+  onPress,
+  onChat,
+}: {
   title: string;
   hint: string;
   state: string;
@@ -81,14 +113,25 @@ const Node = memo(function Node({ title, hint, state, alive, caret, theme, onPre
 }) {
   const styles = useStyles(theme);
   return (
-    <Pressable accessibilityRole={onPress ? "button" : "text"} accessibilityLabel={title} disabled={!onPress} onPress={onPress} style={styles.node}>
+    <Pressable
+      accessibilityRole={onPress ? "button" : "text"}
+      accessibilityLabel={title}
+      disabled={!onPress}
+      onPress={onPress}
+      style={styles.node}
+    >
       <View style={styles.head}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
         {caret ? <Text style={styles.caret}>{caret}</Text> : null}
         {onChat ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={`Open ${title} in Paseo`} hitSlop={8} onPress={onChat}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${title} in Paseo`}
+            hitSlop={8}
+            onPress={onChat}
+          >
             <Text style={styles.caret}>›</Text>
           </Pressable>
         ) : null}
@@ -116,10 +159,13 @@ const taskState = (task: FlowTask): string => {
 
 /** What a lane's Lead card says of it: the Human's part first, then a hold, a READY, and what is running. */
 const leadState = (lane: FlowLane): string => {
-  if (lane.landApproval) return lane.landApproval.approved ? "landing approved, not landed yet" : "landing waits for your approval";
+  if (lane.landApproval)
+    return lane.landApproval.approved ? "landing approved, not landed yet" : "landing waits for your approval";
   if (lane.onHold) return `on hold ${ago(lane.onHold.minutes)}: ${lane.onHold.reason}`;
   if (lane.ready !== undefined) return `reported ready ${since(lane.ready)}`;
-  return countsInstead(lane) ? `${lane.taskCount} task${lane.taskCount === 1 ? "" : "s"}, ${lane.running} running` : seatText(lane.lead);
+  return countsInstead(lane)
+    ? `${lane.taskCount} task${lane.taskCount === 1 ? "" : "s"}, ${lane.running} running`
+    : seatText(lane.lead);
 };
 
 type LaneProps = { lane: FlowLane; theme: PluginTheme; navigation: Navigation };
@@ -165,7 +211,14 @@ function Peers({ lane, theme, navigation }: LaneProps) {
         {lane.kept.map((seat) => (
           <View key={seat.id} style={styles.stub}>
             <View style={styles.link} />
-            <Node theme={theme} title={`Peer · kept · ${seat.task}`} hint="stays until its Lead releases it" state={seatText(seat)} alive={false} onChat={chatOf(navigation, seat)} />
+            <Node
+              theme={theme}
+              title={`Peer · kept · ${seat.task}`}
+              hint="stays until its Lead releases it"
+              state={seatText(seat)}
+              alive={false}
+              onChat={chatOf(navigation, seat)}
+            />
           </View>
         ))}
       </View>
@@ -173,13 +226,19 @@ function Peers({ lane, theme, navigation }: LaneProps) {
   );
 }
 
-const Lane = memo(function Lane({ lane, theme, onOpen, navigation }: LaneProps & { onOpen(id: string): void }) {
+const Lane = memo(function Lane({ lane, theme, onOpen, navigation }: LaneProps & { onOpen: (id: string) => void }) {
   const styles = useStyles(theme);
   if (lane.status === "closed") return <KeptLead lane={lane} theme={theme} navigation={navigation} />;
   if (lane.status === "waiting") {
     return (
       <View style={styles.lane}>
-        <Node theme={theme} title={`Waiting · ${lane.id} ${lane.title}`} hint={`after ${(lane.after ?? []).join(", ")}`} state={lane.held ? `not open: ${lane.held}` : "opens once those land"} alive={false} />
+        <Node
+          theme={theme}
+          title={`Waiting · ${lane.id} ${lane.title}`}
+          hint={`after ${(lane.after ?? []).join(", ")}`}
+          state={lane.held ? `not open: ${lane.held}` : "opens once those land"}
+          alive={false}
+        />
       </View>
     );
   }
@@ -197,9 +256,17 @@ const Lane = memo(function Lane({ lane, theme, onOpen, navigation }: LaneProps &
           onPress={opens ? () => onOpen(lane.id) : undefined}
           onChat={chatOf(navigation, lane.lead)}
         />
-        {navigation && lane.workspaceId && lane.open ? <Button label={`Open ${lane.id}'s diff`} theme={theme} onPress={() => navigation.openWorkspace({ workspaceId: lane.workspaceId! })} /> : null}
+        {navigation && lane.workspaceId && lane.open ? (
+          <Button
+            label={`Open ${lane.id}'s diff`}
+            theme={theme}
+            onPress={() => navigation.openWorkspace({ workspaceId: lane.workspaceId! })}
+          />
+        ) : null}
       </View>
-      {lane.open && (lane.tasks.length > 0 || lane.kept.length > 0) ? <Peers lane={lane} theme={theme} navigation={navigation} /> : null}
+      {lane.open && (lane.tasks.length > 0 || lane.kept.length > 0) ? (
+        <Peers lane={lane} theme={theme} navigation={navigation} />
+      ) : null}
     </View>
   );
 });
@@ -227,11 +294,20 @@ export function FlowSection({ following, flow, error, live, theme, disabled, onL
   const empty = flow !== null && flow.lanes.length === 0 && flow.supervisors.length === 0;
 
   return (
-    <SettingsSection title="Flow" info="Only what the team is holding right now, seats kept until their superior releases them included. Open a lane to see its Peers.">
+    <SettingsSection
+      title="Flow"
+      info="Only what the team is holding right now, seats kept until their superior releases them included. Open a lane to see its Peers."
+    >
       <SettingsCard>
         <SettingsSwitch
           label="Follow the team live"
-          hint={!following ? "The default every project starts with. A project's own Flow tab is what reads its ledger." : live ? "Reads the ledger every few seconds while this tab is open." : "Switched off, so this tab costs nothing."}
+          hint={
+            !following
+              ? "The default every project starts with. A project's own Flow tab is what reads its ledger."
+              : live
+                ? "Reads the ledger every few seconds while this tab is open."
+                : "Switched off, so this tab costs nothing."
+          }
           value={live}
           onValueChange={onLive}
           disabled={disabled}
@@ -247,11 +323,23 @@ export function FlowSection({ following, flow, error, live, theme, disabled, onL
         </SettingsCard>
       ) : flow === null ? (
         <SettingsCard>
-          <Empty theme={theme} title={following ? "Reading the ledger" : "Flow follows one project"} body={following ? "This refreshes on its own." : "Open a project to watch its lanes; the switch above only sets the default."} />
+          <Empty
+            theme={theme}
+            title={following ? "Reading the ledger" : "Flow follows one project"}
+            body={
+              following
+                ? "This refreshes on its own."
+                : "Open a project to watch its lanes; the switch above only sets the default."
+            }
+          />
         </SettingsCard>
       ) : empty ? (
         <SettingsCard>
-          <Empty theme={theme} title="Nothing is running" body="Open a lane and its Lead, Peers and asks appear here." />
+          <Empty
+            theme={theme}
+            title="Nothing is running"
+            body="Open a lane and its Lead, Peers and asks appear here."
+          />
         </SettingsCard>
       ) : (
         <View style={styles.canvas}>
@@ -259,7 +347,14 @@ export function FlowSection({ following, flow, error, live, theme, disabled, onL
             <View style={{ paddingBottom: PAD }}>
               {flow.supervisors.map((seat) => (
                 <View key={seat.id} style={styles.lane}>
-                  <Node theme={theme} title={seat.label} hint={seat.id} state={seatText(seat)} alive={seat.status !== "gone"} onChat={chatOf(navigation, seat)} />
+                  <Node
+                    theme={theme}
+                    title={seat.label}
+                    hint={seat.id}
+                    state={seatText(seat)}
+                    alive={seat.status !== "gone"}
+                    onChat={chatOf(navigation, seat)}
+                  />
                 </View>
               ))}
               {flow.lanes.map((lane) => (

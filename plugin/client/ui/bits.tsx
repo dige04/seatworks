@@ -12,12 +12,18 @@ export function sourceLabel(source: Source, layer: "machine" | "project", follow
   return follows ? `Not set · follows the ${follows}` : "Catalog default";
 }
 
-export function Button({ label, theme, tone = "plain", disabled, onPress }: {
+export function Button({
+  label,
+  theme,
+  tone = "plain",
+  disabled,
+  onPress,
+}: {
   label: string;
   theme: PluginTheme;
   tone?: "plain" | "accent";
   disabled?: boolean;
-  onPress(): void;
+  onPress: () => void;
 }) {
   const styles = useMemo(
     () => ({
@@ -48,7 +54,10 @@ export function Button({ label, theme, tone = "plain", disabled, onPress }: {
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, disabled ? { opacity: CONTROL.faded } : pressed ? { opacity: CONTROL.pressed } : null]}
+      style={({ pressed }) => [
+        styles.button,
+        disabled ? { opacity: CONTROL.faded } : pressed ? { opacity: CONTROL.pressed } : null,
+      ]}
     >
       <Text style={styles.label}>{label}</Text>
     </Pressable>
@@ -74,12 +83,18 @@ export function Avatar({ letter, theme }: { letter: string; theme: PluginTheme }
   );
 }
 
-export function Chips({ options, chosen, theme, disabled, onToggle }: {
+export function Chips({
+  options,
+  chosen,
+  theme,
+  disabled,
+  onToggle,
+}: {
   options: { id: string; label: string }[];
   chosen: string[];
   theme: PluginTheme;
   disabled?: boolean;
-  onToggle(id: string, on: boolean): void;
+  onToggle: (id: string, on: boolean) => void;
 }) {
   const styles = useMemo(
     () => ({
@@ -110,7 +125,11 @@ export function Chips({ options, chosen, theme, disabled, onToggle }: {
             accessibilityState={{ checked: on, disabled: Boolean(disabled) }}
             accessibilityLabel={option.label}
             disabled={disabled}
-            style={({ pressed }) => [styles.chip, on ? styles.on : null, disabled ? { opacity: CONTROL.faded } : pressed ? { opacity: CONTROL.pressed } : null]}
+            style={({ pressed }) => [
+              styles.chip,
+              on ? styles.on : null,
+              disabled ? { opacity: CONTROL.faded } : pressed ? { opacity: CONTROL.pressed } : null,
+            ]}
             onPress={() => onToggle(option.id, !on)}
           >
             <Text style={[styles.text, on ? styles.textOn : null]}>{option.label}</Text>
@@ -139,10 +158,28 @@ export function Empty({ title, body, theme }: { title: string; body: string; the
 }
 
 /** A capitalised group heading, shared by the Health tab and the watch card. */
-export function Heading({ text, theme, tone = "muted" }: { text: string; theme: PluginTheme; tone?: "muted" | "danger" }) {
+export function Heading({
+  text,
+  theme,
+  tone = "muted",
+}: {
+  text: string;
+  theme: PluginTheme;
+  tone?: "muted" | "danger";
+}) {
   return (
     <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 6 }}>
-      <Text style={{ color: tone === "danger" ? theme.colors.statusDanger : theme.colors.foregroundMuted, fontSize: 12, fontWeight: "500", letterSpacing: 0.6, textTransform: "uppercase" }}>{text}</Text>
+      <Text
+        style={{
+          color: tone === "danger" ? theme.colors.statusDanger : theme.colors.foregroundMuted,
+          fontSize: 12,
+          fontWeight: "500",
+          letterSpacing: 0.6,
+          textTransform: "uppercase",
+        }}
+      >
+        {text}
+      </Text>
     </View>
   );
 }

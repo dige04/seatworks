@@ -2,7 +2,12 @@ import type { AttentionChoice, HitlChoice, Layer, McpChoice, RoleChoice } from "
 
 export type Source = "here" | "machine" | "default";
 
-export function sourceOf(values: Layer, machine: Layer, pick: (layer: Layer) => unknown, layer: "machine" | "project"): Source {
+export function sourceOf(
+  values: Layer,
+  machine: Layer,
+  pick: (layer: Layer) => unknown,
+  layer: "machine" | "project",
+): Source {
   if (pick(values) !== undefined) return "here";
   if (layer === "project" && pick(machine) !== undefined) return "machine";
   return "default";
@@ -49,14 +54,18 @@ export function harnessInForce(role: InForce, ...layers: (Layer | undefined)[]):
     if (named) return named;
   }
   // The kit gave a follower the followed role's defaults, so that role's own walk ends in the same place.
-  return role.follows ? harnessInForce({ id: role.follows, defaults: role.defaults }, ...layers) : role.defaults.harness;
+  return role.follows
+    ? harnessInForce({ id: role.follows, defaults: role.defaults }, ...layers)
+    : role.defaults.harness;
 }
 
 /** Walked lowest layer up, as the resolver does: a layer naming another agent drops the models chosen below it. */
 export function modelInForce(role: InForce, ...nearestFirst: (Layer | undefined)[]): string | undefined {
   // Where the resolver starts it: its defaults, or what the role it follows has in force.
   const followed = role.follows ? { id: role.follows, defaults: role.defaults } : undefined;
-  const origin = followed ? { harness: harnessInForce(followed, ...nearestFirst), model: modelInForce(followed, ...nearestFirst) } : role.defaults;
+  const origin = followed
+    ? { harness: harnessInForce(followed, ...nearestFirst), model: modelInForce(followed, ...nearestFirst) }
+    : role.defaults;
   let harness = origin.harness;
   let model = origin.model;
   for (const layer of [...nearestFirst].reverse()) {
@@ -72,7 +81,10 @@ export function modelInForce(role: InForce, ...nearestFirst: (Layer | undefined)
 }
 
 /** The resolver does not fence models against the catalogue, so show the one in force and flag it when the agent does not list it. */
-export function modelRow(model: string, models: { id: string; label: string }[]): { value: string; options: { label: string; value: string }[]; stray: boolean } {
+export function modelRow(
+  model: string,
+  models: { id: string; label: string }[],
+): { value: string; options: { label: string; value: string }[]; stray: boolean } {
   const known = models.map((entry) => ({ label: entry.label, value: entry.id }));
   const stray = Boolean(model) && !models.some((entry) => entry.id === model);
   return { value: model, stray, options: stray ? [...known, { label: model, value: model }] : known };

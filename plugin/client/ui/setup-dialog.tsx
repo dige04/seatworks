@@ -17,14 +17,14 @@ type Props = {
   catalog: CatalogView;
   available: PaseoProject[];
   projects: ProjectRow[];
-  readSettings(slug: string): Promise<{ status: string; values?: Layer; machine?: Layer } | { error: string }>;
+  readSettings: (slug: string) => Promise<{ status: string; values?: Layer; machine?: Layer } | { error: string }>;
   machine: Layer;
   theme: PluginTheme;
   disabled: boolean;
-  onOpenChange(open: boolean): void;
-  attach(root: string, values: Layer): Promise<string | null>;
-  listFolders(path?: string): Promise<Folders | { error: string }>;
-  onAttached(slug: string): void;
+  onOpenChange: (open: boolean) => void;
+  attach: (root: string, values: Layer) => Promise<string | null>;
+  listFolders: (path?: string) => Promise<Folders | { error: string }>;
+  onAttached: (slug: string) => void;
 };
 
 const STEPS = [
@@ -33,7 +33,20 @@ const STEPS = [
   { id: "check", label: "Check" },
 ];
 
-export function SetupDialog({ open, catalog, available, projects, readSettings, machine, theme, disabled, onOpenChange, attach, listFolders, onAttached }: Props) {
+export function SetupDialog({
+  open,
+  catalog,
+  available,
+  projects,
+  readSettings,
+  machine,
+  theme,
+  disabled,
+  onOpenChange,
+  attach,
+  listFolders,
+  onAttached,
+}: Props) {
   const [step, setStep] = useState(0);
   const [root, setRootPath] = useState("");
   const [draft, setDraft] = useState<Layer>({});
@@ -112,14 +125,28 @@ export function SetupDialog({ open, catalog, available, projects, readSettings, 
   const summary = () => {
     if (trouble) return trouble;
     if (!path) return "Choose a repository to start.";
-    if (step === 1) return `${chosen?.label ?? "Every role"} on ${harness?.label ?? "its default agent"}${models.length > 0 ? ` · ${model}` : ""}.`;
+    if (step === 1)
+      return `${chosen?.label ?? "Every role"} on ${harness?.label ?? "its default agent"}${models.length > 0 ? ` · ${model}` : ""}.`;
     return path;
   };
 
   return (
     <Modal title="Set Seatworks up for a project" open={open} onOpenChange={onOpenChange}>
       <Modal.Content>
-        <TabBar theme={theme} active={STEPS[step]!.id} disabled={disabled} onPick={(id) => setStep(Math.max(0, STEPS.findIndex((entry) => entry.id === id)))} tabs={STEPS} />
+        <TabBar
+          theme={theme}
+          active={STEPS[step].id}
+          disabled={disabled}
+          onPick={(id) =>
+            setStep(
+              Math.max(
+                0,
+                STEPS.findIndex((entry) => entry.id === id),
+              ),
+            )
+          }
+          tabs={STEPS}
+        />
 
         {step === 0 ? (
           <>
@@ -127,7 +154,15 @@ export function SetupDialog({ open, catalog, available, projects, readSettings, 
               <SettingsRow label="Repository" hint={path || "No folder chosen yet."}>
                 <View style={styles.pair}>
                   <Button label="Browse" theme={theme} disabled={disabled} onPress={() => browse(path || undefined)} />
-                  <Button label="Pick" theme={theme} disabled={disabled} onPress={() => { setBrowsing(null); setPicking(true); }} />
+                  <Button
+                    label="Pick"
+                    theme={theme}
+                    disabled={disabled}
+                    onPress={() => {
+                      setBrowsing(null);
+                      setPicking(true);
+                    }}
+                  />
                 </View>
               </SettingsRow>
             </SettingsCard>
@@ -135,7 +170,13 @@ export function SetupDialog({ open, catalog, available, projects, readSettings, 
             {browsing ? (
               <SettingsSection
                 title={browsing.path}
-                info={browsing.root ? `Inside the repository ${browsing.root}, which is what would be set up.` : browsing.repository ? "This folder is a repository." : "Open a folder, or go up."}
+                info={
+                  browsing.root
+                    ? `Inside the repository ${browsing.root}, which is what would be set up.`
+                    : browsing.repository
+                      ? "This folder is a repository."
+                      : "Open a folder, or go up."
+                }
               >
                 <SettingsCard>
                   <SettingsAction
@@ -159,7 +200,13 @@ export function SetupDialog({ open, catalog, available, projects, readSettings, 
                     }}
                   />
                   {browsing.parent ? (
-                    <SettingsAction label="Up one folder" hint={browsing.parent} actionLabel="Open" disabled={disabled} onPress={() => browse(browsing.parent ?? undefined)} />
+                    <SettingsAction
+                      label="Up one folder"
+                      hint={browsing.parent}
+                      actionLabel="Open"
+                      disabled={disabled}
+                      onPress={() => browse(browsing.parent ?? undefined)}
+                    />
                   ) : null}
                   {browsing.folders.map((folder) => (
                     <SettingsAction
@@ -203,20 +250,33 @@ export function SetupDialog({ open, catalog, available, projects, readSettings, 
 
         {step === 1 && chosen ? (
           <>
-            <TabBar theme={theme} active={chosen.id} disabled={disabled} onPick={setActiveRole} tabs={catalog.roles.map((entry) => ({ id: entry.id, label: entry.label }))} />
+            <TabBar
+              theme={theme}
+              active={chosen.id}
+              disabled={disabled}
+              onPick={setActiveRole}
+              tabs={catalog.roles.map((entry) => ({ id: entry.id, label: entry.label }))}
+            />
             <SettingsCard>
               <SettingsSelect
                 label="Agent"
                 hint={`Runs every ${chosen.label} turn in this repository.`}
                 value={harnessOf(chosen.id)}
-                options={chosen.harnesses.map((id) => ({ label: catalog.harnesses.find((entry) => entry.id === id)?.label ?? id, value: id }))}
+                options={chosen.harnesses.map((id) => ({
+                  label: catalog.harnesses.find((entry) => entry.id === id)?.label ?? id,
+                  value: id,
+                }))}
                 onValueChange={(next) => setDraft((current) => setRole(current, chosen.id, { harness: next }, true))}
                 disabled={disabled}
               />
               {models.length > 1 || row.stray ? (
                 <ModelPicker
                   label="Model"
-                  hint={row.stray ? `${row.value} is not one this agent offers. Pick one it does.` : "Used for every lane here."}
+                  hint={
+                    row.stray
+                      ? `${row.value} is not one this agent offers. Pick one it does.`
+                      : "Used for every lane here."
+                  }
                   value={row.value}
                   options={row.options}
                   theme={theme}
@@ -225,7 +285,7 @@ export function SetupDialog({ open, catalog, available, projects, readSettings, 
                 />
               ) : models.length === 1 ? (
                 <SettingsRow label="Model" hint={`${harness?.label ?? "This agent"} runs one model.`}>
-                  <Text style={{ color: theme.colors.foreground, fontSize: 14 }}>{models[0]!.label}</Text>
+                  <Text style={{ color: theme.colors.foreground, fontSize: 14 }}>{models[0].label}</Text>
                 </SettingsRow>
               ) : null}
             </SettingsCard>
@@ -239,11 +299,16 @@ export function SetupDialog({ open, catalog, available, projects, readSettings, 
               <SettingsRow
                 key={entry.id}
                 label={entry.label}
-                hint={`${catalog.harnesses.find((item) => item.id === harnessOf(entry.id))?.label ?? harnessOf(entry.id)}${draft.roles?.[entry.id]?.model ? ` · ${draft.roles[entry.id]!.model}` : ""}`}
+                hint={`${catalog.harnesses.find((item) => item.id === harnessOf(entry.id))?.label ?? harnessOf(entry.id)}${draft.roles?.[entry.id]?.model ? ` · ${draft.roles[entry.id].model}` : ""}`}
               />
             ))}
             <SettingsRow label="MCP servers" hint="Left as they are. Set them per project in the MCP tab." />
-            {attached.includes(path) ? <SettingsRow label="This project is already set up" hint="Its rules, its servers and its attention stay as they are; only the agents above change." /> : null}
+            {attached.includes(path) ? (
+              <SettingsRow
+                label="This project is already set up"
+                hint="Its rules, its servers and its attention stay as they are; only the agents above change."
+              />
+            ) : null}
           </SettingsCard>
         ) : null}
 
@@ -254,7 +319,13 @@ export function SetupDialog({ open, catalog, available, projects, readSettings, 
           {step > 0 ? <Button label="Back" theme={theme} onPress={() => setStep(step - 1)} /> : null}
           <Button label="Cancel" theme={theme} onPress={close} />
           {step < STEPS.length - 1 ? (
-            <Button label="Next" tone="accent" theme={theme} disabled={disabled || !path} onPress={() => setStep(step + 1)} />
+            <Button
+              label="Next"
+              tone="accent"
+              theme={theme}
+              disabled={disabled || !path}
+              onPress={() => setStep(step + 1)}
+            />
           ) : (
             <Button
               label="Attach"

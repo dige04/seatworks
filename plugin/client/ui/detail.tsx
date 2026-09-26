@@ -13,8 +13,8 @@ type Props = {
   tab: DetailTab;
   theme: PluginTheme;
   disabled: boolean;
-  onBack(): void;
-  onTab(tab: DetailTab): void;
+  onBack: () => void;
+  onTab: (tab: DetailTab) => void;
   onDetach?: () => void;
   children: ReactNode;
 };
@@ -34,7 +34,12 @@ export function Detail({ title, subtitle, tab, theme, disabled, onBack, onTab, o
   return (
     <View style={{ gap: 16 }}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to the project list" style={styles.back} onPress={onBack}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to the project list"
+          style={styles.back}
+          onPress={onBack}
+        >
           <Text style={styles.backText}>‹</Text>
         </Pressable>
         <View style={styles.titles}>

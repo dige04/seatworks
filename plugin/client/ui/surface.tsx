@@ -54,11 +54,29 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
   const [openLanes, setOpenLanes] = useState<{ of: string; lanes: string[] }>({ of: "", lanes: [] });
   const project = open && open !== MACHINE ? open : undefined;
   const lanesOpen = openLanes.of === (project ?? "") ? openLanes.lanes : [];
-  const { data, save, reload, saving, saved, saveError, addServer, attach, detach, listFolders, runDoctor, readStatus, readSettings } = useSeatworks(project);
+  const {
+    data,
+    save,
+    reload,
+    saving,
+    saved,
+    saveError,
+    addServer,
+    attach,
+    detach,
+    listFolders,
+    runDoctor,
+    readStatus,
+    readSettings,
+  } = useSeatworks(project);
   const settings = data.status === "ready" ? data : null;
   const flowLive = settings ? (settings.values.flow?.live ?? settings.machine.flow?.live ?? true) : true;
   const flowEvery = settings ? (settings.values.flow?.everySeconds ?? settings.machine.flow?.everySeconds ?? 5) : 5;
-  const { flow, error: flowError } = useFlow(tab === "flow" && flowLive ? project : undefined, flowEvery * 1000, lanesOpen.slice().sort().join(","));
+  const { flow, error: flowError } = useFlow(
+    tab === "flow" && flowLive ? project : undefined,
+    flowEvery * 1000,
+    lanesOpen.slice().sort().join(","),
+  );
   const styles = useSurfaceStyles(theme, layout.compact);
   useSavedToast(saving, saved);
 
@@ -83,7 +101,11 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
   const settledAs = `${data.revision}:${JSON.stringify(data.machine)}`;
   const here = data.projects.find((entry) => entry.slug === project);
   const layer = project ? "project" : "machine";
-  const problems = [...(data.settingsError ? [data.settingsError] : []), ...(saveError ? [saveError] : []), ...data.team.errors];
+  const problems = [
+    ...(data.settingsError ? [data.settingsError] : []),
+    ...(saveError ? [saveError] : []),
+    ...data.team.errors,
+  ];
   // Settings that could not be read are shown as empty, so editing them would save that emptiness over what the file holds.
   const locked = saving || data.settingsError !== null;
 
@@ -138,7 +160,11 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
         />
         {data.projects.length === 0 ? (
           <SettingsCard>
-            <Empty theme={theme} title="No project uses Seatworks yet" body="Machine defaults hold until a project sets its own. Use Add project to add one." />
+            <Empty
+              theme={theme}
+              title="No project uses Seatworks yet"
+              body="Machine defaults hold until a project sets its own. Use Add project to add one."
+            />
           </SettingsCard>
         ) : null}
         {dialogNode}
@@ -161,7 +187,19 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
         {trouble}
         {tab === "team" ? (
           <>
-            <TeamSection catalog={data.catalog} team={data.team} values={data.values} machine={data.machine} layer={layer} theme={theme} disabled={locked} active={chip} onActive={setChip} save={save} reload={reload} />
+            <TeamSection
+              catalog={data.catalog}
+              team={data.team}
+              values={data.values}
+              machine={data.machine}
+              layer={layer}
+              theme={theme}
+              disabled={locked}
+              active={chip}
+              onActive={setChip}
+              save={save}
+              reload={reload}
+            />
           </>
         ) : null}
         {tab === "flow" ? (
@@ -177,7 +215,10 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
             onOpen={(lane) =>
               setOpenLanes((current) => {
                 const lanes = current.of === (project ?? "") ? current.lanes : [];
-                return { of: project ?? "", lanes: lanes.includes(lane) ? lanes.filter((id) => id !== lane) : [...lanes, lane] };
+                return {
+                  of: project ?? "",
+                  lanes: lanes.includes(lane) ? lanes.filter((id) => id !== lane) : [...lanes, lane],
+                };
               })
             }
           />

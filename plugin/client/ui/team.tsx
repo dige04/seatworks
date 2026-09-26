@@ -1,6 +1,13 @@
 import type { PluginTheme } from "@getpaseo/plugin";
 import { useRpc } from "@getpaseo/plugin/client";
-import { SettingsAction, SettingsCard, SettingsRow, SettingsSection, SettingsSelect, SettingsSwitch } from "@getpaseo/plugin/client/ui";
+import {
+  SettingsAction,
+  SettingsCard,
+  SettingsRow,
+  SettingsSection,
+  SettingsSelect,
+  SettingsSwitch,
+} from "@getpaseo/plugin/client/ui";
 import { type ReactElement, useState } from "react";
 import { modelsRpc } from "../../shared/rpc.ts";
 import { Text } from "react-native";
@@ -22,11 +29,10 @@ type Props = {
   theme: PluginTheme;
   disabled: boolean;
   active: string | null;
-  onActive(role: string): void;
-  save(change: (values: Layer) => Layer): Promise<boolean>;
-  reload(): void;
+  onActive: (role: string) => void;
+  save: (change: (values: Layer) => Layer) => Promise<boolean>;
+  reload: () => void;
 };
-
 
 /** The models are Paseo's: it asks each agent, and this asks Paseo to do it again. */
 function ModelsCard({ catalog, disabled, reload }: Pick<Props, "catalog" | "disabled" | "reload">) {
@@ -37,7 +43,9 @@ function ModelsCard({ catalog, disabled, reload }: Pick<Props, "catalog" | "disa
   const label = (id: string) => catalog.harnesses.find((entry) => entry.id === id)?.label ?? id;
   const failed = listed ? Object.entries(listed).filter(([, entry]) => entry.error) : [];
   const hint = listed
-    ? Object.entries(listed).map(([id, entry]) => `${label(id)} ${entry.count}`).join(" · ")
+    ? Object.entries(listed)
+        .map(([id, entry]) => `${label(id)} ${entry.count}`)
+        .join(" · ")
     : catalog.harnesses.map((entry) => `${entry.label} ${entry.models.length}`).join(" · ");
   return (
     <SettingsCard>
@@ -66,7 +74,17 @@ function ModelsCard({ catalog, disabled, reload }: Pick<Props, "catalog" | "disa
 type Role = CatalogView["roles"][number];
 
 /** Rows, not a component: the card borders each child it gets. */
-function roleRows({ catalog, team, values, machine, layer, theme, disabled, save, role }: Omit<Props, "active" | "onActive" | "reload"> & { role: Role }): ReactElement[] {
+function roleRows({
+  catalog,
+  team,
+  values,
+  machine,
+  layer,
+  theme,
+  disabled,
+  save,
+  role,
+}: Omit<Props, "active" | "onActive" | "reload"> & { role: Role }): ReactElement[] {
   const seat = team.roles[role.id];
   const follows = role.follows ? catalog.roles.find((entry) => entry.id === role.follows)?.label : undefined;
   const harness = catalog.harnesses.find((entry) => entry.id === seat?.harness);
@@ -75,14 +93,18 @@ function roleRows({ catalog, team, values, machine, layer, theme, disabled, save
   const row = modelRow(model, models);
   const stray = row.stray;
   const thinking = models.find((entry) => entry.id === model)?.thinkingOptions ?? [];
-  const source = (field: keyof RoleChoice) => sourceOf(values, machine, (entry) => entry.roles?.[role.id]?.[field], layer);
+  const source = (field: keyof RoleChoice) =>
+    sourceOf(values, machine, (entry) => entry.roles?.[role.id]?.[field], layer);
   const rows: ReactElement[] = [
     <SettingsSelect
       key="agent"
       label="Agent"
       hint={sourceLabel(source("harness"), layer, follows)}
       value={seat?.harness ?? role.defaults.harness}
-      options={role.harnesses.map((id) => ({ label: catalog.harnesses.find((entry) => entry.id === id)?.label ?? id, value: id }))}
+      options={role.harnesses.map((id) => ({
+        label: catalog.harnesses.find((entry) => entry.id === id)?.label ?? id,
+        value: id,
+      }))}
       onValueChange={(next) => void save((current) => setRole(current, role.id, { harness: next }, true))}
       disabled={disabled}
     />,
@@ -92,7 +114,11 @@ function roleRows({ catalog, team, values, machine, layer, theme, disabled, save
       <ModelPicker
         key="model"
         label="Model"
-        hint={stray ? `${model} is not one this agent offers. Pick one it does.` : sourceLabel(source("model"), layer, follows)}
+        hint={
+          stray
+            ? `${model} is not one this agent offers. Pick one it does.`
+            : sourceLabel(source("model"), layer, follows)
+        }
         value={row.value}
         options={row.options}
         theme={theme}
@@ -103,7 +129,7 @@ function roleRows({ catalog, team, values, machine, layer, theme, disabled, save
   } else if (models.length === 1) {
     rows.push(
       <SettingsRow key="model" label="Model" hint={`${harness?.label ?? "This agent"} runs one model.`}>
-        <Text style={{ color: theme.colors.foreground, fontSize: 14 }}>{models[0]!.label}</Text>
+        <Text style={{ color: theme.colors.foreground, fontSize: 14 }}>{models[0].label}</Text>
       </SettingsRow>,
     );
   }
@@ -113,7 +139,7 @@ function roleRows({ catalog, team, values, machine, layer, theme, disabled, save
         key="thinking"
         label="Thinking"
         hint={sourceLabel(source("thinking"), layer, follows)}
-        value={seat?.thinking ?? thinking[0]!.id}
+        value={seat?.thinking ?? thinking[0].id}
         options={thinking.map((entry) => ({ label: entry.label, value: entry.id }))}
         onValueChange={(next) => void save((current) => setRole(current, role.id, { thinking: next }))}
         disabled={disabled}
@@ -127,12 +153,18 @@ function roleRows({ catalog, team, values, machine, layer, theme, disabled, save
 function SignalsCard({ team, values, machine, layer, disabled, save }: Props) {
   return (
     <SettingsCard>
-      <SettingsRow label="What the watch tells the Supervisor" hint="Pages always reach it. Each signal here is only recorded, in shadow, until you turn it on; none ever reaches a Lead or the seat it is about." />
+      <SettingsRow
+        label="What the watch tells the Supervisor"
+        hint="Pages always reach it. Each signal here is only recorded, in shadow, until you turn it on; none ever reaches a Lead or the seat it is about."
+      />
       {team.signals.map((signal) => (
         <SettingsSwitch
           key={signal.kind}
           label={signal.title}
-          hint={`${signal.kind}. ${sourceLabel(sourceOf(values, machine, (entry) => entry.attention?.signals?.[signal.kind], layer), layer)}.`}
+          hint={`${signal.kind}. ${sourceLabel(
+            sourceOf(values, machine, (entry) => entry.attention?.signals?.[signal.kind], layer),
+            layer,
+          )}.`}
           value={team.attention.signals[signal.kind] === "on"}
           onValueChange={(next) => void save((current) => setSignal(current, signal.kind, next ? "on" : "shadow"))}
           disabled={disabled}
@@ -148,7 +180,10 @@ function HitlCard({ team, values, machine, layer, disabled, save }: Props) {
     <SettingsCard>
       <SettingsSwitch
         label="Human in the loop"
-        hint={`Off, only the concept is yours: the Supervisor grills you on it and decides everything else. On, it may queue questions for you and landings wait on your ask-first paths. ${sourceLabel(sourceOf(values, machine, (entry) => entry.hitl?.on, layer), layer)}.`}
+        hint={`Off, only the concept is yours: the Supervisor grills you on it and decides everything else. On, it may queue questions for you and landings wait on your ask-first paths. ${sourceLabel(
+          sourceOf(values, machine, (entry) => entry.hitl?.on, layer),
+          layer,
+        )}.`}
         value={team.hitl.on}
         onValueChange={(next) => void save((current) => setHitl(current, { on: next }))}
         disabled={disabled}
@@ -163,8 +198,18 @@ export function TeamSection(props: Props) {
   if (!role) return null;
   return (
     <SettingsSection title="Team" info={role.description}>
-      <TabBar theme={theme} active={role.id} disabled={disabled} onPick={onActive} tabs={catalog.roles.map((entry) => ({ id: entry.id, label: entry.label }))} />
-      {role.can.includes("judge") ? <JudgeCard {...props} role={role} rows={roleRows({ ...props, role })} /> : <SettingsCard>{roleRows({ ...props, role })}</SettingsCard>}
+      <TabBar
+        theme={theme}
+        active={role.id}
+        disabled={disabled}
+        onPick={onActive}
+        tabs={catalog.roles.map((entry) => ({ id: entry.id, label: entry.label }))}
+      />
+      {role.can.includes("judge") ? (
+        <JudgeCard {...props} role={role} rows={roleRows({ ...props, role })} />
+      ) : (
+        <SettingsCard>{roleRows({ ...props, role })}</SettingsCard>
+      )}
       {role.can.includes("supervise") ? <HitlCard {...props} /> : null}
       {role.can.includes("supervise") ? <SignalsCard {...props} /> : null}
       <ModelsCard catalog={props.catalog} disabled={props.disabled} reload={props.reload} />

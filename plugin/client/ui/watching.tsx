@@ -7,13 +7,27 @@ import type { WatchJudge, WatchView } from "../../shared/flow-views.ts";
 import { incidentState } from "../format/watch.ts";
 import { judgeWords } from "../format/watch.ts";
 
-const ago = (minutes: number): string => (minutes < 1 ? "just now" : minutes < 60 ? `${minutes} min ago` : `${Math.round(minutes / 60)} h ago`);
+const ago = (minutes: number): string =>
+  minutes < 1 ? "just now" : minutes < 60 ? `${minutes} min ago` : `${Math.round(minutes / 60)} h ago`;
 
 function useStyles(theme: PluginTheme) {
   return useMemo(
     () => ({
-      heading: { color: theme.colors.foregroundMuted, fontSize: 12, fontWeight: "500" as const, letterSpacing: 0.6, textTransform: "uppercase" as const, paddingTop: 6 },
-      row: { flexDirection: "row" as const, alignItems: "flex-start" as const, gap: 12, paddingHorizontal: 18, paddingVertical: 12 },
+      heading: {
+        color: theme.colors.foregroundMuted,
+        fontSize: 12,
+        fontWeight: "500" as const,
+        letterSpacing: 0.6,
+        textTransform: "uppercase" as const,
+        paddingTop: 6,
+      },
+      row: {
+        flexDirection: "row" as const,
+        alignItems: "flex-start" as const,
+        gap: 12,
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+      },
       labels: { flex: 1, gap: 4, minWidth: 0 },
       title: { color: theme.colors.foreground, fontSize: 14, fontWeight: "500" as const },
       hint: { color: theme.colors.foregroundMuted, fontSize: 12 },
@@ -49,7 +63,9 @@ function Trouble({ watch, theme }: { watch: WatchView; theme: PluginTheme }) {
               <Dot color={theme.colors.statusWarning} />
             </View>
             <View style={styles.labels}>
-              <Text style={styles.title}>{entry.kind === "call.malformed" ? "A call never reached the desk" : entry.kind}</Text>
+              <Text style={styles.title}>
+                {entry.kind === "call.malformed" ? "A call never reached the desk" : entry.kind}
+              </Text>
               <Text style={styles.hint}>{entry.detail}</Text>
             </View>
             <Text style={styles.hint}>{ago(entry.minutes)}</Text>
@@ -63,7 +79,11 @@ function Trouble({ watch, theme }: { watch: WatchView; theme: PluginTheme }) {
 function JudgeLine({ judge, theme }: { judge: WatchJudge; theme: PluginTheme }) {
   const styles = useStyles(theme);
   const words = judgeWords(judge);
-  const tone = { success: theme.colors.statusSuccess, warning: theme.colors.statusWarning, muted: theme.colors.foregroundMuted }[words.tone];
+  const tone = {
+    success: theme.colors.statusSuccess,
+    warning: theme.colors.statusWarning,
+    muted: theme.colors.foregroundMuted,
+  }[words.tone];
   return (
     <Section title="The watch" theme={theme}>
       <View style={styles.row}>
