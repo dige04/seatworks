@@ -280,7 +280,8 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     );
   assert.match(
     next(workLetters.handback({ ...task, kind: "review" }, "/h.md", "Verdict: accept", "agent-7", "lead")),
-    /^Weigh its findings, then cut it/,
+    /^Weigh its findings; cut it once you have no further question for it/,
+    "a council asks the same reviewer again, so its hand-back never tells the Lead to let it go at once",
   );
   assert.match(
     next(workLetters.handback(task, "/h.md", "Outcome: complete", "agent-7", "supervisor")),

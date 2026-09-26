@@ -17,7 +17,7 @@ export const workLetters = {
       reader === "supervisor"
         ? "Its Lead is gone: replace_lead puts a new Lead on the lane, this hand-back included; drop_lane only if the lane is no longer wanted."
         : task.kind === "review"
-          ? "Weigh its findings, then cut it: a review has nothing to merge. A changes verdict is settled before you report the lane ready."
+          ? "Weigh its findings; cut it once you have no further question for it. A changes verdict is settled before you report the lane ready."
           : "Judge it by what the work did, then accept, rework with exactly what must change, or cut; start_review first on a big or doubtful change.";
     return mail(
       "done",
