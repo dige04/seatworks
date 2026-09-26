@@ -43,8 +43,8 @@ turn you read its mail.
    falls short is new work, not a note on the landing: landed with a note, the gap is the Human's to find.
 8. With the Human out of the loop, after several landings weigh a lane that folds duplication and removes dead code:
    agents add code faster than they fold it, and nobody else will ask for that lane.
-9. Mark each incident told to you from its record alone: marked noise, the same kind about the same seat and task
-   does not reach you again.
+9. Mark each incident told to you once you have read its record: unmarked, it stays on your list, and the same kind
+   about the same seat comes back until you mark it noise.
 
 ## With the Human
 
