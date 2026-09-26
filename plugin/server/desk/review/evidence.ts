@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
-import type { Kit } from "../../catalog/kit/kit.ts";
+import type { CheckSpec, Kit } from "../../catalog/kit/kit.ts";
 import { clip } from "../../core/text.ts";
 import type { Case } from "./asking.ts";
 import type { Lane } from "../../domain/lane.ts";
@@ -64,8 +64,8 @@ function handbackOf(task: Task): string | undefined {
 }
 
 /**
- * What a moment asks: whether each act the catalog words was asked for, whether a hand-back the record does not back says
- * its checks pass, and what an instruction acted on unchecked did; nothing that reads an instruction the window has lost.
+ * What a moment asks: whether each act the catalog words was asked for, and each check its facts open, such as whether a
+ * hand-back the record does not back says its checks pass; nothing that reads an instruction the window has lost.
  */
 export function momentCases(kit: Kit, place: { lane?: Lane; task?: Task }, moment: Moment): Case[] {
   const { task, lane } = place;
@@ -87,10 +87,9 @@ export function momentCases(kit: Kit, place: { lane?: Lane; task?: Task }, momen
     ]);
     cases.push({ subject, episode, state: { instruction, ...asked }, asked: Object.fromEntries(fills) });
   }
-  const handback =
-    task?.handback && moment.facts.some((found) => found.kind === "unverified" || found.kind === "claim-contradicted")
-      ? handbackOf(task)
-      : undefined;
+  const opens = (check: CheckSpec | undefined) =>
+    moment.facts.some((found) => check?.facts?.includes(found.kind) === true);
+  const handback = task?.handback && opens(kit.checks.claims_checks_pass) ? handbackOf(task) : undefined;
   if (task?.handback && handback)
     cases.push({
       subject: task.id,
@@ -101,11 +100,7 @@ export function momentCases(kit: Kit, place: { lane?: Lane; task?: Task }, momen
   const kind = kit.checks.instruction_kind;
   const after = kind?.type === "choice" ? kind.after : undefined;
   const from = moment.instruction?.from ?? [];
-  if (
-    instruction &&
-    moment.facts.some((found) => found.kind === "edit-before-look") &&
-    (!after || from.some((sender) => after.includes(sender)))
-  ) {
+  if (instruction && opens(kind) && (!after || from.some((sender) => after.includes(sender)))) {
     cases.push({
       subject,
       episode,

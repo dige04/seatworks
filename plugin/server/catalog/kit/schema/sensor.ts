@@ -25,6 +25,9 @@ const Instructions = z.union([
 const Mode = z.enum(["off", "shadow"]);
 const unit = z.number().min(0).max(1);
 
+/** The facts the code raises at a turn's end that open a question about that turn. */
+const Facts = z.array(text).min(1).optional();
+
 /**
  * One condition, answered yes or no: at or above `yes` it holds, at or below `no` it does not, and between is unclear. A question
  * about an act names in `acts` each fact that opens it and the act as it asks it, the fact's own words where `{quote}` is.
@@ -35,6 +38,7 @@ const Noul = z
     instructions: Instructions,
     criteria: z.strictObject({ true: text, false: text }),
     acts: z.record(z.string(), text.includes("{quote}")).optional(),
+    facts: Facts,
     mode: Mode,
     yes: unit,
     no: unit,
@@ -47,6 +51,7 @@ const Choice = z
     type: z.literal("choice"),
     instructions: Instructions,
     criteria: z.record(z.string(), text),
+    facts: Facts,
     mode: Mode,
     sure: unit,
     after: z.array(text).optional(),
