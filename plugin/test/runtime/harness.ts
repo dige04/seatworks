@@ -67,10 +67,10 @@ const ide = {
   },
 };
 
-/** `sensor` stands in for the HTTP one the host gives the desk, so no test asks a real model. */
 /** The events of kind `K`, a kind made from a template (merge.<status>) included. */
 type EventOf<K, E = DeskEvent> = E extends { kind: infer T } ? (K extends T ? E : never) : never;
 
+/** `sensor` stands in for the HTTP one the host gives the desk, so no test asks a real model. */
 export function harness(options: { sensor?: (spec: SensorSpec, key: string) => Judge } = {}) {
   // One harness is one machine: a test that builds two gets two, since a daemon never shares its state.
   process.env.HOME = tempDir("sw2-home-");
