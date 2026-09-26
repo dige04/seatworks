@@ -90,21 +90,27 @@ test("where a lane works is the Human's call: asked when their copy is off its b
   await h.endTurn(numbers.lead!, "done");
   h.git(h.root, "switch", "-q", "fix/login");
 
-  await h.call(sup, "supervisor", "set_project", { laneHome: "newBranch" });
+  const said = "Open lanes where I say from now on, please.";
+  h.humanSays(sup, said);
+  await h.call(sup, "supervisor", "set_project", { laneHome: "newBranch", humanSaid: said });
   writeFileSync(join(h.root, "a.txt"), "the Human's own edit\n");
   assert.match(
     (await open("Here", { writeSet: ["b.txt"] })).text,
     /has not said: carry on fix\/login here \(onBranch\), a new branch that takes the uncommitted work along/,
   );
   h.git(h.root, "checkout", "--", "a.txt");
-  assert.equal((await h.call(sup, "supervisor", "set_project", { laneHome: "isolate" })).ok, true);
+  assert.match(
+    (await h.call(sup, "supervisor", "set_project", { laneHome: "isolate" })).text,
+    /^Nothing was set: to set where lanes work to isolate is the Human's while they are in the loop\. Ask them, and pass their words/,
+  );
+  assert.equal((await h.call(sup, "supervisor", "set_project", { laneHome: "isolate", humanSaid: said })).ok, true);
   assert.match(await status(), /Lanes open in a copy of their own, as chosen for every lane \(laneHome\)\./);
   assert.equal((await open("Standing")).ok, true);
   assert.ok(h.ledger().lanes.L4!.slot);
   assert.equal(branch(), "fix/login");
   assert.equal((await open("After it", { after: ["L4"] })).ok, true);
   assert.equal(h.ledger().lanes.L5!.opening?.isolate, true);
-  await h.call(sup, "supervisor", "set_project", { laneHome: "onBranch" });
+  await h.call(sup, "supervisor", "set_project", { laneHome: "onBranch", humanSaid: said });
   assert.equal((await open("Carry on")).ok, true);
   assert.deepEqual([h.ledger().lanes.L6!.onBranch, h.ledger().lanes.L6!.branch], [true, "fix/login"]);
 });

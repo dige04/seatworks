@@ -184,6 +184,10 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
     assert.deepStrictEqual(sent, raw, `${contract.name} answered with what JSON does not carry`);
     return contract.output.parse(sent) as z.output<C["output"]>;
   };
+  let typed = 0;
+  /** What the Human types into `seat`'s chat, as Paseo keeps a message from the app. */
+  const humanSays = (seat: string, text: string) =>
+    timelineOf(seat).add({ type: "user_message", text, clientMessageId: `app-typed-${++typed}` });
   /** Writes the project's own settings layer, as the owner would in its settings.json. */
   const projectSettings = (layer: Record<string, unknown>) => {
     mkdirSync(project.state, { recursive: true });
@@ -219,6 +223,7 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
     restart,
     machineSettings,
     projectSettings,
+    humanSays,
   };
 }
 

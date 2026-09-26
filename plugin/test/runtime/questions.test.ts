@@ -43,7 +43,13 @@ test("a question's class decides what waits on it: an irreversible one holds its
   );
   h.timelineOf(sup).add({ type: "user_message", text: "No. Don't touch invoices at all.", clientMessageId: "app-2" });
   assert.match(
-    (await h.call(sup, "supervisor", "record_human_answer", { question: "H1", choice: "decline", quote: "no" })).text,
+    (
+      await h.call(sup, "supervisor", "record_human_answer", {
+        question: "H1",
+        choice: "decline",
+        quote: "No. Don't touch invoices at all.",
+      })
+    ).text,
     /^H1 is declined: decline\. Lane L1 is still on hold for it/,
   );
   await h.call(sup, "supervisor", "resume_lane", { lane: "L1" });

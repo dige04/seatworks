@@ -693,6 +693,10 @@
               ]
             },
             "description": "Risk rules replacing the kit's (migrations, schemas, SQL): the whole list, or empty for none. A rule questions reviews and never holds a landing."
+          },
+          "humanSaid": {
+            "type": "string",
+            "description": "With the Human in the loop, their words from this chat asking to drop an askFirst path or change laneHome."
           }
         }
       }

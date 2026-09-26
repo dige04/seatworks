@@ -106,7 +106,9 @@ test("an approval is for the lane as it was held, and for what the Human asked a
     { isolate: true },
   );
   const { h, sup, land, work, onMain } = landable;
-  const askFirst = (paths: string[]) => h.call(sup, "supervisor", "set_project", { askFirst: paths });
+  const said = "Change what you ask me about first, as I tell you.";
+  h.humanSays(sup, said);
+  const askFirst = (paths: string[]) => h.call(sup, "supervisor", "set_project", { askFirst: paths, humanSaid: said });
   await land();
   assert.deepEqual(h.ledger().lanes.L1!.landApproval!.signals, [
     "It changes src/auth/login.ts, under src/auth, which the Human asked to be asked about first.",

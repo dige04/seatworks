@@ -229,7 +229,8 @@ test("a lane carrying on the Human's branch is refused where there is none, star
     (await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).text,
     /waits for the Human's approval, on the Flow tab of the panel\. It changes b\.txt, under b\.txt, which the Human asked to be asked about first\.\n/,
   );
-  await h.call(sup, "supervisor", "set_project", { askFirst: [] });
+  h.humanSays(sup, "Stop asking me about a.txt and b.txt.");
+  await h.call(sup, "supervisor", "set_project", { askFirst: [], humanSaid: "Stop asking me about a.txt and b.txt." });
   const closed = await h.call(sup, "supervisor", "land_lane", { lane: "L1" });
   assert.equal(closed.ok, true, closed.text);
   assert.match(closed.text, /the work stays on fix\/login, the branch it carried on; nothing was merged anywhere/);

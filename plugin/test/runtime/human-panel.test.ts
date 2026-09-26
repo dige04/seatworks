@@ -106,11 +106,20 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
     h.heard(sup).join("\n"),
     /HUMAN ANSWERED H1 \(Delete old invoices, or keep them archived\?\), on the panel: Archive\.\n\nTheir note, their own words:\nand keep a list of them\n\nNext: Carry their choice into the lane, and write it into CONTEXT\.md if it settles the concept\./,
   );
-  assert.match((await record("H1", "decline", "archive them")).text, /H1 is already answered\./);
+  assert.match((await record("H1", "decline", "archive them, please")).text, /H1 is already answered\./);
+  assert.match(
+    (await record("H1", "decline", "archive")).text,
+    /are not in this chat/,
+    "a scrap of a message is no one's words",
+  );
 
   await ask({ lane: "L1", class: "irreversible" });
   assert.match((await record("h2", "Archive", "archive them, please!")).text, /^H2 is answered: Archive\./);
-  assert.equal(h.ledger().questions.H2!.answer?.by, "chat");
+  assert.deepEqual(
+    [h.ledger().questions.H2!.answer?.by, h.ledger().questions.H2!.answer?.quote],
+    ["chat", "Hmm.  Archive them,\nplease."],
+    "what they wrote goes on record whole",
+  );
   await ask({});
   assert.deepEqual(await answer("H3", "decline"), { answered: "H3 is declined. The Supervisor has it." });
   assert.match(

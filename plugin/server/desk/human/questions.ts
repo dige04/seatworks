@@ -1,13 +1,13 @@
 import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { coverGlob, firstOverlap } from "../../core/scope.ts";
-import { sentBy } from "../../core/sent-by.ts";
 import { clip } from "../../core/text.ts";
 import { DAY_MS } from "../../core/time.ts";
 import { QUESTION, type Question, type QuestionClass } from "../../domain/question.ts";
 import type { DeskBase } from "../base.ts";
 import { type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { putOnHold } from "../lanes/hold.ts";
+import { humanSaid } from "./said.ts";
 import { askLetters } from "../letters/ask-letters.ts";
 import { askFirstHits, changeOf } from "../lanes/land-facts.ts";
 import type { Lane } from "../../domain/lane.ts";
@@ -187,39 +187,25 @@ export function withdrawQuestion(
   return ok(`${id} is off the Human's queue; they read why on the Report.${held}`);
 }
 
-/** Words as a quote is checked: spacing, a closing stop and case do not count. */
-const flat = (text: string) =>
-  text
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/[.!?]+$/, "")
-    .toLowerCase();
-
 /** Puts an answer the Human gave in the Supervisor's chat on record, once their own words are found there. */
 export async function recordHumanAnswer(
   desk: DeskServices,
   caller: Caller,
   args: { question: string; choice: string; quote: string; text?: string },
 ): Promise<ToolReply> {
-  const { roster } = desk;
   const { project } = caller;
   const id = args.question.trim().toUpperCase();
-  const quote = flat(args.quote);
-  const said = (await roster.history(caller.id, 200)).flatMap(({ item }) =>
-    item.type === "user_message" && sentBy(item)[0] === "person" && typeof item.text === "string"
-      ? [flat(item.text)]
-      : [],
-  );
-  if (!quote || !said.some((text) => text.includes(quote))) {
+  const said = await humanSaid(desk.roster, caller.id, str(args.quote));
+  if (!said)
     return no(
-      `The Human's own words "${clip(str(args.quote), 200)}" are not in this chat as far back as the desk reads: quote what they wrote exactly, or put it to them with ask_human.`,
+      `The Human's own words "${clip(str(args.quote), 200)}" are not in this chat as far back as the desk reads: quote a message they wrote, whole or twenty characters of it, or put it to them with ask_human.`,
     );
-  }
   const choice = args.choice.trim();
+  // What they wrote goes on record whole beside the choice: the words are the evidence, not the part quoted.
   const recorded = settleQuestion(desk, project, id, choice, {
     text: str(args.text) || undefined,
     by: "chat",
-    quote: str(args.quote),
+    quote: said,
   });
   if (typeof recorded === "string") return no(recorded);
   const lane = recorded.parked && recorded.lane ? loadLedger(project.state).lanes[recorded.lane] : undefined;
