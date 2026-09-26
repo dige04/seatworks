@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import type { Check } from "../../../shared/views.ts";
 import type { Kit, ProxySpec } from "../../catalog/kit/kit.ts";
@@ -8,7 +7,7 @@ import type { RoleSeat } from "../../catalog/team/role-seats.ts";
 import type { Team } from "../../catalog/team/team.ts";
 import { errorText } from "../../core/errors.ts";
 import { reaches, toolNames } from "../../core/mcp-client.ts";
-import { expandHome } from "../../core/paths.ts";
+import { executableIn, expandHome, pathDirs } from "../../core/paths.ts";
 
 type Probes = {
   has(bin: string): boolean;
@@ -18,14 +17,7 @@ type Probes = {
 };
 
 export const realProbes: Probes = {
-  has(bin) {
-    try {
-      execFileSync("/bin/sh", ["-c", 'command -v "$1"', "sh", bin], { stdio: "ignore", timeout: 5000 });
-      return true;
-    } catch {
-      return false;
-    }
-  },
+  has: (bin) => executableIn(pathDirs(), bin) !== undefined,
   exists: existsSync,
   tools: toolNames,
   reaches,

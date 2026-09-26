@@ -1,6 +1,6 @@
 import { accessSync, constants, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, delimiter, join } from "node:path";
+import { basename, delimiter, extname, join } from "node:path";
 import { getPath, isRecord } from "./json.ts";
 
 export const PLUGIN_ID = "seatworks-v2";
@@ -58,7 +58,7 @@ export function deskSocket(homeDir = home()): string {
 }
 
 export function nodeBin(): string {
-  if (basename(process.execPath) === "node") return process.execPath;
+  if (/^node(\.exe)?$/i.test(basename(process.execPath))) return process.execPath;
   return executableIn([...pathDirs(), "/opt/homebrew/bin", "/usr/local/bin"], "node") ?? "node";
 }
 
@@ -67,17 +67,20 @@ export function pathDirs(): string[] {
   return (process.env.PATH ?? "").split(delimiter);
 }
 
-/** The first of `dirs` holding a `name` this process may run. */
+/** The first of `dirs` holding a `name` this process may run; on Windows, `name` with an extension `PATHEXT` names. */
 export function executableIn(dirs: string[], name: string): string | undefined {
-  for (const dir of dirs) {
-    const file = join(dir, name);
-    try {
-      accessSync(file, constants.X_OK);
-      return file;
-    } catch {
-      // Not there, or not ours to run: the next directory may have it.
-    }
-  }
+  const names =
+    process.platform === "win32" && !extname(name)
+      ? (process.env.PATHEXT ?? ".COM;.EXE;.BAT;.CMD").split(";").flatMap((ext) => (ext ? [`${name}${ext}`] : []))
+      : [name];
+  for (const dir of dirs)
+    for (const file of names.map((each) => join(dir, each)))
+      try {
+        accessSync(file, constants.X_OK);
+        return file;
+      } catch {
+        // Not there, or not ours to run: the next name or directory may have it.
+      }
   return undefined;
 }
 
