@@ -16,10 +16,17 @@ function unwritten(role: RoleSpec, text: string): string[] {
   return [...new Set(named)].filter((segment) => !writes.has(segment) && !DESK_OWNED.has(segment));
 }
 
+/** `source` with the paths the desk fills in; the Human's own rules go through this alone, and reach a seat as written. */
 export function renderText(role: RoleSpec, source: string, paths: PromptPaths): string {
   const text = source.replaceAll("{{guides}}", paths.guides).replaceAll("{{state}}", paths.state);
   const leftover = text.match(/\{\{[^}]*\}\}/);
   if (leftover) throw new Error(`the ${role.role} prompt still holds the placeholder ${leftover[0]}`);
+  return text;
+}
+
+/** The kit's own text for a role, held to the words the role must not see and to the state it writes. */
+function renderKitText(role: RoleSpec, source: string, paths: PromptPaths): string {
+  const text = renderText(role, source, paths);
   // Checked in the source, not the rendered text: a repo or home path holding a hidden word made the seat unbuildable.
   const hidden = hiddenWordsIn(source, role.hidesWords ?? []);
   if (hidden.length > 0) {
@@ -35,9 +42,11 @@ export function renderText(role: RoleSpec, source: string, paths: PromptPaths): 
 
 /** The role's prompt, then what the harness it sits on needs said against that agent's own instructions, when it ships any. */
 export function renderPrompt(kit: Kit, role: RoleSpec, harness: string, paths: PromptPaths): string {
-  const prompt = renderText(role, readFileSync(contentPath(kit, role.prompt), "utf-8"), paths);
+  const prompt = renderKitText(role, readFileSync(contentPath(kit, role.prompt), "utf-8"), paths);
   const delta = harnessFile(kit, harness, "delta/ROLE.md", role);
-  return existsSync(delta) ? `${prompt.trimEnd()}\n\n${renderText(role, readFileSync(delta, "utf-8"), paths)}` : prompt;
+  return existsSync(delta)
+    ? `${prompt.trimEnd()}\n\n${renderKitText(role, readFileSync(delta, "utf-8"), paths)}`
+    : prompt;
 }
 
 function markdownIn(dir: string): string[] {

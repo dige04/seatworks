@@ -41,11 +41,6 @@ const UNBUILDABLE: { role: string; layer?: Layer; file?: string; text?: string; 
   },
   {
     role: "peer",
-    layer: { rules: "Leave the Paseo config alone." },
-    refusal: "the peer prompt contains words that role must not see: paseo",
-  },
-  {
-    role: "peer",
     file: "mcp/tools.json",
     text: JSON.stringify({ peer: [{ name: "done", description: "Hand the task back; your paseo is told." }] }),
     refusal: "the peer tools the peer is given show words it must not see: paseo",
@@ -119,6 +114,12 @@ test("a seat whose text shows its role a hidden word, an unfilled placeholder or
     "a hidden word in a path the desk puts in is not the role's text, and the role names what it writes or the desk's own record",
   );
   const home = tempDir("sw2-home-");
-  const fine = resolveTeam(kit, { rules: "Leave the daemon config alone." });
-  assert.ok(materialize(kit, fine, "peer", home, project).length > 0, "rules with no hidden word build");
+  const human = resolveTeam(kit, {
+    rules: "Leave the Paseo config alone.",
+    roles: { peer: { rules: "Keep notes in $SEATWORKS_STATE/peer-notes.md." } },
+  });
+  assert.ok(
+    materialize(kit, human, "peer", home, project).length > 0,
+    "the Human's rules reach the seat as written: the words its role's own text hides and the state it does not write included",
+  );
 });

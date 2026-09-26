@@ -73,7 +73,7 @@ test("the settings store saves only over what it read, and never over a file it 
   );
 });
 
-test("a rule that would leave a seat unbuildable is refused where it is written, not where it lands", () => {
+test("the Human's rules are saved as written, and one that would leave a seat unbuildable is refused where it is written, not where it lands", () => {
   const kit = makeKit();
   const machine = join(tempDir("sw2-settings-"), "settings.json");
   const paths = { guides: "/guides", state: "$SEATWORKS_STATE" };
@@ -84,14 +84,18 @@ test("a rule that would leave a seat unbuildable is refused where it is written,
       : Object.keys(team.roles).flatMap((role) => seatProblems(kit, team, role, paths));
   };
 
-  // Nothing in the schema or team resolution objects to this line, yet every Peer and Reviewer seat fails to build.
-  const rule = { rules: "Leave the Paseo config alone; ask before touching migrations." };
+  // Nothing in the schema or team resolution objects to this line, yet every seat would fail to build.
+  const rule = { rules: "Keep {{notes}} short; ask before touching migrations." };
   assert.deepEqual(resolveTeam(kit, rule).errors, []);
   const refused = writeLayer(machine, readLayer(machine).revision, rule, unbuildable);
   assert.equal(refused.status, "invalid");
-  assert.match(refused.status === "invalid" ? refused.error : "", /must not see: paseo/);
+  assert.match(refused.status === "invalid" ? refused.error : "", /still holds the placeholder \{\{notes\}\}/);
   assert.equal(existsSync(machine), false, "and nothing was written, so there is nothing to undo");
 
-  const rephrased = { rules: "Leave the daemon config alone; ask before touching migrations." };
-  assert.equal(writeLayer(machine, readLayer(machine).revision, rephrased, unbuildable).status, "saved");
+  const hidden = { rules: "Leave the Paseo config alone and ask the supervisor before touching migrations." };
+  assert.equal(
+    writeLayer(machine, readLayer(machine).revision, hidden, unbuildable).status,
+    "saved",
+    "a word a role's own text may not say is the Human's to write",
+  );
 });
