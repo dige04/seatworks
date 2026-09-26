@@ -28,9 +28,10 @@ the evidence between them, and brings you in for what only you can decide.
    has one. The Supervisor lands the lane: the plugin merges in your base if it moved, runs the gate
    on the result, and lands the lane on your local base branch. A lane that touches a path you asked
    to see first waits for your approval.
-4. **You come back to a report.** The panel's **Report** tab tells the last day from the record: what
-   needs you, what went ahead on a recommendation, what landed. Pushing and releasing are yours:
-   every seat's `git` refuses to push.
+4. **You come back to a report.** The panel's **Report** tab tells you, from the record: what needs
+   you, what went ahead on a recommendation, what landed. Pushing and releasing are yours while you are
+   in the loop, and the Supervisor's while you are not, which the plugin runs for it and never forces;
+   every seat's own `git` refuses to push.
 
 ## What it does, and what it doesn't
 
@@ -39,11 +40,11 @@ yours.
 
 | It does | It enforces | It never does |
 |---|---|---|
-| Starts one agent per seat, set up for its role | Lanes may not overlap in what they declare they write | Judge the work |
+| Starts one agent per seat, set up for its role | Tasks running side by side in a lane may not hold the same paths | Judge the work |
 | Keeps a shared record of lanes, tasks, questions and incidents | One writer per working copy | Tell a seat what the watch concluded about it |
 | Carries mail between seats, each letter ending with what it asks of its reader, and holds it until its reader can take it, for up to 7 days | A red gate stops a task merging into its lane, unless its Lead accepts it over the gate with a reason, and a lane landing, unless the Supervisor lands it over the gate with a reason | Write your project's concept for you |
-| Keeps a durable record outside your repo | A landing that touches a path you asked to see first waits for you | Write into your project's files |
-| Watches Leads and Peers, tells whoever answers for them, and tells the Supervisor at once of what cannot be undone | Each role's permissions, where its agent allows it, and git commands only the desk runs | Push or release |
+| Keeps a durable record outside your repo | A landing that touches a path you asked to see first waits for you | Write your project's files, but for the Seatworks block in its `AGENTS.md` |
+| Watches Leads and Peers and tells the Supervisor what it sees | Each role's permissions, where its agent allows it, and git commands only the desk runs | Push or release unless told to |
 
 ## The team
 
@@ -76,10 +77,11 @@ the project has no `CLAUDE.md`, and the others read `AGENTS.md`. Every seat's `P
 desk's git commands, `gh` and `paseo`. Claude Code, Codex, Oh My Pi and OpenCode seats are also
 denied `git push`, `gh`, `paseo` and starting other agents by their own rules. Pi has no command
 rules, so a Pi seat can start another agent: its `PATH` cannot refuse one, since its own agent
-starts through that same `PATH`. A Codex Lead reads the project through a Codex permission profile,
-which needs a Codex recent enough to have them (0.154 has). The shipped Claude Code settings answer
-in Vietnamese: change
-`language` in `plugin/harness/claude/settings.json` for another language.
+starts through that same `PATH`. A Codex Lead or Supervisor reads the project through a Codex
+permission profile, which needs a Codex recent enough to have them (0.154 has).
+
+The Supervisor speaks to you in the language set as the Human's language in the machine settings
+(`language`), on every agent; every other seat writes English, which the watch reads best.
 
 ## Install
 
@@ -87,7 +89,8 @@ You need:
 
 - Paseo `>=0.9.1 <0.10.0`
 - Node.js 24 or newer; there is no build step
-- `git` and `jq`
+- `git`
+- `python3`, and optionally `jq` and the `ocr` CLI, for the Lead's `ultra-review` skill
 - the CLI of each agent you use, signed in
 - optionally `gh` (or the tracker `catalog/ecosystem.json` names under `issues`), to open a lane
   from an issue, and `uv`, for code search
@@ -106,11 +109,11 @@ reloads the plugin. It is offered only once no seat is left in any project, idle
 because every project moves to the new version at once. Below the version is one row for each thing
 that needs you:
 
-- A changed **prompt** or **skill**: **Use new**, or **Keep mine** to go on with the version you had.
-  Yours is copied to `~/.local/share/seatworks-v3/own/` for you to edit by hand, and you are still
-  told when the original changes.
-- Changed **guides** and **records**: named only, for you to read in git.
-- Settings this version cannot read, and seats still on an older version.
+- A **prompt** or **skill** that changed, came or went, to read in git and mark seen. Where you keep
+  your own copy of it under `~/.local/share/seatworks-v3/own/`, yours stays the one in use, and you
+  are still told when the original changes.
+- Changed **guides** and **records**, named together.
+- Seats started before this version, in each project.
 
 **Clean up** lists seat folders, working copies and copies nothing uses any more, and removes only
 what you pick.
@@ -120,8 +123,9 @@ what you pick.
 1. In Paseo, open **Seatworks** in the sidebar.
 2. **Add project**, pick the repository, choose an agent for each role, and attach. Attaching puts a
    Seatworks block, between `<!-- seatworks:begin … -->` and `<!-- seatworks:end -->`, at the end of
-   the project's `AGENTS.md`, which every agent working there reads. Commit it: a lane in a copy of
-   its own sees only what is committed, and a lane in your checkout waits while it is uncommitted.
+   the project's `AGENTS.md`, and every seat also gets it through its agent's own instructions. Commit
+   it: the Supervisor is told whenever attaching changes it, and a lane in your checkout does not
+   land over a tracked file with uncommitted changes.
    Attaching also opens the project in Paseo's own project list, and gives Paseo one provider for each
    role and the agent your team gives it there; they follow your settings, and go once no attached
    project uses them.
@@ -133,10 +137,11 @@ The plugin starts everyone else as the work needs them. A lane works in your che
 branch, unless the Supervisor or your standing order (`laneHome`) keeps it on the branch you are on or
 gives it a working copy of its own. Your checkout holds one lane at a time, so a lane opened meanwhile
 takes a copy of its own or waits its turn. When neither has said, and your checkout has uncommitted
-work or is on a branch other than the base, you are asked first.
+work or is on a branch other than the base, the lane takes a copy of its own, and the Supervisor is
+told this was decided for it.
 
-**Your project's files stay yours.** The plugin writes nothing into them: what the team shares is in
-each role's own prompt, and everything the plugin keeps lives under `~/.local/share/seatworks-v3/`.
+**Your project's files stay yours.** The plugin writes nothing into them but the Seatworks block, and
+everything it keeps lives under `~/.local/share/seatworks-v3/`.
 
 ## When the team needs you
 
@@ -150,34 +155,33 @@ current. Three of them are where you meet the work:
   ready, and one that cannot be undone holds its lane now. Answer with a choice or decline it, with
   a note if you like. A landing held for you shows the desk's evidence; approve it and it lands,
   send it back and your note goes to the Lead. Below that are the lanes and tasks, live.
-- **Report** is the last day, read from the record and written by no agent: what needs you, what went
+- **Report** is read from the record and written by no agent: what needs you, what went
   ahead on a recommendation, what landed, what could not be undone, and the counts.
 - **Orders** shows what you settled, read only: the paths you see first, the risk rules, where lanes
   work, and `CONTEXT.md`. You change them by telling the Supervisor.
 
 You can also answer a question in the Supervisor's chat, and it records your answer in your own words.
 You may type into any seat's chat: what you write to a Lead or a Peer is passed on to the Supervisor.
-The Supervisor can stop a lane at once with a hold, until it resumes the lane, and asks you at most
-three questions a day across all projects (`questionsPerDay`).
+The Supervisor can stop a lane at once with a hold, until it resumes the lane, and while you are in
+the loop asks you at most three questions a day across all projects (`questionsPerDay`).
 
 ## The watch
 
-The plugin reads the turns of Leads and Peers in code, for things like a destructive command, the
-same failure again and again, or a weakened test, and each lane's record, for things like a task sent
-back three times. A finding becomes an **incident**: an ordinary one about a Peer goes to its Lead, and
-one about a Lead, an urgent one (a *page*), or one whose Lead is gone goes to the Supervisor. The seat
-it is about never hears of it. Whoever gets it marks it `useful`, `noise` or `unknown`.
+The watch reads each Lead's and Peer's new thinking, words and briefs every few minutes while it
+works and when its turn ends. Code turns what it can count or match into facts, such as a destructive
+command, going round in circles, a test that lost its assertions or a task sent back again and again.
+What takes judgement goes to a brain, which checks the new text against a catalog of patterns: a
+Lead settling how the system is built, a Peer struggling with what something means, an agent
+dropping its approach or saying it was wrong, a brief that tells a Peer how. On the Watcher's chip in **Team** you
+pick the brains: Jev, a small model asked over OpenRouter with your key, which stays on this machine
+and is never shown again; the Watcher seat; both, where Jev sifts and the seat judges; or none, which
+leaves the code's facts.
 
-Out of the box, ordinary incidents are recorded and listed but not mailed, while a page still goes to
-the Supervisor. To mail the rest, turn on **Mail incidents** on the Supervisor's chip in the **Team**
-tab.
-
-What code cannot read, the watch asks a model, one question at a time, at the moment it matters: was
-this destructive command asked for, does a complete hand-back's summary admit a gap, did a review that
-accepts a migration say it ran the invariant. On the Watcher's chip in **Team** you pick who answers:
-Jev, a small model asked over OpenRouter with your key, which stays on this machine and is never shown
-again; the Watcher seat; or nobody. Every question ships in shadow: its answers are kept in the
-project's `assessments.log` for you to label, and no seat is sent them.
+Everything the watch finds becomes an **incident** and goes to the Supervisor, which decides whether
+and how to step in. There is no switch per signal: the Supervisor marks each incident `useful`,
+`noise` or `unknown`, and a kind it marked noise is not told again about the same seat and task. The
+seat an incident is about never hears of it, and the watch speaks to no one else. The brains' answers
+are kept in the project's `assessments.log`.
 
 ## Known Paseo behaviour
 
