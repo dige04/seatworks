@@ -9,7 +9,7 @@ import { tellMoment } from "../watch/moments.ts";
 import { serialIn } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
-import { outsideNote, parallelProblem } from "./placement.ts";
+import { hintedNote, outsideNote, parallelProblem } from "./placement.ts";
 
 type Changes = Record<string, string | string[]>;
 
@@ -42,12 +42,19 @@ async function checked(desk: DeskServices, caller: Caller, args: Args, changes: 
     return "A task keeps a goal and at least one acceptance line; give what it asks now.";
   const asked = laneTask(loadLedger(caller.project.state), caller, str(args.task));
   if (typeof asked === "string") return [];
-  if (changes.holds === undefined) return [];
-  if (asked.task.mode !== "parallel")
-    return `${asked.task.id} works in the lane's copy, one writer at a time, so it holds nothing: point it with hints instead.`;
+  if (changes.holds === undefined || asked.task.mode !== "parallel") return [];
   if (changes.holds.length === 0)
     return "A task beside others keeps at least one held path; give every path it holds now.";
   return serialIn(desk.kit, caller.project, asked.lane.worktree ?? caller.project.root);
+}
+
+/** What the amendment sets: paths given a task in the lane's copy to hold go among its hints, which that copy's one writer reads. */
+function asAsked(task: Task, changes: Changes): { set: Changes; hinted?: string[] } {
+  const holds = changes.holds as string[] | undefined;
+  if (task.mode === "parallel" || holds === undefined) return { set: changes };
+  const { holds: _, ...rest } = changes;
+  const hints = [...new Set([...((changes.hints as string[] | undefined) ?? task.hints), ...holds])];
+  return { set: { ...rest, hints }, hinted: holds };
 }
 
 function record(
@@ -62,17 +69,19 @@ function record(
     if (typeof found === "string") return found;
     const { lane, task } = found;
     if (DECIDED.includes(task.status)) return `${task.id} is ${task.status}; start a task for what is asked now.`;
+    const { set, hinted } = asAsked(task, changes);
     // Checked as a start is, where it is written: holding more, a task beside others could hold what another does.
-    const holds = changes.holds as string[] | undefined;
+    const holds = set.holds as string[] | undefined;
     const problem =
       holds !== undefined && task.status !== "waiting"
         ? parallelProblem(ledger, lane, holds, serial, task.id)
         : undefined;
     if (problem) return `${problem.why} Leave those paths out of ${task.id}.`;
-    const amendment = amend(task, changes, caller.id, str(args.why));
+    const amendment = amend(task, set, caller.id, str(args.why));
     if (!amendment) return `Nothing about ${task.id} would change; pass the fields it asks differently now.`;
     task.updatedAt = Date.now();
-    return { task: { ...task }, amendment, note: holds && outsideNote(lane, task.id, holds) };
+    const note = hinted ? hintedNote(task.id, hinted) : holds && outsideNote(lane, task.id, holds);
+    return { task: { ...task }, amendment, note };
   });
 }
 

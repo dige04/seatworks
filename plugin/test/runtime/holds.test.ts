@@ -57,10 +57,6 @@ test("a task beside others holds its paths: refused when it cannot hold them, br
     planned("b", "B", { parallel: true }),
   );
   assert.match((await beside).text, /B runs beside others but holds nothing/);
-  assert.match(
-    (await add(planned("c", "C", { holds: ["src/app.ts"] }))).text,
-    /C holds src\/app\.ts but runs in the lane's copy, which has one writer at a time: leave holds out, or give those paths as hints\./,
-  );
   assert.deepEqual(h.ledger().tasks, {});
 
   await add(planned("t", "Totals", { hints: ["src/cart.ts"] }));

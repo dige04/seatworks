@@ -347,13 +347,22 @@ test("a Lead amends a task: its Peer hears at its next turn, and only a task bes
     /context, was:\nnone\ncontext, now:\nThe header parser is in b\.txt\./,
   );
   assert.deepEqual(h.ledger().tasks["L1-T1"]!.amended?.[1]?.was, { context: "", hints: ["a.txt"] });
-  assert.match(
-    (await amend({ holds: ["a.txt"] })).text,
-    /L1-T1 works in the lane's copy, one writer at a time, so it holds nothing: point it with hints instead\./,
+  const hinted =
+    /L1-T1 runs in the lane's copy, which has one writer at a time, so it holds nothing: it keeps c\.txt as a hint of where to start\./;
+  assert.match((await amend({ holds: ["c.txt"] })).text, hinted);
+  assert.deepEqual(
+    [h.ledger().tasks["L1-T1"]!.hints, h.ledger().tasks["L1-T1"]!.holds],
+    [["a.txt", "b.txt", "c.txt"], []],
   );
   await h.call(build.lead!, "lead", "add_tasks", oneTask("s", "Side", { holds: ["c.txt"], parallel: true }));
   assert.match((await amend({ task: "L1-T2", holds: [] })).text, /keeps at least one held path/);
   assert.deepEqual(h.ledger().tasks["L1-T2"]!.holds, ["c.txt"]);
+  const listed = await h.call(build.lead!, "lead", "add_tasks", oneTask("n", "Next", { holds: ["b.txt"] }));
+  assert.match(
+    listed.text,
+    /N runs in the lane's copy, which has one writer at a time, so it holds nothing: it keeps b\.txt as a hint/,
+  );
+  assert.deepEqual([h.ledger().tasks["L1-T3"]!.hints, h.ledger().tasks["L1-T3"]!.holds], [["b.txt"], []]);
   await h.call(build.lead!, "lead", "cut", { task: "L1-T1", reason: "done with it" });
   assert.match((await amend({ goal: "y" })).text, /L1-T1 is cut; start a task for what is asked now/);
 });
