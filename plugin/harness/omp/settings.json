@@ -166,22 +166,6 @@
         "approval": "deny"
       },
       {
-        "match": "git worktree",
-        "approval": "deny"
-      },
-      {
-        "match": "git worktree *",
-        "approval": "deny"
-      },
-      {
-        "match": "git -C * worktree",
-        "approval": "deny"
-      },
-      {
-        "match": "git -C * worktree *",
-        "approval": "deny"
-      },
-      {
         "match": "git branch -f*",
         "approval": "deny"
       },
