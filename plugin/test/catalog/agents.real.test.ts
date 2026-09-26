@@ -23,7 +23,7 @@ import { tempDir } from "../tempdir.ts";
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const DESK_GIT = "push pull checkout switch update-ref stash worktree".split(" ");
-/** What moves the branch checked out: a writing seat's own task branch, which the git shim guards; refused outright to the rest. */
+/** What moves the branch checked out: a writing seat's own task branch, where it always stands; refused outright to the rest. */
 const MOVES = "merge reset rebase cherry-pick".split(" ");
 const SEARCHES = ["supervisor", "lead", "peer"];
 const BUILT_INS: Record<string, string[]> = {
@@ -65,7 +65,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
     const waits = !["lead", "supervisor"].includes(as);
     const searches = SEARCHES.includes(as);
     const bare = as === "watcher";
-    // A seat that writes may move its own task branch, which only the shim can tell; one that does not is refused outright.
+    // A seat that writes may move its own task branch, the only one it stands on; one that does not is refused outright.
     const refusedGit = can(role, "write") ? DESK_GIT : [...DESK_GIT, ...MOVES];
     const freedGit = can(role, "write") ? MOVES : [];
     assert.deepEqual(

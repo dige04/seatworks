@@ -54,10 +54,11 @@ The plugin **serves** SLP so it works better with Paseo. It must **never constra
   one task and a Lead one lane; its superior ends it, never the desk.
 - **Branches are the desk's; a task branch is its Peer's.** The desk makes every branch and copy,
   merges a task the Lead `accept`s into its lane, and lands a lane on base at the Supervisor's
-  `land_lane`. A writing seat may merge, rebase, reset or cherry-pick only on its own `task/*`
-  branch; no seat pulls, checks out, switches, stashes, updates a ref or pushes: the git shim and
-  each agent's own rules refuse it. A base that conflicts with a lane is never left half merged: the
-  Lead has a task take it in on its own branch.
+  `land_lane`. No seat pulls, checks out, switches, stashes, updates a ref or pushes: the git shim
+  refuses it on every agent, however spelled and whatever runs it, and each agent's own rules too.
+  So a writing seat always stands on its task's branch, where it may merge, rebase, reset or
+  cherry-pick; each role's own rules refuse those four to seats that do not write. A base that
+  conflicts with a lane is never left half merged: the Lead has a task take it in on its own branch.
 - **The Human in the loop is a setting**, `hitl.on`, off by default. Off, only the concept goes to
   the Human, through the Supervisor's grilling; the Supervisor decides the rest, answers the seats'
   permission prompts with `permit`, and pushes with `push`. On, their question queue, standing orders

@@ -120,7 +120,7 @@ test("a seat's shell, on the PATH the desk gives it, refuses what only the desk 
   }
 });
 
-test("a seat moves its own task branch, merging into it, rebasing, resetting, and never another branch", () => {
+test("a seat settles what conflicts on its task's branch through its git: merging the base in, rebasing and backing out, resetting its own history", () => {
   const root = tempDir("sw2-shim-own-");
   const real = (...args: string[]) =>
     execFileSync("git", ["-C", root, "-c", "user.name=t", "-c", "user.email=t@x", ...args], { encoding: "utf-8" });
@@ -141,8 +141,6 @@ test("a seat moves its own task branch, merging into it, rebasing, resetting, an
     });
   const refused = (...args: string[]) => /^git: refused: /.test(git(...args).stderr);
 
-  assert.ok(refused("reset", "--hard", "HEAD~1"), "main is not the seat's to move");
-  assert.ok(refused("merge", "task/l1-t1-cart"), "nor is a lane or the base merged into by a seat");
   real("switch", "-q", "task/l1-t1-cart");
   assert.equal(git("rebase", "main").status === 0, false, "a rebase that stops on a conflict stops as git's own");
   assert.ok(!refused("rebase", "--abort"), "and the seat may back out of it");
@@ -152,6 +150,4 @@ test("a seat moves its own task branch, merging into it, rebasing, resetting, an
   real("add", "a.txt");
   assert.equal(git("commit", "-qm", "settle").status, 0);
   assert.equal(git("reset", "--soft", "HEAD~1").status, 0, "its own history is its own");
-  real("checkout", "-q", "--detach");
-  assert.ok(refused("cherry-pick", "main"), "a detached head is nobody's branch");
 });
