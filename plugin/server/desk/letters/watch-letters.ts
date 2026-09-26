@@ -5,28 +5,16 @@ import type { Finding } from "../../domain/incident.ts";
 import type { Incident } from "../../domain/incident.ts";
 import { type Letter, mail } from "./envelope.ts";
 
-/** What the desk's own moments ask of whoever supervises, in place of the plain next step: the call stays the Lead's. */
-const MOMENT_NEXT: Record<string, string> = {
-  architecture:
-    "A reach past what a task was given is structure settling. Nothing, if the directive foresaw it; else ask its Lead why. Then mark_incident it.",
-  struggling:
-    "Nothing, if its record shows it climbing out; else send its Lead one open question carrying where it stuck. Then mark_incident it.",
-  turning:
-    "A turn this sharp often has a reason nobody wrote down. Nothing, if its record gives one; else ask its Lead whether the outcome holds. Then mark_incident it.",
-  "lane-idle":
-    "If its words read worse than the work looks, read the lane's record first; then take the smallest step that unblocks it, and mark_incident it.",
-};
-
 /** What the watch raises with whoever supervises: an incident, or a moment SLP wakes them for. */
 export const watchLetters = {
   /**
    * Read by whoever supervises, W's only reader. `steers` when a message reaches the seat mid-turn; `human` when the Human
-   * is in the loop, else a page is the Supervisor's to hold and decide.
+   * is in the loop, else a page is the Supervisor's to hold and decide; `next` what the catalog asks for this kind.
    */
   incident(
     incident: Incident,
     place: { lane?: Lane; task?: Task },
-    { steers, human }: { steers: boolean; human: boolean },
+    { steers, human, next: asked }: { steers: boolean; human: boolean; next?: string },
   ): Letter {
     const lines = [
       `INCIDENT ${incident.id} (${oneLine(incident.kind, 40)}, ${incident.level}) on ${oneLine(incident.where, 160)}, agent ${incident.seat}.`,
@@ -60,7 +48,7 @@ export const watchLetters = {
     );
     const next =
       incident.level !== "page"
-        ? (MOMENT_NEXT[incident.kind] ??
+        ? (asked ??
           "Read the record, take the smallest step (most often none), then mark_incident it from the record alone.")
         : `${pageNext(place, human)}; then read the record and mark_incident it.`;
     return mail("incident", [incident.id, incident.opened, incident.level], lines.join("\n"), next);

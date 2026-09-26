@@ -144,6 +144,13 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   assert.ok("watch" in flow, JSON.stringify(flow));
   assert.equal(flow.watch.incidents.find((card) => card.id === "I7")?.title, "Ran a command that cannot be undone");
 
+  const decided = await notice(h, peer, "big-decision", "attend", "We keep every total in one table.");
+  assert.match(
+    h.heard(sup).join("\n"),
+    new RegExp(`INCIDENT ${decided.opened[0]!.id} \\(big-decision[^]*?\\nNext: [^\\n]*Nothing, if `),
+    "a pattern's Next is the catalog's, as a moment's is",
+  );
+
   const unnumbered = JSON.stringify({ items: book(h) });
   writeFileSync(join(h.project.state, "incidents.json"), unnumbered);
   await assert.rejects(notice(h, peer, "turning"), /Nothing was written over it/);

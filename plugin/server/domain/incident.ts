@@ -33,8 +33,9 @@ export type Incident = {
 };
 
 /**
- * Every fact the code raises and its level; one that can open an incident has the title a person reads it by, and `theirs`
- * when its quote is the seat's own text with no word of the watch's in it.
+ * Every fact the code raises and its level; one that can open an incident has the title a person reads it by, `theirs`
+ * when its quote is the seat's own text with no word of the watch's in it, and a `next` where it asks more than the plain
+ * next step of whoever supervises: the call stays the Lead's.
  */
 const FACTS = {
   destructive: { level: "page", title: "Ran a command that cannot be undone", theirs: true },
@@ -51,10 +52,26 @@ const FACTS = {
   "reviews-unconverged": { level: "attend", title: "Reviews piling up with nothing accepted" },
   "certainty-only": { level: "attend", title: "A review told to report only certainties" },
   "brief-prewritten": { level: "attend", title: "A brief that writes the answer out" },
-  struggling: { level: "attend", title: "A task struggling" },
-  architecture: { level: "attend", title: "A task's reach widened: structure settling" },
-  turning: { level: "attend", title: "A task's goal turned sharply" },
-  "lane-idle": { level: "attend", title: "A Lead idle with nothing going" },
+  struggling: {
+    level: "attend",
+    title: "A task struggling",
+    next: "Nothing, if its record shows it climbing out; else send its Lead one open question carrying where it stuck. Then mark_incident it.",
+  },
+  architecture: {
+    level: "attend",
+    title: "A task's reach widened: structure settling",
+    next: "A reach past what a task was given is structure settling. Nothing, if the directive foresaw it; else ask its Lead why. Then mark_incident it.",
+  },
+  turning: {
+    level: "attend",
+    title: "A task's goal turned sharply",
+    next: "A turn this sharp often has a reason nobody wrote down. Nothing, if its record gives one; else ask its Lead whether the outcome holds. Then mark_incident it.",
+  },
+  "lane-idle": {
+    level: "attend",
+    title: "A Lead idle with nothing going",
+    next: "Nothing, if its record shows what it waits on; else read the lane's record, since its words may read worse than the work looks, and take the smallest step that unblocks it. Then mark_incident it.",
+  },
   "ask-waiting": { level: "attend", title: "An ask left waiting on its reader" },
   "call-failed": { level: "note" },
   "gate-failed": { level: "note" },
@@ -62,7 +79,7 @@ const FACTS = {
   "edit-before-look": { level: "note" },
 } as const satisfies Record<
   string,
-  { level: "note" } | { level: Exclude<Level, "note">; title: string; theirs?: true }
+  { level: "note" } | { level: Exclude<Level, "note">; title: string; theirs?: true; next?: string }
 >;
 
 export type FactKind = keyof typeof FACTS;
@@ -79,6 +96,10 @@ export const fact = (kind: FactKind, quote: string): Fact => ({
 /** The title of a kind the incident book holds, which may be one this code no longer raises. */
 export function factTitle(kind: string): string | undefined {
   return (FACTS as Record<string, { title?: string }>)[kind]?.title;
+}
+
+export function factNext(kind: string): string | undefined {
+  return (FACTS as Record<string, { next?: string }>)[kind]?.next;
 }
 
 type Delivery = "unsent" | "held" | "told";

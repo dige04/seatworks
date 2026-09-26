@@ -68,7 +68,7 @@ export const ChecksFile = z.record(
  * One thing the watch's brains read a seat's own words for: the capabilities of the seats it watches, which of their items
  * it reads, the sensor's one-condition question on an item's `text` (none when only the seat can judge it), the seat's
  * question on the whole look, what each answer means, the signs the look must hold for a yes to count, its thresholds,
- * and whether a yes asks attention or is only kept, a note.
+ * whether a yes asks attention or is only kept, a note, and what it asks of whoever supervises beyond the plain next step.
  */
 const Pattern = z
   .strictObject({
@@ -81,6 +81,7 @@ const Pattern = z
     criteria: z.strictObject({ true: text, false: text }),
     gate: z.array(z.enum(["stuck", "reworked", "handed-back", "edit-before-look"])).optional(),
     level: z.enum(["attend", "note"]).optional(),
+    next: text.optional(),
     yes: unit,
     no: unit,
   })

@@ -29,7 +29,8 @@ test("an idle Lead with nothing running, asked or reported ready wakes whoever s
   const said = h.heard(sup).join("\n");
   assert.match(
     said,
-    /INCIDENT I1 \(lane-idle, attend\) on the Lead of L1 \(Quiet\)[^]*What was seen: idle \d+ minutes with no running task, no open ask and no report of it ready; its last words: /,
+    /INCIDENT I1 \(lane-idle, attend\) on the Lead of L1 \(Quiet\)[^]*What was seen: idle \d+ minutes with no running task, no open ask and no report of it ready; its last words: [^]*\nNext: Nothing, if /,
+    "whether to step in is whoever supervises' own call",
   );
   assert.doesNotMatch(
     said,
