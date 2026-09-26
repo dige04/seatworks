@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { permit as answer } from "../messaging/permit.ts";
+import { permit as answer } from "../human/permit.ts";
 import { defineTool } from "../services.ts";
 
 export const permit = defineTool({
