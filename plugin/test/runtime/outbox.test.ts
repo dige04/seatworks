@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { Seats } from "../../server/core/ports.ts";
@@ -54,12 +55,10 @@ test("a letter goes to its seat when the seat can take it, and until then is hel
   };
   // Whether a seat's harness takes mail into a running turn is its own: here, by the seat.
   const steering = new Set(["lead", "fresh", "unseen", "stopped"]);
-  const outbox = new Outbox(
-    join(tempDir(), "outbox.json"),
-    (_to, list) => list.map((letter) => letter.text).join("|"),
-    fakeSeats(agents),
-    { steers: (seat) => steering.has(seat.id) },
-  );
+  const file = join(tempDir(), "outbox.json");
+  const outbox = new Outbox(file, (_to, list) => list.map((letter) => letter.text).join("|"), fakeSeats(agents), {
+    steers: (seat) => steering.has(seat.id),
+  });
   const post = (to: string, key: string, text: string, wakes?: false) =>
     outbox.post({ to, key, text, ...(wakes === false ? { wakes } : {}) });
 
@@ -115,4 +114,8 @@ test("a letter goes to its seat when the seat can take it, and until then is hel
   assert.deepEqual(agents.quiet.sent, []);
   assert.equal(await post("quiet", "ask:A1", "a question"), "sent");
   assert.deepEqual(agents.quiet.sent, ["lane opened|a question"], "it goes with the next letter that asks");
+
+  writeFileSync(file, "{not json");
+  await assert.rejects(post("busy", "late", "held for later"), /outbox\.json is there but could not be read/);
+  assert.equal(readFileSync(file, "utf-8"), "{not json", "the letters held in it are not written over by the next one");
 });
