@@ -10,11 +10,11 @@ import { tellMoment } from "../watch/moments.ts";
 import { serialIn } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
-import { parallelProblem } from "./placement.ts";
+import { outsideNote, parallelProblem } from "./placement.ts";
 
 type Changes = Record<string, string | string[]>;
 
-type Amended = { task: Task; amendment: Amendment };
+type Amended = { task: Task; amendment: Amendment; note?: string };
 
 /** Changes what a task asks while its Peer works, keeping what it asked before; the Peer is told at its next turn, not cut off. */
 export async function amendTask(desk: DeskServices, caller: Caller, args: Args): Promise<ToolReply> {
@@ -30,10 +30,11 @@ export async function amendTask(desk: DeskServices, caller: Caller, args: Args):
     by: caller.id,
   });
   await tellMoments(desk, caller, str(args.why), done);
-  if (done.task.status === "waiting") return ok(`${done.task.id} is amended; it starts as it is now.`);
+  const note = done.note ? ` Note: ${done.note}` : "";
+  if (done.task.status === "waiting") return ok(`${done.task.id} is amended; it starts as it is now.${note}`);
   const posted = await desk.mail.post(done.task.peer, workLetters.amended(done.task, done.amendment, "worker"));
   const told = posted === "nobody" ? ", and it has no Peer to tell" : "; its Peer has it at its next turn";
-  return ok(`${done.task.id} is amended${told}.`);
+  return ok(`${done.task.id} is amended${told}.${note}`);
 }
 
 /** Why the amendment is refused before anything is written, or the one-writer paths its new holds are checked against. */
@@ -75,7 +76,7 @@ function record(
     const amendment = amend(task, changes, caller.id, str(args.why));
     if (!amendment) return `Nothing about ${task.id} would change; pass the fields it asks differently now.`;
     task.updatedAt = Date.now();
-    return { task: { ...task }, amendment };
+    return { task: { ...task }, amendment, note: holds && outsideNote(lane, task.id, holds) };
   });
 }
 
