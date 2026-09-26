@@ -1,4 +1,4 @@
-import { git } from "../../core/git.ts";
+import { AS_DESK, git } from "../../core/git.ts";
 import { clip } from "../../core/text.ts";
 import { type Caller, type ToolReply, no, ok } from "../context.ts";
 import type { DeskServices } from "../services.ts";
@@ -6,8 +6,8 @@ import { recordEvent } from "../store/event-log.ts";
 import { loadConfig } from "./project.ts";
 
 /**
- * Sends the project's base where the Human's own git would push it, with a release tag on its head when it names one.
- * Never forced, and the project's own push hooks run as they would.
+ * Sends the project's base where the Human's own git would push it, with a release tag on its head when it names one,
+ * made as seatworks and unsigned like the desk's commits. Never forced, and no hook runs, as for all git the desk runs.
  */
 export async function pushBase(
   { teamFor }: Pick<DeskServices, "teamFor">,
@@ -63,7 +63,17 @@ async function pushTag(
   tag: string,
   message: string | undefined,
 ): Promise<string | undefined> {
-  const made = await git(root, ["tag", "-a", tag, "-m", message?.trim() || tag, base]);
+  const made = await git(root, [
+    ...AS_DESK,
+    "-c",
+    "tag.gpgSign=false",
+    "tag",
+    "-a",
+    tag,
+    "-m",
+    message?.trim() || tag,
+    base,
+  ]);
   if (made.code !== 0) return `it was not made: ${clip(made.stderr.trim(), 400)}`;
   const pushed = await git(root, ["push", remote, `refs/tags/${tag}`], 300_000);
   if (pushed.code === 0) return undefined;

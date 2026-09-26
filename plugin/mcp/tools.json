@@ -519,7 +519,7 @@
     {
       "name": "push",
       "title": "Push the base",
-      "description": "Send the project's base to its remote, and with tag, tag its head as a release and send that too. Yours while the Human is out of the loop; refused while they are in it. Never forced: a remote that moved on refuses it, and the project's push hooks run.",
+      "description": "Send the project's base to its remote, and with tag, tag its head as a release and send that too. Yours while the Human is out of the loop; refused while they are in it. Never forced: a remote that moved on refuses it. The tag is made as seatworks, unsigned, and no push hook runs.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,

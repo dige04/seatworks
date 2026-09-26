@@ -357,11 +357,19 @@ test("with the Human out of the loop, getting what landed out is the Supervisor'
   assert.match((await push()).text, /^Pushed main to origin\.$/);
   const head = () => h.git(h.root, "rev-parse", "main").trim();
   assert.equal(h.git(remote, "rev-parse", "main").trim(), head());
+  h.git(h.root, "config", "user.name", "The Human");
+  h.git(h.root, "config", "tag.gpgSign", "true");
+  h.git(h.root, "config", "gpg.program", "false");
   assert.match(
     (await push({ tag: "v1.0.0", message: "the cart" })).text,
     /^Pushed main and the tag v1\.0\.0 to origin\.$/,
   );
   assert.equal(h.git(remote, "rev-parse", "v1.0.0^{commit}").trim(), head());
+  assert.equal(
+    h.git(remote, "for-each-ref", "--format=%(taggername) %(contents:signature)", "refs/tags/v1.0.0").trim(),
+    "seatworks",
+    "a release tag the desk makes is its own, unsigned, as its commits are",
+  );
   assert.match((await push({ tag: "bad..tag" })).text, /bad\.\.tag is not a name git takes for a tag/);
 
   const fork = tempDir("sw2-fork-");
