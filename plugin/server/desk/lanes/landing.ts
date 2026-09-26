@@ -99,7 +99,7 @@ async function gateThenLand(
     const text = `Lane ${lane.id} was not closed: it could not land, because ${result.how}. land_lane it again once that is cleared, or drop_lane it.`;
     return { ...no(text), blocked: result.how };
   }
-  if (!gate.ok) recordEvent(project, { kind: "gate.overridden", lane: lane.id, by });
+  if (!gate.ok) recordEvent(project, { kind: "gate.overridden", lane: lane.id, by, reason: over.reason });
   return { how: `${result.how}${gate.ok ? "" : ", over a red gate"}`, note: check.note };
 }
 

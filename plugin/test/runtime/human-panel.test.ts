@@ -310,7 +310,7 @@ test("with the Human out of the loop, the Report lists what was decided for them
     report.decided.map((item) => [item.title, item.detail]),
     [
       ["Allowed a permission for the Lead of L1", "by the Supervisor"],
-      ["L1 landed over a red gate", "by the Supervisor"],
+      ["L1 landed over a red gate", "by the Supervisor: the gate is broken, not the cart"],
       ["Pushed main to origin, tagged v1.0.0", "by the Supervisor"],
     ],
   );
