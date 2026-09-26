@@ -1,8 +1,8 @@
 import { daemonLog } from "../../core/logger.ts";
 import type { ToolReply, ToolRequest } from "../context.ts";
 import { ok } from "../context.ts";
+import type { DeskBase } from "../base.ts";
 import type { Intents } from "../store/intents.ts";
-import { type Letter } from "../letters/envelope.ts";
 import { callLetters } from "../letters/call-letters.ts";
 
 /** When the run began, how long this caller waits from its own call, and whether it joined a run already going. */
@@ -16,7 +16,7 @@ export function inTime(
   request: ToolRequest,
   reply: Promise<ToolReply>,
   how: Window,
-  mail: { intents: Intents; post(to: string, letter: Letter): Promise<unknown> },
+  { intents, mail }: { intents: Intents; mail: DeskBase["mail"] },
 ): Promise<ToolReply> {
   return new Promise((resolve) => {
     let answered = false;
@@ -26,12 +26,12 @@ export function inTime(
       clearTimeout(timer);
       resolve(ok(said));
       const promised = { agent: request.agent, tool: request.tool, started: how.started };
-      mail.intents.promise(promised);
+      intents.promise(promised);
       // Unkept when it cannot be posted: the next start then tells the seat no answer is coming.
       void reply
         .then(async (done) => {
           await mail.post(request.agent, callLetters.later(promised, done, cut));
-          mail.intents.kept(promised);
+          intents.kept(promised);
         })
         .catch((error: unknown) =>
           daemonLog.error(

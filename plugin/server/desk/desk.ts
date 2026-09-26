@@ -95,8 +95,7 @@ export class Desk {
     this.watcher = new Watcher(base, roster, agents);
     const merges = new MergeQueue(base, (project) => startWaiting(this.services, project, true));
     this.services = { ...base, roster, slots, ownCopy, teardowns, agents, merges, watcher: this.watcher };
-    const mail = { intents: this.intents, post: (to: string, letter: Letter) => base.mail.post(to, letter) };
-    this.calls = new ToolCalls(this.services, options.tools, mail);
+    this.calls = new ToolCalls(this.services, options.tools, this.intents);
     this.projects = projects;
     this.human = new Human(this.services);
   }

@@ -11,23 +11,22 @@ import { callLetters } from "../letters/call-letters.ts";
 import { projectOf } from "../project/project.ts";
 import type { DeskServices, ToolDef } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
+import type { Intents } from "../store/intents.ts";
 
 /** How long a harness waits on one call before it gives up; the desk answers first. */
 export const ANSWER_WITHIN_MS = 240_000;
-
-type Mail = Parameters<typeof inTime>[3];
 
 /** A seat's tool calls: who is calling, whether the call fits what the seat was shown, and its reply in time or as mail. */
 export class ToolCalls {
   private readonly running = new Map<string, { reply: Promise<ToolReply>; started: number }>();
   private readonly desk: DeskServices;
   private readonly tools: ToolDef[];
-  private readonly mail: Mail;
+  private readonly intents: Intents;
 
-  constructor(desk: DeskServices, tools: ToolDef[], mail: Mail) {
+  constructor(desk: DeskServices, tools: ToolDef[], intents: Intents) {
     this.desk = desk;
     this.tools = tools;
-    this.mail = mail;
+    this.intents = intents;
   }
 
   /** Whether a call from this seat is still being worked on — which is not silence. */
@@ -45,8 +44,9 @@ export class ToolCalls {
   ): Promise<ToolReply> {
     const key = `${request.agent}\n${request.tool}\n${JSON.stringify(sortKeys(request.args ?? {}))}`;
     const running = this.running.get(key);
+    const kept = { intents: this.intents, mail: this.desk.mail };
     if (running)
-      return inTime(request, running.reply, { started: running.started, within, again: true, cancelled }, this.mail);
+      return inTime(request, running.reply, { started: running.started, within, again: true, cancelled }, kept);
     const started = Date.now();
     // A throw is answered too: only a resolved reply posts the letter the seat was promised.
     const reply = this.handle(request)
@@ -55,7 +55,7 @@ export class ToolCalls {
         if (this.running.get(key)?.started === started) this.running.delete(key);
       });
     this.running.set(key, { reply, started });
-    return inTime(request, reply, { started, within, again: false, cancelled }, this.mail);
+    return inTime(request, reply, { started, within, again: false, cancelled }, kept);
   }
 
   /** A reply that went out but never reached its seat, whose call was stopped or whose line dropped: mailed instead. */
