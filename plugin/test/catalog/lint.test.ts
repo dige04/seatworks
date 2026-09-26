@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { skillSources } from "../../server/catalog/kit/content.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { seatedAs } from "../../server/catalog/kit/roles.ts";
+import { hiddenWordsIn } from "../../server/catalog/kit/hidden-words.ts";
 
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const kit = loadKit(PLUGIN);
@@ -75,6 +76,14 @@ test("what a seat reads keeps within its budgets: prompts, deltas, skills and th
       `${role.role}: ${words(text)} words and ${ruleLines(text)} rule lines, over the prompt research's ${budget[0]} and ${budget[1]}`,
     );
   }
+  const block = readFileSync(join(PLUGIN, "content", "project", "AGENTS.md"), "utf-8");
+  assert.ok(words(block) <= 300, `the project's Seatworks block: ${words(block)} words, over 300`);
+  for (const role of kit.roles)
+    assert.deepEqual(
+      hiddenWordsIn(block, role.hidesWords ?? []),
+      [],
+      `every agent in the project reads its Seatworks block, the ${role.role} included`,
+    );
   for (const file of deltas)
     assert.ok(
       words(readFileSync(file, "utf-8")) <= 80,

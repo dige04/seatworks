@@ -18,6 +18,7 @@ import { Runtime } from "../../server/runtime/runtime.ts";
 import type { z } from "zod";
 import { tempDir } from "../tempdir.ts";
 import { type Pending, fakePaseo } from "./fake-paseo.ts";
+import { writeProjectBlock } from "../../server/catalog/seat/project-block.ts";
 
 const made: Runtime[] = [];
 
@@ -39,6 +40,8 @@ export function repo(): { root: string; git: (cwd: string, ...args: string[]) =>
   // An IntelliJ project, which is what the index these tests fake serves.
   mkdirSync(join(root, ".idea"));
   writeFileSync(join(root, ".idea", "misc.xml"), "<project/>\n");
+  // Set up as the Human leaves a project: the Seatworks block its setup wrote, committed.
+  writeProjectBlock(kit, root);
   git(root, "init", "-q", "-b", "main");
   git(root, "add", "-A");
   git(root, "commit", "-qm", "seed");

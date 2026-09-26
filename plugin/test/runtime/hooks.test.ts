@@ -51,10 +51,15 @@ test("a seat as Paseo creates, opens and archives it: prompt, key, seat director
     "a harness reading servers from a file shared by its seats gets the key through the env alone",
   );
   const prompt = (provider: string) => create(provider).config.systemPrompt ?? "";
-  const onClaude = prompt("sw2-peer-claude");
-  assert.match(onClaude, /^# Peer\n/, "created with its role's prompt");
+  const [own = "", told = ""] = prompt("sw2-peer-claude").split(/\n\n(?=# Working rules\n)/);
+  assert.match(own, /^# Peer\n/, "created with its role's prompt");
+  assert.match(told, /^# Working rules\n[^]*`search`/, "then what it is told of its servers");
   const delta = readFileSync(join(import.meta.dirname, "..", "..", "harness", "codex", "delta", "peer.md"), "utf-8");
-  assert.equal(prompt("sw2-peer-codex"), `${onClaude.trimEnd()}\n\n${delta}`, "then what its harness needs said");
+  assert.equal(
+    prompt("sw2-peer-codex"),
+    `${own}\n\n${delta.trimEnd()}\n\n${told}`,
+    "and what its harness needs said comes between",
+  );
 
   const open = (agentId: string, reason: string, env: Record<string, string> = {}, cwd = h.root) =>
     (hook("agent.session_open", { request: { agentId, reason, provider: "sw2-lead-claude", cwd, env } }) as Made).env;
@@ -83,10 +88,18 @@ test("a seat as Paseo creates, opens and archives it: prompt, key, seat director
 
   // A seat's own directory is added, and Claude reads an added directory's CLAUDE.md but never its AGENTS.md.
   const root = tempDir("sw2-supervisor-project-");
-  writeFileSync(join(root, "AGENTS.md"), "Use pnpm.\n");
+  writeFileSync(
+    join(root, "AGENTS.md"),
+    "Use pnpm.\n\n<!-- seatworks:begin: an older kit -->\nOld rules.\n<!-- seatworks:end -->\n\nUse Node 26.\n",
+  );
   const file = join(seatDir(kit, lead, claude, home(), projectOf(root)), "CLAUDE.md");
   const rules = () => (existsSync(file) ? readFileSync(file, "utf-8") : "");
   open("agent-7", "create", {}, root);
+  assert.match(
+    readFileSync(join(root, "AGENTS.md"), "utf-8"),
+    /^Use pnpm\.\n\n<!-- seatworks:begin: Seatworks writes this block[^\n]*-->\n## Seatworks\n[^]*<!-- seatworks:end -->\n\nUse Node 26\.\n$/,
+    "a seat opening in a project brings its Seatworks block up to date, where it stands, and leaves the rest alone",
+  );
   assert.match(
     rules(),
     new RegExp(`^@${join(root, "AGENTS.md")}$`, "m"),

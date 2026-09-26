@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSyn
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { renderPrompt, skillProblems, skillSources } from "../../server/catalog/kit/content.ts";
+import { renderPrompt, renderText, skillProblems, skillSources } from "../../server/catalog/kit/content.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { providerId, toolsOf } from "../../server/catalog/kit/roles.ts";
 import { applyRole } from "../../server/catalog/seat/launch.ts";
@@ -14,7 +14,7 @@ import { seedRecords } from "../../server/catalog/seat/seat-files.ts";
 import { materialize, seatDir } from "../../server/catalog/seat/seats.ts";
 import { placeGuides } from "../../server/catalog/seat/snapshots.ts";
 import { choicesFor, serversFor } from "../../server/catalog/seat/servers.ts";
-import { resolveTeam, withHarness } from "../../server/catalog/team/team.ts";
+import { resolveTeam, rulesFor, withHarness } from "../../server/catalog/team/team.ts";
 import { describeTeam } from "../../server/runtime/panel/team-view.ts";
 import { readConfig } from "../../server/core/config-file.ts";
 import { git } from "../../server/core/git.ts";
@@ -71,8 +71,7 @@ test("the shipped kit resolves to a complete team, and every role's seat builds 
         /\{\{/,
         `${name} on ${on}`,
       );
-    const contextFile = join(dir, harness.contextFile!);
-    const told = existsSync(contextFile) ? readFileSync(contextFile, "utf-8") : "";
+    const told = renderText(role, rulesFor(team, name), { guides: "/guides", state: "/state" });
     assert.doesNotMatch(told, /\{\{/, `${name} seat has no placeholder left`);
     for (const [id, entry] of Object.entries(kit.mcp)) {
       const served = seat.mcp.includes(id);

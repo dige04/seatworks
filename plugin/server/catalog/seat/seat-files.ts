@@ -7,12 +7,12 @@ import { LeftAlone, ensureLink, isLink, present, writeIfChanged } from "../../co
 import { type Json, getPath, isRecord, layered, sameJson, setPath } from "../../core/json.ts";
 import { daemonLog } from "../../core/logger.ts";
 import { expandHome } from "../../core/paths.ts";
-import { type PromptPaths, renderText, skillProblems, skillSources } from "../kit/content.ts";
+import { skillProblems, skillSources } from "../kit/content.ts";
 import type { HarnessSpec, Kit, McpServers, RoleSpec } from "../kit/kit.ts";
 import { harnessFileSources, roleSettingsFile } from "../kit/harness-files.ts";
 import { projectImports, stateWrites } from "./launch.ts";
 import { snapshot } from "./snapshots.ts";
-import { type Team, rulesFor, skillDirsFor } from "../team/team.ts";
+import { type Team, skillDirsFor } from "../team/team.ts";
 
 /** What a seat's build changed, for the log: each file written, linked or removed. */
 type Recorder = { changes: string[]; note(changed: boolean, what: string): void; removed(what: string): void };
@@ -204,21 +204,13 @@ export function writeMcpFile(harness: HarnessSpec, dir: string, servers: McpServ
   record.note(writeConfigIfChanged(file, next), harness.mcp.file);
 }
 
-export function writeInstructions(
-  team: Team,
-  roleName: string,
-  dir: string,
-  paths: PromptPaths,
-  record: Recorder,
-  root?: string,
-): void {
-  const { role, harness } = team.roles[roleName]!;
-  const rules = [renderText(role, rulesFor(team, roleName), paths), projectImports(harness, root)]
-    .filter(Boolean)
-    .join("\n");
+export function writeInstructions(team: Team, roleName: string, dir: string, record: Recorder, root?: string): void {
+  const { harness } = team.roles[roleName]!;
+  // What the seat is told goes in its prompt; its own file only takes in the project's instructions its agent misses.
+  const imports = projectImports(harness, root);
   if (!harness.contextFile) return;
   const contextPath = join(dir, harness.contextFile);
-  if (rules) record.note(writeIfChanged(contextPath, rules), harness.contextFile);
+  if (imports) record.note(writeIfChanged(contextPath, imports), harness.contextFile);
   else removeIfPresent(contextPath, harness.contextFile, record);
 }
 

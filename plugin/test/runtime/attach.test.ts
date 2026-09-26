@@ -2,7 +2,7 @@
 import "../setup.ts";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { chmodSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { stateRoot } from "../../server/core/paths.ts";
@@ -19,7 +19,14 @@ test("a project attached by path, set up, detached only when idle and attached a
   const root = realpathSync(tempDir("sw2-rpc-attach-"));
   git(root, "init", "-q");
   mkdirSync(join(root, "src"), { recursive: true });
+  writeFileSync(join(root, "AGENTS.md"), "Use pnpm.\n");
   const added = which(await call(contracts.projectsAdd, { root: join(root, "src") }), "slug");
+  const agents = () => readFileSync(join(root, "AGENTS.md"), "utf-8");
+  assert.equal(
+    agents(),
+    "Use pnpm.\n\n<!-- seatworks:begin: Seatworks writes this block; write your own rules outside it -->\n## Seatworks\n\nWork through the team tools.\n<!-- seatworks:end -->\n",
+    "setting a project up puts the Seatworks block in its AGENTS.md, which every agent there reads, after the Human's own",
+  );
   assert.equal(
     added.root,
     root,
@@ -47,7 +54,9 @@ test("a project attached by path, set up, detached only when idle and attached a
   const missing = await call(contracts.projectsAdd, { root: join(root, "nowhere") });
   assert.match(which(missing, "error").error, /is not a directory/);
 
+  const written = agents();
   const again = which(await call(contracts.projectsAdd, { root }), "slug");
+  assert.equal(agents(), written, "and setting it up again writes it once");
   assert.equal(again.slug, added.slug, "the same repository is the same project");
   const kept = which(await call(contracts.settingsRead, { project: added.slug }), "values").values;
   assert.deepEqual(

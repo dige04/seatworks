@@ -1,7 +1,9 @@
-import { renderPrompt } from "../../catalog/kit/content.ts";
+import { renderPrompt, renderText } from "../../catalog/kit/content.ts";
+import { rulesFor } from "../../catalog/team/team.ts";
 import { type Kit, type RoleSpec, SEAT_KEY } from "../../catalog/kit/kit.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import { applyRole, seatBin, seatEnv } from "../../catalog/seat/launch.ts";
+import { writeProjectBlock } from "../../catalog/seat/project-block.ts";
 import { seedRecords } from "../../catalog/seat/seat-files.ts";
 import { seatDir } from "../../catalog/seat/seats.ts";
 import { daemonLog } from "../../core/logger.ts";
@@ -33,7 +35,12 @@ export class SeatLaunch {
     this.remember(project);
     const team = this.seating.ensure(seat.role.role, seat.harness, project);
     const paths = { guides: guidesDir(), state: project.state };
-    const render = (role: RoleSpec) => renderPrompt(this.kit, role, seat.harness.id, paths);
+    // The role's prompt, then what this seat is told of its servers and the Human's rules.
+    const render = (role: RoleSpec) =>
+      [renderPrompt(this.kit, role, seat.harness.id, paths), renderText(role, rulesFor(team, role.role), paths)]
+        .map((part) => part.trimEnd())
+        .filter(Boolean)
+        .join("\n\n");
     const key = seat.role.tools ? this.keys.issue() : undefined;
     const servers = this.seating.servers(team, seat.role.role, key);
     const applied = applyRole(this.kit, team, config, render, project.state, servers);
@@ -49,6 +56,11 @@ export class SeatLaunch {
       seedRecords(this.kit, project.state);
     } catch (error) {
       daemonLog.error("could not seed project records:", error);
+    }
+    try {
+      writeProjectBlock(this.kit, project.root);
+    } catch (error) {
+      daemonLog.error(`could not write the Seatworks block into ${project.root}/AGENTS.md:`, error);
     }
     this.seating.ensure(seat.role.role, seat.harness, project);
     const dir = seatDir(this.kit, seat.role, seat.harness, home(), project);

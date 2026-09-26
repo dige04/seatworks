@@ -94,6 +94,12 @@ function skillDirs(root: string): string[] {
 }
 
 /** A preset outside this package names its own files, so an absolute path is taken as given. */
+/** What the kit has every agent in a project read, in the project's own AGENTS.md; none when the kit ships none. */
+export function projectBlock(kit: Kit): string {
+  const file = contentPath(kit, "project/AGENTS.md");
+  return existsSync(file) ? readFileSync(file, "utf-8") : "";
+}
+
 function contentPath(kit: Kit, path: string): string {
   return isAbsolute(path) ? path : ownOr(kit, path);
 }

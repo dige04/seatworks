@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { renderPrompt } from "../../server/catalog/kit/content.ts";
@@ -120,10 +120,5 @@ test("a seat whose text shows its role a hidden word, an unfilled placeholder or
   );
   const home = tempDir("sw2-home-");
   const fine = resolveTeam(kit, { rules: "Leave the daemon config alone." });
-  assert.ok(materialize(kit, fine, "peer", home, project).length > 0);
-  const peer = fine.roles.peer!;
-  assert.match(
-    readFileSync(join(seatDir(kit, peer.role, peer.harness, home, project), "AGENTS.md"), "utf-8"),
-    /Leave the daemon config alone/,
-  );
+  assert.ok(materialize(kit, fine, "peer", home, project).length > 0, "rules with no hidden word build");
 });

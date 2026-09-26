@@ -40,7 +40,7 @@ function withAgent(id: string, files: Record<string, string>): Kit {
   return kit;
 }
 
-test("a Claude seat per project writes shared plus role settings, links skills, clears MCP files and writes the rules to CLAUDE.md", () => {
+test("a Claude seat per project writes shared plus role settings, links skills and clears MCP files", () => {
   const kit = makeKit();
   const team = resolveTeam(kit);
   const home = tempDir("sw2-home-");
@@ -82,19 +82,14 @@ test("a Claude seat per project writes shared plus role settings, links skills, 
   assert.equal(state.userID, "u");
   assert.equal("enableAllProjectMcpServers" in state, false);
   assert.deepEqual(state.projects?.["/x"], { mcpServers: {}, trust: true });
-  const rules = readFileSync(join(dir, "CLAUDE.md"), "utf-8");
-  assert.match(rules, /Prefer the IDE for navigation\./);
-  assert.match(rules, /Your IDE tools: `ide_find_references`\./);
   assert.deepEqual(materialize(kit, team, "lead", home, project, serversFor(kit, team, "lead", context)), []);
 
   const off = resolveTeam(kit, { mcp: { ide: { enabled: false } } });
   const removed = materialize(kit, off, "lead", home, project, serversFor(kit, off, "lead", context));
-  assert.ok(removed.includes("CLAUDE.md removed"));
   assert.ok(removed.includes("skill ide-guide removed"));
-  assert.equal(existsSync(join(dir, "CLAUDE.md")), false);
 });
 
-test("a seat whose harness reads its servers from a file gets that file, its whole layered settings and its rules in a real file, in JSON or TOML", () => {
+test("a seat whose harness reads its servers from a file gets that file and its whole layered settings, in JSON or TOML, and no rules file of its own", () => {
   const kit = withAgent("toml", {
     "harness.json": JSON.stringify({
       id: "toml",
@@ -139,10 +134,10 @@ test("a seat whose harness reads its servers from a file gets that file, its who
       settings,
       `${id}: the kit's settings are the whole file`,
     );
-    assert.equal(lstatSync(join(dir, "AGENTS.md")).isSymbolicLink(), false, id);
-    assert.match(
-      readFileSync(join(dir, "AGENTS.md"), "utf-8"),
-      /^# Working rules[^]*Look library APIs up in the docs\./,
+    assert.equal(
+      existsSync(join(dir, "AGENTS.md")),
+      false,
+      `${id}: what it is told is in its prompt, and the project's AGENTS.md it reads where it works`,
     );
     assert.equal(readFileSync(outside, "utf-8"), "project rules that must not change", id);
     const listed = readConfig<Record<string, Record<string, Server>>>(join(dir, harness.mcp.file), {})[

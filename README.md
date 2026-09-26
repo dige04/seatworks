@@ -118,7 +118,10 @@ what you pick.
 ## First run
 
 1. In Paseo, open **Seatworks** in the sidebar.
-2. **Add project**, pick the repository, choose an agent for each role, and attach.
+2. **Add project**, pick the repository, choose an agent for each role, and attach. Attaching puts a
+   Seatworks block, between `<!-- seatworks:begin … -->` and `<!-- seatworks:end -->`, at the end of
+   the project's `AGENTS.md`, which every agent working there reads. Commit it: a lane in a copy of
+   its own sees only what is committed, and a lane in your checkout waits while it is uncommitted.
 3. Open **Health** and choose **Run**.
 4. Start an agent in that project with the provider **Supervisor · Claude Code (sw2)**, and tell it
    what you want.

@@ -17,6 +17,7 @@ import type { TeamSource } from "../team-source.ts";
 import { listFolders } from "./folders.ts";
 import type { ProjectsRpc } from "./rpc.ts";
 import { firstUnder } from "../../core/fs.ts";
+import { writeProjectBlock } from "../../catalog/seat/project-block.ts";
 
 export const unknownProject = (slug: string) => `No project named ${slug} has been seen on this machine.`;
 
@@ -50,6 +51,7 @@ export class ProjectsPanel implements ProjectsRpc {
     // record() only logs failures; an attach whose slug cannot be found leaves every screen for it dead.
     if (!this.deps.source.named(project.slug))
       return { error: `${project.root} could not be put on record; see the daemon log.` };
+    writeProjectBlock(this.deps.kit, project.root);
     return { slug: project.slug, root: project.root };
   }
 

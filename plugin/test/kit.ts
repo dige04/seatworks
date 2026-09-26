@@ -180,6 +180,7 @@ export function makeKit(): Kit {
   put(dir, "content/prompts/PEER.md", "# Peer\n\nRead {{guides}}/BRIEF.md.\n");
   put(dir, "content/prompts/SCRIBE.md", "# Scribe\n\nKeep the notes.\n");
   put(dir, "content/guides/BRIEF.md", "# Brief\n");
+  put(dir, "content/project/AGENTS.md", "## Seatworks\n\nWork through the team tools.\n");
   put(dir, "content/skills/supervisor/plan-check/SKILL.md", "---\nname: plan-check\ndescription: checks a plan\n---\n");
   put(dir, "content/skills/peer/test-first/SKILL.md", "---\nname: test-first\ndescription: tests\n---\n");
   // Models are what Paseo lists, never harness.json: the ones written above become that list.
