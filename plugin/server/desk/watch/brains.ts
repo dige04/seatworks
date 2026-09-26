@@ -72,8 +72,8 @@ export async function readLook(services: DeskServices, project: Project, seat: N
         ? patterns.filter(([id, pattern]) => sifted.flagged.has(id) || !pattern.instructions)
         : patterns;
     if (judged.length > 0) {
-      const judge = services.watcher.judge(project, brains.seat.role, subject);
-      findings.push(...(await weigh(project, subject, brains.seat.id, judge, place, items, judged, asked, look, cut)));
+      const judge = services.watcher.judge(project, brains.seat, subject);
+      findings.push(...(await weigh(project, subject, brains.seat, judge, place, items, judged, asked, look, cut)));
     }
   }
   if (findings.length > 0) await notice(services, project, seat, findings);

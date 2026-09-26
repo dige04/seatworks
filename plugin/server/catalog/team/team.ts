@@ -10,12 +10,12 @@ import { can, seatedAs } from "../kit/roles.ts";
 
 /**
  * The brains that read what the watch's eye sees, as the settings chose: the sensor, with its key where a settings layer
- * keeps one, and the seat of a role that can judge; `mode` says which of them read.
+ * keeps one, and the role that can judge, whose seat reads; `mode` says which of them read.
  */
 type Brains = {
   mode: "off" | "sensor" | "seat" | "both";
   sensor?: { id: string; sensor: SensorSpec; key?: string };
-  seat?: { id: string; role: string };
+  seat?: string;
 };
 
 /** The sensor that asks review's checks, with its key where the machine keeps one; none when the kit knows no such sensor. */
@@ -123,7 +123,7 @@ function brainsOf(kit: Kit, attention: Attention, layers: Layer[], errors: strin
   return {
     mode,
     ...(found && mode !== "seat" ? { sensor: { id: attention.sensor, sensor: found, ...(key ? { key } : {}) } } : {}),
-    ...(seat && mode !== "sensor" ? { seat: { id: seat, role: seat } } : {}),
+    ...(seat && mode !== "sensor" ? { seat } : {}),
   };
 }
 

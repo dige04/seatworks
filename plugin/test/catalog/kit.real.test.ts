@@ -329,6 +329,6 @@ test("the Lead, who accepts a task on reading its code, is given every code tool
 
 test("the preset reads what the watch sees with both brains: the kit's sensor sifts, and its Watcher seat judges", () => {
   const { brains } = resolveTeam(loadKit(PLUGIN));
-  assert.deepEqual([brains.mode, brains.sensor?.id, brains.seat?.role], ["both", "jev", "watcher"]);
+  assert.deepEqual([brains.mode, brains.sensor?.id, brains.seat], ["both", "jev", "watcher"]);
   assert.equal(brains.sensor?.key, undefined, "a sensor with no key asks nothing until the owner gives one");
 });

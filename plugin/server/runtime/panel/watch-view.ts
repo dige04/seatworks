@@ -19,7 +19,7 @@ export type Trouble = { kind: string; at: number; detail: string };
 function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJudge {
   const { sensor, seat } = team.brains;
   if (!sensor && !seat) return { label: "", state: "off", minutes: null, detail: null };
-  const seatLabel = seat && `the ${kit.roles.find((role) => role.role === seat.role)?.label ?? seat.role}`;
+  const seatLabel = seat && `the ${kit.roles.find((role) => role.role === seat)?.label ?? seat}`;
   const named = [sensor?.sensor.label, seatLabel].filter(Boolean).join(" and ");
   const label = named.charAt(0).toUpperCase() + named.slice(1);
   if (sensor && !sensor.key && !seat) return { label, state: "nokey", minutes: null, detail: sensor.sensor.key };
@@ -38,7 +38,7 @@ function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJu
       // A line cut mid-write says nothing of how the brains answer.
     }
   }
-  if (!last?.at || (last.by !== sensor?.id && last.by !== seat?.id))
+  if (!last?.at || (last.by !== sensor?.id && last.by !== seat))
     return { label, state: "waiting", minutes: null, detail: null };
   const minutes = minutesSince(now, last.at);
   return last.unasked
