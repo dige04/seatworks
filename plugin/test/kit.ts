@@ -1,3 +1,4 @@
+import "./setup.ts";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tempDir } from "./tempdir.ts";
