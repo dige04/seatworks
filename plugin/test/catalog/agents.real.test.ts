@@ -116,6 +116,11 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         undefined,
         `${where}: the Human's language is their machine's setting, which the desk tells whoever supervises on every agent`,
       );
+      assert.equal(
+        at(settings, "showThinkingSummaries"),
+        true,
+        `${where}: the watch reads a seat's thinking, which Claude redacts to a stub unless the settings ask for it`,
+      );
       const deny = list(at(settings, "permissions.deny"));
       for (const command of refusedGit)
         assert.ok(
