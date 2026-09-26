@@ -23,7 +23,7 @@ function brain(says: Record<string, number>, why: Record<string, string> = {}, a
       asked.push({ state, questions });
       const hit = about.test(JSON.stringify(state));
       const answers = Object.fromEntries(
-        Object.keys(questions).map((id) => [id, { noul: hit ? (says[id] ?? 0.05) : 0.05 }]),
+        Object.keys(questions).map((id) => [id, { likely: hit ? (says[id] ?? 0.05) : 0.05 }]),
       );
       return { answers, model: "vendor/model-1", why };
     },

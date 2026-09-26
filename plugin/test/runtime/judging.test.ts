@@ -15,8 +15,8 @@ const KEY = "a-key-for-tests-only";
 
 type Asked = { key: string; state: Record<string, unknown>; questions: Record<string, Question> };
 
-/** A sensor answering each noul by its check's name in `nouls` and every choice with `picks`, failing to ask or to be made once told to; and what it was asked, with which key. */
-function sensor(nouls: Record<string, number>, picks: Answer = { choice: "claims_code_bug", confidence: 0.9 }) {
+/** A sensor answering each condition by its check's name in `likely` and every pick with `picks`, failing to ask or to be made once told to; and what it was asked, with which key. */
+function sensor(likely: Record<string, number>, picks: Answer = { pick: "claims_code_bug", confidence: 0.9 }) {
   const asked: Asked[] = [];
   let failing: Error | undefined;
   let unmade: Error | undefined;
@@ -29,7 +29,7 @@ function sensor(nouls: Record<string, number>, picks: Answer = { choice: "claims
         const answers = Object.fromEntries(
           Object.entries(questions).map(([name, question]): [string, Answer] => [
             name,
-            question.type === "noul" ? { noul: nouls[name.split("__")[0]!] ?? 0.5 } : picks,
+            question.type === "condition" ? { likely: likely[name.split("__")[0]!] ?? 0.5 } : picks,
           ]),
         );
         return { answers, model: "vendor/model-1-20260917", tokens: 321 };
@@ -145,7 +145,7 @@ test("a hand-back is asked about in shadow by review's own sensor, whatever read
   await settle();
   const gap = h.runtime.kit.checks.summary_admits_gap!;
   const summary = { summary: "Rounds half up; the refund path is stubbed for now.", out_of_scope: ["the CSV export"] };
-  const question = { type: "noul", instructions: gap.instructions, criteria: gap.criteria };
+  const question = { type: "condition", instructions: gap.instructions, criteria: gap.criteria };
   assert.deepEqual(asked, [{ key: KEY, state: summary, questions: { summary_admits_gap: question } }]);
   const { at, episode, ...first } = kept(h.project.state)[0]!;
   assert.ok(Date.parse(at) > 0);
@@ -158,7 +158,7 @@ test("a hand-back is asked about in shadow by review's own sensor, whatever read
     questions: { summary_admits_gap: question },
     model: "vendor/model-1-20260917",
     tokens: 321,
-    answers: { summary_admits_gap: { noul: 0.9 } },
+    answers: { summary_admits_gap: { likely: 0.9 } },
     verdicts: { summary_admits_gap: "yes" },
   });
   await h.idle(lead);
@@ -200,7 +200,7 @@ test("a hand-back is asked about in shadow by review's own sensor, whatever read
   const rule = h.runtime.kit.ecosystem.riskRules[0]!;
   assert.deepEqual(ran!.questions, {
     review_ran_invariant__1: {
-      type: "noul",
+      type: "condition",
       instructions: {
         invariant: rule.invariant,
         question: "Does `report` say that `invariant` was checked by running code?",
@@ -218,7 +218,7 @@ test("a hand-back is asked about in shadow by review's own sensor, whatever read
 test("a turn's moments are asked about: an act, an unbacked hand-back, a change before any look, and nothing once the instruction is lost", async (t) => {
   const { make, of } = sensor(
     { asked_for: 0.1, claims_checks_pass: 0.95 },
-    { choice: "claims_code_bug", confidence: 0.4 },
+    { pick: "claims_code_bug", confidence: 0.4 },
   );
   const { h, sup, lane: opened, peer, timeline } = await laneWithPeer(undefined, { sensor: make });
   judgedBy("off", KEY);
@@ -299,7 +299,7 @@ test("a turn's moments are asked about: an act, an unbacked hand-back, a change 
   assert.deepEqual(
     verdicts("instruction_kind")[0],
     { instruction_kind: "unclear" },
-    "a choice below its sure line is unclear",
+    "a pick below its sure line is unclear",
   );
 
   const lookless = h.events("watch.fact").filter((event) => event.fact === "edit-before-look").length;

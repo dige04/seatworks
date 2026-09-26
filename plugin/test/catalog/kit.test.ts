@@ -189,7 +189,7 @@ const REFUSED: [string, unknown, RegExp][] = [
   [
     "catalog/checks.json",
     { ...checks, instruction_kind: { ...checks.instruction_kind, criteria: { other: "Anything." } } },
-    /^checks\.json is not as the kit reads it:\n✖ a choice needs two criteria or more\n {2}→ at instruction_kind$/,
+    /^checks\.json is not as the kit reads it:\n✖ a pick needs two criteria or more\n {2}→ at instruction_kind$/,
   ],
   [
     "catalog/checks.json",

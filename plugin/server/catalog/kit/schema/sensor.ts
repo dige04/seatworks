@@ -32,9 +32,9 @@ const Facts = z.array(text).min(1).optional();
  * One condition: at or above `yes` it holds, at or below `no` it does not, between is unclear. `acts` names each fact that
  * opens a question about an act, and the act as it asks it, with the fact's own words where `{quote}` is.
  */
-const Noul = z
+const Condition = z
   .strictObject({
-    type: z.literal("noul"),
+    type: z.literal("condition"),
     instructions: Instructions,
     criteria: z.strictObject({ true: text, false: text }),
     acts: z.record(z.string(), text.includes("{quote}")).optional(),
@@ -46,9 +46,9 @@ const Noul = z
   .refine((check) => check.no < check.yes, { error: "no must sit below yes" });
 
 /** One of several answers, taken at `sure` or more and unclear below; `after` names who an instruction must come from for it to be asked. */
-const Choice = z
+const Pick = z
   .strictObject({
-    type: z.literal("choice"),
+    type: z.literal("pick"),
     instructions: Instructions,
     criteria: z.record(z.string(), text),
     facts: Facts,
@@ -56,12 +56,12 @@ const Choice = z
     sure: unit,
     after: z.array(text).optional(),
   })
-  .refine((check) => Object.keys(check.criteria).length >= 2, { error: "a choice needs two criteria or more" });
+  .refine((check) => Object.keys(check.criteria).length >= 2, { error: "a pick needs two criteria or more" });
 
 /** `catalog/checks.json`: the questions the watch asks a sensor, by name. */
 export const ChecksFile = z.record(
   z.string().regex(/^[a-z][a-z_]*$/, { error: "is not a lowercase name" }),
-  z.discriminatedUnion("type", [Noul, Choice]),
+  z.discriminatedUnion("type", [Condition, Pick]),
 );
 
 /**

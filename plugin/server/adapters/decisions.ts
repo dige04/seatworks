@@ -36,27 +36,28 @@ function bounded<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
 const unit = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 
-/** A noul's probability, or a choice among the question's own criteria; a choice with no confidence is not sure of itself. */
-function answerOf(
-  name: string,
-  question: Question,
-  answer: { noul?: unknown; choice?: unknown; confidence?: unknown },
-): Answer {
-  if (question.type === "noul") {
+type Said = { noul?: unknown; choice?: unknown; confidence?: unknown };
+
+/** The endpoint's names for a condition and a pick, which it calls a noul and a choice. */
+const asAsked = (question: Question) => ({ ...question, type: question.type === "condition" ? "noul" : "choice" });
+
+/** A condition's probability, or a pick among the question's own criteria; a pick with no confidence is not sure of itself. */
+function answerOf(name: string, question: Question, answer: Said): Answer {
+  if (question.type === "condition") {
     if (!unit(answer.noul)) throw new Error(`the answer to ${name} is not a probability`);
-    return { noul: answer.noul };
+    return { likely: answer.noul };
   }
   if (typeof answer.choice !== "string" || !Object.hasOwn(question.criteria, answer.choice))
     throw new Error(`the answer to ${name} is not one of its choices`);
   if (answer.confidence !== undefined && !unit(answer.confidence))
     throw new Error(`the answer to ${name} has a confidence outside 0 to 1`);
-  return { choice: answer.choice, confidence: answer.confidence ?? 0 };
+  return { pick: answer.choice, confidence: answer.confidence ?? 0 };
 }
 
 /** Every question answered as it was asked, or none: an answer with a question missing is not what was asked. */
 function readJudgement(body: unknown, questions: Record<string, Question>): Judgement {
   const held = (body ?? {}) as {
-    answers?: Record<string, { noul?: unknown; choice?: unknown; confidence?: unknown }>;
+    answers?: Record<string, Said>;
     model?: unknown;
     usage?: { input_tokens?: unknown };
   };
@@ -111,7 +112,8 @@ async function decide(spec: Decisions, key: string, body: string): Promise<unkno
 export function decisionsJudge(spec: Decisions, key: string): Judge {
   return {
     async ask(state, questions) {
-      const body = JSON.stringify({ ...spec.body, model: spec.model, state, questions });
+      const asked = Object.fromEntries(Object.entries(questions).map(([name, question]) => [name, asAsked(question)]));
+      const body = JSON.stringify({ ...spec.body, model: spec.model, state, questions: asked });
       return readJudgement(await decide(spec, key, body), questions);
     },
   };

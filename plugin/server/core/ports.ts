@@ -170,15 +170,15 @@ export type Host = {
   config: PaseoConfig;
 };
 
-/** A question as the watch's catalog words it, the fields the code fills filled: a noul is one condition, a choice picks one of its criteria. */
+/** A question as the catalog words it, the fields the code fills filled: one condition, or a pick among its criteria. */
 export type Question = {
-  type: "noul" | "choice";
+  type: "condition" | "pick";
   instructions: string | Record<string, string>;
   criteria: Record<string, string>;
 };
 
-/** A noul's answer is how likely its condition holds, from 0 to 1; a choice's, the pick and how sure of it. */
-export type Answer = { noul: number } | { choice: string; confidence: number };
+/** A condition's answer is how likely it holds, from 0 to 1; a pick's, the criterion picked and how sure of it. */
+export type Answer = { likely: number } | { pick: string; confidence: number };
 
 export type Judgement = {
   answers: Record<string, Answer>;

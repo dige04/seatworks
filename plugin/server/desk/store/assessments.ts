@@ -13,7 +13,7 @@ type About = { subject: string; episode: string; by: string; state: Record<strin
 
 /** Whether a condition holds: at or above `yes` it does, at or below `no` it does not, and between is unclear. */
 export function holds(spec: { yes: number; no: number }, answer: Answer | undefined): "yes" | "no" | "unclear" {
-  const yes = answer && "noul" in answer ? answer.noul : undefined;
+  const yes = answer && "likely" in answer ? answer.likely : undefined;
   return yes === undefined ? "unclear" : yes >= spec.yes ? "yes" : yes <= spec.no ? "no" : "unclear";
 }
 

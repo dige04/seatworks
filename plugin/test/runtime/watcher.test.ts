@@ -113,7 +113,7 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
     [
       "watcher",
       watcher!.provider,
-      Object.fromEntries(asked.map((question) => [question, { noul: 1 }])),
+      Object.fromEntries(asked.map((question) => [question, { likely: 1 }])),
       Object.fromEntries(asked.map((question) => [question, "It says it will build a stub for the parser."])),
     ],
     "what it answers is kept beside the case",
@@ -130,7 +130,7 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
   await settle();
   assert.deepEqual(
     Object.values(kept(h.project.state).at(-1)!.answers as Record<string, unknown>)[0],
-    { noul: 0.5 },
+    { likely: 0.5 },
     "unsure is the middle",
   );
 

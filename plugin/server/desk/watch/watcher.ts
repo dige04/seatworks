@@ -26,14 +26,14 @@ type Said = { question: string; says: string; why: string };
 const UNSURE = "unsure";
 
 const takes = (question: Question) => [
-  ...(question.type === "noul" ? ["yes", "no"] : Object.keys(question.criteria)),
+  ...(question.type === "condition" ? ["yes", "no"] : Object.keys(question.criteria)),
   UNSURE,
 ];
 
-/** A seat's word as a sensor's would be: yes and no as certain, unsure as the middle; a choice as sure, unsure as no choice at all. */
+/** A seat's word as a sensor's would be: yes and no as certain, unsure as the middle; a pick as sure, unsure as none at all. */
 function answerOf(question: Question, says: string): Answer {
-  if (question.type === "noul") return { noul: says === "yes" ? 1 : says === "no" ? 0 : 0.5 };
-  return says === UNSURE ? { choice: UNSURE, confidence: 0 } : { choice: says, confidence: 1 };
+  if (question.type === "condition") return { likely: says === "yes" ? 1 : says === "no" ? 0 : 0.5 };
+  return says === UNSURE ? { pick: UNSURE, confidence: 0 } : { pick: says, confidence: 1 };
 }
 
 /**

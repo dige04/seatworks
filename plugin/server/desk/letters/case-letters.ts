@@ -17,7 +17,7 @@ function asked(name: string, question: Question): string[] {
           .filter(([field]) => field !== "question")
           .map(([field, value]) => `   ${field}: ${value}`);
   const meanings =
-    question.type === "noul"
+    question.type === "condition"
       ? [`   yes: ${question.criteria.true}`, `   no: ${question.criteria.false}`]
       : Object.entries(question.criteria).map(([choice, meaning]) => `   ${choice}: ${meaning}`);
   return [`${name}: ${words}`, ...filled, ...meanings];

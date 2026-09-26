@@ -45,8 +45,8 @@ function questionOf(check: CheckSpec, fill: Record<string, string> = {}): Questi
 }
 
 function verdictOf(check: CheckSpec, answer: Answer | undefined): string {
-  if (check.type === "noul") return holds(check, answer);
-  return answer && "choice" in answer && answer.confidence >= check.sure ? answer.choice : "unclear";
+  if (check.type === "condition") return holds(check, answer);
+  return answer && "pick" in answer && answer.confidence >= check.sure ? answer.pick : "unclear";
 }
 
 /**

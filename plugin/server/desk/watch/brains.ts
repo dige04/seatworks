@@ -108,7 +108,7 @@ function briefsSince(ledger: Ledger | undefined, seat: Noticed, place: Placed, s
 }
 
 const asQuestion = (pattern: PatternSpec, instructions: string): Question => ({
-  type: "noul",
+  type: "condition",
   instructions,
   criteria: pattern.criteria,
 });
@@ -142,7 +142,7 @@ async function sift(
             id,
             item.text,
             quote,
-            `seen by ${by.sensor.label}, ${(answer as { noul: number }).noul.toFixed(2)} sure, in its ${item.kind}`,
+            `seen by ${by.sensor.label}, ${(answer as { likely: number }).likely.toFixed(2)} sure, in its ${item.kind}`,
           ),
           theirs: true,
         });

@@ -77,7 +77,7 @@ export function momentCases(kit: Kit, place: { lane?: Lane; task?: Task }, momen
   const instruction = clip(moment.instruction?.text ?? "", SAID);
   const cases: Case[] = [];
   const check = kit.checks.asked_for;
-  const acts = check?.type === "noul" ? (check.acts ?? {}) : {};
+  const acts = check?.type === "condition" ? (check.acts ?? {}) : {};
   const opened = moment.facts.filter((found) => Object.hasOwn(acts, found.kind));
   if (instruction && opened.length > 0) {
     const fills = opened.map((found, index): [string, Case["asked"][string]] => [
@@ -97,7 +97,7 @@ export function momentCases(kit: Kit, place: { lane?: Lane; task?: Task }, momen
       asked: { claims_checks_pass: { check: "claims_checks_pass" } },
     });
   const kind = kit.checks.instruction_kind;
-  const after = kind?.type === "choice" ? kind.after : undefined;
+  const after = kind?.type === "pick" ? kind.after : undefined;
   const from = moment.instruction?.from ?? [];
   if (instruction && opens(kind) && (!after || from.some((sender) => after.includes(sender)))) {
     cases.push({

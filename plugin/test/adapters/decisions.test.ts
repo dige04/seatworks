@@ -48,12 +48,12 @@ const base = {
   retries: 1,
 };
 const gap: Question = {
-  type: "noul",
+  type: "condition",
   instructions: "Does `summary` say that something was not done?",
   criteria: { true: "It names one.", false: "It names none." },
 };
 const team: Question = {
-  type: "choice",
+  type: "pick",
   instructions: "Which team owns it?",
   criteria: { account: "Accounts", frontend: "The web app", payments: "Payments" },
 };
@@ -62,10 +62,10 @@ const recorded = JSON.parse(
   readFileSync(new URL("../fixtures/decisions-response.json", import.meta.url), "utf-8"),
 ) as unknown;
 
-test("a sensor is asked over HTTP with its key in the header only, and only an answer to every question as asked is taken", async (t) => {
+test("a sensor is asked over HTTP in its own words with its key in the header only, and only an answer to every question as asked is taken", async (t) => {
   const asked = await endpoint(t, [{ status: 200, body: recorded }]);
   const judged = await decisionsJudge(asked.spec, "secret-key-for-tests").ask({ summary: "Done." }, { is_bug: gap });
-  assert.deepEqual(judged, { answers: { is_bug: { noul: 0.96 } }, model: "typesafe/jev-1.13-20260917", tokens: 476 });
+  assert.deepEqual(judged, { answers: { is_bug: { likely: 0.96 } }, model: "typesafe/jev-1.13-20260917", tokens: 476 });
   assert.equal(asked.calls.length, 1);
   const [call] = asked.calls;
   assert.deepEqual([call!.method, call!.path], ["POST", "/api"]);
@@ -76,9 +76,9 @@ test("a sensor is asked over HTTP with its key in the header only, and only an a
       provider: { data_collection: "deny" },
       model: "vendor/model-1",
       state: { summary: "Done." },
-      questions: { is_bug: gap },
+      questions: { is_bug: { ...gap, type: "noul" } },
     },
-    "its data rules go with every request, and never replace what it asks",
+    "its data rules go with every request, never replace what it asks, and a condition is asked as the endpoint names one",
   );
   assert.doesNotMatch(
     JSON.stringify(call!.body),
@@ -102,11 +102,11 @@ test("a sensor is asked over HTTP with its key in the header only, and only an a
     /the response names no model/,
   );
   assert.deepEqual((await answer(both({ type: "noul", noul: 1 }), nouls)).answers, {
-    a: { noul: 0.4 },
-    b: { noul: 1 },
+    a: { likely: 0.4 },
+    b: { likely: 1 },
   });
 
-  assert.deepEqual((await answer(recorded, { team })).answers, { team: { choice: "payments", confidence: 0.75 } });
+  assert.deepEqual((await answer(recorded, { team })).answers, { team: { pick: "payments", confidence: 0.75 } });
   const chosen = (choice: unknown) => ({ answers: { team: choice }, model: "m" });
   await assert.rejects(
     answer(chosen({ type: "choice", choice: "legal", confidence: 0.9 }), { team }),
@@ -122,7 +122,7 @@ test("a sensor is asked over HTTP with its key in the header only, and only an a
   );
   assert.deepEqual(
     (await answer(chosen({ type: "choice", choice: "payments" }), { team })).answers,
-    { team: { choice: "payments", confidence: 0 } },
+    { team: { pick: "payments", confidence: 0 } },
     "a choice that gives no confidence is not sure of itself",
   );
 });
@@ -132,7 +132,7 @@ test("a busy, refusing or stalled sensor is retried only where retrying helps, w
     { status: 429, retryAfter: "0.01" },
     { status: 200, body: recorded },
   ]);
-  assert.deepEqual((await decisionsJudge(busy.spec, "k").ask({}, { is_bug: gap })).answers.is_bug, { noul: 0.96 });
+  assert.deepEqual((await decisionsJudge(busy.spec, "k").ask({}, { is_bug: gap })).answers.is_bug, { likely: 0.96 });
   assert.equal(busy.calls.length, 2, "a busy endpoint is asked again");
 
   const down = await endpoint(t, [
