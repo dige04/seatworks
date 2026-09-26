@@ -216,6 +216,35 @@ test("a failure not climbed out of in ten steps is noticed, ended only by the sa
   );
 });
 
+test("a seat refused again and again, by its agent's permissions or by the desk, is a refusal loop, told once until something goes through", () => {
+  const refused = (seq: number, command: string) => {
+    const copy = again(failedCat, `r${seq}`, seq, (detail) => Object.assign(detail, { command }));
+    Object.assign(copy.event.item!, {
+      error: { content: `Permission to use Bash with command ${command} has been denied.` },
+    });
+    return copy;
+  };
+  const loops = (messages: StreamMessage[]) => found(messages, "refusal-loop").map((fact) => fact.quote);
+  assert.deepEqual(loops([refused(2, "git log"), refused(3, "git status"), refused(4, "git diff")]), [
+    "3 refusals in a row, the last: bash: git diff",
+  ]);
+  assert.deepEqual(
+    loops([refused(2, "git log"), refused(3, "git status"), run("ok", 4, "ls", true), refused(5, "git diff")]),
+    [],
+    "a call that goes through breaks the run",
+  );
+  assert.equal(
+    loops([2, 3, 4, 5, 6].map((seq) => refused(seq, `git log -${seq}`))).length,
+    1,
+    "a loop is told once while it lasts",
+  );
+  assert.deepEqual(
+    loops([run("a", 2, "cat a", false), run("b", 3, "cat b", false), run("c", 4, "cat c", false)]),
+    [],
+    "a failure that is no refusal is not one",
+  );
+});
+
 test("a seat's turn stays open through the late end of an older turn, and a message steered into a long turn does not make it long again", () => {
   const context = () => ({ rules: rules(), handedBack: () => undefined, placed: true });
   const seat = { id: "s1", provider: "sw2-peer-claude", cwd: "/work" };

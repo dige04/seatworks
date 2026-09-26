@@ -4,7 +4,7 @@ import type { Seen, SeatView, Seats, Stream } from "../../core/ports.ts";
 import { sentBy } from "../../core/sent-by.ts";
 import { onDetail } from "./commands.ts";
 import { type Fact, fact } from "../../domain/incident.ts";
-import { Recovery, type Rules, onSettle, stuck } from "./facts.ts";
+import { Recovery, Refusals, type Rules, onSettle, stuck } from "./facts.ts";
 import { contradicted, editBeforeLook, unverified } from "./turn-facts.ts";
 import type { Quirks } from "../../catalog/kit/timeline.ts";
 import { type Unit, Window } from "./window.ts";
@@ -43,6 +43,7 @@ export class SeatWatch {
   private readonly durations: number[] = [];
   private readonly told = new Set<string>();
   private readonly recovery = new Recovery();
+  private readonly refusals = new Refusals();
   private looked = 0;
   private lookedAt = Date.now();
   private readonly lookFacts = new Set<string>();
@@ -65,6 +66,7 @@ export class SeatWatch {
       this.window.clear();
       this.looked = 0;
       this.recovery.reset();
+      this.refusals.reset();
       this.told.clear();
       return [];
     }
@@ -97,7 +99,7 @@ export class SeatWatch {
             ...(change.settled ? onSettle(call, rules, (path) => this.lastRead(path, call.id)) : []),
           ];
     if (change.settled && change.call && !change.call.pseudo) {
-      facts.push(...this.recovery.step(change.call, rules));
+      facts.push(...this.recovery.step(change.call, rules), ...this.refusals.step(change.call, rules));
       const pattern = stuck(this.window.sinceInstruction(), rules);
       if (pattern) facts.push(fact("stuck", pattern));
       else this.told.delete("stuck");

@@ -65,6 +65,7 @@ export class Watching {
         scope,
         repeatsAt: attention.repeatsAt,
         recoverWithin: attention.recoverWithin,
+        refusalsAt: attention.refusalsAt,
         stuckWithin: attention.stuckWithin,
       },
       handedBack: (at) => {

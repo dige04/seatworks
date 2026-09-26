@@ -14,6 +14,7 @@
   "repeatsAt": 3,
   "stuckWithin": 20,
   "recoverWithin": 10,
+  "refusalsAt": 3,
   "longTurnMinutes": 30,
   "longTurnTimes": 3,
   "longTurnAfterTurns": 5,

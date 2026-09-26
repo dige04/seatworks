@@ -14,6 +14,7 @@ export type Rules = {
   testPath: RegExp;
   suppressed: RegExp;
   checkerPath: RegExp;
+  refused: RegExp;
   skipped: RegExp;
   assertion: RegExp;
   runners: Set<string>;
@@ -24,6 +25,7 @@ export type Rules = {
   scope?: string[];
   repeatsAt: number;
   recoverWithin: number;
+  refusalsAt: number;
   stuckWithin: number;
 };
 
@@ -253,5 +255,22 @@ export class Recovery {
 
   reset(): void {
     this.open = undefined;
+  }
+}
+
+/** Refusals in a row, by the agent's own permissions or by the desk: one call that goes through ends the run. */
+export class Refusals {
+  private count = 0;
+
+  step(call: Call, rules: Rules): Fact[] {
+    const refused =
+      failed(call) && (rules.desk?.(call) === true || rules.refused.test(JSON.stringify(call.error ?? "")));
+    this.count = refused ? this.count + 1 : 0;
+    if (this.count !== rules.refusalsAt) return [];
+    return [fact("refusal-loop", `${this.count} refusals in a row, the last: ${oneLine(describe(call), 120)}`)];
+  }
+
+  reset(): void {
+    this.count = 0;
   }
 }

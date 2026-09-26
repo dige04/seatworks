@@ -61,6 +61,8 @@ export const AttentionChoice = z.strictObject({
   repeatsAt: z.number().int().min(2).optional(),
   /** Steps after a failed command with neither it nor the gate passing, before the watch calls it no recovery. */
   recoverWithin: z.number().int().min(2).optional(),
+  /** Refusals in a row, by a seat's own permissions or by the desk, that make a refusal loop. */
+  refusalsAt: z.number().int().min(2).optional(),
   reworksAt: z.number().int().min(2).optional(),
   reviewsAt: z.number().int().min(2).optional(),
   suppressed: Pattern.optional(),
