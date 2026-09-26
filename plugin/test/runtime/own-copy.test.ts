@@ -38,10 +38,9 @@ test("a lane works in the project's own copy from open to landing, and hands it 
   const unbounded = await h.call(lead, "lead", "add_tasks", {
     tasks: [{ key: "t", title: "Add four", goal: "g", acceptance: ["a"], hints: ["a.txt"] }],
   });
-  assert.equal(unbounded.ok, false);
-  assert.match(unbounded.text, /needs outOfScope/);
-  assert.equal((await h.call(lead, "lead", "add_tasks", work("Add four", "a.txt"))).ok, true);
+  assert.equal(unbounded.ok, true, `limits the goal does not hold are the Lead's to give or not: ${unbounded.text}`);
   const first = h.ledger().tasks["L1-T1"]!;
+  assert.deepEqual(first.outOfScope, []);
   assert.equal(h.agents.get(first.peer!)!.cwd, root);
   assert.match(first.branch!, /^task\/l1-t1-/);
   assert.equal(branch(), first.branch);

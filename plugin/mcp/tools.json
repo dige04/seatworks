@@ -921,8 +921,7 @@
                 "key",
                 "title",
                 "goal",
-                "acceptance",
-                "outOfScope"
+                "acceptance"
               ]
             }
           }

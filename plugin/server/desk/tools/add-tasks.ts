@@ -9,7 +9,7 @@ const Asked = z.strictObject({
   acceptance: z.array(z.string()),
   hints: z.array(z.string()).optional(),
   holds: z.array(z.string()).optional(),
-  outOfScope: z.array(z.string()),
+  outOfScope: z.array(z.string()).optional(),
   context: z.string().optional(),
   skills: z.array(z.string()).optional(),
   parallel: z.boolean().optional(),
