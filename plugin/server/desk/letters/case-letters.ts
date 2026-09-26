@@ -10,15 +10,17 @@ function shown(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function asked(name: string, question: Question): string[] {
+/** A question's own words, and each field the code filled in, by name. */
+function wordsOf(question: Question): { words: string; filled: [string, string][] } {
   const { instructions } = question;
-  const words = typeof instructions === "string" ? instructions : (instructions.question ?? "");
-  const filled =
-    typeof instructions === "string"
-      ? []
-      : Object.entries(instructions)
-          .filter(([field]) => field !== "question")
-          .map(([field, value]) => `   ${field}: ${value}`);
+  if (typeof instructions === "string") return { words: instructions, filled: [] };
+  const filled = Object.entries(instructions).filter(([field]) => field !== "question");
+  return { words: instructions.question ?? "", filled };
+}
+
+function asked(name: string, question: Question): string[] {
+  const { words, filled: fields } = wordsOf(question);
+  const filled = fields.map(([field, value]) => `   ${field}: ${value}`);
   const meanings =
     question.type === "condition"
       ? [`   yes: ${question.criteria.true}`, `   no: ${question.criteria.false}`]
@@ -48,10 +50,7 @@ export const caseLetters = {
   /** What review's sensor read in one moment of `subject`'s work, for whoever decides on it: a lead to check, never a verdict. */
   evidence(subject: string, episode: string, by: string, read: Read[]): Letter {
     const lines = read.map(({ question, verdict, sure }) => {
-      const { instructions } = question;
-      const words = typeof instructions === "string" ? instructions : (instructions.question ?? "");
-      const filled =
-        typeof instructions === "string" ? [] : Object.entries(instructions).filter(([f]) => f !== "question");
+      const { words, filled } = wordsOf(question);
       const given = filled.length > 0 ? ` (${filled.map(([field, value]) => `${field}: ${value}`).join("; ")})` : "";
       const key = question.type === "condition" ? { yes: "true", no: "false" }[verdict] : verdict;
       const meant = key && Object.hasOwn(question.criteria, key) ? `: ${question.criteria[key]}` : "";
