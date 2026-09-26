@@ -299,7 +299,12 @@ test("with the Human out of the loop, getting what landed out is the Supervisor'
   h.git(elsewhere, "commit", "-q", "--allow-empty", "-m", "elsewhere");
   h.git(elsewhere, "push", "-q", "origin", "main");
   h.git(h.root, "commit", "-q", "--allow-empty", "-m", "here");
-  assert.match((await push()).text, /^Nothing was pushed to origin: /, "a remote that moved on is never forced");
+  assert.match(
+    (await push()).text,
+    /^Nothing was pushed: origin has 1 commit on main that main here lacks, and a push is never forced\. Taking it in is a lane's work: open_lane with a task whose Peer merges origin\/main, fetched now, into its own branch/,
+    "a remote that moved on is never forced, and taking it in goes through a lane",
+  );
+  assert.equal(h.git(h.root, "rev-parse", "origin/main").trim(), h.git(remote, "rev-parse", "main").trim());
 
   h.projectSettings({ hitl: { on: true } });
   assert.match((await push()).text, /^Pushing and releasing are the Human's while they are in the loop/);
