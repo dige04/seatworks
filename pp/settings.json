@@ -1,0 +1,13 @@
+{
+  "roles": {
+    "lead": {
+      "rules": "Pick the role for each task in add_tasks:\n- peer (default): well-specified work inside owned paths, with acceptance a focused check can show.\n- peer-deep: work that crosses modules or a contract, needs long terminal sessions or debugging whose cause is unknown, or touches auth, money, migrations, concurrency or security; also a task peer handed back wrong twice (cut it and add it again with role peer-deep).\nReviews:\n- A routine lane or task gets one review from reviewer. Do not review where nothing material is uncertain.\n- A material question on a stable implementation (a changed contract, a risky area, a large lane) gets three lanes at once: start reviewer, reviewer-claude and reviewer-ocr in the same turn with the same brief, none shown another's findings, then end your turn to wait for all three. reviewer-ocr is coverage, not a vote.\n- When reviewer and reviewer-claude contradict each other, take the contradiction back to both and ask which yields on the real trade-off; do not open a council unless that leaves a consequential decision open.\n- Before any rework, check whether the findings converge on one bad design or missing mechanism and what the fix trades off; fix that cause once instead of looping finding by finding.\n- Report a lane ready only after every review you started on it has come back and you have settled its findings; never start a review and report in the same turn."
+    },
+    "supervisor": {
+      "rules": "- Never land a lane while a review of it is still running or its latest findings are unsettled: read status first, and wait for the review.\n- A red gate caused only by tests another lane or a known pre-existing failure owns may be landed over, naming those tests; anything else goes back to the Lead."
+    }
+  },
+  "attention": {
+    "judge": "jev"
+  }
+}
