@@ -28,8 +28,9 @@ the evidence between them, and brings you in for what only you can decide.
    has one. The Supervisor lands the lane: the plugin merges in your base if it moved, runs the gate
    on the result, and lands the lane on your local base branch. A lane that touches a path you asked
    to see first waits for your approval.
-4. **You come back to a report.** The panel's **Report** tab tells you, from the record: what needs
-   you, what went ahead on a recommendation, what landed. Pushing and releasing are yours while you are
+4. **You come back to a report.** The panel's **Report** tab tells you, from the record and since you
+   last marked it read: what needs you, what was decided for you, what went ahead on a recommendation,
+   what landed. Pushing and releasing are yours while you are
    in the loop, and the Supervisor's while you are not, which the plugin runs for it and never forces;
    every seat's own `git` refuses to push.
 
@@ -155,8 +156,12 @@ current. Three of them are where you meet the work:
   ready, and one that cannot be undone holds its lane now. Answer with a choice or decline it, with
   a note if you like. A landing held for you shows the desk's evidence; approve it and it lands,
   send it back and your note goes to the Lead. Below that are the lanes and tasks, live.
-- **Report** is read from the record and written by no agent: what needs you, what went
-  ahead on a recommendation, what landed, what could not be undone, and the counts.
+- **Report** is read from the record and written by no agent, from where you last marked it read:
+  what needs you, first what stops the Supervisor or a lane, with how long each has waited; what was
+  decided for you (pushes and tags, merges and landings over a red gate with their reasons,
+  permissions given or refused, asks a Lead settled when nobody answered); what went ahead on a
+  recommendation, what landed, what could not be undone, and how often your answers took the
+  recommendation and how fast.
 - **Orders** shows what you settled, read only: the paths you see first, the risk rules, where lanes
   work, and `CONTEXT.md`. You change them by telling the Supervisor.
 

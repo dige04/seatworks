@@ -59,8 +59,14 @@ The plugin **serves** SLP so it works better with Paseo. It must **never constra
   against mistakes, not intent: what git itself starts (hooks, `rebase --exec`, `bisect run`) and a
   git named by its full path run the real git. So a writing seat always stands on its task's branch,
   where it may merge, rebase, reset or cherry-pick; each role's own rules refuse those four to seats
-  that do not write. A base that conflicts with a lane is never left half merged: its Lead has the
-  facts, and the Supervisor chooses whose task takes the base in on its own branch.
+  that do not write. The shim also refuses git whose work tree is not the seat's own copy, so a seat
+  never touches the Human's checkout or another seat's copy. The desk's own git runs no hooks,
+  fsmonitor or command the repository's config names, since a seat could have planted one. Each copy
+  the desk makes gets the ignored files the project's `.worktreeinclude` names and then the
+  project's `setup` command, before its seat starts, and is locked in git while its work goes on. A
+  Lead may `reseat` a task: a fresh Peer on the same branch and copy, briefed from the record. A base
+  that conflicts with a lane is never left half merged: its Lead has the facts, and the Supervisor
+  chooses whose task takes the base in on its own branch.
 - **The Human in the loop is a setting**, `hitl.on`, off by default. Off, only the concept goes to
   the Human, through the Supervisor's grilling; the Supervisor decides the rest, answers the seats'
   permission prompts with `permit`, and pushes with `push`. On, their question queue, standing orders
