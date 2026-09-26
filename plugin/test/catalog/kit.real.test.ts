@@ -15,6 +15,7 @@ import { materialize, seatDir } from "../../server/catalog/seat/seats.ts";
 import { placeGuides } from "../../server/catalog/seat/snapshots.ts";
 import { choicesFor, serversFor } from "../../server/catalog/seat/servers.ts";
 import { resolveTeam, withHarness } from "../../server/catalog/team/team.ts";
+import { describeTeam } from "../../server/runtime/panel/team-view.ts";
 import { readConfig } from "../../server/core/config-file.ts";
 import { git } from "../../server/core/git.ts";
 import { guidesDir, paseoConfigPath } from "../../server/core/paths.ts";
@@ -304,11 +305,18 @@ test("the desk names each seat's fixed choices from the kit: who writes and with
 });
 
 test("a second reviewer seats as the Reviewer on the same agent, with another model, so two lenses are not one model twice", () => {
-  const team = resolveTeam(loadKit(PLUGIN));
+  const kit = loadKit(PLUGIN);
+  const team = resolveTeam(kit);
   const [first, second] = ["reviewer", "second-reviewer"].map((name) => team.roles[name]!);
   assert.deepEqual(
     [second!.role.prompt, second!.role.tools, second!.role.can, second!.harness.id],
     [first!.role.prompt, first!.role.tools, first!.role.can, first!.harness.id],
   );
   assert.notEqual(second!.model?.id, first!.model?.id);
+  const shown = describeTeam(kit, resolveTeam(kit, { mcp: { "code-search": { enabled: true } } })).roles;
+  assert.deepEqual(
+    shown["second-reviewer"]!.tools,
+    shown.reviewer!.tools,
+    "the panel shows the code tools it is given",
+  );
 });

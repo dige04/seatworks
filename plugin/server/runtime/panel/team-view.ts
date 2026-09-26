@@ -1,5 +1,5 @@
 import type { Kit } from "../../catalog/kit/kit.ts";
-import { providerId } from "../../catalog/kit/roles.ts";
+import { providerId, seatedAs } from "../../catalog/kit/roles.ts";
 import { type Team, rulesFor, skillDirsFor } from "../../catalog/team/team.ts";
 import { transportOf } from "../../catalog/team/mcp-states.ts";
 import type { Project } from "../../desk/project/project.ts";
@@ -38,7 +38,10 @@ export function describeTeam(kit: Kit, team: Team, project?: Project): TeamView 
           thinking: seat.thinking ?? null,
           mcp: seat.mcp,
           tools: Object.fromEntries(
-            seat.mcp.map((id) => [id, (team.mcp[id]!.tools ?? team.mcp[id]!.entry?.tools)?.[name] ?? []]),
+            seat.mcp.map((id) => [
+              id,
+              (team.mcp[id]!.tools ?? team.mcp[id]!.entry?.tools)?.[seatedAs(seat.role)] ?? [],
+            ]),
           ),
           skills: [...skillDirsFor(team, name).keys()],
           rules: rulesFor(team, name),
