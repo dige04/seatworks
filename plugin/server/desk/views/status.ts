@@ -63,8 +63,8 @@ export function statusPage(
 }
 
 /**
- * The status page: the whole project, or one lane when `laneId` names it; `copy` adds the project's own checkout, and `human`
- * says whether the Human is in the loop.
+ * The status page: the whole project, or one lane when `laneId` names it; `copy` adds the project's own checkout, `human`
+ * says whether the Human is in the loop, and `quoting` gives the words of open asks, for a seat and never the Human.
  */
 export function statusText(
   project: Project,
@@ -78,7 +78,8 @@ export function statusText(
     held = [],
     copy,
     human,
-  }: { laneId?: string; waiting?: SeatView[]; held?: Held[]; copy?: OwnCheckout; human: boolean },
+    quoting = false,
+  }: { laneId?: string; waiting?: SeatView[]; held?: Held[]; copy?: OwnCheckout; human: boolean; quoting?: boolean },
 ): string {
   const lanes = Object.values(ledger.lanes).filter((lane) => (laneId ? lane.id === laneId : true));
   const open = lanes.filter((lane) => lane.status === "open");
@@ -93,7 +94,7 @@ export function statusText(
       : open.flatMap((lane) => openLaneLines(ledger, lane, seats, now, copy !== undefined))),
     ...waitingLaneLines(ledger, pending, copy !== undefined),
     ...(laneId ? [] : [...keptLines(ledger, seats, now), ...copyLines(ledger)]),
-    ...askLines(ledger, now, laneId),
+    ...askLines(ledger, now, laneId, quoting),
     ...(laneId ? [] : [...questionLines(ledger, now), ...closedLines(lanes)]),
   ];
   return `${lines.join("\n")}\n`;
@@ -216,12 +217,13 @@ function copyLines(ledger: Ledger): string[] {
   return ["## Working copies", "", ...slots.map((slot) => `- ${slot.id} ${slot.path}: ${holder(slot)}`), ""];
 }
 
-function askLines(ledger: Ledger, now: number, laneId: string | undefined): string[] {
+/** The asks still open; their words only for a seat reading, since a page for the Human holds no agent's words. */
+function askLines(ledger: Ledger, now: number, laneId: string | undefined, quoting: boolean): string[] {
   const asks = Object.values(ledger.asks).filter(
     (ask) => ask.status === "open" && (laneId ? ask.lane === laneId : true),
   );
   const line = (ask: (typeof asks)[number]) =>
-    `- ${ask.id} ${ask.kind} from ${ask.fromRole} ${ask.from} to ${ask.to}, open ${minutesSince(now, ask.openedAt)} min: ${opening(ask.text).slice(0, 160)}`;
+    `- ${ask.id} ${ask.kind} from ${ask.fromRole} ${ask.from} to ${ask.to}, open ${minutesSince(now, ask.openedAt)} min${quoting ? `: ${opening(ask.text).slice(0, 160)}` : "."}`;
   return ["## Open asks", "", ...(asks.length === 0 ? ["None."] : asks.map(line))];
 }
 

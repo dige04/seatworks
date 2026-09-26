@@ -279,9 +279,15 @@ test("the Flow tab draws the machine as the ledger and Paseo have it, and an unc
     default: "half up",
   });
   assert.deepEqual(
-    (await drawn(h)).asks.map((ask) => [ask.id, ask.text, ask.minutes]),
-    [["A1", "Which rounding do we use?", 0]],
+    (await drawn(h)).asks,
+    [{ id: "A1", kind: "question", fromRole: "lead", toRole: "supervisor", minutes: 0 }],
+    "who asked whom and when, never the seat's words",
   );
+  const page = await h.rpc(contracts.status, { project: h.project.slug });
+  assert.ok("text" in page);
+  assert.match(page.text, /- A1 question from lead \S+ to \S+, open 0 min\.\n/);
+  assert.doesNotMatch(page.text, /Which rounding/);
+  assert.match((await h.call(sup, "supervisor", "status", {})).text, /open 0 min: Which rounding do we use\?/);
   await h.call(sup, "supervisor", "answer", { ask: "A1", text: "Half up." });
   assert.deepEqual((await drawn(h)).asks, []);
 

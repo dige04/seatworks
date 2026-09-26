@@ -32,6 +32,7 @@ export const status = defineTool({
       laneId: lane,
       copy,
       human: teamFor(caller.project).hitl.on,
+      quoting: true,
     });
     if (lastStatus.get(caller.id) === hash(text))
       return ok("Nothing has changed since you last asked: end your turn, and mail wakes you when something does.");

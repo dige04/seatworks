@@ -120,9 +120,8 @@ function asksOf(ledger: Ledger, now: number): FlowAsk[] {
       id: ask.id,
       kind: ask.kind,
       fromRole: ask.fromRole,
-      to: ask.to,
+      toRole: ledger.agents[ask.to]?.role ?? "owner",
       minutes: minutes(now, ask.openedAt),
-      text: ask.text.split(/\r?\n/).find((line) => line.trim()) ?? "",
     }));
 }
 

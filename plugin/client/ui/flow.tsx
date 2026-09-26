@@ -212,8 +212,8 @@ function AsksCard({ asks, theme }: { asks: FlowAsk[]; theme: PluginTheme }) {
       {asks.map((ask) => (
         <View key={ask.id} style={styles.row}>
           <View style={styles.labels}>
-            <Text style={styles.title}>{`${ask.id} · ${ask.text}`}</Text>
-            <Text style={styles.hint}>{`${ask.kind} from the ${ask.fromRole}`}</Text>
+            <Text style={styles.title}>{`${ask.id} · ${ask.kind}`}</Text>
+            <Text style={styles.hint}>{`from the ${ask.fromRole} to the ${ask.toRole}`}</Text>
           </View>
           <Text style={styles.quiet}>{ago(ask.minutes)}</Text>
         </View>

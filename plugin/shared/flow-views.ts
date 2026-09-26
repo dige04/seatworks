@@ -52,13 +52,13 @@ const FlowLane = z.object({
   ready: z.number().optional(),
 });
 export type FlowLane = z.infer<typeof FlowLane>;
+/** An open ask between seats, as the Human reads it: who asked whom and how long ago, never the words, which are the seats'. */
 const FlowAsk = z.object({
   id: z.string(),
   kind: z.string(),
   fromRole: z.string(),
-  to: z.string(),
+  toRole: z.string(),
   minutes: z.number(),
-  text: z.string(),
 });
 export type FlowAsk = z.infer<typeof FlowAsk>;
 const FlowQuestion = z.object({
