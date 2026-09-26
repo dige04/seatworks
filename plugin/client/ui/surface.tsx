@@ -73,7 +73,8 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
   const flowLive = settings ? (settings.values.flow?.live ?? settings.machine.flow?.live ?? true) : true;
   const flowEvery = settings ? (settings.values.flow?.everySeconds ?? settings.machine.flow?.everySeconds ?? 5) : 5;
   const { flow, error: flowError } = useFlow(
-    tab === "flow" && flowLive ? project : undefined,
+    tab === "flow" ? project : undefined,
+    flowLive,
     flowEvery * 1000,
     lanesOpen.slice().sort().join(","),
   );

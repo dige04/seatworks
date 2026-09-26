@@ -4,10 +4,12 @@ import { flowRpc } from "../../shared/rpc.ts";
 import type { FlowView } from "../../shared/flow-views.ts";
 import { message } from "../format/error.ts";
 
+/** One project's Flow, read when it is opened and, while `live`, again every `everyMs`. */
 export function useFlow(
   project: string | undefined,
-  everyMs = 5000,
-  openKey = "",
+  live: boolean,
+  everyMs: number,
+  openKey: string,
 ): { flow: FlowView | null; error: string | null } {
   const call = useRpc(flowRpc);
   const latest = useRef(call);
@@ -41,12 +43,12 @@ export function useFlow(
       }
     };
     void read();
-    const timer = setInterval(() => void read(), everyMs);
+    const timer = live ? setInterval(() => void read(), everyMs) : undefined;
     return () => {
       alive = false;
-      clearInterval(timer);
+      if (timer !== undefined) clearInterval(timer);
     };
-  }, [project, everyMs, openKey]);
+  }, [project, live, everyMs, openKey]);
 
   return { flow, error };
 }

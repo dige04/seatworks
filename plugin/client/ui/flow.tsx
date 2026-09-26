@@ -323,7 +323,7 @@ export function FlowSection({
               ? "The default every project starts with. A project's own Flow tab is what reads its ledger."
               : live
                 ? "Reads the ledger every few seconds while this tab is open."
-                : "Switched off, so this tab costs nothing."
+                : "Switched off: read once each time this tab opens, so what waits for you still shows."
           }
           value={live}
           onValueChange={onLive}
@@ -331,10 +331,10 @@ export function FlowSection({
         />
       </SettingsCard>
 
-      {live && flow ? <QuestionCards project={flow.project} questions={flow.questions} theme={theme} /> : null}
-      {live && flow ? <ApprovalsCards project={flow.project} lanes={flow.lanes} theme={theme} /> : null}
+      {flow ? <QuestionCards project={flow.project} questions={flow.questions} theme={theme} /> : null}
+      {flow ? <ApprovalsCards project={flow.project} lanes={flow.lanes} theme={theme} /> : null}
 
-      {!live ? null : error ? (
+      {error ? (
         <SettingsCard>
           <Empty theme={theme} title="The flow could not be read" body={error} />
         </SettingsCard>
@@ -382,7 +382,7 @@ export function FlowSection({
         </View>
       )}
 
-      {live && flow && flow.moreLanes > 0 ? (
+      {flow && flow.moreLanes > 0 ? (
         <SettingsCard>
           <SettingsRow
             label={`${flow.moreLanes} more lane${flow.moreLanes === 1 ? "" : "s"}`}
@@ -391,7 +391,7 @@ export function FlowSection({
         </SettingsCard>
       ) : null}
 
-      {live && flow ? (
+      {flow ? (
         <WatchCard
           watch={flow.watch}
           supervisor={flow.supervisors[0]?.label ?? "seat that supervises"}
@@ -400,7 +400,7 @@ export function FlowSection({
         />
       ) : null}
 
-      {live && flow && flow.asks.length > 0 ? <AsksCard asks={flow.asks} theme={theme} /> : null}
+      {flow && flow.asks.length > 0 ? <AsksCard asks={flow.asks} theme={theme} /> : null}
     </SettingsSection>
   );
 }
