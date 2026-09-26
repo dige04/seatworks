@@ -30,7 +30,7 @@ const SEAT_FACING = [
   "catalog/refused.json",
 ];
 
-/** Owners learn of a change in what seats read only through the version: Update names it and Migrate asks about it. */
+/** Owners learn of a change in what seats read only through the version: Update names it, and the Plugin section the seats started before it. */
 test(
   "a change to what a seat reads comes with a new version",
   { skip: git("rev-parse", "HEAD") === undefined && "not a git checkout" },
