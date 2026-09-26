@@ -99,15 +99,16 @@ export class TurnRules {
     }
     const who = agent.title ?? `${role.label} ${agent.id}`;
     const permitter = this.deps.hitlOn(project) ? undefined : await this.permitterOf(project, agent.id);
-    if (permitter) {
-      await this.deps.desk.post(
-        permitter.to,
-        seatLetters.permission(agent.id, who, request, "supervisor", permitter.from),
-      );
-      return;
-    }
-    const owner = await this.ownerOf(project, agent.id, role);
-    await this.deps.desk.post(owner.to, seatLetters.permission(agent.id, who, request, owner.reader));
+    const owner = permitter ? undefined : await this.ownerOf(project, agent.id, role);
+    const posted = await this.deps.desk.post(
+      permitter?.to ?? owner?.to,
+      permitter
+        ? seatLetters.permission(agent.id, who, request, "supervisor", permitter.from)
+        : seatLetters.permission(agent.id, who, request, owner!.reader),
+    );
+    // Mail for nobody is dropped: the request is left in Paseo, and this record is all that says so.
+    if (posted === "nobody")
+      this.deps.log(project, `nobody is seated to answer ${permitter?.from ?? who}'s permission ${request.id ?? ""}`);
   }
 
   /** With the Human out of the loop, a Lead's or Peer's permission is whoever supervises its lane, by the task or lane it works. */

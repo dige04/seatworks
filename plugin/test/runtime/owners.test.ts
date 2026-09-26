@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { test } from "node:test";
 import { type Pending } from "./fake-paseo.ts";
 import { harness } from "./harness.ts";
@@ -175,6 +177,16 @@ test("with the Human out of the loop, a Peer's permission is the Supervisor's to
   assert.match(
     heard(h, lead),
     /PERMISSION REFUSED for L1-T1 \(Clean build\) by the owner: Bash: rm -rf build-p-2\n\nWhy: it reaches past its copy/,
+  );
+  Object.assign(h.agents.get(sup)!, { archivedAt: new Date().toISOString(), status: "closed" });
+  const unread: Pending = { id: "p-3", kind: "tool", name: "Bash", title: "npm install" };
+  h.agents.get(peer)!.pending.push(unread);
+  await h.permission(peer, unread);
+  const logged = join(h.project.state, "attention.log");
+  assert.match(
+    existsSync(logged) ? readFileSync(logged, "utf-8") : "",
+    /nobody is seated to answer L1-T1's permission p-3/,
+    "a permission nobody can read is at least on record",
   );
 
   h.projectSettings({ hitl: { on: true } });
