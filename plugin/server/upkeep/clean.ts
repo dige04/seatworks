@@ -9,6 +9,8 @@ import { errorText } from "../core/errors.ts";
 import { readLedger } from "../desk/store/ledger.ts";
 import type { Project } from "../desk/project/project.ts";
 import { firstUnder } from "../core/fs.ts";
+import { isRecord } from "../core/json.ts";
+import { readKept } from "../core/store.ts";
 
 type CleanContext = {
   kit: Kit;
@@ -121,6 +123,16 @@ function records(ctx: CleanContext): CleanItem[] {
     const path = join(base, slug);
     const project = attached.get(slug);
     if (project && existsSync(project.root)) continue;
+    const meta = project ? undefined : readKept(join(path, "meta.json"), {}, isRecord);
+    if (meta && "fault" in meta) {
+      found.push(
+        item(path, "records", "a project's records, but which project is not known", {
+          held: meta.fault,
+          careful: true,
+        }),
+      );
+      continue;
+    }
     const concept = existsSync(join(path, "CONTEXT.md"));
     const why = project ? `attached, but ${project.root} is gone` : "detached; attaching it again would find its lanes";
     found.push(

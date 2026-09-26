@@ -68,6 +68,9 @@ test("clean up lists only what nothing will use again: seats nothing will sit in
   const old = join(stateRoot(home), "projects", "old-fff000");
   mkdirSync(old, { recursive: true });
   writeFileSync(join(old, "CONTEXT.md"), "# Old");
+  const unread = join(stateRoot(home), "projects", "shop-abc999");
+  mkdirSync(unread, { recursive: true });
+  writeFileSync(join(unread, "meta.json"), "{ not json");
   const used = join(contentRoot(home), "guides-aaaaaaaaaaaa");
   const stale = join(contentRoot(home), "guides-bbbbbbbbbbbb");
   mkdirSync(used, { recursive: true });
@@ -87,6 +90,13 @@ test("clean up lists only what nothing will use again: seats nothing will sit in
         old,
         "detached; attaching it again would find its lanes. It holds the project's CONTEXT.md",
         null,
+        true,
+      ],
+      [
+        "records",
+        unread,
+        "a project's records, but which project is not known",
+        `${join(unread, "meta.json")} is there but could not be read: it is not JSON at position 2 (line 1 column 3)`,
         true,
       ],
     ].sort((a, b) => String(a[1]).localeCompare(String(b[1]))),
