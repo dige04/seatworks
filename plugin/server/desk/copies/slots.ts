@@ -19,6 +19,7 @@ import { type Slot, nextSlotId } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
 import type { Project } from "../project/project.ts";
 import { errorText } from "../../core/errors.ts";
+import { firstUnder } from "../../core/fs.ts";
 
 type Holder = { lane?: string; task?: string };
 
@@ -161,7 +162,7 @@ export class Slots {
   /** Removes a path the desk made under its own worktree root, and the project's folder once empty. */
   private discard(project: Project, path: string): void {
     const root = join(worktreeRoot(), project.slug);
-    if (!path.startsWith(`${root}/`)) return;
+    if (!firstUnder(root, path)) return;
     try {
       rmSync(path, { recursive: true, force: true });
       if (readdirSync(root).length === 0) rmdirSync(root);

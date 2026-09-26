@@ -6,6 +6,7 @@ import { currentBranch, git } from "../core/git.ts";
 import { readJson } from "../core/store.ts";
 import { PLUGIN_ID, nodeBin } from "../core/paths.ts";
 import { daemonLog } from "../core/logger.ts";
+import { firstUnder } from "../core/fs.ts";
 
 export type UpdateContext = {
   dir: string;
@@ -51,7 +52,7 @@ export async function checkUpdate(ctx: UpdateContext, fetch = true): Promise<Upd
     updated: null,
   };
   const blocked = (why: string) => ({ ...view, blocked: why });
-  if (dir.startsWith(`${ctx.managedRoot}/`))
+  if (firstUnder(ctx.managedRoot, dir))
     return blocked(
       `Paseo installed this copy from Git: run \`paseo plugin update ${PLUGIN_ID} --ref <branch>\`, naming the branch it came from, since without --ref Paseo takes the remote's default branch.`,
     );

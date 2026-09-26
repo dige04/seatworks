@@ -11,10 +11,16 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
 
 /** Something that is not a link stands where one should go: it is left alone, since deleting it would lose what it holds. */
 export class LeftAlone extends Error {}
+
+/** The first folder under `root` that `path` lies in, however this platform separates folders; none when it lies outside. */
+export function firstUnder(root: string, path: string): string | undefined {
+  const rest = relative(root, path);
+  return rest && rest !== ".." && !rest.startsWith(`..${sep}`) && !isAbsolute(rest) ? rest.split(sep)[0] : undefined;
+}
 
 export function isLink(path: string): boolean {
   try {

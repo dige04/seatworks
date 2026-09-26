@@ -16,6 +16,7 @@ import type { FlowRead, WatchView } from "../../../shared/flow-views.ts";
 import type { TeamSource } from "../team-source.ts";
 import { listFolders } from "./folders.ts";
 import type { ProjectsRpc } from "./rpc.ts";
+import { firstUnder } from "../../core/fs.ts";
 
 export const unknownProject = (slug: string) => `No project named ${slug} has been seen on this machine.`;
 
@@ -58,7 +59,7 @@ export class ProjectsPanel implements ProjectsRpc {
     const keep: string[] = [];
     for (const given of roots) {
       const path = given.trim();
-      if (!path || path === worktrees || path.startsWith(`${worktrees}/`)) continue;
+      if (!path || path === worktrees || firstUnder(worktrees, path)) continue;
       let real: string;
       try {
         if (!statSync(path).isDirectory()) continue;

@@ -9,6 +9,7 @@ import { errorText } from "../core/errors.ts";
 import { readLedger } from "../desk/store/ledger.ts";
 import type { Project } from "../desk/project/project.ts";
 import { BACKUP } from "./migrate.ts";
+import { firstUnder } from "../core/fs.ts";
 
 type CleanContext = {
   kit: Kit;
@@ -144,7 +145,8 @@ function linksInto(dir: string, root: string, depth: number, into: Set<string>):
     if (stat.isSymbolicLink()) {
       const target = readlinkSync(path);
       const real = isAbsolute(target) ? target : resolve(dir, target);
-      if (real.startsWith(`${root}/`)) into.add(real.slice(root.length + 1).split("/")[0]!);
+      const under = firstUnder(root, real);
+      if (under) into.add(under);
     } else if (stat.isDirectory() && depth > 0) linksInto(path, root, depth - 1, into);
   }
 }
