@@ -76,7 +76,7 @@
       "CLAUDE.md",
       ".claude/CLAUDE.md"
     ],
-    "otherwise": [
+    "imports": [
       "AGENTS.md",
       ".claude/AGENTS.md"
     ],

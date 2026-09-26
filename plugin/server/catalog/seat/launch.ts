@@ -107,15 +107,25 @@ function appendAt(options: Json | undefined, path: string, value: string): Json 
   return layered(options, added) as Json;
 }
 
-/** What a seat's rules file takes in of the project's own instructions that its agent reads nowhere else: only while the project has none it reads. */
+/**
+ * What a seat's rules file takes in of the project's own instructions: each of `imports` the project has, unless a file
+ * its agent reads there already takes it in, since Seatworks keeps its block in the project's AGENTS.md and Claude reads
+ * that only where the project has no CLAUDE.md.
+ */
 export function projectImports(harness: HarnessSpec, root: string | undefined): string {
   const spec = harness.projectInstructions;
-  if (!spec || !root || spec.reads.some((file) => existsSync(join(root, file)))) return "";
-  return spec.otherwise
+  if (!spec || !root) return "";
+  const read = spec.reads
     .filter((file) => existsSync(join(root, file)))
+    .map((file) => readFileSync(join(root, file), "utf-8"))
+    .join("\n");
+  return spec.imports
+    .filter((file) => existsSync(join(root, file)) && !new RegExp(`@(\\./)?${escaped(file)}\\b`).test(read))
     .map((file) => `${spec.importAs.replace("{path}", join(root, file))}\n`)
     .join("");
 }
+
+const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * The harness's own env goes in too: Paseo may run one agent server for every seat of a harness, built from its built-in provider.

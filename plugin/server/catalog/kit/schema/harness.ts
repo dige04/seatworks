@@ -25,7 +25,7 @@ export const HarnessFile = z
     projectInstructions: z
       .strictObject({
         reads: z.array(text).min(1),
-        otherwise: z.array(text).min(1),
+        imports: z.array(text).min(1),
         importAs: z.string().includes("{path}", { error: "does not say where the file's path goes" }),
       })
       .optional(),

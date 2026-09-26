@@ -71,7 +71,7 @@ export function makeKit(): Kit {
     projectContextOption: "additionalDirectories",
     projectInstructions: {
       reads: ["CLAUDE.md", ".claude/CLAUDE.md"],
-      otherwise: ["AGENTS.md", ".claude/AGENTS.md"],
+      imports: ["AGENTS.md", ".claude/AGENTS.md"],
       importAs: "@{path}",
     },
     settings: { file: "settings.json", source: "settings.json", roleSource: "settings/ROLE.settings.json" },

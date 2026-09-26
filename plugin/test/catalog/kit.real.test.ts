@@ -225,7 +225,7 @@ test("each shipped role writes under the project's state only what its prompt, d
   }
 });
 
-test("a Claude seat reads the project's own CLAUDE.md, or its AGENTS.md where it has none, though its settings come from its seat alone", () => {
+test("a Claude seat reads the project's own CLAUDE.md and takes in its AGENTS.md, though its settings come from its seat alone", () => {
   const kit = loadKit(PLUGIN);
   const team = resolveTeam(kit);
   mkdirSync(dirname(paseoConfigPath()), { recursive: true });

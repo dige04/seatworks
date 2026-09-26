@@ -107,7 +107,14 @@ test("a seat as Paseo creates, opens and archives it: prompt, key, seat director
   );
   writeFileSync(join(root, "CLAUDE.md"), "Use npm.\n");
   open("agent-7", "resume", {}, root);
-  assert.doesNotMatch(rules(), /AGENTS\.md/, "and reads the project's CLAUDE.md in its place once there is one");
+  assert.match(
+    rules(),
+    new RegExp(`^@${join(root, "AGENTS.md")}$`, "m"),
+    "and still takes it in beside the project's CLAUDE.md, since its Seatworks block is there, where Claude would read CLAUDE.md alone",
+  );
+  writeFileSync(join(root, "CLAUDE.md"), "Use npm.\n\n@AGENTS.md\n");
+  open("agent-7", "resume", {}, root);
+  assert.doesNotMatch(rules(), /AGENTS\.md/, "but not twice, where the project's CLAUDE.md takes it in itself");
 
   await hook("agent.archived", { agent: { id: "agent-9", provider: "sw2-lead-claude", cwd: h.root } });
   assert.equal(open("agent-9", "resume")[SEAT_KEY], undefined, "a seat archived lets its key go");
