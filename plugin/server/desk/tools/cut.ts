@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { git, resetHard } from "../../core/git.ts";
+import { git, pristineState, resetHard } from "../../core/git.ts";
 import { no, ok, str } from "../context.ts";
 import { loadLedger } from "../ledger.ts";
 import { defineTool } from "../services.ts";
@@ -25,7 +25,10 @@ export const cut = defineTool({
     if (task.kind === "code" && task.mode === "lane" && task.startSha && lane.worktree) {
       // Resetting to the task's start would also drop later merges whose Peers were told their work was in.
       const since = Object.values(ledger.tasks).filter((other) => other.lane === lane.id && other.id !== task.id && other.status === "merged" && other.updatedAt > task.openedAt);
-      if (since.length > 0) {
+      if (lane.worktree === project.root && (await pristineState(lane.worktree)) !== "clean") {
+        // The Human's own checkout holds uncommitted work a reset would take along with the task's.
+        undone = ` The lane works in the Human's own checkout and it holds uncommitted work, so nothing in it was reset: undo what you want gone with a rework.`;
+      } else if (since.length > 0) {
         undone = ` Its writing is left in the lane's working copy: ${since.map((other) => other.id).join(", ")} landed there after ${task.id} started, and going back to ${task.startSha.slice(0, 7)} would take that too. Undo what you want gone.`;
       } else {
         await resetHard(lane.worktree, task.startSha);

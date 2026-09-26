@@ -297,9 +297,22 @@ test("a lane that reaches a risk rule is rehearsed with its gate, and a red rehe
   await h.call(sup, "supervisor", "set_project", { riskRules: [rule(["src/db"])] });
   assert.match(await ready(), /Gate: true passed on the lane branch in \d+s\n\nfalse, rehearsing that running it twice changes nothing, failed with exit 1 on the lane branch\./);
   const refused = await land();
+  console.log("REFUSED", refused.ok, refused.text.slice(0, 300));
   assert.equal(refused.ok, false);
   assert.match(refused.text, /false, rehearsing that running it twice changes nothing, failed with exit 1[^]*land_lane it over the gate with overGate true and your reason/);
   const over = await h.call(sup, "supervisor", "land_lane", { lane: "L1", overGate: true, reason: "the rehearsal is known broken" });
   assert.equal(over.ok, true, over.text);
   assert.ok(onMain("src/db/001.sql"));
+});
+
+test("a lane whose review is still running is not landed until that review comes back", async () => {
+  const { h, lane, land, onMain } = await laneWith({ "src/cart.ts": "export const cart = 1;\n" });
+  const started = await h.call(lane.lead!, "lead", "start_review", { focus: "And the lane?" });
+  assert.equal(started.ok, true, started.text);
+  const review = Object.values(h.ledger().tasks).find((task) => task.kind === "review")!;
+  const refused = await land();
+  assert.equal(refused.ok, false);
+  assert.match(refused.text, new RegExp(`Lane L1 was not landed: its review ${review.id} is still running`));
+  assert.equal(onMain("src/cart.ts"), false);
+  assert.equal(h.ledger().lanes.L1!.status, "open");
 });

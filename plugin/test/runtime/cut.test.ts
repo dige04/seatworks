@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { saveLedger } from "../../server/desk/ledger.ts";
@@ -30,4 +30,16 @@ test("a task whose merge is under way is not cut, since the cut would not stop i
   assert.equal(cut.ok, false);
   assert.match(cut.text, /^L1-T2 is being merged/);
   assert.equal(h.ledger().tasks["L1-T2"]!.status, "merging");
+});
+
+test("cutting a task in the Human's own checkout resets nothing there, so their uncommitted work stays", async () => {
+  const { h, lane } = await laneWithPeer();
+  const copy = h.ledger().lanes.L1!.worktree!;
+  assert.equal(realpathSync(copy), realpathSync(h.root), "the first lane works in the Human's own checkout");
+  writeFileSync(join(copy, "notes.txt"), "the Human's own notes\n");
+
+  const cut = await h.call(lane.lead!, "lead", "cut", { task: "L1-T1", reason: "wrong" });
+  assert.equal(cut.ok, true, cut.text);
+  assert.match(cut.text, /nothing in it was reset/);
+  assert.equal(readFileSync(join(copy, "notes.txt"), "utf-8"), "the Human's own notes\n");
 });

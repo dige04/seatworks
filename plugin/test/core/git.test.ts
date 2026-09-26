@@ -171,3 +171,19 @@ test("whether a branch is already in another is answered from the branches, not 
   assert.equal(await contains(root, "main", "task/l1-t1"), false);
   assert.equal(await contains(root, "lane/l1", "task/gone"), undefined, "a branch that is not there is not an answer to delete on");
 });
+
+test("two lanes landing at once never drop one from base: the second either lands on top or is refused", async () => {
+  for (let round = 0; round < 5; round++) {
+    const { root, run, commit } = repo();
+    for (const lane of ["l1", "l2"]) {
+      run("checkout", "-qb", `lane/${lane}`, "main");
+      commit(`${lane}.txt`, `${lane}\n`, lane);
+    }
+    run("checkout", "-qb", "elsewhere", "main");
+    const landed = await Promise.all(["l1", "l2"].map((lane) => landLane(root, "main", `lane/${lane}`, { as: "squash", message: lane, keep: `refs/seatworks/lanes/${lane}` })));
+    const onMain = run("ls-tree", "--name-only", "main").split("\n");
+    for (const [index, lane] of ["l1", "l2"].entries()) {
+      if (landed[index]!.landed) assert.ok(onMain.includes(`${lane}.txt`), `${lane} was reported landed but is not on main (round ${round})`);
+    }
+  }
+});

@@ -2,7 +2,7 @@ import { headSha, isAncestor, landLane, landedRef, mergeBranch, mergeUnderWay } 
 import { midTurn } from "../core/paseo.ts";
 import { ASK } from "../domain/ask.ts";
 import { LANE } from "../domain/lane.ts";
-import { TASK } from "../domain/task.ts";
+import { AT_WORK, TASK } from "../domain/task.ts";
 import { type ToolReply, no, ok, str } from "./context.ts";
 import { laneGate } from "./gates.ts";
 import { askFirstHits, changeOf, landFacts } from "./landing.ts";
@@ -136,6 +136,12 @@ async function stillHeld(desk: DeskServices, project: Project, lane: Lane, held:
 /** Lands an open lane for `by`, or says what kept it from landing: a hold for the Human, base that will not merge, a red gate. */
 async function land(desk: DeskServices, project: Project, ledger: Ledger, lane: Lane, by: string, overGate: boolean): Promise<Closed | { how: string; note: string }> {
   const { ctx } = desk;
+  // A review still at work is evidence not yet in: landing now throws away what it finds.
+  const reviewing = Object.values(ledger.tasks).filter((task) => task.lane === lane.id && task.kind === "review" && AT_WORK.includes(task.status));
+  if (reviewing.length > 0) {
+    const why = `its review ${reviewing.map((task) => task.id).join(", ")} is still running`;
+    return { ...no(`Lane ${lane.id} was not landed: ${why}. Its findings come as mail; land it once they are settled, or cut the review first.`), blocked: why };
+  }
   const held = lane.landApproval;
   const tip = await headSha(project.root, lane.branch);
   // A commit after the hold makes it a lane nobody has looked at: it is checked again from the start.

@@ -243,15 +243,17 @@ export const landedRef = (lane: string) => `refs/seatworks/lanes/${lane}`;
  * the lane branch, which already contains `base`; the commit is made without checking anything out.
  */
 export async function landLane(root: string, base: string, branch: string, how: { as: LandAs; message: string; keep: string }): Promise<LandResult> {
-  if (!(await isAncestor(root, base, branch))) return { landed: false, how: `${branch} does not contain ${base}, so landing it would be a merge nobody has gated` };
+  // Read once: the final move is a compare-and-swap against it, so a landing beside this one is never written over.
+  const from = await headSha(root, base);
+  if (!from) return { landed: false, how: `git could not read ${base}` };
+  if (!(await isAncestor(root, from, branch))) return { landed: false, how: `${branch} does not contain ${base}, so landing it would be a merge nobody has gated` };
   // Undefined when the lane changes nothing on base: there is nothing to commit and base stays where it is.
   let tip: string | undefined = branch;
   if (how.as !== "ff") {
-    const trees = await git(root, ["rev-parse", `${base}^{tree}`, `${branch}^{tree}`]);
-    const [from, to] = trees.stdout.trim().split("\n");
-    if (trees.code === 0 && from === to) tip = undefined;
+    const trees = await git(root, ["rev-parse", `${from}^{tree}`, `${branch}^{tree}`]);
+    if (trees.code === 0 && new Set(trees.stdout.trim().split("\n")).size === 1) tip = undefined;
     else {
-      const parents = how.as === "merge" ? [base, branch] : [base];
+      const parents = how.as === "merge" ? [from, branch] : [from];
       const made = await git(root, ["commit-tree", `${branch}^{tree}`, ...parents.flatMap((parent) => ["-p", parent]), "-m", how.message]);
       if (made.code !== 0) return { landed: false, how: made.stderr.trim() || "git could not make the commit to land" };
       tip = made.stdout.trim();
@@ -268,8 +270,7 @@ export async function landLane(root: string, base: string, branch: string, how: 
     if (used.stdout.split("\n").some((line) => line.trim() === `branch refs/heads/${base}`)) {
       return { landed: false, how: `${base} is checked out in another working copy` };
     }
-    const run = await git(root, ["branch", "-f", base, tip]);
-    if (run.code !== 0) return { landed: false, how: run.stderr.trim() || "branch update failed" };
+    if ((await git(root, ["update-ref", `refs/heads/${base}`, tip, from])).code !== 0) return { landed: false, how: `${base} moved while this lane was landing; land it again on the new ${base}` };
   }
   // Should this fail, the branch is kept rather than lost: dropping it checks it against this ref.
   await git(root, ["update-ref", how.keep, branch]);
