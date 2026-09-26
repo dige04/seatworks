@@ -211,6 +211,14 @@ test("a Peer that is gone is found past the first page of agents, its Lead told,
     /- T is L1-T2 More: running, Peer/,
     "nobody writes in the copy any more, so nothing waits for it",
   );
+  archive(h, lead);
+  archive(h, h.ledger().tasks["L1-T2"]!.peer!);
+  await h.tick(Date.now());
+  assert.match(
+    heard(h, sup),
+    /L1-T2[^]*its agent was closed or archived[^]*Next: Its Lead is gone: replace_lead puts a new Lead on the lane/,
+    "with its Lead gone too, whoever supervises is told instead",
+  );
 });
 
 test("a call that runs longer than a seat can wait is answered once by mail, and the turn it ends is not silence", async (t) => {
