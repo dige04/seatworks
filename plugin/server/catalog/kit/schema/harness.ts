@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { Json, pattern, text, texts } from "./fields.ts";
+import { Json, text, texts } from "./fields.ts";
+import { Pattern } from "../../../../shared/settings.ts";
 import { McpTransport } from "./mcp.ts";
 
 /** `harness/<id>/harness.json`: how one agent harness is set up, launched and read. */
@@ -35,7 +36,7 @@ export const HarnessFile = z
       .strictObject({
         exitField: text.optional(),
         pseudoCalls: z.array(z.strictObject({ name: text, detail: text })).optional(),
-        unparsed: z.strictObject({ input: text, error: pattern }).optional(),
+        unparsed: z.strictObject({ input: text, error: Pattern }).optional(),
       })
       .optional(),
     settings: z.strictObject({

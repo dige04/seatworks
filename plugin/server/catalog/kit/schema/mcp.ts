@@ -1,6 +1,7 @@
 import { isAbsolute } from "node:path";
 import { z } from "zod";
-import { Json, pattern, text, texts } from "./fields.ts";
+import { Json, text, texts } from "./fields.ts";
+import { Pattern } from "../../../../shared/settings.ts";
 
 /** How a seat reaches an MCP server. */
 export const McpTransport = z.enum(["stdio", "http", "sse"]);
@@ -8,7 +9,7 @@ export const McpTransport = z.enum(["stdio", "http", "sse"]);
 const ProxyHook = {
   tool: text,
   args: Json.optional(),
-  when: pattern.optional(),
+  when: Pattern.optional(),
   timeoutSeconds: z.number().positive().optional(),
 };
 
@@ -20,13 +21,13 @@ const Proxy = z.strictObject({
   pin: text.optional(),
   gitExclude: texts.optional(),
   open: z
-    .strictObject({ ...ProxyHook, route: z.strictObject({ when: pattern, from: text, field: text }).optional() })
+    .strictObject({ ...ProxyHook, route: z.strictObject({ when: Pattern, from: text, field: text }).optional() })
     .optional(),
   close: z.strictObject(ProxyHook).optional(),
   wait: z
     .strictObject({
       ...ProxyHook,
-      busy: pattern.optional(),
+      busy: Pattern.optional(),
       seconds: z.number().positive().optional(),
       pollSeconds: z.number().positive().optional(),
     })
@@ -34,7 +35,7 @@ const Proxy = z.strictObject({
   sync: z
     .strictObject({ tool: text, paths: text.optional(), maxPaths: z.number().int().positive().optional() })
     .optional(),
-  errors: z.array(z.strictObject({ when: pattern, reply: text })).optional(),
+  errors: z.array(z.strictObject({ when: Pattern, reply: text })).optional(),
   descriptions: z.record(z.string(), z.string()).optional(),
   timeoutSeconds: z.number().positive().optional(),
 });

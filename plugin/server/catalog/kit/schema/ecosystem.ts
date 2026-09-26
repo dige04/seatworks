@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { pattern, text, texts } from "./fields.ts";
+import { text, texts } from "./fields.ts";
+import { Pattern } from "../../../../shared/settings.ts";
 
 const Gate = z.strictObject({
   files: z.array(text).min(1),
@@ -25,20 +26,20 @@ export const EcosystemFile = z.strictObject({
   gates: z.array(Gate),
   scriptRunners: texts,
   unsetScript: text,
-  files: z.strictObject({ test: pattern, docs: pattern }),
+  files: z.strictObject({ test: Pattern, docs: Pattern }),
   /** How a lane's issue is read: the first form whose `match` takes the reference runs, and prints title, url and body as JSON. */
-  issues: z.array(z.strictObject({ match: pattern, run: z.array(text).min(1) })),
+  issues: z.array(z.strictObject({ match: Pattern, run: z.array(text).min(1) })),
   watch: z.strictObject({
-    destructive: pattern,
-    testPath: pattern,
-    suppressed: pattern,
-    skipped: pattern,
-    assertion: pattern,
-    refused: pattern,
+    destructive: Pattern,
+    testPath: Pattern,
+    suppressed: Pattern,
+    skipped: Pattern,
+    assertion: Pattern,
+    refused: Pattern,
     runners: texts,
     /** A review told to report only what it is sure of. */
-    certainty: pattern,
+    certainty: Pattern,
     /** A brief that writes the answer out: code in a fence, or numbered build steps that name files or follow on. */
-    prewritten: z.strictObject({ code: pattern, step: pattern, then: pattern, fileMember: pattern }),
+    prewritten: z.strictObject({ code: Pattern, step: Pattern, then: Pattern, fileMember: Pattern }),
   }),
 });

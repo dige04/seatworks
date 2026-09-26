@@ -33,7 +33,8 @@ export type RoleChoice = z.infer<typeof RoleChoice>;
 export type Connect = z.infer<typeof Connect>;
 export type McpChoice = z.infer<typeof McpChoice>;
 
-const Pattern = z
+/** A pattern handed to `new RegExp` later, inside a try that reads a failure as "not reachable", so a typo must be caught here. */
+export const Pattern = z
   .string()
   .min(1)
   .refine(
@@ -45,7 +46,7 @@ const Pattern = z
         return false;
       }
     },
-    { message: "that is not a pattern this machine can read" },
+    { error: "is not a pattern this machine can read" },
   );
 
 export const AttentionChoice = z.strictObject({
