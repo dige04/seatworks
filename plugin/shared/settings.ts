@@ -52,8 +52,10 @@ export const Pattern = z
 export const AttentionChoice = z.strictObject({
   tickSeconds: z.number().int().min(5).optional(),
   leadIdleMinutes: z.number().int().min(1).optional(),
-  askRemindMinutes: z.number().int().min(1).optional(),
-  maxReminders: z.number().int().min(0).optional(),
+  /** How long an open ask waits on its reader before the watch notes it. */
+  askWaitingMinutes: z.number().int().min(1).optional(),
+  /** With the Human out of the loop, how long a Lead's ask waits on whoever supervises before it goes back to the Lead. */
+  askLapseMinutes: z.number().int().min(1).optional(),
   /** Each attention signal the watch raises, told to whoever supervises (on) or only recorded (shadow, the default). */
   signals: z.record(z.string(), z.enum(["shadow", "on"])).optional(),
   destructive: Pattern.optional(),

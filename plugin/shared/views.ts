@@ -61,8 +61,8 @@ export type CatalogView = z.infer<typeof CatalogView>;
 const Attention = z.object({
   tickSeconds: z.number(),
   leadIdleMinutes: z.number(),
-  askRemindMinutes: z.number(),
-  maxReminders: z.number(),
+  askWaitingMinutes: z.number(),
+  askLapseMinutes: z.number(),
   signals: z.record(z.string(), z.enum(["shadow", "on"])),
   destructive: z.string(),
   testPath: z.string(),

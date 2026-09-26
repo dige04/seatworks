@@ -23,6 +23,7 @@ const FACTS = {
   architecture: { level: "attend", title: "A task's reach widened: structure settling" },
   turning: { level: "attend", title: "A task's goal turned sharply" },
   "lane-idle": { level: "attend", title: "A Lead idle with nothing going" },
+  "ask-waiting": { level: "attend", title: "An ask left waiting on its reader" },
   "call-failed": { level: "note" },
   "gate-failed": { level: "note" },
   "outside-scope": { level: "note" },

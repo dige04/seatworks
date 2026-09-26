@@ -159,7 +159,6 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     askLetters.answered({ ...ask, fromRole: "lead" }),
     askLetters.answeredFor(ask, "the owner"),
     askLetters.askTo({ ...ask, status: "open" }, "the Peer on L1-T1", "lead"),
-    askLetters.reminder(ask, 30),
     landLetters.landHeld(lane, "It changes src/auth.", "abc"),
     landLetters.landSentBack(lane, "put it behind a flag", "abc"),
     landLetters.baseConflict(lane, ["a.js"]),
@@ -257,10 +256,6 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
   // An open question or a correction is weighed by whoever it reaches, never taken as an order.
   assert.match(next(messageLetters.message("the owner", "why X?", sending)), /^Weigh it against your task or lane/);
   assert.match(next(workLetters.rework(task, "fix it")), /or say with evidence why not/);
-  assert.match(
-    next(askLetters.escalated({ ...ask, status: "open" }, 30, "L1")),
-    /^Answer only what is not an engineering call/,
-  );
   const page = { ...incident, level: "page" as const };
   assert.match(
     next(watchLetters.incident(page, { lane, task }, { steers: true, human: true })),

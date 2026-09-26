@@ -7,6 +7,7 @@ import { sentBy } from "../../server/core/sent-by.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { tempDir } from "../tempdir.ts";
 import { harness } from "./harness.ts";
+import { book } from "./noticed.ts";
 
 type Harness = ReturnType<typeof harness>;
 
@@ -75,7 +76,7 @@ test("an ask reaches whoever can answer it, the answer comes back once, and whoe
   assert.equal(columns.ok, true, columns.text);
   const ask = Object.values(h.ledger().asks).at(-1)!;
   assert.equal(ask.to, lead, "an ask goes upward, to the Lead");
-  // Unanswered asks escalate to the owner, so the owner answering one is the design.
+  // The Supervisor may answer any ask, and its Lead is told.
   assert.equal((await h.call(sup, "supervisor", "answer", { ask: ask.id, text: "Drop it and migrate." })).ok, true);
   assert.match(heard(h, peer), /Drop it and migrate/, "the Peer gets its answer");
   assert.match(heard(h, lead), new RegExp(`ANSWERED FOR YOU: ${ask.id}`), "the Lead holds the room's state");
@@ -87,19 +88,24 @@ test("an ask reaches whoever can answer it, the answer comes back once, and whoe
     bestGuess: "half up",
   });
   assert.equal(rounding.ok, true, rounding.text);
-  const escalating = Object.values(h.ledger().asks).at(-1)!.id;
+  const waiting = Object.values(h.ledger().asks).at(-1)!.id;
   h.agents.get(lead)!.status = "idle";
-  archive(h, sup);
   const start = Date.now();
+  const waitedOn = () => Object.values(book(h)).filter((item) => item.kind === "ask-waiting");
+  await h.tick(start + 14 * 60_000);
+  assert.deepEqual(waitedOn(), [], "not before it has waited its while");
   for (const minutes of [16, 32, 48]) await h.tick(start + minutes * 60_000);
-  assert.equal(h.ledger().asks[escalating]!.escalated ?? false, false, "nobody received it, so it is not escalated");
-  const back = h.add(SUPERVISOR, h.root, "sup-2");
-  await h.tick(start + 64 * 60_000);
-  assert.equal(h.ledger().asks[escalating]!.escalated, true);
-  assert.match(
-    heard(h, back),
-    /Round half up or down\?\n\nTried: read the spec\n\nTheir default: half up/,
-    "the one who sat down is told, the Peer's best guess with it",
+  const [fact] = waitedOn();
+  assert.deepEqual(
+    [waitedOn().length, fact!.seat, fact!.held],
+    [1, lead, "shadow"],
+    "an ask left waiting is a fact about its reader for the watch, in shadow",
+  );
+  assert.match(fact!.quote, new RegExp(`${waiting} \\(question\\) from L1-T1: Round half up or down\\?`));
+  assert.doesNotMatch(
+    `${heard(h, lead)}\n${heard(h, sup)}`,
+    /STILL OPEN|UNANSWERED/,
+    "no clock nags the reader or goes over its head: when to look is the watch's to say",
   );
 
   assert.equal(
@@ -107,7 +113,7 @@ test("an ask reaches whoever can answer it, the answer comes back once, and whoe
     true,
   );
   const endpoint = Object.values(h.ledger().asks).at(-1)!.id;
-  archive(h, back);
+  archive(h, sup);
   const next = h.add(SUPERVISOR, h.root, "sup-3");
   await h.tick(start + 80 * 60_000);
   assert.match(
@@ -357,17 +363,23 @@ test("with the Human out of the loop, a Lead's ask nobody answers in time goes b
   await h.call(lead, "lead", "ask", { kind: "question", text: "Keep the old endpoint?", default: "keep it" });
   const id = Object.values(h.ledger().asks).at(-1)!.id;
   h.agents.get(sup)!.status = "running";
-  await h.tick(start + 44 * 60_000);
-  assert.equal(h.ledger().asks[id]!.status, "open", "the owner's reminders take their time first");
-  await h.tick(start + 46 * 60_000);
+  h.projectSettings({ attention: { askLapseMinutes: 20 } });
+  await h.tick(start + 19 * 60_000);
+  assert.equal(h.ledger().asks[id]!.status, "open", "whoever supervises has the owner's time to answer first");
+  await h.tick(start + 21 * 60_000);
   assert.equal(h.ledger().asks[id]!.status, "answered");
+  assert.equal(
+    h.ledger().asks[id]!.answer,
+    "Nobody answered within 21 minutes: it went back to its Lead to settle.",
+    "the record says what happened, not a settlement the Lead has yet to make",
+  );
   assert.match(
     heard(h, lead),
     new RegExp(
-      `NO ANSWER to your ask ${id} in 46 minutes: Keep the old endpoint\\?\\n\\nNext: Settle it yourself from CONTEXT\\.md`,
+      `NO ANSWER to your ask ${id} in 21 minutes: Keep the old endpoint\\?\\n\\nNext: Settle it yourself from CONTEXT\\.md`,
     ),
   );
-  assert.match(heard(h, sup), new RegExp(`LAPSED ${id} from the Lead of L1: unanswered for 46 minutes`));
+  assert.match(heard(h, sup), new RegExp(`LAPSED ${id} from the Lead of L1: unanswered for 21 minutes`));
   assert.match((await h.call(sup, "supervisor", "answer", { ask: id, text: "keep it" })).text, /already answered/);
 
   h.projectSettings({ hitl: { on: true } });
@@ -375,26 +387,4 @@ test("with the Human out of the loop, a Lead's ask nobody answers in time goes b
   const kept = Object.values(h.ledger().asks).at(-1)!.id;
   await h.tick(start + 200 * 60_000);
   assert.equal(h.ledger().asks[kept]!.status, "open", "in the loop, the Human's answer is waited for");
-});
-
-test("an ask is reminded only to a reader free to answer it: never whoever supervises, nor a Lead waiting on its own ask upward", async () => {
-  const h = harness();
-  h.projectSettings({ hitl: { on: true } });
-  const sup = h.add(SUPERVISOR, h.root, "sup");
-  const { lead, peer } = await lane(h, sup, "Remind", "Work");
-  await h.call(lead, "lead", "ask", { kind: "question", text: "Keep the old endpoint?", default: "keep it" });
-  const upward = Object.values(h.ledger().asks).at(-1)!.id;
-  await h.call(peer, "peer", "ask", { question: "Round half up?", tried: "read it", bestGuess: "half up" });
-  const fromPeer = Object.values(h.ledger().asks).at(-1)!.id;
-  for (const seat of [sup, lead]) h.agents.get(seat)!.status = "idle";
-  const start = Date.now();
-  await h.tick(start + 16 * 60_000);
-  const reminded = (seat: string, id: string) =>
-    heard(h, seat).includes(`STILL OPEN after`) && heard(h, seat).includes(`ask ${id}`);
-  assert.equal(reminded(sup, upward), false, "whoever supervises may rightly be waiting on the Human");
-  assert.equal(reminded(lead, fromPeer), false, "a Lead waiting on its own answer is not idle for want of a nudge");
-  await h.call(sup, "supervisor", "answer", { ask: upward, text: "Keep it." });
-  h.agents.get(lead)!.status = "idle";
-  await h.tick(start + 32 * 60_000);
-  assert.ok(reminded(lead, fromPeer), "once answered, it is reminded as any reader is");
 });

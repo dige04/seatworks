@@ -26,7 +26,7 @@ function answeredNext(question: Question): string {
   return "Write their choice into CONTEXT.md if it settles the concept";
 }
 
-/** The letters an ask sends: to whoever it is put to, the answer back, and the reminders while it waits. */
+/** The letters an ask sends: to whoever it is put to, the answer back, and what becomes of one left unanswered. */
 export const askLetters = {
   askTo(ask: Ask, from: string, reader: "lead" | "supervisor"): Letter {
     const next =
@@ -96,15 +96,6 @@ export const askLetters = {
     );
   },
 
-  reminder(ask: Ask, minutes: number): Letter {
-    return mail(
-      "remind",
-      [ask.id, ask.reminders],
-      `STILL OPEN after ${minutes} minutes: ask ${ask.id} (${ask.kind}): ${firstLine(ask.text)}`,
-      "Answer it now: whoever asked is waiting on you.",
-    );
-  },
-
   /** A decision that cannot be undone waits for the Human: the Lead keeps off what it decides and plans the rest around it. */
   pending(question: Question): Letter {
     return mail(
@@ -134,21 +125,6 @@ export const askLetters = {
         `LAPSED ${ask.id} from the Lead of ${ask.lane ?? "a lane"}: unanswered for ${minutes} minutes, so its Lead settles it from what it has.`,
         "Nothing now; tell the Lead if what it settles on is wrong.",
       ),
-    );
-  },
-
-  escalated(ask: Ask, minutes: number, lane: string): Letter {
-    const text = [
-      `UNANSWERED ${ask.id} in ${lane}: a Peer has waited ${minutes} minutes on its Lead.`,
-      "",
-      ask.text,
-      ...theirDefault(ask),
-    ].join("\n");
-    return mail(
-      "escalate",
-      [ask.id],
-      text,
-      "Answer only what is not an engineering call (its Lead is told); else give its Lead one open question. If the Lead looks stuck, read its record first.",
     );
   },
 };
