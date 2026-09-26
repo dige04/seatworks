@@ -49,10 +49,9 @@ export function desiredProvider(kit: Kit, seat: RoleSeat): Json {
 function wantedProviders(kit: Kit, teams: Team[]): Map<string, Json> {
   const wanted = new Map<string, Json>();
   for (const team of teams)
-    for (const role of kit.roles) {
-      const seat = team.roles[role.role];
-      const id = seat && providerId(kit, role.role, seat.harness.id);
-      if (seat && id && !wanted.has(id)) wanted.set(id, desiredProvider(kit, seat));
+    for (const seat of Object.values(team.roles)) {
+      const id = providerId(kit, seat.role.role, seat.harness.id);
+      if (!wanted.has(id)) wanted.set(id, desiredProvider(kit, seat));
     }
   return wanted;
 }
@@ -109,7 +108,7 @@ export function providerPatches(
     const have = held[id];
     const next = merged(have ?? {}, want, managed);
     if (have && sameJson(next, have)) continue;
-    // A key the kit no longer wants cannot be patched away, so the provider is removed and added again whole.
+    // A held key the kit does not want cannot be patched away, so the provider is removed and added again whole.
     if (have && !covers(next, have)) removed.push(id);
     providers[id] = next;
     changed.push(`provider ${id}`);
