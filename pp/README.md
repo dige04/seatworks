@@ -25,8 +25,8 @@ security add-generic-password -U -s "Seatworks Claude Code token" -a "$USER" -w 
 |---|---|---|
 | Supervisor | Claude Code · Opus 5.5 · high | talks with you, decides the rest |
 | Lead | Claude Code · Opus 5.5 · medium | owns a lane, judges hand-backs |
-| Peer | omp · Gemini 3.8 Flash · high | bulk work, big pool, fast |
-| Deep Peer | Claude Code · Opus 5.5 · medium | cross-cutting, terminal-heavy or risky work |
+| Peer | Claude Code · Opus 5.5 · medium | most tasks |
+| Deep Peer | Claude Code · Opus 5.5 · high | cross-cutting, terminal-heavy or risky work |
 | Reviewer | Codex · GPT-6 Sol · high | lane 1 of the semantic pair, routine reviews |
 | Second Reviewer | Claude Code · Opus 5.5 · xhigh | lane 2 of the semantic pair |
 | Coverage Reviewer | Codex · GPT-6 Luna · max | lane 3: OCR delegation, every reviewable file accounted for |
@@ -37,9 +37,10 @@ Jev (TypeSafe `jev-1.13.0`, asked directly at `api.typesafe.ai`) answers the wat
 ## Rules (`pp/settings.json`)
 
 - **Lead** picks `peer` or `peer-deep` per task. One review for routine work; a material question (contract, money,
-  concurrency, security, a large lane) gets three lanes at once, none seeded with another's findings. Contradictions
-  go back to both semantic reviewers; findings are checked for one converging cause before any rework. A lane is
-  reported ready only after every review it started has come back.
+  concurrency, security, a large lane) gets three lanes at once, none seeded with another's findings. The Lead settles
+  findings as one judgment: only blocking ones (behavior, acceptance, security, data, a contract) are reworked, once, for
+  their shared cause; the rest go in its report. It checks a rework itself, reviews again only for a changed contract or
+  risky area, and stops at two review rounds. Reviewers mark each finding blocking or not.
 - **Supervisor** never lands a lane whose review is running, and lands over a red gate only for tests another lane or a
   known failure owns, naming them.
 
