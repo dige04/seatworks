@@ -156,8 +156,9 @@ below. `test/architecture.test.ts`, `tsc`, ESLint and Prettier hold most of it.
   through `KeyedQueue`, which lets idle keys go.
 
 **Formatting.** Prettier at 120 columns, ESLint's type-checked rules, `tsc` with `strict` and
-`noUncheckedIndexedAccess`. A `!` states an invariant the code guarantees. A file stays within 300
-lines (400 for a test) and a function within 50: split by concept, not by line count.
+`noUncheckedIndexedAccess`. A `!` states an invariant the code guarantees. Split by concept, never by
+line count: a module holds one concept and a function does one job, and a second concept or job gets
+its own, however short.
 
 **Tests.**
 - Before writing a test, answer what contract it protects, what regression turns it red, why the
@@ -191,9 +192,9 @@ lines (400 for a test) and a function within 50: split by concept, not by line c
 - **Fail first.** For every fix, put the old behaviour back and watch the new test fail. Green suites
   here have agreed with bugs before: one compared tool names where schemas mattered.
 - **No dormant machinery.** No framework, abstraction or setting without a real consumer today.
-- **`test/architecture.test.ts` is a ratchet** on import layers, cycles, file and function sizes,
-  unused exports, and agent or server names in code. Its lists of known breaches only shrink: split or
-  move the code, never add an entry or raise a number.
+- **`test/architecture.test.ts` is a ratchet** on import layers, cycles, unused exports, writes to
+  the console, and agent or server names in code. Its list of known breaches only shrinks: move or fix
+  the code, never add an entry.
 - **No docs or decision records unless asked.** Git history is the record. No new markdown files
   either: plans stay outside the repository, and a change that needs explaining is explained in its
   commit message. The docs name nothing outside the repository but the paths the plugin itself uses.

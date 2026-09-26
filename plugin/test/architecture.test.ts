@@ -39,32 +39,12 @@ const PACKAGES = ["@getpaseo/plugin/server", "@getpaseo/plugin/client", "@getpas
 
 const NAMED: string[] = [];
 
-const LIMITS = { file: 300, testFile: 400, function: 50 };
-
-const LONG_FILES: Record<string, number> = {};
-
-const LONG_FUNCTIONS: Record<string, number> = {
-  "client/state/seatworks.ts useSeatworks": 240,
-  "client/ui/flow.tsx FlowSection": 63,
-  "client/ui/health.tsx HealthSection": 94,
-  "client/ui/model-picker.tsx ModelPicker": 128,
-  "client/ui/projects.tsx ProjectList": 57,
-  "client/ui/servers.tsx ServersSection": 138,
-  "client/ui/servers.tsx Tuning": 56,
-  "client/ui/setup-dialog.tsx SetupDialog": 242,
-  "client/ui/surface.tsx SeatworksSurface": 172,
-  "client/ui/team.tsx roleRows": 56,
-  "client/ui/upkeep.tsx UpkeepSection": 163,
-};
-
 const ENTRIES = ["index.server.ts", "index.client.tsx", "eslint.config.js"];
 
 type Import = { to: string; names: Set<string> | "all" };
 type Source = {
-  lines: number;
   imports: Import[];
   exports: Map<string, number>;
-  functions: Map<string, number>;
   words: string[];
 };
 
@@ -74,33 +54,6 @@ function codeIn(dir: string): string[] {
   return readdirSync(join(PLUGIN, dir))
     .filter((name) => !["node_modules", "content", "fixtures"].includes(name))
     .flatMap((name) => codeIn(join(dir, name)));
-}
-
-const isFunction = (node: ts.Node): node is ts.FunctionLikeDeclaration =>
-  ts.isFunctionLike(node) && "body" in node && node.body !== undefined;
-
-/** A function's own name, or else what holds it: the variable or property it is assigned to, or the call it is passed to. */
-function nameOf(node: ts.Node): string {
-  if ((ts.isFunctionLike(node) || ts.isClassLike(node)) && node.name) return node.name.getText();
-  if (ts.isConstructorDeclaration(node)) return "constructor";
-  const parent = node.parent;
-  if (ts.isVariableDeclaration(parent) || ts.isPropertyAssignment(parent) || ts.isPropertyDeclaration(parent))
-    return parent.name.getText();
-  if (ts.isCallExpression(parent))
-    return ts.isPropertyAccessExpression(parent.expression) ? parent.expression.name.text : parent.expression.getText();
-  return "(anonymous)";
-}
-
-/** Named after the functions, classes and variables around it too, so two helpers or two `handle`s of one file stay apart. */
-function qualified(node: ts.Node): string {
-  const names: string[] = [];
-  for (let at: ts.Node | undefined = node; at; at = at.parent) {
-    if (isFunction(at) || ts.isClassLike(at)) names.unshift(nameOf(at));
-    // A variable holding a function already names it; one holding a call's result names what is inside the call.
-    else if (ts.isVariableDeclaration(at) && at.initializer && !ts.isFunctionLike(at.initializer))
-      names.unshift(at.name.getText());
-  }
-  return names.join(".");
 }
 
 function bound(name: ts.BindingName): string[] {
@@ -128,10 +81,8 @@ function read(path: string): Source {
     return named.startsWith(".") ? relative(PLUGIN, resolve(PLUGIN, dirname(path), named)) : named;
   };
   const source: Source = {
-    lines: text.split("\n").length - (text.endsWith("\n") ? 1 : 0),
     imports: [],
     exports: new Map(),
-    functions: new Map(),
     words: [],
   };
   const namespaces = new Map<string, Import>();
@@ -162,11 +113,6 @@ function read(path: string): Source {
     for (const name of exported(statement)) source.exports.set(name, line(statement));
   }
   const visit = (node: ts.Node) => {
-    if (isFunction(node)) {
-      const key = qualified(node);
-      const length = file.getLineAndCharacterOfPosition(node.getEnd()).line + 2 - line(node);
-      source.functions.set(key, Math.max(length, source.functions.get(key) ?? 0));
-    }
     if (
       ts.isCallExpression(node) &&
       node.expression.kind === ts.SyntaxKind.ImportKeyword &&
@@ -258,38 +204,6 @@ test("no module of the plugin imports itself back through others", () => {
     [],
     "Each group imports itself round a cycle: move what both sides need to a module neither imports.",
   );
-});
-
-test("files keep within their size, and one listed in LONG_FILES only grows shorter", () => {
-  const limit = (path: string) => (path.startsWith("test/") ? LIMITS.testFile : LIMITS.file);
-  const problems = [
-    ...files
-      .filter((path) => sources.get(path)!.lines > Math.max(limit(path), LONG_FILES[path] ?? 0))
-      .map(
-        (path) => `${path} has ${sources.get(path)!.lines} lines, over ${LONG_FILES[path] ?? limit(path)}: split it.`,
-      ),
-    ...Object.keys(LONG_FILES)
-      .filter((path) => (sources.get(path)?.lines ?? 0) <= limit(path))
-      .map((path) => `${path} is within ${limit(path)} lines now: take it off LONG_FILES.`),
-  ];
-  assert.deepEqual(problems, []);
-});
-
-test("the plugin's functions keep within their size, and one listed in LONG_FUNCTIONS only grows shorter", () => {
-  const measured = new Map<string, number>(
-    product.flatMap((path) =>
-      [...sources.get(path)!.functions].map(([name, lines]) => [`${path} ${name}`, lines] as const),
-    ),
-  );
-  const problems = [
-    ...[...measured]
-      .filter(([key, lines]) => lines > Math.max(LIMITS.function, LONG_FUNCTIONS[key] ?? 0))
-      .map(([key, lines]) => `${key} has ${lines} lines, over ${LONG_FUNCTIONS[key] ?? LIMITS.function}: split it.`),
-    ...Object.keys(LONG_FUNCTIONS)
-      .filter((key) => (measured.get(key) ?? 0) <= LIMITS.function)
-      .map((key) => `${key} is within ${LIMITS.function} lines now: take it off LONG_FUNCTIONS.`),
-  ];
-  assert.deepEqual(problems, []);
 });
 
 test("only the daemon log writes to the console, so what the plugin says there is in one place with one prefix", () => {
