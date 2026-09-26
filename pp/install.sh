@@ -7,11 +7,15 @@ here=$(cd "$(dirname "$0")" && pwd)
 plugin="$here/../plugin"
 state="$HOME/.local/share/seatworks-v3"
 
-node=$(command -v node)
-for candidate in /opt/homebrew/bin/node /usr/local/bin/node "$node"; do
-  [ -x "$candidate" ] && [ "$("$candidate" -p 'process.versions.node.split(".")[0]')" -ge 24 ] && { node=$candidate; break; }
+# The major version of a node binary, or 0 when it cannot answer within 10 s (a Homebrew node can hang in dyld).
+major() { perl -e 'alarm 10; exec @ARGV' "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
+
+node=""
+for candidate in "$(command -v node || true)" $(ls -d "$HOME"/.local/share/mise/installs/node/*/bin/node 2>/dev/null | sort -rV) /opt/homebrew/bin/node /usr/local/bin/node; do
+  [ -n "$candidate" ] && [ -x "$candidate" ] && [ "$(major "$candidate")" -ge 24 ] && { node=$candidate; break; }
 done
-[ "$("$node" -p 'process.versions.node.split(".")[0]')" -ge 24 ] || { echo "Node 24 or newer is needed for the checks; install it (brew install node)." >&2; exit 1; }
+[ -n "$node" ] || { echo "Node 24 or newer is needed for the checks; install it (mise install node@25, or brew install node)." >&2; exit 1; }
+echo "using node $("$node" -v) at $node"
 command -v paseo >/dev/null || { echo "paseo is not on PATH." >&2; exit 1; }
 command -v jq >/dev/null || { echo "jq is not on PATH (brew install jq)." >&2; exit 1; }
 

@@ -1,12 +1,12 @@
 # Seatworks v3 · P/P edition
 
-A fork of [sting9k/seatworks](https://github.com/sting9k/seatworks) `v3` (from `8216651`, 3.0.0-dev.30) tuned for one
+A fork of [sting9k/seatworks](https://github.com/sting9k/seatworks) `v3` (on `4c35563`, 3.0.0-dev.61) tuned for one
 Human with Claude Max 20x, Codex 5x, Antigravity (omp) 20x and a TypeSafe key. One Supervisor per project.
 
 ## Install
 
 ```bash
-./pp/install.sh          # checks (Node >= 24), team files, Paseo plugin install, sign-in check
+./pp/install.sh          # checks (Node >= 24, found on PATH, mise or Homebrew), team files, Paseo plugin install, sign-in check
 ```
 
 Then in Paseo: **Seatworks › Add project**, **Health › Run**, and start an agent with the provider
@@ -45,14 +45,17 @@ Jev (TypeSafe `jev-1.13.0`, asked directly at `api.typesafe.ai`) answers the wat
 
 ## What this fork changes in code
 
-| Commit | Change |
+| Change | Why |
 |---|---|
-| `753268c` | Claude seats sign in from the keychain token; settings for Deep Peer and Second Reviewer |
-| `8ad293d` | Coverage Reviewer role: `REVIEWER-OCR.md`, Codex settings and rules |
-| `051a710` | Jev asked of TypeSafe directly, not through OpenRouter |
-| `5ba17f8` | Land refused while a review runs; landing is a compare-and-swap (two lanes landing at once never drop one); `cut` never resets the Human's own checkout while it holds uncommitted work. Each with a fail-first test |
+| Claude seats sign in from the keychain token (`bin/seat-room`); settings for Deep Peer and Second Reviewer | a seat's own config directory has no login on macOS |
+| Coverage Reviewer role: `REVIEWER-OCR.md`, Codex settings and rules | lane 3 of the review, OCR delegation |
+| Jev asked of TypeSafe directly (`catalog/sensor/jev.json`) | the key is a TypeSafe key, not OpenRouter's |
+| A lane is not landed while a review it started has not handed back, idle seat or not (`desk/lanes/landing.ts`, with a fail-first test; upstream's race test gets the review's hand-back before its last landing) | run 2 landed a lane before its review came back |
 
-`npm run check`: 589/589.
+Upstream fixed on its own the two other bugs this fork used to patch: landings are now a compare-and-swap, one at a time,
+and a task's cut never discards the Human's own work.
+
+Checks (`tsc`, `eslint`, `prettier`, `node --test`): 226/226.
 
 ## Measured (3 end-to-end runs on a scratch repo)
 
