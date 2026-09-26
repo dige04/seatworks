@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { harness, laneWithPeer } from "./harness.ts";
@@ -250,6 +250,15 @@ test("tasks that wait are recorded, amended, held while the lane's copy is taken
     (await add("g", "Again", { hints: ["d.txt"], after: ["L1-T4"] })).text,
     /L1-T4 was cut[^]*Take it out of after/,
   );
+  // The lane works in the Human's own checkout: cutting its task undoes the task's edits, never the Human's own files.
+  const own = build.worktree!;
+  assert.equal(build.slot, undefined, "no copy of the desk's own");
+  writeFileSync(join(own, "a.txt"), "half done\n");
+  writeFileSync(join(own, "mine.txt"), "the Human's own note\n");
+  assert.equal((await h.call(lead, "lead", "cut", { task: "L1-T3", reason: "not now" })).ok, true);
+  assert.equal(h.git(own, "branch", "--show-current").trim(), build.branch);
+  assert.equal(readFileSync(join(own, "a.txt"), "utf-8"), "A\n");
+  assert.equal(readFileSync(join(own, "mine.txt"), "utf-8"), "the Human's own note\n");
   await h.call(sup, "supervisor", "drop_lane", { lane: "L1", reason: "no longer wanted" });
   assert.equal(h.ledger().tasks["L1-T5"]!.status, "cut");
 });

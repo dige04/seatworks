@@ -81,12 +81,16 @@ export async function dropMerged(cwd: string, branch: string, into: string): Pro
   return (await contains(cwd, into, branch)) === true && (await git(cwd, ["branch", "-D", branch])).code === 0;
 }
 
-/** Puts `cwd` on `branch`, made from `start` when it is not there yet; git's reason when it cannot. `discard` drops work uncommitted there. */
+/**
+ * Puts `cwd` on `branch`, made from `start` when it is not there yet; git's reason when it cannot. `discard` drops edits to
+ * tracked files there, and `untracked` the files git does not track as well, which only a copy the desk made may lose.
+ */
 export async function switchTo(
   cwd: string,
   branch: string,
   start: string,
   discard = false,
+  untracked = false,
 ): Promise<string | undefined> {
   const exists = await branchExists(cwd, branch);
   const run = await git(cwd, [
@@ -94,7 +98,7 @@ export async function switchTo(
     ...(discard ? ["--discard-changes"] : []),
     ...(exists ? [branch] : ["-c", branch, start]),
   ]);
-  if (run.code === 0 && discard) await git(cwd, ["clean", "-fd"]);
+  if (run.code === 0 && discard && untracked) await git(cwd, ["clean", "-fd"]);
   return run.code === 0 ? undefined : run.stderr.trim() || `git switch exited ${run.code}`;
 }
 
