@@ -236,8 +236,13 @@ test("each seat is told and given what its servers, its role and the Human say, 
   assert.deepEqual([...skillDirsFor(plain, "lead").keys()], ["ide-guide"], "its skills follow it");
   assert.equal(rulesFor(plain, "supervisor"), "", "a seat with nothing to be told has no rules");
   assert.deepEqual(
-    [plain.attention.leadIdleMinutes, plain.attention.signals],
-    [15, {}],
+    [
+      plain.attention.leadIdleMinutes,
+      plain.attention.signals,
+      plain.attention.recoverWithin,
+      plain.attention.lookMinutes,
+    ],
+    [15, {}, 10, 5],
     "the kit's attention, every signal in shadow until labels turn it on",
   );
   assert.deepEqual(

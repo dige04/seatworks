@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Kit } from "../../catalog/kit/kit.ts";
+import { recordPatterns } from "../../catalog/kit/patterns.ts";
 import { daemonLog } from "../../core/logger.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import type { SeatView, Seats } from "../../core/ports.ts";
@@ -163,7 +164,11 @@ export class Patrol {
   /** Desk-record facts about a lane, filed against its Lead in the same incident book the watch uses. */
   private async history(project: Project, ledger: Ledger, seats: SeatMap): Promise<void> {
     const attention = this.deps.source.teamFor(project).attention;
-    const found = deskFacts(ledger, { reworksAt: attention.reworksAt, reviewsAt: attention.reviewsAt });
+    const found = deskFacts(ledger, {
+      reworksAt: attention.reworksAt,
+      reviewsAt: attention.reviewsAt,
+      ...recordPatterns(this.deps.kit),
+    });
     if (found.length === 0) return;
     const book = loadIncidents(project.state);
     for (const seen of found) {

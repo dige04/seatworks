@@ -58,6 +58,8 @@ export const AttentionChoice = z.strictObject({
   destructive: Pattern.optional(),
   testPath: Pattern.optional(),
   repeatsAt: z.number().int().min(2).optional(),
+  /** Steps after a failed command with neither it nor the gate passing, before the watch calls it no recovery. */
+  recoverWithin: z.number().int().min(2).optional(),
   reworksAt: z.number().int().min(2).optional(),
   reviewsAt: z.number().int().min(2).optional(),
   suppressed: Pattern.optional(),

@@ -67,6 +67,7 @@ const Attention = z.object({
   destructive: z.string(),
   testPath: z.string(),
   repeatsAt: z.number(),
+  recoverWithin: z.number(),
   reworksAt: z.number(),
   reviewsAt: z.number(),
   suppressed: z.string(),

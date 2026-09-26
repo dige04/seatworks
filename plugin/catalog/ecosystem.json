@@ -130,6 +130,13 @@
       "gh",
       "docker",
       "kubectl"
-    ]
+    ],
+    "certainty": "\\b(?:report|raise|flag|list|mention|include)\\b[^.]{0,20}\\bonly\\b[^.]{0,40}\\b(?:certain|sure|confident|proven|prove|confirmed|verified)\\b|\\bonly\\b[^.]{0,20}\\b(?:report|raise|flag|list|mention)\\b[^.]{0,40}\\b(?:certain|sure|confident|proven|prove|confirmed|verified)\\b|\\bno\\s+(?:speculation|speculative|guesswork|guesses|hypotheses|maybes)\\b|\\bhigh[- ]confidence\\b[^.]{0,20}\\bonly\\b|\\bonly\\b[^.]{0,20}\\bhigh[- ]confidence\\b|\\b(?:do\\s*n[o']?t|never)\\s+(?:report|raise|flag)\\b[^.]{0,30}\\bunless\\b",
+    "prewritten": {
+      "code": "```[\\s\\S]*?(?:^|\\n)\\s*(?:import|from|export|const|let|var|def|class|function|fn|public|private|#include|package)\\b",
+      "step": "^\\s*(?:step\\s*)?[1-9][.)]\\s*(?:then\\s+)?(?:create|add|write|edit|update|rename|move|delete|remove|implement|refactor|extract|install|register|wire|import|export)\\b",
+      "then": "\\b(?:then|next|after that)\\b[^.]{0,30}\\b(?:create|add|write|edit|rename|move|delete|implement)\\b",
+      "fileMember": "\\b[\\w-]+(?:\\/[\\w-]+)*\\.[a-z]{1,4}\\b[^.]{0,40}\\b(?:function|method|class|const|export|field|column|endpoint)\\b"
+    }
   }
 }

@@ -12,18 +12,9 @@ type Seen = { seat: string; fact: Fact };
 type Reading = {
   reworksAt: number;
   reviewsAt: number;
+  certainty: RegExp;
+  prewritten: { code: RegExp; step: RegExp; then: RegExp; fileMember: RegExp };
 };
-
-const CERTAIN =
-  /\b(?:report|raise|flag|list|mention|include)\b[^.]{0,20}\bonly\b[^.]{0,40}\b(?:certain|sure|confident|proven|prove|confirmed|verified)\b|\bonly\b[^.]{0,20}\b(?:report|raise|flag|list|mention)\b[^.]{0,40}\b(?:certain|sure|confident|proven|prove|confirmed|verified)\b|\bno\s+(?:speculation|speculative|guesswork|guesses|hypotheses|maybes)\b|\bhigh[- ]confidence\b[^.]{0,20}\bonly\b|\bonly\b[^.]{0,20}\bhigh[- ]confidence\b|\b(?:do\s*n[o']?t|never)\s+(?:report|raise|flag)\b[^.]{0,30}\bunless\b/i;
-
-const CODE_FENCE =
-  /```[\s\S]*?(?:^|\n)\s*(?:import|from|export|const|let|var|def|class|function|fn|public|private|#include|package)\b/;
-const BUILD_STEP =
-  /^\s*(?:step\s*)?[1-9][.)]\s*(?:then\s+)?(?:create|add|write|edit|update|rename|move|delete|remove|implement|refactor|extract|install|register|wire|import|export)\b/im;
-const THEN_BUILD = /\b(?:then|next|after that)\b[^.]{0,30}\b(?:create|add|write|edit|rename|move|delete|implement)\b/i;
-const FILE_AND_MEMBER =
-  /\b[\w-]+(?:\/[\w-]+)*\.[a-z]{1,4}\b[^.]{0,40}\b(?:function|method|class|const|export|field|column|endpoint)\b/i;
 
 const READ_AT_MOST = 4000;
 
@@ -40,12 +31,12 @@ const reworksOf = (task: Task): number => task.reworks ?? 0;
 const settled = (task: Task): boolean => SETTLED.includes(task.status);
 
 /** Whether a brief hands over an answer to be typed in rather than an outcome to be reached. */
-function prewritten(text: string): boolean {
+function prewritten(text: string, { code, step, then, fileMember }: Reading["prewritten"]): boolean {
   const read = text.slice(0, READ_AT_MOST);
   if (!read.trim()) return false;
-  if (CODE_FENCE.test(read)) return true;
-  if (!BUILD_STEP.test(read)) return false;
-  return THEN_BUILD.test(read) || FILE_AND_MEMBER.test(read);
+  if (code.test(read)) return true;
+  if (!step.test(read)) return false;
+  return then.test(read) || fileMember.test(read);
 }
 
 /** What the record shows of one open lane: its tasks, the ledger they are in, and the settings it is read by. */
@@ -125,8 +116,10 @@ function reviewsUnconverged({ here, ledger, reading }: LaneRecord): Finding {
 }
 
 /** A review asked for certainty reports less than it found, and what it drops is real. */
-function certaintyOnly({ here }: LaneRecord): Finding {
-  const timid = here.filter((task) => task.kind === "review" && CERTAIN.test(task.goal.slice(0, READ_AT_MOST)));
+function certaintyOnly({ here, reading }: LaneRecord): Finding {
+  const timid = here.filter(
+    (task) => task.kind === "review" && reading.certainty.test(task.goal.slice(0, READ_AT_MOST)),
+  );
   if (timid.length === 0) return undefined;
   return [
     "certainty-only",
@@ -135,9 +128,10 @@ function certaintyOnly({ here }: LaneRecord): Finding {
 }
 
 /** A brief that carries the answer gets agreement back, not engineering. */
-function briefPrewritten({ here }: LaneRecord): Finding {
+function briefPrewritten({ here, reading }: LaneRecord): Finding {
   const typed = here.filter(
-    (task) => task.kind === "code" && !settled(task) && prewritten(`${task.goal}\n${task.context ?? ""}`),
+    (task) =>
+      task.kind === "code" && !settled(task) && prewritten(`${task.goal}\n${task.context ?? ""}`, reading.prewritten),
   );
   if (typed.length === 0) return undefined;
   return [

@@ -65,7 +65,7 @@ export class Watching {
         temp: tmpdir(),
         scope,
         repeatsAt: attention.repeatsAt,
-        recoverWithin: 10,
+        recoverWithin: attention.recoverWithin,
       },
       handedBack: (at) => {
         try {

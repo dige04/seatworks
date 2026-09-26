@@ -31,6 +31,20 @@ export function watchPatterns(kit: Kit, attention: Attention) {
   };
 }
 
+/** What a lane's record is read for beside its counts: a review asked for certainty only, a brief that writes the work out. */
+export function recordPatterns(kit: Kit) {
+  const { certainty, prewritten } = kit.ecosystem.watch;
+  return {
+    certainty: new RegExp(certainty, "i"),
+    prewritten: {
+      code: new RegExp(prewritten.code),
+      step: new RegExp(prewritten.step, "im"),
+      then: new RegExp(prewritten.then, "i"),
+      fileMember: new RegExp(prewritten.fileMember, "i"),
+    },
+  };
+}
+
 export function fileKinds(kit: Kit): FileKinds {
   return { test: new RegExp(kit.ecosystem.files.test, "i"), docs: new RegExp(kit.ecosystem.files.docs, "i") };
 }
