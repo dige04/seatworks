@@ -136,7 +136,7 @@ export function JudgeCard(props: Props) {
       <SettingsCard>
         <SettingsRow
           label="Brains"
-          hint={`Which brains read what the watch's eye sees. Both: ${named} sifts, the ${role.label} judges. A signal they raise is recorded in shadow until you turn it on for the Supervisor. ${sourceLabel(
+          hint={`Which brains read what the watch's eye sees. Both: ${named} sifts, the ${role.label} judges. ${sourceLabel(
             sourceOf(values, machine, (entry) => entry.attention?.brain, layer),
             layer,
           )}.`}
