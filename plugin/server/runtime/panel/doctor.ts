@@ -15,6 +15,12 @@ const onPath = (bin: string): boolean => executableIn(pathDirs(), bin) !== undef
 
 type Listed = { names: string[] } | { error: string } | undefined;
 
+type Found = Omit<Check, "group">;
+
+const inGroup =
+  (group: Check["group"]) =>
+  (check: Found): Check => ({ ...check, group });
+
 /** What the panel's Health section shows: the settings, git, each agent the seats run on, each MCP server in use, and Paseo's own tools. */
 export async function doctor(kit: Kit, team: Team, paseoTools: () => Promise<Listed>): Promise<Check[]> {
   const settings = {
@@ -22,18 +28,21 @@ export async function doctor(kit: Kit, team: Team, paseoTools: () => Promise<Lis
     ok: team.errors.length === 0,
     detail: team.errors.length === 0 ? "The settings resolve to a complete team." : team.errors.join("\n"),
   };
-  const checks: Check[] = [settings, gitCheck(), ...harnessChecks(kit, team)];
+  const checks: Check[] = [
+    ...[settings, gitCheck()].map(inGroup("machine")),
+    ...harnessChecks(kit, team).map(inGroup("agent")),
+  ];
   for (const state of Object.values(team.mcp).filter((server) => server.enabled)) {
     const check = await serverCheck(team, state);
-    if (check) checks.push(check);
+    if (check) checks.push(inGroup("server")(check));
   }
   const paseo = await paseoCheck(kit, team, paseoTools);
-  if (paseo) checks.push(paseo);
+  if (paseo) checks.push(inGroup("machine")(paseo));
   return checks;
 }
 
 /** When a seat has Paseo's own tools on: `allow` leaves on a tool catalog/paseo.json lacks, and a seat is asked before one it does not pre-approve. */
-async function paseoCheck(kit: Kit, team: Team, paseoTools: () => Promise<Listed>): Promise<Check | undefined> {
+async function paseoCheck(kit: Kit, team: Team, paseoTools: () => Promise<Listed>): Promise<Found | undefined> {
   if (Object.values(team.roles).every((seat) => paseoToolsPolicy(kit, seat.role)?.enabled === false)) return undefined;
   const id = "paseo:tools";
   const listed = await paseoTools();
@@ -61,17 +70,17 @@ async function paseoCheck(kit: Kit, team: Team, paseoTools: () => Promise<Listed
 }
 
 /** Git, which the desk runs itself for every lane and task; what a skill runs, its own compatibility line names. */
-function gitCheck(): Check {
+function gitCheck(): Found {
   const ok = onPath("git");
   return { id: "bin:git", ok, detail: ok ? "git is on PATH." : "git is not on PATH; the desk and every seat need it." };
 }
 
 /** Each agent the team's seats run on: its command on PATH, and the files its harness says it needs. */
-function harnessChecks(kit: Kit, team: Team): Check[] {
+function harnessChecks(kit: Kit, team: Team): Found[] {
   const harnesses = new Map<string, string[]>();
   for (const seat of Object.values(team.roles))
     harnesses.set(seat.harness.id, [...(harnesses.get(seat.harness.id) ?? []), seat.role.label]);
-  const checks: Check[] = [];
+  const checks: Found[] = [];
   for (const [id, roles] of harnesses) {
     const harness = kit.harnesses[id]!;
     const bin = harness.provider.env?.SEATWORKS_AGENT_BIN;
@@ -101,7 +110,7 @@ function harnessChecks(kit: Kit, team: Team): Check[] {
 }
 
 /** An enabled server some seat uses; one that throws is that server's failed check, not the loss of the checks before it. */
-async function serverCheck(team: Team, state: McpState): Promise<Check | undefined> {
+async function serverCheck(team: Team, state: McpState): Promise<Found | undefined> {
   try {
     const users = Object.values(team.roles).filter((seat) => seat.mcp.includes(state.id));
     if (users.length === 0) return undefined;
@@ -115,7 +124,7 @@ async function serverCheck(team: Team, state: McpState): Promise<Check | undefin
 }
 
 /** A proxy's backend: its command on PATH, or a server at its address exposing every tool the team uses of it. */
-async function proxyCheck(state: McpState, proxy: ProxySpec, users: RoleSeat[], help: string): Promise<Check> {
+async function proxyCheck(state: McpState, proxy: ProxySpec, users: RoleSeat[], help: string): Promise<Found> {
   const id = `mcp:${state.id}`;
   if (proxy.backend.type === "stdio") {
     const bin = proxy.backend.command[0] ?? "";
@@ -146,7 +155,7 @@ async function proxyCheck(state: McpState, proxy: ProxySpec, users: RoleSeat[], 
 }
 
 /** A server the seats reach themselves: its command on PATH, or an address that answers; an SSE server is not probed. */
-async function directCheck(state: McpState, help: string): Promise<Check | undefined> {
+async function directCheck(state: McpState, help: string): Promise<Found | undefined> {
   const id = `mcp:${state.id}`;
   const shaped = state.connect ? connectToServer(state.connect) : undefined;
   const direct = (shaped ?? (state.entry?.server ? { ...state.entry.server } : undefined)) as

@@ -32,8 +32,6 @@ function size(bytes: number): string {
   return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
 }
 
-const short = (path: string) => path.replace(/^\/(Users|home)\/[^/]+/, "~");
-
 const KIND: Record<CleanItem["kind"], string> = {
   seat: "Seat folder",
   copy: "Working copy",
@@ -230,8 +228,7 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
               const next = await clean(picks.length ? { remove: picks.map((item) => item.path) } : {});
               setCleaned(next);
               setChosen(picks.length ? new Set() : picked(next.items));
-              if (next.failed.length)
-                setError(next.failed.map((fail) => `${short(fail.path)}: ${fail.error}`).join("\n"));
+              if (next.failed.length) setError(next.failed.map((fail) => `${fail.shown}: ${fail.error}`).join("\n"));
             })
           }
         />
@@ -241,7 +238,7 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
               {items.map((item) => (
                 <SettingsSwitch
                   key={item.path}
-                  label={`${KIND[item.kind]} · ${short(item.path)}`}
+                  label={`${KIND[item.kind]} · ${item.shown}`}
                   hint={`${item.held ? `Kept: ${item.held}` : item.why} · ${size(item.bytes)}`}
                   value={chosen.has(item.path)}
                   disabled={busy !== null || item.held !== null}

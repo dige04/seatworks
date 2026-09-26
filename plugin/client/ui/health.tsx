@@ -16,10 +16,11 @@ type Props = {
   readStatus: (slug: string) => Promise<{ text: string; error?: string }>;
 };
 
-const GROUPS = ["This machine", "Agents", "Servers"] as const;
-
-const groupOf = (id: string): (typeof GROUPS)[number] =>
-  id.startsWith("harness:") ? "Agents" : id.startsWith("mcp:") ? "Servers" : "This machine";
+const GROUPS: [Check["group"], string][] = [
+  ["machine", "This machine"],
+  ["agent", "Agents"],
+  ["server", "Servers"],
+];
 
 export function HealthSection({ project, theme, checks, stale, onChecks, runDoctor, readStatus }: Props) {
   const [status, setStatus] = useState("");
@@ -73,12 +74,12 @@ export function HealthSection({ project, theme, checks, stale, onChecks, runDoct
           disabled={busy !== null}
           onPress={() => void run("doctor", async () => onChecks(await runDoctor()))}
         />
-        {GROUPS.map((group) => {
-          const mine = all.filter((check) => groupOf(check.id) === group);
+        {GROUPS.map(([group, title]) => {
+          const mine = all.filter((check) => check.group === group);
           if (mine.length === 0) return null;
           return (
             <View key={group}>
-              <Heading text={group} theme={theme} />
+              <Heading text={title} theme={theme} />
               {mine.map((check) => (
                 <SettingsRow key={check.id} label={check.id} hint={check.detail}>
                   <Text style={check.ok ? styles.good : styles.bad}>{check.ok ? "OK" : "Needs work"}</Text>

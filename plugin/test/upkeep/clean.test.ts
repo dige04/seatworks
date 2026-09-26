@@ -134,8 +134,16 @@ test("removal takes only what a fresh scan still finds free, and leaves a folder
   assert.deepEqual(
     result.failed.sort((a, b) => a.path.localeCompare(b.path)),
     [
-      { path: two, error: "it is in use now, or already gone" },
-      { path: dirty, error: "it has uncommitted changes" },
+      {
+        path: two,
+        shown: join("~", ".omp", "seats", "sw2-lead-omp-gone-def456"),
+        error: "it is in use now, or already gone",
+      },
+      {
+        path: dirty,
+        shown: join("~", ".local", "share", "seatworks-v3", "worktrees", "shop-abc123", "S3"),
+        error: "it has uncommitted changes",
+      },
     ].sort((a, b) => a.path.localeCompare(b.path)),
   );
   assert.deepEqual(

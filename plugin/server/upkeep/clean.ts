@@ -1,5 +1,5 @@
 import { existsSync, lstatSync, readdirSync, readFileSync, readlinkSync, rmSync, rmdirSync } from "node:fs";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { CleanItem, CleanView } from "../../shared/upkeep-views.ts";
 import type { Kit } from "../catalog/kit/kit.ts";
 import type { Team } from "../catalog/team/team.ts";
@@ -11,6 +11,8 @@ import type { Project } from "../desk/project/project.ts";
 import { firstUnder } from "../core/fs.ts";
 import { isRecord } from "../core/json.ts";
 import { readKept } from "../core/store.ts";
+
+type Found = Omit<CleanItem, "shown">;
 
 type CleanContext = {
   kit: Kit;
@@ -41,7 +43,7 @@ function entries(dir: string): string[] {
   }
 }
 
-const item = (path: string, kind: CleanItem["kind"], why: string, extra: Partial<CleanItem> = {}): CleanItem => ({
+const item = (path: string, kind: CleanItem["kind"], why: string, extra: Partial<Found> = {}): Found => ({
   path,
   kind,
   why,
@@ -52,7 +54,7 @@ const item = (path: string, kind: CleanItem["kind"], why: string, extra: Partial
 });
 
 /** Nothing else removes a seat directory, but one an open seat runs in is never garbage: its harness is reading it. */
-function seats(ctx: CleanContext): CleanItem[] {
+function seats(ctx: CleanContext): Found[] {
   const { kit } = ctx;
   const attached = new Map(ctx.known.map((project) => [project.slug, project]));
   const running = new Set(ctx.live.map((seat) => `${seat.provider}|${seat.slug}`));
@@ -63,7 +65,7 @@ function seats(ctx: CleanContext): CleanItem[] {
   const named = new RegExp(
     `^${kit.prefix.replace(/[^a-z0-9]/gi, "\\$&")}([a-z0-9-]+?)-(${agents})-([a-z0-9-]+-[0-9a-f]{6})$`,
   );
-  const found: CleanItem[] = [];
+  const found: Found[] = [];
   for (const root of roots) {
     for (const name of entries(root)) {
       const [, role, agent, slug] = named.exec(name) ?? [];
@@ -82,10 +84,10 @@ function seats(ctx: CleanContext): CleanItem[] {
 }
 
 /** A working copy the desk holds no slot for, and every copy of a project that is not attached. */
-async function copies(ctx: CleanContext): Promise<CleanItem[]> {
+async function copies(ctx: CleanContext): Promise<Found[]> {
   const root = worktreeRoot(ctx.home);
   const attached = new Map(ctx.known.map((project) => [project.slug, project]));
-  const found: CleanItem[] = [];
+  const found: Found[] = [];
   for (const slug of entries(root)) {
     const project = attached.get(slug);
     let held: Set<string>;
@@ -115,10 +117,10 @@ async function copies(ctx: CleanContext): Promise<CleanItem[]> {
 }
 
 /** Records outlive Detach on purpose, so attaching again finds its lanes and CONTEXT.md. */
-function records(ctx: CleanContext): CleanItem[] {
+function records(ctx: CleanContext): Found[] {
   const base = join(stateRoot(ctx.home), "projects");
   const attached = new Map(ctx.known.map((project) => [project.slug, project]));
-  const found: CleanItem[] = [];
+  const found: Found[] = [];
   for (const slug of entries(base)) {
     const path = join(base, slug);
     const project = attached.get(slug);
@@ -163,7 +165,7 @@ function linksInto(dir: string, root: string, depth: number, into: Set<string>):
 }
 
 /** A copy of the guides or a skill no seat directory links to: the sweep would take it in two weeks. */
-function snapshots(ctx: CleanContext): CleanItem[] {
+function snapshots(ctx: CleanContext): Found[] {
   const root = contentRoot(ctx.home);
   const linked = new Set<string>();
   linksInto(dirname(guidesDir(ctx.home)), root, 0, linked);
@@ -177,8 +179,15 @@ function snapshots(ctx: CleanContext): CleanItem[] {
     .map((name) => item(join(root, name), "snapshot", "no seat links to it"));
 }
 
+/** A path as the owner reads it: under their home folder, from `~`, on whatever platform. */
+function shownOf(path: string, home: string): string {
+  const rest = relative(home, path);
+  return rest && !rest.startsWith("..") && !isAbsolute(rest) ? join("~", rest) : path;
+}
+
 export async function scanGarbage(ctx: CleanContext): Promise<CleanItem[]> {
-  return [...seats(ctx), ...(await copies(ctx)), ...records(ctx), ...snapshots(ctx)];
+  const found = [...seats(ctx), ...(await copies(ctx)), ...records(ctx), ...snapshots(ctx)];
+  return found.map((each) => ({ ...each, shown: shownOf(each.path, ctx.home) }));
 }
 
 /** The repository a linked working copy belongs to, read before the copy is gone. */
@@ -199,7 +208,7 @@ export async function removeGarbage(ctx: CleanContext, picked: string[]): Promis
   for (const path of picked) {
     const found = now.get(path);
     if (!found || found.held) {
-      failed.push({ path, error: found?.held ?? "it is in use now, or already gone" });
+      failed.push({ path, shown: shownOf(path, ctx.home), error: found?.held ?? "it is in use now, or already gone" });
       continue;
     }
     try {
@@ -209,7 +218,7 @@ export async function removeGarbage(ctx: CleanContext, picked: string[]): Promis
       if (found.kind === "copy" && entries(dirname(path)).length === 0) rmdirSync(dirname(path));
       removed.push(path);
     } catch (error) {
-      failed.push({ path, error: errorText(error) });
+      failed.push({ path, shown: shownOf(path, ctx.home), error: errorText(error) });
     }
   }
   return { items: await scanGarbage(ctx), removed, failed };

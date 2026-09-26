@@ -90,7 +90,7 @@ export class SettingsPanel implements SettingsRpc {
 
   async doctor(slug?: string): Promise<Check[]> {
     const project = slug ? this.deps.source.named(slug) : undefined;
-    if (slug && !project) return [{ id: "project", ok: false, detail: unknownProject(slug) }];
+    if (slug && !project) return [{ id: "project", group: "machine", ok: false, detail: unknownProject(slug) }];
     return doctor(this.deps.kit, this.deps.source.teamFor(project), this.deps.paseoTools);
   }
 

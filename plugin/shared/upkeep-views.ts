@@ -1,8 +1,10 @@
 /** The Upkeep section over RPC: what the plugin left behind, its updates, and what its content changed. */
 import { z } from "zod";
 
+/** `shown` is `path` as the owner reads it, from `~` under their home folder. */
 const CleanItem = z.object({
   path: z.string(),
+  shown: z.string(),
   kind: z.enum(["seat", "copy", "records", "snapshot"]),
   why: z.string(),
   bytes: z.number(),
@@ -13,7 +15,7 @@ export type CleanItem = z.infer<typeof CleanItem>;
 export const CleanView = z.object({
   items: z.array(CleanItem),
   removed: z.array(z.string()),
-  failed: z.array(z.object({ path: z.string(), error: z.string() })),
+  failed: z.array(z.object({ path: z.string(), shown: z.string(), error: z.string() })),
 });
 export type CleanView = z.infer<typeof CleanView>;
 

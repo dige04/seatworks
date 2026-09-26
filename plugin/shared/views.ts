@@ -5,7 +5,13 @@ import { AttentionChoice, Connect, LayerSchema, Scalar } from "./settings.ts";
 /** A call the panel made that the plugin refused, and why. */
 export const Refused = z.object({ error: z.string() });
 
-export const Check = z.object({ id: z.string(), ok: z.boolean(), detail: z.string() });
+/** One of the doctor's findings; `group` is what it is about: this machine, an agent the seats run on, or an MCP server. */
+export const Check = z.object({
+  id: z.string(),
+  group: z.enum(["machine", "agent", "server"]),
+  ok: z.boolean(),
+  detail: z.string(),
+});
 export type Check = z.infer<typeof Check>;
 
 const ModelView = z.object({
