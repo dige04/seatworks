@@ -344,10 +344,10 @@ test("review records what it cannot ask as unasked, and never seats the Watcher"
   await handBack("first");
   assert.deepEqual(
     kept(h.project.state).map((line) => [line.subject, line.by, line.unasked, line.answers]),
-    [["L1-T1", "jev", "Jev has no OpenRouter key on this machine", undefined]],
+    [["L1-T1", "jev", "Jev has no TypeSafe key on this machine", undefined]],
     "with no key, the check is kept as unasked",
   );
-  assert.deepEqual(unasked(), [["L1-T1", "jev", "Jev has no OpenRouter key on this machine"]]);
+  assert.deepEqual(unasked(), [["L1-T1", "jev", "Jev has no TypeSafe key on this machine"]]);
   assert.deepEqual(watchersOf(h), [], "nor is the Watcher seat, which judges the watch, ever asked in its place");
 
   judgedBy("off", KEY);
@@ -403,16 +403,16 @@ test("the Flow tab says which of the watch's brains read and how that stands, fr
   judgedBy("off", KEY);
   assert.deepEqual(await line(), { label: "", state: "off", minutes: null, detail: null });
   judgedBy("sensor");
-  assert.deepEqual(await line(), { label: "Jev", state: "nokey", minutes: null, detail: "OpenRouter key" });
+  assert.deepEqual(await line(), { label: "Jev", state: "nokey", minutes: null, detail: "TypeSafe key" });
   assert.deepEqual(
     (await h.rpc(contracts.catalog, {})).sensors,
     [
       {
         id: "jev",
         label: "Jev",
-        key: "OpenRouter key",
-        model: "typesafe/jev-1.13",
-        terms: "Asked with data collection denied.",
+        key: "TypeSafe key",
+        model: "jev-1.13.0",
+        terms: "Asked of TypeSafe directly.",
       },
     ],
     "the switch offers each sensor the kit has, by name and the key it takes",
