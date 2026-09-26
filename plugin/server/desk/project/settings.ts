@@ -1,8 +1,8 @@
 import type { RiskRule } from "../../catalog/kit/schema/ecosystem.ts";
-import { configFault } from "../../core/config-file.ts";
 import { LAND_AS, branchExists } from "../../core/git.ts";
+import { keptFault } from "../../core/store.ts";
 import { type Caller, type ToolReply, no, ok, str, strs } from "../context.ts";
-import { type LaneHome, type ProjectConfig, configFile, loadConfig, saveConfig } from "./project.ts";
+import { type LaneHome, type ProjectConfig, readProjectConfig, saveConfig } from "./project.ts";
 
 /** A set_project call as the tool takes it: each field left out keeps what the project has. */
 type Settings = {
@@ -19,10 +19,9 @@ type Settings = {
 
 /** Sets the project's standing configuration, refusing as open_lane does over a file it could not read. */
 export async function setProject(caller: Caller, args: Settings): Promise<ToolReply> {
-  // Refused as open_lane refuses: read as all defaults, an unreadable file was saved over with them.
-  const unreadable = configFault(configFile(caller.project.state));
-  if (unreadable) return no(`${unreadable}\nOnly the Human can repair it or move it aside; nothing was saved over it.`);
-  const config = loadConfig(caller.project.state);
+  const read = readProjectConfig(caller.project.state);
+  if ("fault" in read) return no(keptFault(read.fault).message);
+  const { config } = read;
   const base = str(args.base);
   if (base && !(await branchExists(caller.project.root, base))) return no(`The branch ${base} does not exist.`);
   const minutes = Number(args.gateTimeoutMinutes);

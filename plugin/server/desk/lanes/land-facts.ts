@@ -1,4 +1,3 @@
-import { configFault } from "../../core/config-file.ts";
 import { changedFiles, diffCounts, kindOf } from "../../core/git-diff.ts";
 import { commitsAhead, git, mergeBase } from "../../core/git.ts";
 import { coverOf, globToRegex, uncovered } from "../../core/scope.ts";
@@ -10,7 +9,7 @@ import { loadIncidents } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, tasksOf } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
-import { type Project, configFile, loadConfig, serialOnlyOf } from "../project/project.ts";
+import { type Project, readProjectConfig, serialOnlyOf } from "../project/project.ts";
 
 type LandGate = { set: boolean; ok: boolean };
 
@@ -107,9 +106,10 @@ export async function changeOf(project: Project, lane: Lane): Promise<Change> {
 
 /** Why landing `change` waits for the Human: the paths it touches that they asked to be asked about first, or orders that cannot be read. */
 export function askFirstHits(project: Project, change: Change): string[] {
-  const fault = configFault(configFile(project.state));
-  if (fault) return [`The Human's standing orders cannot be read (${fault}), so no landing goes ahead without them.`];
-  const { askFirst } = loadConfig(project.state);
+  const read = readProjectConfig(project.state);
+  if ("fault" in read)
+    return [`The Human's standing orders cannot be read (${read.fault}), so no landing goes ahead without them.`];
+  const { askFirst } = read.config;
   if (askFirst.length === 0) return [];
   const files = change.files;
   if (!files)

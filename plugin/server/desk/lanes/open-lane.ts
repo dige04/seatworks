@@ -1,6 +1,6 @@
 import type { Kit } from "../../catalog/kit/kit.ts";
-import { configFault } from "../../core/config-file.ts";
 import { branchExists, currentBranch, uncommittedPaths } from "../../core/git.ts";
+import { keptFault } from "../../core/store.ts";
 import { clip, slugify } from "../../core/text.ts";
 import { workKey } from "../claims.ts";
 import { type Caller, type ToolReply, no, ok, str, strs } from "../context.ts";
@@ -12,10 +12,9 @@ import {
   type LaneHome,
   type Project,
   type ProjectConfig,
-  configFile,
   detectGate,
   laneHomeFor,
-  loadConfig,
+  readProjectConfig,
   saveConfig,
   serialIn,
 } from "../project/project.ts";
@@ -54,11 +53,11 @@ type Plan = { args: OpenLaneCall; place: Place; after: string[]; pending: Lane[]
 /** Opens a lane now, or records it waiting for the lanes it names; a Lead is started for one that opens. */
 export async function openLane(desk: DeskServices, caller: Caller, asked: OpenLaneCall): Promise<ToolReply> {
   const { project } = caller;
-  const config = loadConfig(project.state);
-  const plan = await planOpen(project, config, asked);
+  const read = readProjectConfig(project.state);
+  if ("fault" in read) return no(keptFault(read.fault).message);
+  const plan = await planOpen(project, read.config, asked);
   if (typeof plan === "string") return no(plan);
-  const fault = seedConfig(desk.kit, project, config, plan);
-  if (fault) return no(fault);
+  seedConfig(desk.kit, project, read.config, plan);
   return plan.pending.length > 0 ? waitToOpen(desk, caller, plan) : openNow(desk, caller, plan);
 }
 
@@ -117,14 +116,10 @@ async function homeOf(
 }
 
 /** Seeded only when unanswered: the gate is "" when the owner answered "no gate", and a branch carried on is not a base. */
-function seedConfig(kit: Kit, project: Project, config: ProjectConfig, plan: Plan): string | undefined {
-  if (config.base && config.gate !== undefined) return undefined;
-  const fault = configFault(configFile(project.state));
-  if (fault)
-    return `${fault}\nOnly the Human can repair it or move it aside — no seat may write the desk's own files — so tell them; the desk will not write its own defaults over a file it could not read.`;
+function seedConfig(kit: Kit, project: Project, config: ProjectConfig, plan: Plan): void {
+  if (config.base && config.gate !== undefined) return;
   const base = config.base ?? (plan.place.onBranch ? undefined : plan.place.base);
   saveConfig(project.state, { ...config, base, gate: config.gate ?? detectGate(project.root, kit.ecosystem) });
-  return undefined;
 }
 
 async function waitToOpen(desk: DeskServices, caller: Caller, plan: Plan): Promise<ToolReply> {

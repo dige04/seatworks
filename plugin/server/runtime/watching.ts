@@ -8,7 +8,7 @@ import type { TurnEnded } from "../core/ports.ts";
 import type { Desk } from "../desk/desk.ts";
 import { laneOfLead, taskOfPeer } from "../domain/ledger.ts";
 import { loadLedger } from "../desk/store/ledger.ts";
-import { type Project, gateCommands, loadConfig, projectOf } from "../desk/project/project.ts";
+import { type Project, gateCommands, projectOf, readProjectConfig } from "../desk/project/project.ts";
 import type { TeamSource } from "./team-source.ts";
 import { malformed } from "./timeline.ts";
 import type { Trouble } from "./panel/watch-view.ts";
@@ -52,12 +52,15 @@ export class Watching {
     } catch (error) {
       this.deps.desk.event(project, { kind: "watch.unbriefed", agent: seat.id, error: errorText(error) });
     }
+    const orders = readProjectConfig(project.state);
+    if ("fault" in orders)
+      this.deps.desk.event(project, { kind: "watch.unbriefed", agent: seat.id, error: orders.fault });
     return {
       placed,
       rules: {
         ...watchPatterns(this.deps.kit, attention),
         desk: callsTo(found.harness.mcpCall, found.harness.mcpServerField, TEAM_SERVER),
-        gates: gateCommands(seat.cwd, loadConfig(project.state).gate, this.deps.kit.ecosystem),
+        gates: gateCommands(seat.cwd, "config" in orders ? orders.config.gate : undefined, this.deps.kit.ecosystem),
         cwd: seat.cwd,
         temp: tmpdir(),
         scope,

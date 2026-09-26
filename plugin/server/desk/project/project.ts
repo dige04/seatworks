@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { LAND_AS, type LandAs, gitCommonDir, trackedFiles } from "../../core/git.ts";
-import { getPath } from "../../core/json.ts";
+import { type Json, getPath, isRecord } from "../../core/json.ts";
 import { stateRoot } from "../../core/paths.ts";
-import { readJson, writeJson } from "../../core/store.ts";
+import { keptFault, readKept, writeJson } from "../../core/store.ts";
 import type { Ecosystem, Kit } from "../../catalog/kit/kit.ts";
 import { RiskRule } from "../../catalog/kit/schema/ecosystem.ts";
 import { coverOf, serialPaths } from "../../core/scope.ts";
@@ -118,9 +118,24 @@ export function conceptFile(state: string): string | undefined {
   return existsSync(file) ? file : undefined;
 }
 
-/** An empty gate is the owner's decision and must survive a read: as `undefined`, `open_lane` would seed a detected gate over it. */
+/**
+ * The project's standing orders from one read, or why they cannot be read; absent, they are every default. For the few
+ * callers that go on over a fault: a landing then waits for the Human, and the watch reads the seat without them.
+ */
+export function readProjectConfig(state: string): { config: ProjectConfig } | { fault: string } {
+  const read = readKept<Json>(configFile(state), {}, isRecord);
+  return "fault" in read ? read : { config: configOf(read.value) };
+}
+
+/** The project's standing orders; ones that cannot be read throw, rather than stand in as defaults the Human never set. */
 export function loadConfig(state: string): ProjectConfig {
-  const stored = readJson<Partial<ProjectConfig>>(configFile(state), {});
+  const read = readProjectConfig(state);
+  if ("fault" in read) throw keptFault(read.fault);
+  return read.config;
+}
+
+/** An empty gate is the owner's decision and must survive a read: as `undefined`, `open_lane` would seed a detected gate over it. */
+function configOf(stored: Partial<ProjectConfig>): ProjectConfig {
   const minutes = Number(stored.gateTimeoutMinutes);
   return {
     base: typeof stored.base === "string" && stored.base ? stored.base : undefined,

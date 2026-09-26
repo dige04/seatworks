@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { tempDir } from "../tempdir.ts";
@@ -79,6 +79,19 @@ test("a task that goes red with its lane brought in stays out until its Lead acc
     /Gate: ran on this task: test ! -f x\.txt \|\| test ! -f y\.txt: the gate failed with exit 1 — merged over it: y replaces x next task/,
   );
   assert.ok(h.events("gate.overridden").some((event) => event.task === "L1-T3" && event.reason === reason));
+
+  // Standing orders that cannot be read are not a project without a gate: nothing is handed back as if it had none.
+  await h.call(lead, "lead", "add_tasks", {
+    tasks: [{ key: "e", title: "Early", goal: "g", ...scope, holds: ["e.txt"], parallel: true }],
+  });
+  const early = Object.values(h.ledger().tasks).find((task) => task.title === "Early")!;
+  h.commit(early.worktree!, "e.txt", "e\n");
+  const orders = join(h.project.state, "project.json");
+  writeFileSync(orders, "{not json");
+  const unread = await h.call(early.peer!, "peer", "done", { outcome: "complete", summary: "e" });
+  assert.equal(unread.ok, false, unread.text);
+  assert.match(unread.text, /project\.json is there but could not be read[^]*Nothing was written over it/);
+  assert.equal(readFileSync(orders, "utf-8"), "{not json");
 });
 
 test("what the gate did reaches the Lead: with the hand-back, when its verdict is used again, and with each merge", async () => {
