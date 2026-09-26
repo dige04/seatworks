@@ -41,7 +41,7 @@ export const projectsRpc = defineRpc({
 });
 export const projectsAddRpc = defineRpc({
   name: "seatworks.projects.add",
-  input: z.object({ root: z.string().min(1) }),
+  input: z.object({ root: z.string().min(1), values: z.json().optional() }),
   output: Added,
 });
 export const projectsRemoveRpc = defineRpc({
@@ -60,6 +60,11 @@ export const mcpParseRpc = defineRpc({
   output: Parsed,
 });
 export const teamRpc = defineRpc({ name: "seatworks.team.read", input: z.object({ project }), output: TeamRead });
+export const teamPreviewRpc = defineRpc({
+  name: "seatworks.team.preview",
+  input: z.object({ root: z.string().min(1), values: z.json() }),
+  output: TeamRead,
+});
 export const doctorRpc = defineRpc({
   name: "seatworks.doctor.run",
   input: z.object({ project }),
@@ -137,6 +142,7 @@ export const contracts = {
   projectsCandidates: projectsCandidatesRpc,
   mcpParse: mcpParseRpc,
   team: teamRpc,
+  teamPreview: teamPreviewRpc,
   doctor: doctorRpc,
   status: statusRpc,
   flow: flowRpc,

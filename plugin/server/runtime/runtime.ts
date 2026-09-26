@@ -148,15 +148,17 @@ export class Runtime implements HostHooks {
     const seats = this.host.seats;
     const watch = (project: Project) =>
       watchView(project, this.watching.troublesOf(project), source.teamFor(project), kit);
+    const settings = new SettingsPanel({
+      kit,
+      source,
+      changed,
+      reconcile,
+      models: () => this.refreshModels(),
+      paseoTools: () => this.host.tools(),
+    });
+    const adopt = (project: Project, draft: unknown) => settings.adopt(project, draft);
     return {
-      settings: new SettingsPanel({
-        kit,
-        source,
-        changed,
-        reconcile,
-        models: () => this.refreshModels(),
-        paseoTools: () => this.host.tools(),
-      }),
+      settings,
       projects: new ProjectsPanel({
         kit,
         source,
@@ -166,6 +168,7 @@ export class Runtime implements HostHooks {
         watch,
         changed,
         reconcile,
+        adopt,
       }),
       upkeep: new UpkeepPanel({ kit, source, seats }),
       human: new HumanPanel(source, this.desk.human),

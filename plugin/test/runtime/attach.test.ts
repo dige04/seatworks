@@ -8,6 +8,7 @@ import { test } from "node:test";
 import { stateRoot } from "../../server/core/paths.ts";
 import { emptyLedger } from "../../server/domain/ledger.ts";
 import { contracts } from "../../shared/rpc.ts";
+import type { Layer } from "../../shared/settings.ts";
 import { tempDir } from "../tempdir.ts";
 import { fakeConfig } from "./fake-paseo.ts";
 import { daemon, served, which } from "./served.ts";
@@ -72,6 +73,35 @@ test("a project attached by path, set up, opened in Paseo's own project list, de
     ["Never touch the release branch.", "Bearer SECRET"],
     "a second setup leaves the desk's layer alone",
   );
+
+  // The setup screen's agents for a project, previewed and then attached in one call, over what the project holds.
+  const onOmp = { roles: { lead: { harness: "omp" } } };
+  const preview = which(await call(contracts.teamPreview, { root, values: onOmp }), "roles");
+  assert.deepEqual(
+    [preview.roles.lead!.harness, preview.roles.lead!.model, preview.roles.peer!.harness],
+    ["omp", "glm", "omp"],
+    "the draft over the project's own layer, as the seats would run on it",
+  );
+  const fresh = realpathSync(tempDir("sw2-rpc-fresh-"));
+  git(fresh, "init", "-q");
+  assert.equal(
+    which(await call(contracts.teamPreview, { root: fresh, values: {} }), "roles").roles.peer!.harness,
+    "omp",
+    "a repository not set up yet runs on the machine's defaults",
+  );
+  const setUp = async (values: Layer) => which(await call(contracts.projectsAdd, { root, values }), "slug");
+  const lead = async () => which(await call(contracts.settingsRead, { project: added.slug }), "values").values;
+  assert.equal((await setUp({ roles: { lead: { model: "haiku", thinking: "high" } } })).refused, undefined);
+  assert.deepEqual((await lead()).roles?.lead, { model: "haiku", thinking: "high" }, "a draft that moves no role");
+  await setUp(onOmp);
+  const folded = await lead();
+  assert.deepEqual(
+    [folded.rules, folded.roles?.lead, folded.roles?.peer, folded.mcp?.docs?.connect?.headers?.Authorization],
+    ["Never touch the release branch.", { harness: "omp" }, { harness: "omp" }, "Bearer SECRET"],
+    "the rules and the pasted token stay, and the old agent's choices do not follow the role to the new one",
+  );
+  const ghost = await setUp({ roles: { ghost: { harness: "claude" } } });
+  assert.match(ghost.refused ?? "", /unknown role ghost/, "attached, and why its setup was not saved");
 
   const ledger = join(stateRoot(), "projects", added.slug, "ledger.json");
   const remove = async () => call(contracts.projectsRemove, { project: added.slug });

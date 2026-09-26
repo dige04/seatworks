@@ -5,8 +5,6 @@ import { test } from "node:test";
 import { applyModels } from "../../server/catalog/paseo/models.ts";
 import { serversFor } from "../../server/catalog/seat/servers.ts";
 import { resolveTeam, rulesFor, servingProject, skillDirsFor, withHarness } from "../../server/catalog/team/team.ts";
-import { describeCatalog } from "../../server/runtime/panel/catalog-view.ts";
-import { harnessInForce, modelInForce } from "../../client/model/layer.ts";
 import type { Layer } from "../../shared/settings.ts";
 import { makeKit } from "../kit.ts";
 import { tempDir } from "../tempdir.ts";
@@ -19,93 +17,59 @@ const served = (team: ReturnType<typeof resolveTeam>, role: string) => serversFo
 const proxied = (servers: Served, id: string) => JSON.parse(servers[id]?.args?.[1] ?? "{}") as Proxied;
 
 const onClaude: Layer = { roles: { peer: { harness: "claude", model: "opus", thinking: "medium" } } };
-const IN_FORCE: [string, Layer, Layer, [string, string?, string?], [string, string?]][] = [
-  ["supervisor", {}, {}, ["claude", "opus", "high"], ["claude", "opus"]],
-  ["peer", {}, {}, ["omp", "glm", undefined], ["omp", "glm"]],
-  ["lead", {}, { roles: { lead: { harness: "omp" } } }, ["omp", "glm", undefined], ["omp", undefined]],
-  [
-    "lead",
-    { roles: { lead: { model: "gpt-5.6-sol" } } },
-    {},
-    ["claude", "gpt-5.6-sol", "medium"],
-    ["claude", "gpt-5.6-sol"],
-  ],
+const IN_FORCE: [string, Layer, Layer, [string, string?, string?]][] = [
+  ["supervisor", {}, {}, ["claude", "opus", "high"]],
+  ["peer", {}, {}, ["omp", "glm", undefined]],
+  ["lead", {}, { roles: { lead: { harness: "omp" } } }, ["omp", "glm", undefined]],
+  ["lead", { roles: { lead: { model: "gpt-5.6-sol" } } }, {}, ["claude", "gpt-5.6-sol", "medium"]],
   [
     "supervisor",
     { roles: { supervisor: { model: "opus-next", thinking: "max" } } },
     {},
     ["claude", "opus-next", "max"],
-    ["claude", "opus-next"],
   ],
   [
     "supervisor",
     { roles: { supervisor: { harness: "omp" } } },
     { roles: { supervisor: { harness: "claude" } } },
     ["claude", "opus", "high"],
-    ["claude", "opus"],
   ],
   [
     "lead",
     { roles: { lead: { harness: "omp", model: "glm" } } },
     { roles: { lead: { harness: "claude" } } },
     ["claude", "opus", "medium"],
-    ["claude", "opus"],
   ],
-  ["lead", { roles: { lead: { harness: "omp", model: "glm" } } }, {}, ["omp", "glm", undefined], ["omp", "glm"]],
+  ["lead", { roles: { lead: { harness: "omp", model: "glm" } } }, {}, ["omp", "glm", undefined]],
   [
     "peer",
     { roles: { peer: { harness: "omp", model: "glm" } } },
     { roles: { peer: { harness: "claude" } } },
     ["claude", "opus", "medium"],
-    ["claude", undefined],
   ],
-  ["peer", { roles: { peer: { harness: "claude" } } }, {}, ["claude", "opus", "medium"], ["claude", undefined]],
-  ["scribe", {}, {}, ["omp", "glm", undefined], ["omp", "glm"]],
-  ["scribe", onClaude, {}, ["claude", "opus", "medium"], ["claude", "opus"]],
-  ["scribe", onClaude, { roles: { scribe: { model: "haiku" } } }, ["claude", "haiku", undefined], ["claude", "haiku"]],
-  ["scribe", onClaude, { roles: { scribe: { harness: "omp" } } }, ["omp", "glm", undefined], ["omp", undefined]],
+  ["peer", { roles: { peer: { harness: "claude" } } }, {}, ["claude", "opus", "medium"]],
+  ["scribe", {}, {}, ["omp", "glm", undefined]],
+  ["scribe", onClaude, {}, ["claude", "opus", "medium"]],
+  ["scribe", onClaude, { roles: { scribe: { model: "haiku" } } }, ["claude", "haiku", undefined]],
+  ["scribe", onClaude, { roles: { scribe: { harness: "omp" } } }, ["omp", "glm", undefined]],
   [
     "scribe",
     { roles: { ...onClaude.roles, scribe: { harness: "omp" } } },
     { roles: { scribe: { harness: "claude" } } },
     ["claude", "opus", "medium"],
-    ["claude", "opus"],
   ],
 ];
 
-test("each seat runs the agent, model and thinking its layers choose, and the panel shows the same", () => {
+test("each seat runs the agent, model and thinking its layers choose", () => {
   const kit = makeKit();
   writeFileSync(join(kit.dir, "harness", "claude", "settings", "peer.settings.json"), "{}");
-  const spec = (id: string) => describeCatalog(kit).roles.find((role) => role.id === id)!;
-  for (const [role, machine, project, seat, panel] of IN_FORCE) {
+  for (const [role, machine, project, seat] of IN_FORCE) {
     const what = `${role} over ${JSON.stringify([machine, project])}`;
     const team = resolveTeam(kit, machine, project);
     assert.deepEqual(team.errors, [], what);
     const { harness, model, thinking } = team.roles[role]!;
     assert.deepEqual([harness.id, model?.id, thinking], seat, what);
-    assert.deepEqual(
-      [harnessInForce(spec(role), project, machine), modelInForce(spec(role), project, machine)],
-      panel,
-      `the panel: ${what}`,
-    );
   }
-
-  const peer = spec("peer");
-  const draft: Layer = { roles: { peer: { harness: "omp" } } };
-  assert.equal(
-    harnessInForce(peer, draft, { roles: { peer: { harness: "claude" } } }),
-    "omp",
-    "a draft being filled in wins",
-  );
-  assert.equal(harnessInForce(peer, undefined, undefined), "omp", "and a layer not read yet is not a choice");
-  const ompLead: Layer = { roles: { lead: { harness: "omp", model: "glm" } } };
-  assert.equal(modelInForce(spec("lead"), { roles: { lead: { model: "haiku" } } }, undefined, ompLead), "haiku");
-  const scribe = spec("scribe");
-  assert.equal(
-    modelInForce(scribe, { roles: { peer: { model: "haiku" } } }, {}, onClaude),
-    "haiku",
-    "a draft of the followed role moves its follower",
-  );
 
   const opened = withHarness(resolveTeam(kit), "lead", kit.harnesses.omp!).roles.lead!;
   assert.deepEqual(

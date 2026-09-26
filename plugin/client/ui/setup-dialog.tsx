@@ -6,10 +6,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { Button } from "./bits.tsx";
 import type { Layer } from "../../shared/settings.ts";
-import type { CatalogView, Folders, ProjectRow } from "../../shared/views.ts";
+import type { CatalogView, Folders, ProjectRow, TeamView } from "../../shared/views.ts";
 import type { PaseoProject } from "../state/seatworks.ts";
 import { message } from "../format/error.ts";
-import { harnessInForce, modelInForce, modelRow, setRole } from "../model/layer.ts";
+import { modelRow, setRole } from "../model/layer.ts";
 import { TabBar } from "./tabs.tsx";
 
 type Props = {
@@ -17,8 +17,7 @@ type Props = {
   catalog: CatalogView;
   available: PaseoProject[];
   projects: ProjectRow[];
-  readSettings: (slug: string) => Promise<{ status: string; values?: Layer; machine?: Layer } | { error: string }>;
-  machine: Layer;
+  previewTeam: (root: string, values: Layer) => Promise<TeamView | { error: string }>;
   theme: PluginTheme;
   disabled: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,8 +37,7 @@ export function SetupDialog({
   catalog,
   available,
   projects,
-  readSettings,
-  machine,
+  previewTeam,
   theme,
   disabled,
   onOpenChange,
@@ -54,8 +52,8 @@ export function SetupDialog({
   const [browsing, setBrowsing] = useState<Folders | null>(null);
   const [picking, setPicking] = useState(false);
   const [trouble, setTrouble] = useState<string | null>(null);
-  // What the target already holds; without it the selects showed the kit's agent, not the one in force.
-  const [held, setHeld] = useState<{ root: string; values: Layer; machine: Layer } | null>(null);
+  // The team the draft makes of the target, as the desk resolves it over what the target holds already.
+  const [preview, setPreview] = useState<{ root: string; team: TeamView } | null>(null);
   const attached = projects.map((entry) => entry.root);
   const styles = useMemo(
     () => ({
@@ -68,34 +66,23 @@ export function SetupDialog({
 
   const chosen = catalog.roles.find((entry) => entry.id === role) ?? catalog.roles[0];
   const path = root.trim();
-  const inForce = held?.root === path ? held : undefined;
-  // A repository not set up yet still runs on the machine's defaults, not the kit's.
-  const below = inForce?.machine ?? machine;
-  const harnessOf = (id: string) => {
-    const spec = catalog.roles.find((entry) => entry.id === id);
-    return spec ? harnessInForce(spec, draft, inForce?.values, below) : "";
-  };
+  const team = preview?.root === path ? preview.team : undefined;
+  const harnessOf = (id: string) => team?.roles[id]?.harness ?? "";
   const harness = catalog.harnesses.find((entry) => entry.id === harnessOf(chosen?.id ?? ""));
   const models = harness?.models ?? [];
-  const settled = (id: string) => {
-    const spec = catalog.roles.find((entry) => entry.id === id);
-    return spec ? modelInForce(spec, draft, inForce?.values, below) : undefined;
-  };
-  const model = settled(chosen?.id ?? "") ?? models[0]?.id ?? "";
+  const model = team?.roles[chosen?.id ?? ""]?.model ?? models[0]?.id ?? "";
   const row = modelRow(model, models);
 
   useEffect(() => {
-    const slug = projects.find((entry) => entry.root === path)?.slug;
-    if (!open || !slug || held?.root === path) return;
+    if (!open || !path) return;
     let stale = false;
-    void readSettings(slug).then((read) => {
-      if (stale || "error" in read || read.status !== "ready") return;
-      setHeld({ root: path, values: read.values ?? {}, machine: read.machine ?? {} });
+    void previewTeam(path, draft).then((read) => {
+      if (!stale && !("error" in read)) setPreview({ root: path, team: read });
     });
     return () => {
       stale = true;
     };
-  }, [open, path, projects, readSettings, held?.root]);
+  }, [open, path, draft, previewTeam]);
 
   const close = () => {
     setDraft({});
@@ -104,7 +91,7 @@ export function SetupDialog({
     setBrowsing(null);
     setPicking(false);
     setTrouble(null);
-    setHeld(null);
+    setPreview(null);
     onOpenChange(false);
   };
 

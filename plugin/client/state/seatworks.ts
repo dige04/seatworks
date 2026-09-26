@@ -13,12 +13,13 @@ import {
   settingsReadRpc,
   settingsWriteRpc,
   statusRpc,
+  teamPreviewRpc,
   teamRpc,
 } from "../../shared/rpc.ts";
 import type { Layer } from "../../shared/settings.ts";
 import type { CatalogView, ProjectRow, TeamView } from "../../shared/views.ts";
 import { message } from "../format/error.ts";
-import { type InForce, foldRoles, harnessInForce, keptRoles, setMcp } from "../model/layer.ts";
+import { keptRoles, setMcp } from "../model/layer.ts";
 
 export type PaseoProject = { name: string; root: string };
 
@@ -67,6 +68,7 @@ export function useSeatworks(project?: string) {
     settings: useRpc(settingsReadRpc),
     write: useRpc(settingsWriteRpc),
     team: useRpc(teamRpc),
+    preview: useRpc(teamPreviewRpc),
     doctor: useRpc(doctorRpc),
     status: useRpc(statusRpc),
     flow: useRpc(flowRpc),
@@ -198,42 +200,27 @@ export function useSeatworks(project?: string) {
     }
   }, []);
 
+  /** Attaches `root` with the setup the screen chose, in one call: the desk folds it into what the project holds. */
   const attach = useCallback(
     async (root: string, values: Layer): Promise<string | null> => {
       return writing(async () => {
-        const added = await latest.current.add({ root });
+        const added = await latest.current.add({ root, values });
         if ("error" in added) {
           setSaveError(added.error);
           setSaved(false);
           return null;
         }
-        if (Object.keys(values).length > 0) {
-          const read = await latest.current.settings({ project: added.slug });
-          if (read.status !== "ready") {
-            // Filed under the project the dialog is about to open, which is where it has to be read.
-            setRefusal({ of: added.slug, text: read.error });
-            setSaved(false);
-            return added.slug;
-          }
-          // A write is the whole layer, so the draft is folded into what the project holds; alone it erased rules, servers and tuning.
-          const catalogue = data.status === "ready" ? data.catalog.roles : [];
-          const merged = foldRoles(read.values, values, (role) => {
-            const spec = catalogue.find((entry) => entry.id === role);
-            return spec ? harnessInForce(spec, read.values, read.machine) : undefined;
-          });
-          const written = await latest.current.write({ project: added.slug, revision: read.revision, values: merged });
-          if (written.status !== "saved") {
-            setRefusal({ of: added.slug, text: written.error });
-            setSaved(false);
-            return added.slug;
-          }
+        if (added.refused) {
+          // Filed under the project the dialog is about to open, which is where it has to be read.
+          setRefusal({ of: added.slug, text: added.refused });
+          setSaved(false);
+          return added.slug;
         }
         setSaved(true);
         return added.slug;
       }, null);
     },
-    // `data` for the catalog's default harness; without it the callback keeps the first render's empty catalog.
-    [data, writing],
+    [writing],
   );
 
   const detach = useCallback(
@@ -268,10 +255,10 @@ export function useSeatworks(project?: string) {
         }
         // Only to roles whose agent can reach it: otherwise it was refused, and the narrowing control appears only once saved.
         if (data.status !== "ready") return null;
-        const harnessOf = (role: InForce) => harnessInForce(role, data.values, data.machine);
+        const harnessOf = (role: string) => data.team.roles[role]?.harness;
         const reachable = data.catalog.roles
           .filter((role) =>
-            (data.catalog.harnesses.find((entry) => entry.id === harnessOf(role))?.transports ?? []).includes(
+            (data.catalog.harnesses.find((entry) => entry.id === harnessOf(role.id))?.transports ?? []).includes(
               parsed.connect.type,
             ),
           )
@@ -311,8 +298,8 @@ export function useSeatworks(project?: string) {
   const listFolders = useCallback((path?: string) => latest.current.paths(path ? { path } : {}), []);
   const runDoctor = useCallback(() => latest.current.doctor({ project }), [project]);
   const readStatus = useCallback((slug: string) => latest.current.status({ project: slug }), []);
-  // The setup screen needs the layers of the project it is pointed at, which is not the one open here.
-  const readSettings = useCallback((slug: string) => latest.current.settings({ project: slug }), []);
+  // The setup screen previews the project it is pointed at, which is not the one open here.
+  const previewTeam = useCallback((root: string, values: Layer) => latest.current.preview({ root, values }), []);
   return {
     data,
     save,
@@ -327,6 +314,6 @@ export function useSeatworks(project?: string) {
     listFolders,
     runDoctor,
     readStatus,
-    readSettings,
+    previewTeam,
   };
 }

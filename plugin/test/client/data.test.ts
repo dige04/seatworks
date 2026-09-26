@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { KEPT, type Layer } from "../../shared/settings.ts";
 import { countsInstead, leadState, seatText } from "../../client/format/flow.ts";
 import { incidentState, judgeWords } from "../../client/format/watch.ts";
-import { dropMcp, foldRoles, keptRoles, modelRow, setRole, withKey } from "../../client/model/layer.ts";
+import { dropMcp, keptRoles, modelRow, setRole, withKey } from "../../client/model/layer.ts";
 import type { FlowLane, WatchIncident, WatchJudge } from "../../shared/flow-views.ts";
 
 const docs = {
@@ -16,7 +16,7 @@ const lead = { harness: "claude", model: "opus", thinking: "high", rules: "Never
 const held: Layer = {
   rules: "Keep diffs small.",
   roles: { lead },
-  attention: { longTurnMinutes: 30, signals: { stuck: "shadow" } },
+  attention: { longTurnMinutes: 30 },
   mcp: { docs },
   sensor: { other: { key: KEPT } },
 };
@@ -56,35 +56,6 @@ const EDITS: [string, (layer: Layer) => Layer, Layer][] = [
 
 test("a panel edit changes only what it names and keeps the rest of the layer", () => {
   for (const [what, edit, edited] of EDITS) assert.deepEqual(edit(held), edited, what);
-});
-
-test("running the setup screen over a project keeps what it holds, and drops the old agent's model only where an agent is really replaced", () => {
-  const project: Layer = {
-    rules: "Never touch the release branch.",
-    mcp: { docs },
-    attention: { longTurnMinutes: 45 },
-    roles: { peer: { harness: "claude", model: "claude-opus-5", thinking: "high" } },
-  };
-  const recorded = (role: string) => project.roles?.[role]?.harness;
-  assert.deepEqual(
-    foldRoles(project, { roles: { peer: { harness: "omp" } } }, recorded),
-    { ...project, roles: { peer: { harness: "omp" } } },
-    "a write is the whole layer: the rules, the pasted token and the tuning survive, and the model and thinking picked for the old agent are not kept on the new one",
-  );
-  assert.deepEqual(foldRoles(project, { roles: { peer: { thinking: "low" } } }, recorded).roles?.peer, {
-    harness: "claude",
-    model: "claude-opus-5",
-    thinking: "low",
-  });
-  const picked: Layer = { roles: { peer: { model: "glm-5-air" } } };
-  assert.deepEqual(
-    foldRoles(picked, { roles: { peer: { harness: "omp" } } }, () => undefined).roles?.peer,
-    { model: "glm-5-air", harness: "omp" },
-    "a role nobody moved runs the kit's default agent, which no layer names: an agent nobody can name is not one being replaced",
-  );
-  assert.deepEqual(foldRoles(picked, { roles: { peer: { harness: "claude" } } }, () => "omp").roles?.peer, {
-    harness: "claude",
-  });
 });
 
 test("re-pasting a server the owner gave to nobody leaves it given to nobody", () => {

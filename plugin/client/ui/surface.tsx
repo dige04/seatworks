@@ -67,7 +67,7 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
     listFolders,
     runDoctor,
     readStatus,
-    readSettings,
+    previewTeam,
   } = useSeatworks(project);
   const settings = data.status === "ready" ? data : null;
   const flowLive = settings ? (settings.values.flow?.live ?? settings.machine.flow?.live ?? true) : true;
@@ -127,8 +127,7 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
       catalog={data.catalog}
       available={data.candidates}
       projects={data.projects}
-      readSettings={readSettings}
-      machine={project ? data.machine : data.values}
+      previewTeam={previewTeam}
       theme={theme}
       disabled={saving}
       onOpenChange={setDialog}

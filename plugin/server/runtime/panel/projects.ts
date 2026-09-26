@@ -6,6 +6,7 @@ import { can, seatOf } from "../../catalog/kit/roles.ts";
 import { errorText } from "../../core/errors.ts";
 import { daemonLog } from "../../core/logger.ts";
 import { gitCommonDir } from "../../core/git.ts";
+import { isRecord } from "../../core/json.ts";
 import { worktreeRoot } from "../../core/paths.ts";
 import type { SeatView, Seats, Workspaces } from "../../core/ports.ts";
 import { type Project, projectOf } from "../../desk/project/project.ts";
@@ -31,6 +32,7 @@ type ProjectsDeps = {
   watch: (project: Project, seats: Iterable<SeatView>) => WatchView;
   changed: () => void;
   reconcile: () => Promise<void>;
+  adopt: (project: Project, draft: unknown) => Promise<string | undefined>;
 };
 
 /** The projects on this machine as the panel attaches and detaches them, and each one's status page and Flow tab. */
@@ -45,7 +47,8 @@ export class ProjectsPanel implements ProjectsRpc {
     return this.deps.source.known().map((project) => ({ slug: project.slug, root: project.root }));
   }
 
-  async addProject(root: string): Promise<Added> {
+  /** Attaches the project at `root`, and saves the setup `values` chose for it in the same call. */
+  async addProject(root: string, values?: unknown): Promise<Added> {
     const path = root.trim();
     if (!path || !existsSync(path) || !statSync(path).isDirectory())
       return { error: `${path || "That path"} is not a directory on this machine.` };
@@ -55,6 +58,8 @@ export class ProjectsPanel implements ProjectsRpc {
     if (!this.deps.source.named(project.slug))
       return { error: `${project.root} could not be put on record; see the daemon log.` };
     writeProjectBlock(this.deps.kit, project.root);
+    const refused =
+      isRecord(values) && Object.keys(values).length > 0 ? await this.deps.adopt(project, values) : undefined;
     await this.deps.reconcile();
     // Paseo's own project list is where the Human starts the Supervisor; detaching leaves it there, as the Human's.
     await this.deps.workspaces
@@ -65,7 +70,7 @@ export class ProjectsPanel implements ProjectsRpc {
           error,
         ),
       );
-    return { slug: project.slug, root: project.root };
+    return refused ? { slug: project.slug, root: project.root, refused } : { slug: project.slug, root: project.root };
   }
 
   candidateProjects(roots: string[]): string[] {

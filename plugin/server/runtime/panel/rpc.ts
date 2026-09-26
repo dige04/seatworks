@@ -11,6 +11,7 @@ export interface SettingsRpc {
   writeSettings(project: string | undefined, revision: string, values: unknown): Out<typeof contracts.settingsWrite>;
   parseMcp(text: string): Out<typeof contracts.mcpParse>;
   team(project?: string): Out<typeof contracts.team>;
+  previewTeam(root: string, values: unknown): Out<typeof contracts.teamPreview>;
   doctor(project?: string): Out<typeof contracts.doctor>;
   refreshModels(): Out<typeof contracts.models>;
 }
@@ -18,7 +19,7 @@ export interface SettingsRpc {
 /** The projects on this machine: which are attached, and how each one's work stands. */
 export interface ProjectsRpc {
   projects(): Out<typeof contracts.projects>;
-  addProject(root: string): Out<typeof contracts.projectsAdd>;
+  addProject(root: string, values?: unknown): Out<typeof contracts.projectsAdd>;
   removeProject(project: string): Out<typeof contracts.projectsRemove>;
   candidateProjects(roots: string[]): Out<typeof contracts.projectsCandidates>;
   listPaths(path?: string): Out<typeof contracts.paths>;
@@ -63,10 +64,11 @@ export function registerRpc(handle: Serve, panel: Panel): void {
   handle(contracts.settingsWrite, (input) => settings.writeSettings(input.project, input.revision, input.values));
   handle(contracts.mcpParse, (input) => settings.parseMcp(input.text));
   handle(contracts.team, (input) => settings.team(input.project));
+  handle(contracts.teamPreview, (input) => settings.previewTeam(input.root, input.values));
   handle(contracts.doctor, (input) => settings.doctor(input.project));
   handle(contracts.models, () => settings.refreshModels());
   handle(contracts.projects, () => projects.projects());
-  handle(contracts.projectsAdd, (input) => projects.addProject(input.root));
+  handle(contracts.projectsAdd, (input) => projects.addProject(input.root, input.values));
   handle(contracts.projectsRemove, (input) => projects.removeProject(input.project));
   handle(contracts.projectsCandidates, (input) => projects.candidateProjects(input.roots));
   handle(contracts.paths, (input) => projects.listPaths(input.path));

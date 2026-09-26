@@ -1,4 +1,5 @@
-import type { Layer } from "../../../shared/settings.ts";
+import { z } from "zod";
+import { type Layer, LayerSchema } from "../../../shared/settings.ts";
 import type {
   CatalogView,
   Check,
@@ -10,14 +11,15 @@ import type {
 } from "../../../shared/views.ts";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { seatProblems } from "../../catalog/seat/seats.ts";
-import { layerValues, readShown, withKeys, withoutKeys, writeLayer } from "../../catalog/team/settings.ts";
-import { type Team, resolveTeam } from "../../catalog/team/team.ts";
+import { layerValues, readLayer, readShown, withKeys, withoutKeys, writeLayer } from "../../catalog/team/settings.ts";
+import { type Team, resolveTeam, servingProject } from "../../catalog/team/team.ts";
 import { guidesDir } from "../../core/paths.ts";
 import type { Host } from "../../core/ports.ts";
-import type { Project } from "../../desk/project/project.ts";
+import { type Project, projectOf } from "../../desk/project/project.ts";
 import type { TeamSource } from "../team-source.ts";
 import { describeCatalog } from "./catalog-view.ts";
 import { doctor } from "./doctor.ts";
+import { foldDraft } from "./draft.ts";
 import { parseMcp } from "./mcp-paste.ts";
 import { unknownProject } from "./projects.ts";
 import type { SettingsRpc } from "./rpc.ts";
@@ -80,6 +82,31 @@ export class SettingsPanel implements SettingsRpc {
 
   parseMcp(text: string): Parsed {
     return parseMcp(text);
+  }
+
+  /** The team `draft` would make of the project at `root`, over what it holds already, or over the machine's alone. */
+  previewTeam(root: string, draft: unknown): TeamRead {
+    const parsed = LayerSchema.safeParse(draft);
+    if (!parsed.success) return { error: z.prettifyError(parsed.error) };
+    const { kit, source } = this.deps;
+    const project = projectOf(root);
+    const held = source.named(project.slug) ? layerValues(source.projectFile(project)) : {};
+    const machine = source.machineLayer();
+    const before = resolveTeam(kit, machine, held);
+    const layer = foldDraft(held, parsed.data, (role) => before.roles[role]?.harness.id);
+    return describeTeam(kit, servingProject(resolveTeam(kit, machine, layer), project.root), project);
+  }
+
+  /** A setup draft folded into the project's own layer and saved as any panel save is; why not, when it is refused. */
+  async adopt(project: Project, draft: unknown): Promise<string | undefined> {
+    const parsed = LayerSchema.safeParse(draft);
+    if (!parsed.success) return z.prettifyError(parsed.error);
+    const read = readLayer(this.deps.source.projectFile(project));
+    if (read.status !== "ready") return read.error;
+    const before = resolveTeam(this.deps.kit, this.deps.source.machineLayer(), read.values);
+    const layer = foldDraft(read.values, parsed.data, (role) => before.roles[role]?.harness.id);
+    const written = await this.writeSettings(project.slug, read.revision, layer);
+    return written.status === "saved" ? undefined : written.error;
   }
 
   team(slug?: string): TeamRead {

@@ -126,7 +126,8 @@ export type WriteResult = z.infer<typeof WriteResult>;
 
 export const ProjectRow = z.object({ slug: z.string(), root: z.string() });
 export type ProjectRow = z.infer<typeof ProjectRow>;
-export const Added = z.union([ProjectRow, Refused]);
+/** A project attached; `refused` says why the setup it was attached with was not saved. */
+export const Added = z.union([ProjectRow.extend({ refused: z.string().optional() }), Refused]);
 export type Added = z.infer<typeof Added>;
 export const Removed = z.union([z.object({ removed: z.string() }), Refused]);
 export type Removed = z.infer<typeof Removed>;
