@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { writeConfigAtomic } from "../../core/config-file.ts";
 import { executableIn, nodeBin, pathDirs, stateRoot } from "../../core/paths.ts";
@@ -118,7 +119,8 @@ export function projectImports(harness: HarnessSpec, root: string | undefined): 
 
 /**
  * The harness's own env goes in too: Paseo may run one agent server for every seat of a harness, built from its built-in provider.
- * `shim` is the directory `seatBin` writes, which goes first on the seat's PATH.
+ * `shim` is the directory `seatBin` writes, which goes first on the seat's PATH. TMPDIR is where every seat is told its
+ * scratch files go, so a machine that sets none, as Linux services and Windows do, gets the system's.
  */
 export function seatEnv(
   kit: Kit,
@@ -138,7 +140,9 @@ export function seatEnv(
       ...(seat.harness.settings.overlayEnv
         ? { [seat.harness.settings.overlayEnv]: join(seatPath, seat.harness.settings.file) }
         : {}),
+      ...(request.env.TMPDIR || process.env.TMPDIR ? {} : { TMPDIR: tmpdir() }),
       SEATWORKS_ROLE: seat.role.role,
+      SEATWORKS_KIT: kit.dir,
       SEATWORKS_PROJECT: project.root,
       SEATWORKS_STATE: project.state,
       ...(shim ? { PATH: [shim, request.env.PATH ?? process.env.PATH].filter(Boolean).join(delimiter) } : {}),

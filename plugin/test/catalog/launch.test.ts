@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { delimiter, join, matchesGlob } from "node:path";
 import { test } from "node:test";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { providerId } from "../../server/catalog/kit/roles.ts";
@@ -266,13 +267,13 @@ test("a Claude seat's file tools are kept off what the desk owns and what sets u
     );
 });
 
-test("a seat's session gets its harness's environment, its config directory, project variables and the git launcher first on its PATH", () => {
+test("a seat's session gets its harness's environment, its config directory, project variables and the git launcher first on its PATH", (t) => {
   const request = {
     agentId: "a",
     reason: "create" as const,
     provider: "sw2-peer-omp",
     cwd: "/repo",
-    env: { KEEP: "1", PATH: "/usr/bin" },
+    env: { KEEP: "1", PATH: "/usr/bin", TMPDIR: "/scratch" },
   };
   const next = seatEnv(kit, request, "/seats/peer-omp-repo", { root: "/repo", state: "/state/repo" }, "/state/bin");
   assert.deepEqual(
@@ -280,13 +281,24 @@ test("a seat's session gets its harness's environment, its config directory, pro
     {
       KEEP: "1",
       PATH: `/state/bin${delimiter}/usr/bin`,
+      TMPDIR: "/scratch",
       SEATWORKS_HARNESS: "omp",
       SEATWORKS_AGENT_BIN: "omp",
       PI_CODING_AGENT_DIR: "/seats/peer-omp-repo",
       SEATWORKS_ROLE: "peer",
+      SEATWORKS_KIT: kit.dir,
       SEATWORKS_PROJECT: "/repo",
       SEATWORKS_STATE: "/state/repo",
     },
     "Paseo may run one agent server for every seat of a harness, so only the session carries the seat's own environment",
+  );
+  const had = process.env.TMPDIR;
+  delete process.env.TMPDIR;
+  t.after(() => (had === undefined ? delete process.env.TMPDIR : (process.env.TMPDIR = had)));
+  const bare = seatEnv(kit, { ...request, env: {} }, "/seats/peer-omp-repo", { root: "/repo", state: "/state/repo" });
+  assert.equal(
+    bare.env.TMPDIR,
+    tmpdir(),
+    "a machine that sets no TMPDIR, as Linux services and Windows do, still gives a seat the scratch folder it is told to use",
   );
 });
