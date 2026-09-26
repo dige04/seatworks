@@ -140,7 +140,7 @@ test("a lane's own record raises an incident about its Lead once, held while the
 
 const quote = "the same action failing 3 times: Bash: npm test";
 
-test("nothing reaches a seat that names or quotes an open incident about it, while its own words about the work do", async () => {
+test("nothing reaches a seat that names or quotes an open incident about it from whoever supervises, who alone reads incidents", async () => {
   const { h, sup, lane, peer } = await laneWithPeer();
   const now = Date.now();
   const about = (id: string, seat: string) => ({
@@ -159,19 +159,11 @@ test("nothing reaches a seat that names or quotes an open incident about it, whi
   saveIncidents(h.project.state, { next: 3, items: { I1: about("I1", peer), I2: about("I2", lane.lead!) } });
   const refusal = /That repeats incident I1 about the seat it goes to/;
 
-  assert.match(
-    (await h.call(lane.lead!, "lead", "message", { to: "L1-T1", text: "About i1: why did that happen?" })).text,
-    refusal,
-  );
-  assert.match(
-    (await h.call(lane.lead!, "lead", "message", { to: "L1-T1", text: `You hit ${quote.toUpperCase()}.` })).text,
-    refusal,
-  );
-  assert.match(
-    (await h.call(lane.lead!, "lead", "amend_task", { task: "L1-T1", why: `because of ${quote}`, goal: "g2" })).text,
-    refusal,
-  );
   assert.match((await h.call(sup, "supervisor", "message", { to: "L1-T1", text: `See I1.` })).text, refusal);
+  assert.match(
+    (await h.call(sup, "supervisor", "message", { to: "L1-T1", text: `You hit ${quote.toUpperCase()}.` })).text,
+    refusal,
+  );
   assert.match(
     (await h.call(sup, "supervisor", "message", { to: "L1", text: `${quote}?` })).text,
     /That repeats incident I2/,
@@ -188,18 +180,17 @@ test("nothing reaches a seat that names or quotes an open incident about it, whi
   );
   assert.equal(
     (
-      await h.call(lane.lead!, "lead", "message", {
-        to: "L1-T1",
-        text: "Your test run keeps failing the same way; what does the first failure say?",
+      await h.call(sup, "supervisor", "message", {
+        to: "L1",
+        text: "The test run keeps failing the same way; what does the first failure say?",
       })
     ).ok,
     true,
   );
 
+  // A Lead never reads an incident, so what it says to its Peer is its own and passes: here, only by chance the same words.
+  assert.equal((await h.call(lane.lead!, "lead", "message", { to: "L1-T1", text: `You hit ${quote}.` })).ok, true);
   await h.call(peer, "peer", "ask", { question: "Which rounding?", bestGuess: "half up" });
-  assert.match((await h.call(lane.lead!, "lead", "answer", { ask: "A1", text: "Half up. Also I1." })).text, refusal);
-  h.commit(lane.worktree!, "a.txt", "A\n");
-  await h.call(peer, "peer", "done", { outcome: "complete", summary: "a" });
-  assert.match((await h.call(lane.lead!, "lead", "rework", { task: "L1-T1", text: `Stop: ${quote}.` })).text, refusal);
-  assert.equal(h.ledger().tasks["L1-T1"]!.status, "done", "a refused rework sends the task nowhere");
+  assert.match((await h.call(sup, "supervisor", "answer", { ask: "A1", text: "Half up. Also I1." })).text, refusal);
+  assert.equal((await h.call(lane.lead!, "lead", "answer", { ask: "A1", text: "Half up, I1 aside." })).ok, true);
 });

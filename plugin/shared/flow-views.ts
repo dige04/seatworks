@@ -81,7 +81,7 @@ const WatchIncident = z.object({
   name: z.string(),
   minutes: z.number(),
   quote: z.string(),
-  told: z.enum(["lead", "supervisor"]).nullable(),
+  told: z.boolean(),
   lane: z.string().nullable(),
   held: z.string().nullable(),
 });

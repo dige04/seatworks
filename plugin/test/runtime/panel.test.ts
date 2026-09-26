@@ -116,8 +116,10 @@ test("a lane's budget for the day holds back what is only worth attention, howev
         .sent.join("\n")
         .match(/INCIDENT/g) ?? []
     ).length,
-    2,
+    3,
+    "each told goes to whoever supervises",
   );
+  assert.doesNotMatch(h.heard(h.ledger().lanes.L1!.lead!).join("\n"), /INCIDENT/);
 
   const read = await h.rpc(contracts.settingsRead, { project: h.project.slug });
   const saved = await h.rpc(contracts.settingsWrite, {

@@ -23,7 +23,6 @@ export type Incident = {
   count: number;
   open: boolean;
   told?: number;
-  toldTo?: "lead" | "supervisor";
   held?: Held;
   label?: "useful" | "noise" | "unknown";
   note?: string;

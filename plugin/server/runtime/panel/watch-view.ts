@@ -67,7 +67,7 @@ export function watchView(project: Project, troubles: Trouble[], team: Team, kit
       name: nameOf(item.seat, item.where),
       minutes: ago(item.last),
       quote: item.quote.replace(/\s+/g, " ").slice(0, 300),
-      told: item.told !== undefined ? (item.toldTo ?? null) : null,
+      told: item.told !== undefined,
       lane: item.lane ?? null,
       held: item.told === undefined ? (item.held ?? null) : null,
     }));

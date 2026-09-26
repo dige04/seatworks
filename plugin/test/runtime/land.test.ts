@@ -175,10 +175,12 @@ test("what the record holds of a lane goes to whoever lands it, and never to the
   await new Promise((resolve) => setTimeout(resolve, 30));
   await h.idle(peer);
   await h.idle(lead);
+  await h.idle(sup);
   assert.match(
-    h.agents.get(lead)!.sent.join("\n"),
+    h.agents.get(sup)!.sent.join("\n"),
     /INCIDENT I\d+ \(claim-contradicted, attend\) on the Peer on L1-T1[^]*handed back as complete, but `npm test` failed the last time it ran, after the last edit/,
   );
+  assert.doesNotMatch(h.agents.get(lead)!.sent.join("\n"), /INCIDENT/, "never to the Lead it is about");
 
   const beside = [{ key: "s", title: "Side", goal: "g", ...scope, holds: ["c.txt"], parallel: true }];
   await h.call(lead, "lead", "add_tasks", { tasks: beside });

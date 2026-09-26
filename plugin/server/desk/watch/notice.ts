@@ -125,23 +125,10 @@ function openIncidents(
   });
 }
 
-type Reader = "lead" | "supervisor";
-
-/** Attention-level incidents about a Peer go to its Lead; the rest, or a Peer with no Lead, to whoever supervises. Never to the seat itself. */
-async function recipientFor(
-  services: DeskServices,
-  project: Project,
-  seat: Noticed,
-  place: Placed,
-  level: Incident["level"],
-): Promise<{ to: string | undefined; as: Reader }> {
-  const lead = place.lane?.lead;
-  if (level === "attend" && place.task && lead && lead !== seat.id && (await services.roster.seated(lead)))
-    return { to: lead, as: "lead" };
-  const to = await services.roster.supervisorFor(project, place.lane?.opener);
-  return { to: to === seat.id ? undefined : to, as: "supervisor" };
-}
-
+/**
+ * Tells whoever supervises the seat's lane each incident, pages first: W's only edge is to the Supervisor, never to a Lead
+ * and never to the seat it watched. With nobody seated to tell, each is held until somebody sits down.
+ */
 async function deliver(
   services: DeskServices,
   project: Project,
@@ -150,48 +137,36 @@ async function deliver(
   sending: Incident[],
   now: number,
 ): Promise<string[]> {
-  const { kit, incidents, mail, teamFor } = services;
-  const harness = seatOf(kit, seat.provider)?.harness;
-  const steers = harness?.steers === true;
+  const { kit, incidents, mail, roster, teamFor } = services;
+  const steers = seatOf(kit, seat.provider)?.harness.steers === true;
   const human = teamFor(project).hitl.on;
-  const told: string[] = [];
-  for (const level of ["page", "attend"] as const) {
-    const batch = sending.filter((incident) => incident.level === level);
-    if (batch.length === 0) continue;
-    let reader: { to: string | undefined; as: Reader } = { to: undefined, as: "supervisor" };
-    try {
-      reader = await recipientFor(services, project, seat, place, level);
-    } catch (error) {
-      recordEvent(project, { kind: "incident.lookup-failed", error: errorText(error) });
-    }
-    const { to, as } = reader;
-    if (!to) {
-      incidents.transact(project, (incidents) => {
-        for (const sent of batch) {
-          const incident = incidents.items[sent.id];
-          if (incident?.told === now) unheard(incident);
-        }
-      });
-      for (const sent of batch) recordEvent(project, { kind: "incident.held", id: sent.id, held: "nobody" });
-      continue;
-    }
-    incidents.transact(project, (incidents) => {
-      for (const sent of batch) {
-        const incident = incidents.items[sent.id];
-        if (incident?.told === now) incident.toldTo = as;
+  let to: string | undefined;
+  try {
+    to = await roster.supervisorFor(project, place.lane?.opener);
+  } catch (error) {
+    recordEvent(project, { kind: "incident.lookup-failed", error: errorText(error) });
+  }
+  if (!to || to === seat.id) {
+    incidents.transact(project, (book) => {
+      for (const sent of sending) {
+        const incident = book.items[sent.id];
+        if (incident?.told === now) unheard(incident);
       }
     });
-    for (const incident of batch) {
-      try {
-        await mail.post(to, watchLetters.incident(incident, place, { steers, human }, as));
-      } catch (error) {
-        recordEvent(project, { kind: "incident.post-failed", id: incident.id, error: errorText(error) });
-      }
-    }
-    recordEvent(project, { kind: "incident.told", ids: batch.map((incident) => incident.id), to });
-    told.push(...batch.map((incident) => incident.id));
+    for (const sent of sending) recordEvent(project, { kind: "incident.held", id: sent.id, held: "nobody" });
+    return [];
   }
-  return told;
+  const pagesFirst = [...sending].sort((a, b) => Number(a.level !== "page") - Number(b.level !== "page"));
+  for (const incident of pagesFirst) {
+    try {
+      await mail.post(to, watchLetters.incident(incident, place, { steers, human }));
+    } catch (error) {
+      recordEvent(project, { kind: "incident.post-failed", id: incident.id, error: errorText(error) });
+    }
+  }
+  const ids = pagesFirst.map((incident) => incident.id);
+  recordEvent(project, { kind: "incident.told", ids, to });
+  return ids;
 }
 
 export async function retell(services: DeskServices, project: Project, now = Date.now()): Promise<string[]> {
@@ -208,18 +183,15 @@ export async function retell(services: DeskServices, project: Project, now = Dat
   for (const seat of [...new Set(nobody.map((item) => item.seat))]) {
     const noticed = { id: seat, provider: nobody.find((item) => item.seat === seat)!.provider ?? "" };
     const place = placeOf(project, noticed);
-    // Only what somebody is now seated to read; `deliver` then finds that somebody again, per level.
-    const mine: Incident[] = [];
-    for (const level of ["page", "attend"] as const) {
-      const some = nobody.filter((item) => item.seat === seat && item.level === level);
-      if (some.length === 0) continue;
-      try {
-        if ((await recipientFor(services, project, noticed, place, level)).to) mine.push(...some);
-      } catch {
-        // Nobody could be looked up: these stay held for nobody until a later round finds someone.
-      }
+    // Only once somebody is seated to read them; `deliver` then finds that somebody again.
+    let reader: string | undefined;
+    try {
+      reader = await services.roster.supervisorFor(project, place.lane?.opener);
+    } catch {
+      // Nobody could be looked up: these stay held for nobody until a later round finds someone.
     }
-    if (mine.length === 0) continue;
+    if (!reader || reader === seat) continue;
+    const mine = nobody.filter((item) => item.seat === seat);
     const sending = incidents.transact(project, (incidents) => {
       const taken: Incident[] = [];
       for (const item of mine) {

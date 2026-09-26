@@ -118,11 +118,11 @@ test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
   await h.idle(lead);
   await h.idle(sup);
   assert.match(
-    h.agents.get(lead)!.sent.join("\n"),
+    h.agents.get(sup)!.sent.join("\n"),
     /INCIDENT I\d+ \(long-turn, attend\)/,
-    "a turn that runs long is told to the Peer's Lead",
+    "a turn that runs long is told to whoever supervises, W's only reader",
   );
-  assert.doesNotMatch(h.agents.get(sup)!.sent.join("\n"), /long-turn/);
+  assert.doesNotMatch(h.agents.get(lead)!.sent.join("\n"), /INCIDENT/);
 
   await h.call(peer, "peer", "done", { outcome: "complete", summary: "Cleaned" });
   for (const id of ["m1", "m2", "m3"])

@@ -1,7 +1,6 @@
 import { DECIDED } from "../../domain/task.ts";
 import { laneTask } from "../access.ts";
 import { type Args, type Caller, type ToolReply, given, no, ok, str } from "../context.ts";
-import { repeatsIncident } from "../store/incidents.ts";
 import { type Amendment, amend } from "../../domain/amendment.ts";
 import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
@@ -43,9 +42,6 @@ async function checked(desk: DeskServices, caller: Caller, args: Args, changes: 
     return "A task keeps a goal and at least one acceptance line; give what it asks now.";
   const asked = laneTask(loadLedger(caller.project.state), caller, str(args.task));
   if (typeof asked === "string") return [];
-  const said = [str(args.why), ...Object.values(changes).flat()];
-  const refused = repeatsIncident(caller.project.state, asked.task.peer, ...said);
-  if (refused) return refused;
   if (changes.holds === undefined) return [];
   if (asked.task.mode !== "parallel")
     return `${asked.task.id} works in the lane's copy, one writer at a time, so it holds nothing: point it with hints instead.`;

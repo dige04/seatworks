@@ -4,8 +4,7 @@ const HELD: Record<string, string> = { budget: "held · the lane's limit for tod
 
 /** Where an incident has got to, as the card shows it. */
 export function incidentState(item: WatchIncident): string {
-  if (item.told === "lead") return item.lane ? `told Lead ${item.lane}` : "told its Lead";
-  if (item.told === "supervisor") return "told the Supervisor";
+  if (item.told) return "told the Supervisor";
   return (item.held ? HELD[item.held] : undefined) ?? "recorded";
 }
 

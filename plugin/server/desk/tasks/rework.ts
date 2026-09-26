@@ -5,7 +5,6 @@ import { laneTask } from "../access.ts";
 import { type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { holdRefusal } from "../lanes/hold.ts";
 import { holderOf } from "../copies/holder.ts";
-import { repeatsIncident } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
@@ -23,8 +22,6 @@ export async function reworkTask(desk: DeskServices, caller: Caller, args: Rewor
   const text = str(args.text);
   const asked = laneTask(loadLedger(caller.project.state), caller, str(args.task));
   if (typeof asked === "string") return no(asked);
-  const refused = repeatsIncident(caller.project.state, asked.task.peer, text);
-  if (refused) return no(refused);
   if (!asked.task.peer) return no(`${asked.task.id} has no Peer.`);
   // Asked before anything moves: a task sent back to a seat that is gone would wait for nobody.
   if (!(await desk.roster.seated(asked.task.peer)))

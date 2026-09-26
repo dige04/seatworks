@@ -25,9 +25,9 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   });
   const beside = h.ledger().tasks["L1-T2"]!.peer!;
   const mark = (seat: string, id: string, verdict: string, note?: string) =>
-    h.call(seat, seat === lead ? "lead" : "supervisor", "mark_incident", { id, verdict, ...(note ? { note } : {}) });
+    h.call(seat, "supervisor", "mark_incident", { id, verdict, ...(note ? { note } : {}) });
   const listing = async (seat: string, closed = false) =>
-    (await h.call(seat, seat === lead ? "lead" : "supervisor", "incidents", { closed })).text;
+    (await h.call(seat, "supervisor", "incidents", { closed })).text;
   const letters = (seat: string, id: string) => h.heard(seat).filter((text) => text.includes(`INCIDENT ${id} `)).length;
 
   const results = await Promise.all([
@@ -51,19 +51,23 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   );
   await notice(h, peer, "test-weakened");
   await notice(h, lead, "long-turn");
-  assert.match(h.heard(lead).join("\n"), /INCIDENT I4 \(test-weakened, attend\)/, "one about a Peer goes to its Lead");
+  assert.match(
+    h.heard(sup).join("\n"),
+    /INCIDENT I4 \(test-weakened, attend\) on the Peer/,
+    "one about a Peer goes to whoever supervises, W's only reader",
+  );
   assert.match(
     h.heard(sup).join("\n"),
     /INCIDENT I5 \(long-turn, attend\) on the Lead/,
-    "one about the Lead goes above it",
+    "and so does one about the Lead",
   );
-  const led = await listing(lead);
-  assert.match(led, /I4 \[attend/);
-  assert.doesNotMatch(led, /I5/, "a Lead never reads one about itself");
-  const own = await mark(lead, "I5", "noise", "expected");
-  assert.equal(own.ok, false, "nor may it mark one");
-  assert.match(own.text, /no incident I5 here for you/);
-  assert.equal((await mark(lead, "I4", "useful", "it was going round")).ok, true);
+  assert.doesNotMatch(h.heard(lead).join("\n"), /INCIDENT/, "a Lead is never told one");
+  assert.match(
+    (await h.call(lead, "lead", "incidents", {})).text,
+    /Unknown tool incidents/,
+    "nor may it read or mark one",
+  );
+  assert.equal((await mark(sup, "I4", "useful", "it was going round")).ok, true);
   assert.match(
     await listing(sup, true),
     /I4 \[attend, closed, told [^\]]*, marked useful\]/,
@@ -72,7 +76,7 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   assert.equal((await mark(sup, "I9", "useful")).ok, false, "an incident that is not there is refused");
 
   await notice(h, beside, "stuck", "attend", "the same action failing 3 times: npm run build");
-  assert.equal(letters(lead, "I2"), 1, "a condition held while the switch was off is told once it is on");
+  assert.equal(letters(sup, "I2"), 1, "a condition held while the switch was off is told once it is on");
   const noted = await mark(
     sup,
     "I2",
@@ -94,7 +98,7 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   const again = await notice(h, beside, "stuck", "attend", "the same action failing 3 times: npm run build");
   assert.deepEqual(again.opened, [], "the same words marked noise on this seat open nothing new");
   assert.deepEqual(
-    [book(h).I2!.count, letters(lead, "I2")],
+    [book(h).I2!.count, letters(sup, "I2")],
     [3, 1],
     "they are counted, and nobody is asked about them twice",
   );
@@ -116,7 +120,7 @@ test("an incident's life: seen, routed, listed, marked, closed", async () => {
   assert.match(
     h.heard(sup).join("\n"),
     /INCIDENT I8 \(suppressed, attend\) on the Peer/,
-    "with its Lead gone, it goes above",
+    "with its Lead gone, as ever",
   );
 
   await h.runtime.archived(hookAgent(h, beside));

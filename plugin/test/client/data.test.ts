@@ -160,15 +160,13 @@ const incident = (over: Partial<WatchIncident>): WatchIncident => ({
   name: "Peer · L1-T1 Pointer",
   minutes: 6,
   quote: "S9 said: patch.js is missing",
-  told: null,
+  told: false,
   lane: "L1",
   held: null,
   ...over,
 });
 const INCIDENTS: [Partial<WatchIncident>, string][] = [
-  [{ told: "supervisor" }, "told the Supervisor"],
-  [{ told: "lead" }, "told Lead L1"],
-  [{ told: "lead", lane: null }, "told its Lead"],
+  [{ told: true }, "told the Supervisor"],
   [{ held: "budget" }, "held · the lane's limit for today is reached"],
   [{ held: "probation" }, "held · most of this kind's last ten were marked noise"],
   [{ held: "nobody" }, "held · nobody is seated to tell"],

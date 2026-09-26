@@ -87,7 +87,10 @@ export async function answerAsk(
 ): Promise<ToolReply> {
   const id = answered.ask.toUpperCase();
   const { text } = answered;
-  const refused = repeatsIncident(caller.project.state, loadLedger(caller.project.state).asks[id]?.from, text);
+  // Only whoever supervises reads incidents, so only its answer could carry one to the seat it is about.
+  const refused = can(caller.role, "supervise")
+    ? repeatsIncident(caller.project.state, loadLedger(caller.project.state).asks[id]?.from, text)
+    : undefined;
   if (refused) return no(refused);
   const result = ledgers.transact(caller.project, (ledger): { ask: Ask; waitingRole?: string } | string => {
     const ask = ledger.asks[id];

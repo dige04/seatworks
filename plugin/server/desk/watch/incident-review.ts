@@ -1,10 +1,8 @@
-import { can } from "../../catalog/kit/roles.ts";
 import { mask } from "../../core/mask.ts";
 import { clip } from "../../core/text.ts";
 import { type Held, close } from "../../domain/incident.ts";
 import { type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { type Incident, readIncidentsFile } from "../store/incidents.ts";
-import { laneOfLead } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
@@ -58,26 +56,11 @@ function briefs(state: string, shown: Incident[]): string[] {
   return out.length > 0 ? ["", "What they were asked:", ...out] : [];
 }
 
-/** A supervisor sees every incident; a Lead only those about its own open lane's other seats, never itself. */
-function mine(caller: Caller): ((item: Incident) => boolean) | string {
-  if (can(caller.role, "supervise")) return () => true;
-  let lane: string | undefined;
-  try {
-    lane = laneOfLead(loadLedger(caller.project.state), caller.id)?.id;
-  } catch {
-    // An unreadable ledger names no lane of the caller's; the refusal below says so.
-  }
-  if (!lane) return "You have no open lane, so there are no incidents here for you.";
-  return (item) => item.lane === lane && item.seat !== caller.id;
-}
-
-/** The incidents the caller may mark, newest first, with what the seats they are about were asked. */
+/** The incidents whoever supervises may mark, newest first, with what the seats they are about were asked. */
 export function listIncidents(caller: Caller, withClosed: boolean): ToolReply {
   const read = readIncidentsFile(caller.project.state);
   if ("fault" in read) return no(`${read.fault}. Only the Human can repair it or move it aside.`);
-  const allowed = mine(caller);
-  if (typeof allowed === "string") return no(allowed);
-  const all = Object.values(read.incidents.items).filter(allowed);
+  const all = Object.values(read.incidents.items);
   const waiting = all.filter((item) => item.open || !item.label).sort((a, b) => b.last - a.last);
   const shown = waiting.slice(0, 50);
   const lines = [waiting.length > 0 ? `${waiting.length} not yet marked:` : "Nothing waiting to be marked."];
@@ -110,11 +93,9 @@ export function markIncident(
   const { verdict } = marked;
   const note = mask(str(marked.note));
   const now = Date.now();
-  const allowed = mine(caller);
-  if (typeof allowed === "string") return no(allowed);
   const done = incidents.transact(caller.project, (held) => {
     const item = held.items[id];
-    if (!item || !allowed(item)) return undefined;
+    if (!item) return undefined;
     item.label = verdict;
     if (note) item.note = note;
     close(item, now);

@@ -117,7 +117,5 @@ export async function sendMessage(
   const done = settled(task);
   if (done) return no(done);
   if (!(await desk.roster.seated(task.peer))) return no(unread(`The Peer on ${task.id}`));
-  const refused = repeatsIncident(caller.project.state, task.peer, text);
-  if (refused) return no(refused);
   return ok(await handTo(desk, { target: task.peer, from: "your lead", who: `the Peer on ${task.id}` }, sending, text));
 }
