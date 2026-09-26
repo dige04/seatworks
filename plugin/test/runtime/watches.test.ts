@@ -74,13 +74,13 @@ test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
   assert.deepEqual(h.events("incident.open"), [], "a failed call is a note: evidence, opening no incident");
 
   call("c2", "Bash", "running", { type: "unknown", input: {}, output: null });
-  call("c2", "Bash", "running", { type: "shell", command: "rm -rf build" });
+  call("c2", "Bash", "running", { type: "shell", command: "rm -rf build node_modules" });
   await settle();
   await noticed();
   await h.idle(sup);
   const told = h.agents.get(sup)!.sent.join("\n");
   assert.match(told, /INCIDENT I1 \(destructive, page\) on the Peer on L1-T1 \(Clean build\)/);
-  assert.match(told, /What was seen: rm -rf build/);
+  assert.match(told, /What was seen: rm -rf build node_modules/);
   assert.match(told, /not a verdict/);
   assert.ok(!timeline.rows.some((row) => row.item.status === "completed"), "the call it warns about is still running");
   assert.deepEqual(
@@ -95,6 +95,8 @@ test("a Peer's turn as the watch reads it, and who hears of it", async (t) => {
     [],
     "nor reaches it when its turn ends",
   );
+  const asked = await h.call(lead, "lead", "message", { to: "L1-T1", text: "Why rm -rf build node_modules?" });
+  assert.equal(asked.ok, true, "the command it ran is its own words, which its Lead may name back to it");
   assert.ok(
     watched.labels["paseo.parent-agent-id"],
     "a seat the desk starts under another has a parent, so Paseo never pushes its reply to the Human's phone",

@@ -100,6 +100,7 @@ function openIncidents(
         level: finding.level,
         quote: finding.quote,
         facts: finding.facts,
+        ...(finding.theirs && { theirs: finding.theirs }),
       };
       if (settledAsNoise(book, sighting, now)) continue;
       const { incident, opened: isNew } = sight(book, sighting, now);

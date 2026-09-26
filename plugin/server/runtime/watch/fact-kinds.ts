@@ -1,8 +1,11 @@
 import type { Level } from "../../domain/incident.ts";
 
-/** Every fact the code raises and its level; one that can open an incident has the title a person reads it by. */
+/**
+ * Every fact the code raises and its level; one that can open an incident has the title a person reads it by, and `theirs`
+ * when its quote is the seat's own text with no word of the watch's in it.
+ */
 const FACTS = {
-  destructive: { level: "page", title: "Ran a command that cannot be undone" },
+  destructive: { level: "page", title: "Ran a command that cannot be undone", theirs: true },
   stuck: { level: "attend", title: "Going round in circles" },
   "no-recovery": { level: "attend", title: "Did not recover from a failure" },
   "test-weakened": { level: "attend", title: "A test lost its assertions" },
@@ -20,13 +23,21 @@ const FACTS = {
   "gate-failed": { level: "note" },
   "outside-scope": { level: "note" },
   "edit-before-look": { level: "note" },
-} as const satisfies Record<string, { level: "note" } | { level: Exclude<Level, "note">; title: string }>;
+} as const satisfies Record<
+  string,
+  { level: "note" } | { level: Exclude<Level, "note">; title: string; theirs?: true }
+>;
 
 export type FactKind = keyof typeof FACTS;
 
-export type Fact = { kind: FactKind; level: Level; quote: string };
+export type Fact = { kind: FactKind; level: Level; quote: string; theirs?: true };
 
-export const fact = (kind: FactKind, quote: string): Fact => ({ kind, level: FACTS[kind].level, quote });
+export const fact = (kind: FactKind, quote: string): Fact => ({
+  kind,
+  level: FACTS[kind].level,
+  quote,
+  ...("theirs" in FACTS[kind] ? { theirs: true as const } : {}),
+});
 
 /** The title of a kind the incident book holds, which may be one this code no longer raises. */
 export function factTitle(kind: string): string | undefined {

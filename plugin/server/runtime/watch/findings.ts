@@ -10,7 +10,17 @@ const rank = (finding: Finding) =>
 export function decide(facts: Fact[]): Finding[] {
   return facts
     .flatMap((fact) =>
-      fact.level === "note" ? [] : [{ kind: fact.kind, level: fact.level, quote: fact.quote, facts: [fact.kind] }],
+      fact.level === "note"
+        ? []
+        : [
+            {
+              kind: fact.kind,
+              level: fact.level,
+              quote: fact.quote,
+              facts: [fact.kind],
+              ...(fact.theirs && { theirs: fact.theirs }),
+            },
+          ],
     )
     .sort((a, b) => rank(a) - rank(b));
 }

@@ -14,6 +14,8 @@ export type Incident = {
   kind: string;
   level: "page" | "attend";
   quote: string;
+  /** The quote is the seat's own text, a command it ran, which anyone may name back to it. */
+  theirs?: true;
   later?: string;
   facts: string[];
   opened: number;
@@ -145,17 +147,19 @@ export function forget(incidents: Incidents): void {
   for (const item of done.slice(0, Math.max(0, done.length - KEEP))) delete incidents.items[item.id];
 }
 
-/** Why text for `seat` may not go to it: it names or quotes an incident about that seat still open. */
+/**
+ * Why text for `seat` may not go to it: it names an incident about that seat still open, or repeats the watch's words for it.
+ * What the seat itself said or ran is the sender's to name; a short quote is a word the sender would use anyway.
+ */
 export function repeatsIncident(state: string, seat: string | undefined, ...texts: string[]): string | undefined {
   const flat = (text: string) => text.replace(/\s+/g, " ").trim().toLowerCase();
   const said = flat(texts.join("\n"));
-  // A short quote is a path or a word the sender would use anyway; a long one is the desk's own wording.
   const hit = Object.values(loadIncidents(state).items).find(
     (incident) =>
       incident.open &&
       incident.seat === seat &&
       (new RegExp(`\\b${incident.id}\\b`, "i").test(said) ||
-        (incident.quote.length >= 20 && said.includes(flat(incident.quote)))),
+        (!incident.theirs && incident.quote.length >= 20 && said.includes(flat(incident.quote)))),
   );
   return (
     hit &&
