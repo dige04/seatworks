@@ -149,6 +149,14 @@ test("an approval is for the lane as it was held, and for what the Human asked a
     /The Human's standing orders cannot be read \(.*project\.json is there but could not be read.*\), so no landing goes ahead without them\./,
   );
   assert.equal(onMain("src/auth/login.ts"), false);
+  const misread = JSON.stringify({ ...(JSON.parse(kept) as object), askFirst: "src/auth" });
+  writeFileSync(orders, misread);
+  assert.match(
+    (await land()).text,
+    /The Human's standing orders cannot be read \(.*project\.json does not hold what the plugin keeps there: askFirst: .*\), so no landing goes ahead without them\./,
+  );
+  assert.equal((await h.call(sup, "supervisor", "set_project", { gate: "true" })).ok, false);
+  assert.equal(readFileSync(orders, "utf-8"), misread, "a field that does not read is never written over");
   writeFileSync(orders, kept);
   const landed = await land();
   assert.equal(landed.ok, true, landed.text);

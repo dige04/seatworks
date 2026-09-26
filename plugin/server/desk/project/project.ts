@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import { z } from "zod";
 import { LAND_AS, type LandAs, gitCommonDir, trackedFiles } from "../../core/git.ts";
 import { type Json, getPath, isRecord } from "../../core/json.ts";
 import { stateRoot } from "../../core/paths.ts";
@@ -32,6 +33,19 @@ export type ProjectConfig = {
   askFirst: string[];
   riskRules?: RiskRule[];
 };
+
+/** `project.json` as the desk writes it: a field there that does not read is a fault, never a default in its place. */
+const ProjectFile = z.strictObject({
+  base: z.string().optional(),
+  gate: z.string().optional(),
+  gateTimeoutMinutes: z.number().positive().optional(),
+  gateOn: z.enum(["lane", "task"]).optional(),
+  serialOnly: z.array(z.string()).optional(),
+  landAs: z.enum(LAND_AS).optional(),
+  laneHome: z.enum(LANE_HOMES).optional(),
+  askFirst: z.array(z.string()).optional(),
+  riskRules: z.array(RiskRule).optional(),
+});
 
 /** Enough for every copy a machine keeps at once: copy paths are never reused, so an unbounded cache grew for good. */
 const CACHED_PROJECTS = 512;
@@ -123,8 +137,13 @@ export function conceptFile(state: string): string | undefined {
  * callers that go on over a fault: a landing then waits for the Human, and the watch reads the seat without them.
  */
 export function readProjectConfig(state: string): { config: ProjectConfig } | { fault: string } {
-  const read = readKept<Json>(configFile(state), {}, isRecord);
-  return "fault" in read ? read : { config: configOf(read.value) };
+  const file = configFile(state);
+  const read = readKept<Json>(file, {}, isRecord);
+  if ("fault" in read) return read;
+  const parsed = ProjectFile.safeParse(read.value);
+  if (parsed.success) return { config: configOf(parsed.data) };
+  const issue = parsed.error.issues[0]!;
+  return { fault: `${file} does not hold what the plugin keeps there: ${issue.path.join(".")}: ${issue.message}` };
 }
 
 /** The project's standing orders; ones that cannot be read throw, rather than stand in as defaults the Human never set. */
@@ -135,19 +154,17 @@ export function loadConfig(state: string): ProjectConfig {
 }
 
 /** An empty gate is the owner's decision and must survive a read: as `undefined`, `open_lane` would seed a detected gate over it. */
-function configOf(stored: Partial<ProjectConfig>): ProjectConfig {
-  const minutes = Number(stored.gateTimeoutMinutes);
+function configOf(stored: z.output<typeof ProjectFile>): ProjectConfig {
   return {
-    base: typeof stored.base === "string" && stored.base ? stored.base : undefined,
-    gate: typeof stored.gate === "string" ? stored.gate : undefined,
-    gateTimeoutMinutes: Number.isFinite(minutes) && minutes > 0 ? minutes : 30,
-    gateOn: stored.gateOn === "lane" ? "lane" : "task",
+    base: stored.base || undefined,
+    gate: stored.gate,
+    gateTimeoutMinutes: stored.gateTimeoutMinutes ?? 30,
+    gateOn: stored.gateOn ?? "task",
     serialOnly: Array.isArray(stored.serialOnly) ? stored.serialOnly.map(String) : undefined,
-    landAs: LAND_AS.find((as) => as === stored.landAs) ?? "squash",
-    laneHome: LANE_HOMES.find((home) => home === stored.laneHome),
-    askFirst: Array.isArray(stored.askFirst) ? stored.askFirst.map(String) : [],
-    // A list that does not read as rules falls to the kit's, which ask more rather than less.
-    riskRules: RiskRule.array().safeParse(stored.riskRules).data,
+    landAs: stored.landAs ?? "squash",
+    laneHome: stored.laneHome,
+    askFirst: stored.askFirst ?? [],
+    riskRules: stored.riskRules,
   };
 }
 
