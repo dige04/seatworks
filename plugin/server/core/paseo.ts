@@ -17,7 +17,7 @@ export function midTurn(status: string | null | undefined): boolean {
 }
 
 export type PendingPermission = {
-  id?: string;
+  id: string;
   kind?: string;
   name?: string;
   title?: string;

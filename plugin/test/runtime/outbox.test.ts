@@ -9,7 +9,7 @@ import { tempDir } from "../tempdir.ts";
 
 type FakeAgent = {
   status: string;
-  pendingPermissions: { title?: string; name?: string }[];
+  pendingPermissions: { id: string; title?: string; name?: string }[];
   archivedAt: string | null;
   looked?: number;
   sent: string[];
@@ -46,14 +46,14 @@ test("a letter goes to its seat when the seat can take it, and until then is hel
   const agents = {
     sup: agent("idle"),
     busy: agent("running"),
-    asking: agent("idle", { pendingPermissions: [{}] }),
+    asking: agent("idle", { pendingPermissions: [{ id: "p1" }] }),
     archived: agent("idle", { archivedAt: "2026-01-01" }),
     real: agent("idle"),
     lead: agent("running"),
     fresh: agent("running"),
     unseen: agent("running"),
     peer: agent("running"),
-    stopped: agent("running", { pendingPermissions: [{ title: "Which?" }] }),
+    stopped: agent("running", { pendingPermissions: [{ id: "p2", title: "Which?" }] }),
     quiet: agent("idle"),
   };
   // Whether a seat's harness takes mail into a running turn is its own: here, by the seat.

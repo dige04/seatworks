@@ -42,6 +42,13 @@ test("a seat, its branch and its copy's workspace are named for the one duty eac
     ["task/l1-t3-add-discount-codes-10", "task/l1-t4-money-as-integer-cents", "task/l1-t5-supercalifragilisticexpi"],
     "cut between words, and inside one only when it alone is longer than the limit",
   );
+  const long = "Money as integer cents, with refunds from the ledger";
+  const added = await h.call(lead, "lead", "add_tasks", {
+    tasks: [{ key: "m", title: long, goal: "g", ...scope, holds: ["m.txt"], parallel: true }],
+  });
+  assert.equal(added.ok, true, added.text);
+  const money = Object.values(h.ledger().tasks).find((task) => task.title === long)!;
+  assert.equal(title(money.peer!), `${money.id} · Peer · ${long}`, "whole, as long as Paseo takes a name");
   await h.call(sup, "supervisor", "open_lane", {
     title: "Chi tiêu định kỳ",
     outcome: "c changes",

@@ -1,26 +1,21 @@
 import type { PluginHookContext } from "@getpaseo/plugin/server";
-import type { PendingPermission, PermissionResponse, SeatView } from "../../core/paseo.ts";
+import type { PermissionResponse, SeatView } from "../../core/paseo.ts";
 import type { SeatLook, SeatSpec, Seats, Workspace, Workspaces } from "../../core/ports.ts";
 import { deskId } from "../../core/sent-by.ts";
+import { within } from "../../core/text.ts";
 import { type TimelineHandle, follow } from "./stream.ts";
 
 export type PaseoApi = PluginHookContext["paseo"];
 
 type Bound = () => PaseoApi | undefined;
 
-type Handle = {
-  id: string;
-  status?: string | null;
-  cwd?: string | null;
-  archivedAt?: string | null;
-  pendingPermissions?: PendingPermission[];
-  refresh(): Promise<unknown>;
-  current(): { id?: string; provider?: string; cwd?: string | null; title?: string | null } | null | undefined;
-  send(text: string, options?: { messageId?: string; activeTurnBehavior?: "steer" | "interrupt" }): Promise<unknown>;
-  respondToPermission(options: { requestId: string; response: PermissionResponse }): Promise<unknown>;
-  archive(): Promise<unknown>;
-  timeline: TimelineHandle;
-};
+type Handle = ReturnType<PaseoApi["agents"]["ref"]>;
+
+/** The follower reads Paseo's timeline as records whose fields it checks before trusting them, not as Paseo's item types. */
+const timelineOf = (handle: Handle): TimelineHandle => handle.timeline as unknown as TimelineHandle;
+
+/** The daemon takes `activeTurnBehavior` though the SDK's type leaves it out. */
+type SendOptions = NonNullable<Parameters<Handle["send"]>[1]> & { activeTurnBehavior?: "steer" | "interrupt" };
 
 const reach = (bound: Bound): PaseoApi => {
   const paseo = bound();
@@ -62,7 +57,7 @@ async function openSeats(bound: Bound): Promise<SeatView[]> {
 }
 
 export function seatsOn(bound: Bound): Seats {
-  const ref = (id: string): Handle => reach(bound).agents.ref(id) as unknown as Handle;
+  const ref = (id: string): Handle => reach(bound).agents.ref(id);
   return {
     open: () => openSeats(bound),
     async look(id: string): Promise<SeatLook> {
@@ -71,11 +66,12 @@ export function seatsOn(bound: Bound): Seats {
       return lookOf(handle);
     },
     async send(id: string, text: string, kinds: string[], into?: "steer" | "interrupt"): Promise<void> {
-      // The daemon takes `activeTurnBehavior` though the SDK's type leaves it out; the id is how `typed` and `sentBy` know the desk sent it.
-      await ref(id).send(text, { messageId: deskId(kinds), ...(into ? { activeTurnBehavior: into } : {}) });
+      // The id is how `sentBy` knows the desk sent it.
+      const options: SendOptions = { messageId: deskId(kinds), ...(into ? { activeTurnBehavior: into } : {}) };
+      await ref(id).send(text, options);
     },
     async history(id: string, limit: number) {
-      const page = await ref(id).timeline.refetch({ direction: "tail", limit });
+      const page = await timelineOf(ref(id)).refetch({ direction: "tail", limit });
       return page.entries.map(({ item, seqStart, seqEnd, turnId }) => ({
         item,
         seqStart,
@@ -93,7 +89,7 @@ export function seatsOn(bound: Bound): Seats {
     },
     watch(id, see) {
       const handle = ref(id);
-      return follow(handle.timeline, see, {
+      return follow(timelineOf(handle), see, {
         // A failed lookup reads as not archived: a seat stopped on a passing failure is never followed again.
         archived: async () => {
           try {
@@ -150,20 +146,21 @@ export function workspacesOn(bound: Bound): Workspaces {
     },
     async archive(workspace: string): Promise<void> {
       // The daemon reports a refusal as `error` in the payload, not as a throw.
-      const result = (await reach(bound).workspaces.archive(workspace)) as { error?: string | null } | undefined;
-      if (result?.error) throw new Error(result.error);
+      const result = await reach(bound).workspaces.archive(workspace);
+      if (result.error) throw new Error(result.error);
     },
     async seat(workspace: string, spec: SeatSpec): Promise<SeatLook> {
-      const handle = (await reach(bound)
+      const handle = await reach(bound)
         .workspaces.ref(workspace)
         .agents.create({
           config: spec.config as never,
           parent: spec.parent,
-          title: spec.title.slice(0, 60),
+          // Paseo refuses a longer name, and the seat with it.
+          title: within(spec.title, 200),
           prompt: spec.prompt,
           clientMessageId: deskId(["brief"]),
           labels: spec.labels,
-        })) as unknown as Handle;
+        });
       await handle.refresh();
       return lookOf(handle);
     },
