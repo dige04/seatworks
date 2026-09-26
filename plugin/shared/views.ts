@@ -67,10 +67,11 @@ export type Attention = z.infer<typeof Attention>;
 const Hitl = z.object({ on: z.boolean(), questionsPerDay: z.number() });
 export type Hitl = z.infer<typeof Hitl>;
 
+/** The team as the panel shows it: of attention, only which brains read and with which sensor. */
 export const TeamView = z.object({
   project: z.string().nullable(),
   errors: z.array(z.string()),
-  attention: Attention,
+  attention: z.object({ brain: Attention.shape.brain, sensor: z.string() }),
   hitl: Hitl,
   rules: z.string(),
   mcp: z.record(
@@ -80,10 +81,8 @@ export const TeamView = z.object({
       enabled: z.boolean(),
       roles: z.array(z.string()),
       settings: z.record(z.string(), Scalar),
-      transport: z.string(),
       template: z.boolean(),
       connect: Connect.nullable(),
-      rule: z.string().nullable(),
     }),
   ),
   roles: z.record(
@@ -95,7 +94,6 @@ export const TeamView = z.object({
       thinking: z.string().nullable(),
       mcp: z.array(z.string()),
       tools: z.record(z.string(), z.array(z.string())),
-      skills: z.array(z.string()),
       rules: z.string(),
     }),
   ),
