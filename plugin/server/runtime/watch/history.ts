@@ -1,3 +1,4 @@
+import { oneLine } from "../../core/text.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { SETTLED } from "../../domain/task.ts";
@@ -17,11 +18,6 @@ type Reading = {
 };
 
 const READ_AT_MOST = 4000;
-
-const short = (text: string, limit = 120): string => {
-  const flat = text.replace(/\s+/g, " ").trim();
-  return flat.length > limit ? `${flat.slice(0, limit - 1)}…` : flat;
-};
 
 const UNFINISHED = new Set(["partial", "blocked"]);
 
@@ -123,7 +119,9 @@ function certaintyOnly({ here, reading }: LaneRecord): Finding {
   if (timid.length === 0) return undefined;
   return [
     "certainty-only",
-    timid.map((task) => `${task.id} asks its reviewer for only what it is sure of: ${short(task.goal)}`).join("; "),
+    timid
+      .map((task) => `${task.id} asks its reviewer for only what it is sure of: ${oneLine(task.goal, 120)}`)
+      .join("; "),
   ];
 }
 
@@ -139,7 +137,7 @@ function briefPrewritten({ here, reading }: LaneRecord): Finding {
     typed
       .map(
         (task) =>
-          `${task.id}'s brief writes the work out rather than setting an outcome: ${short(task.context?.trim() || task.goal)}`,
+          `${task.id}'s brief writes the work out rather than setting an outcome: ${oneLine(task.context?.trim() || task.goal, 120)}`,
       )
       .join("; "),
   ];

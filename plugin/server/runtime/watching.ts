@@ -124,7 +124,6 @@ export class Watching {
   /** A look's new words go to the brains: the seat's own only, its thinking and what it said, never a tool's output. */
   looked(watch: SeatWatch, look: SeatLook): void {
     const project = projectOf(watch.seat.cwd);
-    if (this.deps.source.teamFor(project).brains.mode === "off") return;
     const items = look.units.flatMap((unit) =>
       (unit.kind === "thought" || unit.kind === "said") && unit.text.trim()
         ? [{ kind: unit.kind, text: unit.text }]

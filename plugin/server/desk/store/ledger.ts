@@ -2,7 +2,7 @@ import { statSync } from "node:fs";
 import { join } from "node:path";
 import { errorText } from "../../core/errors.ts";
 import { isRecord } from "../../core/json.ts";
-import { readKept, writeJson } from "../../core/store.ts";
+import { keptFault, readKept, writeJson } from "../../core/store.ts";
 import { type Ledger, emptyLedger } from "../../domain/ledger.ts";
 
 function ledgerFile(state: string): string {
@@ -26,10 +26,7 @@ export function readLedgerFile(state: string): { ledger: Ledger } | { fault: str
 /** The ledger, or throws why it cannot be read: never an empty one standing in for a file that is there. Absent is empty. */
 export function loadLedger(state: string): Ledger {
   const read = readLedgerFile(state);
-  if ("fault" in read)
-    throw new Error(
-      `${read.fault}. Nothing was read from it as if the project had no work on record. Only the Human can repair it or move it aside; no seat may write the desk's own files.`,
-    );
+  if ("fault" in read) throw keptFault(read.fault);
   return read.ledger;
 }
 

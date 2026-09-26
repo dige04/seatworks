@@ -43,14 +43,12 @@ const text = (value: unknown): string => (typeof value === "string" ? value : ""
 export class Window {
   readonly units: Unit[] = [];
   private readonly calls = new Map<string, Call>();
-  private readonly limit: number;
   private readonly quirks: Quirks;
   private instructionAt = -1;
   private pushed = 0;
   private seq = 0;
 
   constructor(quirks: Quirks = {}) {
-    this.limit = UNITS;
     this.quirks = quirks;
   }
 
@@ -162,7 +160,7 @@ export class Window {
   private push(unit: Unit): void {
     this.units.push(unit);
     this.pushed += 1;
-    if (this.units.length <= this.limit) return;
+    if (this.units.length <= UNITS) return;
     const dropped = this.units.shift();
     if (dropped?.kind === "call") this.calls.delete(dropped.call.id);
   }

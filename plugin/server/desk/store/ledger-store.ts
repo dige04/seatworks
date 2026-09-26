@@ -3,6 +3,7 @@ import { TASK, type TaskMove, type TaskStatus } from "../../domain/task.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
+import { keptFault } from "../../core/store.ts";
 import { loadLedger, readLedgerFile, saveLedger } from "./ledger.ts";
 import type { Project } from "../project/project.ts";
 
@@ -25,10 +26,7 @@ export class LedgerStore {
   transact<T>(project: Project, decide: (ledger: Ledger) => Sync<T>): T {
     this.touched(project);
     const read = readLedgerFile(project.state);
-    if ("fault" in read)
-      throw new Error(
-        `${read.fault}. Nothing was written over it. Only the Human can repair it or move it aside — no seat may write the desk's own files — and what the desk has on record is in that file.`,
-      );
+    if ("fault" in read) throw keptFault(read.fault);
     const result = decide(read.ledger);
     saveLedger(project.state, read.ledger);
     return result;
