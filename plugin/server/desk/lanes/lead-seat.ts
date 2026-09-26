@@ -18,12 +18,16 @@ type Copy = { id?: string; path: string; workspaceId?: string };
 type Seating = { ownCopy: boolean; from?: string; role?: string; parent?: string; issue?: Issue };
 type Seated = { slot: Copy; lead: string; beside: Beside[] };
 
-/** A seat Paseo holds as this lane's Lead, by the labels it was started with; a Peer's and a reviewer's also name a task. */
+/**
+ * A seat Paseo holds as this lane's Lead, by the labels the desk started it with, its role among them; a Peer's and a
+ * reviewer's also name a task.
+ */
 export function leadSeatOf(seats: SeatView[], project: Project, lane: string): SeatView | undefined {
   return seats.find(
     (seat) =>
       seat.labels?.["seatworks.project"] === project.slug &&
       seat.labels["seatworks.lane"] === lane &&
+      Boolean(seat.labels["seatworks.role"]) &&
       !seat.labels["seatworks.task"],
   );
 }

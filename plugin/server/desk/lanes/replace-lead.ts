@@ -44,7 +44,7 @@ export async function replaceLead(
   try {
     const started = leadSeatOf(seats, project, lane.id);
     const seated = started
-      ? { lead: started.id, role: started.labels?.["seatworks.role"] ?? "lead" }
+      ? { lead: started.id, role: started.labels!["seatworks.role"]! }
       : await takeOver(desk, caller, lane, asked.role);
     if (typeof seated === "string") return no(seated);
     const moved = bind(desk, caller, lane, seated);
