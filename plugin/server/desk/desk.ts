@@ -15,7 +15,7 @@ import { OwnCopy } from "./copies/own-copy.ts";
 import { Slots } from "./copies/slots.ts";
 import { Human } from "./human/human.ts";
 import { type Letter } from "./letters/envelope.ts";
-import { messageLetters } from "./letters/message-letters.ts";
+import { callLetters } from "./letters/call-letters.ts";
 import type { Project } from "./project/project.ts";
 import { Agents } from "./seats/agents.ts";
 import { markGone } from "./seats/gone.ts";
@@ -175,8 +175,7 @@ export class Desk {
     await this.services.roster.archiveWaiting(listed);
     await turnsEnded(this.services, (id) => !midTurn(listed.get(id)?.status));
     for (const promised of this.intents.promised()) {
-      if (listed.has(promised.agent))
-        await this.services.mail.post(promised.agent, messageLetters.unanswered(promised));
+      if (listed.has(promised.agent)) await this.services.mail.post(promised.agent, callLetters.unanswered(promised));
       this.intents.kept(promised);
     }
   }

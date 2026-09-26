@@ -4,48 +4,13 @@ import { IN_QUEUE, type Task } from "../../domain/task.ts";
 import { type Letter, mail } from "./envelope.ts";
 import { SAY_IN_REPORT, leadOf } from "./next.ts";
 
-/** A call a seat was told to stop waiting for: the one identity its late answer and its lost answer share. */
-type Waited = { agent: string; tool: string; started: number };
-
 /** One sending of a message: keyed by the event, not the words, since the same instruction sent again is a second instruction. */
 export type Sending = { by: string; to: string; at: number };
 
 const sendingIds = (sending: Sending, text: string) => [sending.by, hash(sending.to, text), sending.at];
 
-/** Answers that come as mail, and what reaches a seat from another seat or the Human. */
+/** What reaches a seat from another seat or the Human. */
 export const messageLetters = {
-  /**
-   * The answer to a call that ran longer than the seat that made it could wait for; `cut` when the call was stopped on the
-   * seat's side before its answer came, rather than outrunning the wait.
-   */
-  later(call: Waited, reply: { ok: boolean; text: string }, cut = false): Letter {
-    const why = cut
-      ? "which was stopped on your side before its answer reached you"
-      : "which ran longer than a tool call can wait";
-    const text = [
-      `ANSWER to your ${call.tool} call, ${why}.`,
-      "",
-      reply.ok ? reply.text : `It was refused: ${reply.text}`,
-    ].join("\n");
-    return mail(
-      "later",
-      [hash(call.agent, call.tool, String(call.started))],
-      text,
-      reply.ok
-        ? "Go on from this answer as if the call had just returned it."
-        : "Read why it was refused before you call it again.",
-    );
-  },
-
-  unanswered(call: Waited): Letter {
-    return mail(
-      "unanswered",
-      [hash(call.agent, call.tool, String(call.started))],
-      `NO ANSWER to your ${call.tool} call: the desk stopped before it finished, so the answer it said would come as mail will not.`,
-      `Call ${call.tool} again if it still needs doing.`,
-    );
-  },
-
   /** `reader` answers only through its own tools: words it says in its turn reach nobody. */
   message(from: string, text: string, sending: Sending, reader: "worker" | "lead"): Letter {
     const next =

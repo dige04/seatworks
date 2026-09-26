@@ -13,6 +13,7 @@ import type { Lane } from "../../server/domain/lane.ts";
 import type { Task } from "../../server/domain/task.ts";
 import { type Letter } from "../../server/desk/letters/envelope.ts";
 import { messageLetters } from "../../server/desk/letters/message-letters.ts";
+import { callLetters } from "../../server/desk/letters/call-letters.ts";
 import { workLetters } from "../../server/desk/letters/work-letters.ts";
 import { seatLetters } from "../../server/desk/letters/seat-letters.ts";
 import { watchLetters } from "../../server/desk/letters/watch-letters.ts";
@@ -88,9 +89,9 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
   };
   const amendment = { at: 0, by: "agent-1", why: "the Human wants an upsert", was: { goal: "insert" } };
   const late = [
-    messageLetters.later(call, { ok: true, text: "done" }),
-    messageLetters.later(call, { ok: false, text: "no" }),
-    messageLetters.unanswered(call),
+    callLetters.later(call, { ok: true, text: "done" }),
+    callLetters.later(call, { ok: false, text: "no" }),
+    callLetters.unanswered(call),
   ];
   const beside = { ...task, id: "L1-T3", hints: ["src/other.js"] };
   const worker = [

@@ -3,7 +3,7 @@ import type { ToolReply, ToolRequest } from "../context.ts";
 import { ok } from "../context.ts";
 import type { Intents } from "../store/intents.ts";
 import { type Letter } from "../letters/envelope.ts";
-import { messageLetters } from "../letters/message-letters.ts";
+import { callLetters } from "../letters/call-letters.ts";
 
 /** When the run began, how long this caller waits from its own call, and whether it joined a run already going. */
 type Window = { started: number; within: number; again: boolean; cancelled?: AbortSignal };
@@ -30,7 +30,7 @@ export function inTime(
       // Unkept when it cannot be posted: the next start then tells the seat no answer is coming.
       void reply
         .then(async (done) => {
-          await mail.post(request.agent, messageLetters.later(promised, done, cut));
+          await mail.post(request.agent, callLetters.later(promised, done, cut));
           mail.intents.kept(promised);
         })
         .catch((error: unknown) =>
