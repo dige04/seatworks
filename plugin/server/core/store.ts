@@ -21,6 +21,27 @@ export function readJsonFile(path: string): JsonRead {
   }
 }
 
+/**
+ * A file the plugin keeps and cannot rebuild, as one read: `empty` while it is absent, and a fault when it is there but
+ * unreadable or not what `holds` accepts. Its caller fails closed on a fault: nothing is written over the file.
+ */
+export function readKept<T>(
+  path: string,
+  empty: T,
+  holds: (value: unknown) => value is T,
+): { value: T } | { fault: string } {
+  const read = readJsonFile(path);
+  if ("fault" in read) return read;
+  if ("absent" in read) return { value: empty };
+  return holds(read.value) ? { value: read.value } : { fault: `${path} does not hold what the plugin keeps there` };
+}
+
+/** Why a kept file that cannot be read stops what would have written it. */
+export function keptFault(fault: string): Error {
+  return new Error(`${fault}. Nothing was written over it. Only the Human can repair it or move it aside.`);
+}
+
+/** For a file the plugin can rebuild or only reads: one that cannot be read is `fallback`. */
 export function readJson<T>(path: string, fallback: T): T {
   const read = readJsonFile(path);
   return "value" in read ? (read.value as T) : fallback;
