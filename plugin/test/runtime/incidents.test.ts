@@ -192,3 +192,27 @@ test("every signal the watch raises is told to whoever supervises, with no switc
   await h.idle(sup);
   assert.match(h.heard(sup).join("\n"), /\(suppressed, attend\)[^]*\(stand-in, attend\)/);
 });
+
+test("a brain never lowers or clears a code fact: what it reads of the same kind is booked apart, and its noise settles only its own", async () => {
+  const { h, sup, peer } = await laneWithPeer();
+  const read = (quote: string) =>
+    h.runtime.desk.notice(h.project, { id: peer, provider: h.agents.get(peer)!.provider, title: peer }, [
+      { kind: "stuck", level: "attend", quote, facts: ["stuck", "judged by the Watcher seat"], brain: true },
+    ]);
+  await notice(h, peer, "stuck", "attend", "the same action failing 3 times: npm test");
+  const judged = await read("its thinking says it is close and only needs one more try");
+  assert.deepEqual(
+    judged.opened.map((incident) => incident.id),
+    ["I2"],
+    "a brain's reading is its own incident",
+  );
+  assert.equal(book(h).I1!.later, undefined, "and never stands in for what the code saw");
+  assert.equal((await h.call(sup, "supervisor", "mark_incident", { id: "I2", verdict: "noise" })).ok, true);
+  await notice(h, peer, "stuck", "attend", "the same action failing 4 times: npm test");
+  assert.deepEqual(
+    [book(h).I1!.count, book(h).I1!.later],
+    [2, "the same action failing 4 times: npm test"],
+    "a brain marked noise settles nothing the code sees",
+  );
+  assert.deepEqual((await read("it says it is nearly there")).opened, [], "while its own reading stays settled");
+});

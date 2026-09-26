@@ -5,8 +5,18 @@ export type Held = "nobody";
 /** How much a fact asks of whoever watches: a page now, attention soon, or only a note on the record. */
 export type Level = "page" | "attend" | "note";
 
-/** What a watch saw that the desk books as an incident; `theirs` when its quote is only the seat's words or command. */
-export type Finding = { kind: string; level: Exclude<Level, "note">; quote: string; facts: string[]; theirs?: true };
+/**
+ * What a watch saw that the desk books as an incident; `theirs` when its quote is only the seat's words or command, and
+ * `brain` when a brain read it rather than the code measured it: a brain may add to what the code saw, never stand in for it.
+ */
+export type Finding = {
+  kind: string;
+  level: Exclude<Level, "note">;
+  quote: string;
+  facts: string[];
+  theirs?: true;
+  brain?: true;
+};
 
 export type Incident = {
   id: string;
@@ -19,6 +29,7 @@ export type Incident = {
   level: "page" | "attend";
   quote: string;
   theirs?: true;
+  brain?: true;
   later?: string;
   facts: string[];
   opened: number;

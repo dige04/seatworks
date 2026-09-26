@@ -35,8 +35,11 @@ export function saveIncidents(state: string, incidents: Incidents): void {
   writeJson(incidentsFile(state), incidents);
 }
 
-export function openFor(incidents: Incidents, seat: string, kind: string): Incident | undefined {
-  return Object.values(incidents.items).find((item) => item.open && item.seat === seat && item.kind === kind);
+/** The open incident a sighting adds to: the same seat and kind, and the same eye, so a brain's never adds to the code's. */
+export function openFor(incidents: Incidents, seat: string, kind: string, brain = false): Incident | undefined {
+  return Object.values(incidents.items).find(
+    (item) => item.open && item.seat === seat && item.kind === kind && Boolean(item.brain) === brain,
+  );
 }
 
 /** Whether this exact sentence was already recorded for this seat and kind, open or closed: the book, not the process, survives a restart. */
@@ -50,18 +53,20 @@ const episode = (item: { task?: string; lane?: string }) => item.task ?? item.la
 
 /**
  * Already settled as noise on this seat: counts the sighting and answers true. `mark_incident` closes an incident, so a
- * standing condition would reopen after every mark. A code fact settles in these exact words; a pattern, whose words are
- * new at every look, for the seat's task or lane. Only at `attend`, only for `noise`.
+ * standing condition would reopen after every mark. A code fact settles in these exact words; a brain's reading, whose
+ * words are new at every look, for the seat's task or lane. Each eye's marks settle only its own. Only `attend` settles.
  */
-export function settledAsNoise(incidents: Incidents, sighting: Sighting, now: number, pattern: boolean): boolean {
+export function settledAsNoise(incidents: Incidents, sighting: Sighting, now: number): boolean {
   if (sighting.level === "page") return false;
+  const brain = Boolean(sighting.brain);
   const marked = Object.values(incidents.items).find(
     (item) =>
       !item.open &&
       item.label === "noise" &&
       item.seat === sighting.seat &&
       item.kind === sighting.kind &&
-      (pattern ? episode(item) === episode(sighting) : item.quote === sighting.quote),
+      Boolean(item.brain) === brain &&
+      (brain ? episode(item) === episode(sighting) : item.quote === sighting.quote),
   );
   if (!marked) return false;
   marked.count += 1;
@@ -70,7 +75,7 @@ export function settledAsNoise(incidents: Incidents, sighting: Sighting, now: nu
 }
 
 export function sight(incidents: Incidents, sighting: Sighting, now: number): { incident: Incident; opened: boolean } {
-  const seen = openFor(incidents, sighting.seat, sighting.kind);
+  const seen = openFor(incidents, sighting.seat, sighting.kind, Boolean(sighting.brain));
   if (seen) {
     Object.assign(seen, { facts: [...new Set([...seen.facts, ...sighting.facts])], last: now, count: seen.count + 1 });
     if (seen.told === undefined) seen.quote = sighting.quote;

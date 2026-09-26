@@ -91,7 +91,7 @@ async function pageUnbooked(
 }
 
 function openIncidents(
-  { kit, incidents, teamFor }: Pick<DeskServices, "kit" | "incidents" | "teamFor">,
+  { incidents, teamFor }: Pick<DeskServices, "incidents" | "teamFor">,
   project: Project,
   seat: Noticed,
   place: Placed,
@@ -114,8 +114,9 @@ function openIncidents(
         quote: finding.quote,
         facts: finding.facts,
         ...(finding.theirs && { theirs: finding.theirs }),
+        ...(finding.brain && { brain: finding.brain }),
       };
-      if (settledAsNoise(book, sighting, now, Object.hasOwn(kit.patterns, finding.kind))) continue;
+      if (settledAsNoise(book, sighting, now)) continue;
       const { incident, opened: isNew } = sight(book, sighting, now);
       if (deliveryOf(incident) !== "told" && tell(incident, now)) sending.push({ ...incident });
       if (isNew) {

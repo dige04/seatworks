@@ -186,4 +186,5 @@ const finding = (kind: string, quote: string, limit: number, seen: string): Find
   level: "attend",
   quote: clip(quote.replace(/\s+/g, " ").trim(), limit),
   facts: [kind, seen],
+  brain: true,
 });
