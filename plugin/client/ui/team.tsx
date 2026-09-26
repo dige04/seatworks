@@ -3,6 +3,7 @@ import { useRpc } from "@getpaseo/plugin/client";
 import {
   SettingsAction,
   SettingsCard,
+  SettingsInput,
   SettingsRow,
   SettingsSection,
   SettingsSelect,
@@ -149,8 +150,12 @@ function roleRows({
   return rows;
 }
 
-/** On the Supervisor's chip, since it is who decides for the Human when they are out of the loop. */
+/** On the Supervisor's chip, since it is who decides for the Human when they are out of the loop; the daily limit is the machine's. */
 function HitlCard({ team, values, machine, layer, disabled, save }: Props) {
+  const [typed, setTyped] = useState<string | null>(null);
+  const count = Number(typed?.trim());
+  const changed = typed !== null && typed.trim() !== String(team.hitl.questionsPerDay);
+  const wrong = changed && (!typed.trim() || !Number.isInteger(count) || count < 0);
   return (
     <SettingsCard>
       <SettingsSwitch
@@ -163,6 +168,31 @@ function HitlCard({ team, values, machine, layer, disabled, save }: Props) {
         onValueChange={(next) => void save((current) => setHitl(current, { on: next }))}
         disabled={disabled}
       />
+      {layer === "machine" ? (
+        <SettingsInput
+          label="Questions a day"
+          hint={`While you are in the loop, at most this many questions reach you a day, across every project; one that cannot be undone or that your ask-first paths raise is counted but never held back. ${sourceLabel(
+            sourceOf(values, machine, (entry) => entry.hitl?.questionsPerDay, layer),
+            layer,
+          )}.`}
+          initialValue={String(team.hitl.questionsPerDay)}
+          onChangeText={setTyped}
+          disabled={disabled}
+        />
+      ) : null}
+      {layer === "machine" && changed ? (
+        <SettingsAction
+          label={wrong ? "That needs a whole number" : "Unsaved change"}
+          error={wrong ? "That needs a whole number, 0 or more" : null}
+          actionLabel="Save"
+          disabled={disabled || wrong}
+          onPress={() =>
+            void save((current) => setHitl(current, { questionsPerDay: count })).then((kept) => {
+              if (kept) setTyped(null);
+            })
+          }
+        />
+      ) : null}
     </SettingsCard>
   );
 }
