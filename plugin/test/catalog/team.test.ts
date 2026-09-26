@@ -344,6 +344,20 @@ test("a server that needs something the project lacks is left off its seats, wit
   assert.deepEqual(servingProject(team, opened).roles.peer!.mcp, ["ide", "docs"]);
 });
 
+test("whoever supervises speaks to the Human in the language the machine's settings name, on every agent, and nobody else is told to", () => {
+  assert.doesNotMatch(rulesFor(resolveTeam(kit), "supervisor"), /language/i, "no language named, none is told");
+  const team = resolveTeam(kit, { language: "Vietnamese" });
+  assert.match(rulesFor(team, "supervisor"), /Speak to the Human in Vietnamese/);
+  assert.doesNotMatch(
+    rulesFor(team, "lead"),
+    /Vietnamese/,
+    "the rest of the team writes English, which the watch reads",
+  );
+  assert.deepEqual(resolveTeam(kit, {}, { language: "French" }).errors, [
+    "The project settings set language, which only the machine's can: the Human is the same in every project",
+  ]);
+});
+
 test("the Human is out of the loop unless the settings put them in: the project's word over the machine's, the machine's limit", () => {
   assert.deepEqual(resolveTeam(kit).hitl, { on: false, questionsPerDay: 3 });
   assert.deepEqual(resolveTeam(kit, { hitl: { on: true, questionsPerDay: 5 } }, { hitl: { on: false } }).hitl, {

@@ -107,8 +107,8 @@ test("every role builds on every agent the kit ships, each in that agent's own t
     if (harness.id === "claude") {
       assert.equal(
         at(settings, "language"),
-        as === "supervisor" ? "vietnamese" : undefined,
-        `${where}: only the Supervisor speaks the Human's language; the rest write English, which the watch reads best`,
+        undefined,
+        `${where}: the Human's language is their machine's setting, which the desk tells whoever supervises on every agent`,
       );
       const deny = list(at(settings, "permissions.deny"));
       for (const command of refusedGit)

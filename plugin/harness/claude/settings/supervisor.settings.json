@@ -1,5 +1,4 @@
 {
-  "language": "vietnamese",
   "permissions": {
     "deny": [
       "Bash(git commit *)",

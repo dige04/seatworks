@@ -25,6 +25,7 @@ export type Team = {
   hitl: Hitl;
   brains: Brains;
   rules: string;
+  language?: string;
   errors: string[];
 };
 
@@ -57,6 +58,10 @@ export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, 
     on: project.hitl?.on ?? machine.hitl?.on ?? false,
     questionsPerDay: machine.hitl?.questionsPerDay ?? QUESTIONS_PER_DAY,
   };
+  if (project.language !== undefined)
+    errors.push(
+      "The project settings set language, which only the machine's can: the Human is the same in every project",
+    );
   return {
     roles,
     mcp,
@@ -64,6 +69,7 @@ export function resolveTeam(kit: Kit, machine: Layer = {}, project: Layer = {}, 
     hitl,
     brains: brainsOf(kit, attention, layers, errors),
     rules: [machine.rules, project.rules].filter((text) => text && text.trim()).join("\n\n"),
+    ...(machine.language ? { language: machine.language } : {}),
     errors,
   };
 }
@@ -169,6 +175,10 @@ export function rulesFor(team: Team, roleName: string): string {
     if (note) lines.push(note);
     if (lines.length > 0) parts.push(lines.join("\n\n"));
   }
+  if (team.language && can(seat.role, "supervise"))
+    parts.push(
+      `## The Human's language\n\nSpeak to the Human in ${team.language}. Write to the rest of the team in English, which it works in and the watch reads.`,
+    );
   if (team.rules) parts.push(`## Rules from the Human\n\n${team.rules.trim()}`);
   if (seat.rules) parts.push(`## Rules from the Human, for the ${seat.role.label}\n\n${seat.rules}`);
   return parts.length > 0 ? `# Working rules\n\n${parts.join("\n\n")}\n` : "";
