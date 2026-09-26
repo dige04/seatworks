@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import type { Check } from "../../../shared/views.ts";
 import type { Kit, ProxySpec } from "../../catalog/kit/kit.ts";
+import { seatedAs } from "../../catalog/kit/roles.ts";
 import { connectToServer, hookTools, proxyOf } from "../../catalog/seat/servers.ts";
 import type { McpState } from "../../catalog/team/mcp-states.ts";
 import type { RoleSeat } from "../../catalog/team/role-seats.ts";
@@ -98,7 +99,7 @@ async function proxyCheck(state: McpState, proxy: ProxySpec, users: RoleSeat[], 
   const exposed = new Set(listed.names);
   const needed = new Set<string>([
     ...hookTools(proxy),
-    ...users.flatMap((seat) => (state.tools ?? state.entry?.tools)?.[seat.role.role] ?? []),
+    ...users.flatMap((seat) => (state.tools ?? state.entry?.tools)?.[seatedAs(seat.role)] ?? []),
   ]);
   const missing = [...needed].filter((tool) => !exposed.has(tool)).sort();
   return {
