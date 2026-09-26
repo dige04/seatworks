@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { intentsPath } from "../../server/core/paths.ts";
+import { stateRoot } from "../../server/core/paths.ts";
 import { saveLedger } from "../../server/desk/store/ledger.ts";
 import { reported } from "../console.ts";
 import { tempDir } from "../tempdir.ts";
@@ -225,13 +225,13 @@ test("an answer promised as mail that a stop lost is owned up to once the plugin
   assert.equal(told(), 1, "an answer that came is not owned up to again");
 
   const said = reported(t);
-  writeFileSync(intentsPath(), "{not json");
+  writeFileSync(join(stateRoot(), "intents.json"), "{not json");
   rmSync(go);
   assert.match((await report("r3")).text, /answer arrives as mail/);
   writeFileSync(go, "");
   assert.ok(await answered(3), "the answer still comes");
   assert.equal(
-    readFileSync(intentsPath(), "utf-8"),
+    readFileSync(join(stateRoot(), "intents.json"), "utf-8"),
     "{not json",
     "a promises file that cannot be read is not written over",
   );

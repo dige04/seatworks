@@ -3,7 +3,8 @@ import type { Team } from "../catalog/team/team.ts";
 import { KeyedQueue } from "../core/keyed-queue.ts";
 import { daemonLog } from "../core/logger.ts";
 import { midTurn } from "../core/paseo.ts";
-import { intentsPath } from "../core/paths.ts";
+import { join } from "node:path";
+import { stateRoot } from "../core/paths.ts";
 import type { Judge, SeatView, Seats, Workspaces } from "../core/ports.ts";
 import { type Fact, type Finding, findingsOf } from "../domain/incident.ts";
 import type { TaskMove, TaskStatus } from "../domain/task.ts";
@@ -86,7 +87,7 @@ export class Desk {
       landings: new KeyedQueue(),
       stopping: this.stop.signal,
     };
-    this.intents = new Intents(intentsPath());
+    this.intents = new Intents(join(stateRoot(), "intents.json"));
     const roster = new Roster(options.kit, options.seats, this.intents);
     const slots = new Slots(base, options.workspaces);
     const ownCopy = new OwnCopy(base, slots);

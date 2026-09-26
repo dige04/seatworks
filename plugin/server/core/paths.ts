@@ -104,10 +104,6 @@ export function commandIn(dirs: string[], name: string): { file: string; shell: 
     : { file: found, shell: false };
 }
 
-export function intentsPath(homeDir = home()): string {
-  return join(stateRoot(homeDir), "intents.json");
-}
-
 export function pluginDir(configPath = paseoConfigPath()): string | undefined {
   try {
     const entry = getPath(JSON.parse(readFileSync(configPath, "utf-8")) as unknown, ["plugins", PLUGIN_ID]);

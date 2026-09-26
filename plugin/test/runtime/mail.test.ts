@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { intentsPath } from "../../server/core/paths.ts";
+import { stateRoot } from "../../server/core/paths.ts";
 import { sentBy } from "../../server/core/sent-by.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { tempDir } from "../tempdir.ts";
@@ -310,7 +310,9 @@ test("a call that runs longer than a seat can wait is answered once by mail, and
   writeFileSync(go, "");
   const said = () => errors.mock.calls.map((line) => line.arguments.map(String).join(" ")).join("\n");
   assert.ok(await within(5000, () => /could not be mailed/.test(said())), "reported, and the desk goes on");
-  const kept = JSON.parse(readFileSync(intentsPath(), "utf-8")) as { promised: { agent: string; tool: string }[] };
+  const kept = JSON.parse(readFileSync(join(stateRoot(), "intents.json"), "utf-8")) as {
+    promised: { agent: string; tool: string }[];
+  };
   assert.deepEqual(
     kept.promised.map(({ agent, tool }) => [agent, tool]),
     [[lead, "report"]],
