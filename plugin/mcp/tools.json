@@ -3,7 +3,7 @@
     {
       "name": "open_lane",
       "title": "Open a lane",
-      "description": "Open a lane: one outcome, run by a new Lead whose directive is these fields. It works in the project's own copy, in a copy of its own (isolate), or waits for lanes (after); the reply says which, and names open lanes that may write the same. Refused, with the choices, when where it works must be chosen first.",
+      "description": "Open a lane: one outcome, run by a new Lead whose directive is these fields. It works in the project's own copy, a copy of its own (isolate; also where nothing chose and that copy holds work or another branch), or waits for lanes (after); the reply says which, and names open lanes that may write the same.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -54,7 +54,7 @@
           },
           "base": {
             "type": "string",
-            "description": "Optional base branch; defaults to the project's."
+            "description": "Optional base branch; defaults to the project's, else the branch the project's own copy is on."
           },
           "onBranch": {
             "type": "boolean",
@@ -160,7 +160,7 @@
     {
       "name": "land_lane",
       "title": "Land a lane",
-      "description": "Land a lane its Lead reported ready: the base is merged in, the gate runs, and it lands the project's way (landAs). Refused with the reason: a red gate lands only with overGate and your reason; a base conflict goes to its Lead. With the Human in the loop, one touching askFirst waits for them.",
+      "description": "Land a lane its Lead reported ready: base merged in, gate run, landed the project's way (landAs). Refused with the reason: red lands only with overGate and your reason; uncommitted work in its copy stops it regardless; a base conflict is its Lead's fact, and you choose who takes base in. In the loop, askFirst waits for the Human.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -519,7 +519,7 @@
     {
       "name": "push",
       "title": "Push the base",
-      "description": "Send the project's base to its remote, and with tag, tag its head as a release and send that too. Yours while the Human is out of the loop; refused while they are in it. Never forced: a remote that moved on refuses it. The tag is made as seatworks, unsigned, and no push hook runs.",
+      "description": "Send the project's base where the Human's git pushes it, and with tag, tag its head as a release (made as seatworks, unsigned) and send that too. Yours while the Human is out of the loop. Refused while they are in it, when git names no push target, or when the remote moved on: never forced. No push hook runs.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -613,7 +613,7 @@
           },
           "gateTimeoutMinutes": {
             "type": "number",
-            "description": "Minutes a gate may run before it counts as failed; 30 unless set."
+            "description": "Minutes a gate, or the desk's git making or merging in a copy, may run before it counts as failed; 30 unless set."
           },
           "gateOn": {
             "type": "string",
@@ -716,7 +716,7 @@
     {
       "name": "incidents",
       "title": "Open incidents",
-      "description": "What the watch told you about the Leads and Peers of this project, latest first: every incident not yet marked, with the seat and what was seen. What it held back is the owner's to label. Signals to look at, never verdicts.",
+      "description": "What the watch told you about the Leads and Peers of this project, latest first: every incident not yet marked, with the seat and what was seen. Signals to look at, never verdicts.",
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": false
@@ -1550,7 +1550,7 @@
     {
       "name": "judge",
       "title": "Judge the case",
-      "description": "Answer a case: one answer for each of its questions, by the name the case gives it, each with why in one sentence quoting the words that decided it. Answers are kept; a pattern's yes reaches whoever supervises only once its signal is on.",
+      "description": "Answer a case: one answer for each of its questions, by the name the case gives it, each with why in one sentence quoting the words that decided it. Answers are kept; a pattern's yes reaches whoever supervises.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
