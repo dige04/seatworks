@@ -27,7 +27,9 @@ const RUNS_COMMAND =
  * shares: no hooks, no fsmonitor, and each command the repository's own config names emptied. The Human's global
  * config, where their own filters such as LFS live, stands.
  */
-async function unplanted(cwd: string): Promise<string[]> {
+async function unplanted(cwd: string, args: string[]): Promise<string[]> {
+  const always = ["-c", `core.hooksPath=${devNull}`, "-c", "core.fsmonitor=false"];
+  if (REFS_ONLY.has(subcommandOf(args))) return always;
   const listed = await spawnGit(
     ["-C", cwd, "config", "--show-scope", "--name-only", "--get-regexp", RUNS_COMMAND],
     30_000,
@@ -36,12 +38,37 @@ async function unplanted(cwd: string): Promise<string[]> {
     const [scope, key] = line.split("\t");
     return key && (scope === "local" || scope === "worktree") ? ["-c", `${key}=`] : [];
   });
-  return ["-c", `core.hooksPath=${devNull}`, "-c", "core.fsmonitor=false", ...planted];
+  return [...always, ...planted];
+}
+
+/** Subcommands that read or move refs and never run a filter or driver: the config need not be read for them. */
+const REFS_ONLY = new Set([
+  "rev-parse",
+  "symbolic-ref",
+  "show-ref",
+  "rev-list",
+  "merge-base",
+  "update-ref",
+  "commit-tree",
+  "for-each-ref",
+  "check-ref-format",
+  "ls-files",
+  "branch",
+  "remote",
+  "config",
+]);
+
+function subcommandOf(args: string[]): string {
+  for (let at = 0; at < args.length; at++) {
+    if (args[at] === "-c") at++;
+    else return args[at]!;
+  }
+  return "";
 }
 
 export async function git(cwd: string, args: string[], timeout = 60_000): Promise<Run> {
   // core.quotePath=false: non-ASCII paths otherwise come back octal-escaped and match no path a write set names.
-  return spawnGit(["-C", cwd, "-c", "core.quotePath=false", ...(await unplanted(cwd)), ...args], timeout);
+  return spawnGit(["-C", cwd, "-c", "core.quotePath=false", ...(await unplanted(cwd, args)), ...args], timeout);
 }
 
 export async function currentBranch(cwd: string): Promise<string | undefined> {
