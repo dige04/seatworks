@@ -105,23 +105,35 @@ export async function changeOf(project: Project, lane: Lane): Promise<Change> {
   return { from, files: from ? await changedFiles(project.root, `${from}..${lane.branch}`) : undefined };
 }
 
+/** Why landing waits for the Human; `path` is the askFirst entry hit, none when the orders or the change are unread. */
+export type AskHit = { path?: string; text: string };
+
 /** Why landing `change` waits for the Human: paths it touches they asked to be asked about first, or orders unread. */
-export function askFirstHits(project: Project, change: Change): string[] {
+export function askFirstHits(project: Project, change: Change): AskHit[] {
   const read = readProjectConfig(project.state);
   if ("fault" in read)
-    return [`The Human's standing orders cannot be read (${read.fault}), so no landing goes ahead without them.`];
+    return [
+      { text: `The Human's standing orders cannot be read (${read.fault}), so no landing goes ahead without them.` },
+    ];
   const { askFirst } = read.config;
   if (askFirst.length === 0) return [];
   const files = change.files;
   if (!files)
     return [
-      "What the lane changed could not be read, so it is not known to stay clear of what the Human asked to be asked about first.",
+      {
+        text: "What the lane changed could not be read, so it is not known to stay clear of what the Human asked to be asked about first.",
+      },
     ];
   return askFirst.flatMap((path) => {
     const cover = coverOf(path);
     const hit = files.filter((file) => cover.test(file));
     return hit.length > 0
-      ? [`It changes ${capped(hit, SHOWN)}, under ${path}, which the Human asked to be asked about first.`]
+      ? [
+          {
+            path,
+            text: `It changes ${capped(hit, SHOWN)}, under ${path}, which the Human asked to be asked about first.`,
+          },
+        ]
       : [];
   });
 }

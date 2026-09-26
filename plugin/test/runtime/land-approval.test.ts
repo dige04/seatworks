@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { configFile } from "../../server/desk/project/project.ts";
@@ -226,5 +226,20 @@ test("with the Human out of the loop nothing waits for them: a lane touching wha
   const landed = await land();
   assert.equal(landed.ok, true, landed.text);
   assert.doesNotMatch(landed.text, /waits for the Human/);
+  assert.ok(onMain("src/auth/login.ts"));
+});
+
+test("an approval stands for the paths the Human was asked about, however base merged in first changes the files named under them", async () => {
+  const landable = await laneWith(
+    { "src/auth/login.ts": "export const login = 1;\n", "src/auth/logout.ts": "export const logout = 1;\n" },
+    ["src/auth"],
+    { isolate: true },
+  );
+  const { h, land, onMain } = landable;
+  await land();
+  mkdirSync(join(h.root, "src", "auth"), { recursive: true });
+  h.commit(h.root, "src/auth/logout.ts", "export const logout = 1;\n");
+  const approved = await decide(h, true, "");
+  assert.match(approved, /^Approved: Lane L1 closed/);
   assert.ok(onMain("src/auth/login.ts"));
 });
