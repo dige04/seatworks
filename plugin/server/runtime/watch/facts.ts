@@ -1,4 +1,4 @@
-import { isAbsolute, relative } from "node:path";
+import { isAbsolute, relative, sep } from "node:path";
 import { weakened } from "../../catalog/kit/ecosystem-patterns.ts";
 import { covers, normalize } from "../../core/scope.ts";
 import { oneLine } from "../../core/text.ts";
@@ -13,6 +13,7 @@ export type Rules = {
   destructive: RegExp;
   testPath: RegExp;
   suppressed: RegExp;
+  checkerPath: RegExp;
   skipped: RegExp;
   assertion: RegExp;
   runners: Set<string>;
@@ -128,6 +129,13 @@ function outside(path: string, rules: Rules): boolean {
 
 export const PROSE = /\.(md|mdx|markdown|txt|rst|adoc)$/i;
 
+/** The path as its copy names it, if it is one the gate or the agents' instructions read. */
+function checkerOf(path: string, rules: Rules): string | undefined {
+  const inCopy = rules.cwd && isAbsolute(path) ? relative(rules.cwd, path) : path;
+  const named = inCopy.split(sep).join("/");
+  return path && !named.startsWith("..") && rules.checkerPath.test(named) ? named : undefined;
+}
+
 const TRUNCATED = /^\.\.\.\[truncated \d+ chars\]$/;
 
 function sides(detail: Call["detail"], known?: (path: string) => string | undefined): [string, string] | undefined {
@@ -192,6 +200,8 @@ export function onSettle(call: Call, rules: Rules, known?: (path: string) => str
       if (added) facts.push(fact("suppressed", `${oneLine(path)}: adds ${oneLine(added, 60)}`));
     }
   }
+  const checker = writes && !bad ? checkerOf(str(detail.filePath), rules) : undefined;
+  if (checker) facts.push(fact("checker-touched", `${oneLine(checker)}: a file the gate or the instructions read`));
   if (writes && outside(str(detail.filePath), rules)) {
     facts.push(fact("outside-scope", oneLine(str(detail.filePath))));
   }

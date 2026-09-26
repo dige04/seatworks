@@ -25,6 +25,7 @@ export function watchPatterns(kit: Kit, attention: Attention) {
     destructive: new RegExp(attention.destructive, "i"),
     testPath: new RegExp(attention.testPath, "i"),
     suppressed: new RegExp(attention.suppressed, "i"),
+    checkerPath: new RegExp(attention.checkerPath, "i"),
     ...testMarkers(kit),
     runners: new Set(kit.ecosystem.watch.runners),
   };

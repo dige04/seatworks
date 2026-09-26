@@ -64,6 +64,8 @@ export const AttentionChoice = z.strictObject({
   reworksAt: z.number().int().min(2).optional(),
   reviewsAt: z.number().int().min(2).optional(),
   suppressed: Pattern.optional(),
+  /** Files the gate or the agents' instructions read: test runner and CI config, the project's instruction files. */
+  checkerPath: Pattern.optional(),
   longTurnMinutes: z.number().int().min(1).optional(),
   /** Past `longTurnAfterTurns` turns, one is long at `longTurnTimes` the median of the last `longTurnMedianOf`. */
   longTurnTimes: z.number().min(1).optional(),

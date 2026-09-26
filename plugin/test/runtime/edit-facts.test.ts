@@ -121,6 +121,24 @@ test("an edit is read for weakened tests, silenced checks and writes outside the
     "temp scratch and a directory of its scope are in; elsewhere, and a copy lying in temp outside its scope, are out",
   );
 
+  const checkers = [
+    edit("c1", 2, { filePath: "/work/vitest.config.ts", oldString: "a", newString: "b" }),
+    edit("c2", 3, { filePath: "/work/.github/workflows/ci.yml", oldString: "a", newString: "b" }),
+    edit("c3", 4, { filePath: "/work/AGENTS.md", oldString: "a", newString: "b" }),
+    edit("c4", 5, { filePath: "/work/src/config.ts", oldString: "a", newString: "b" }),
+  ];
+  assert.deepEqual(
+    play([...opening(), ...checkers], rules({ cwd: "/work" }))
+      .filter((fact) => fact.kind === "checker-touched")
+      .map((fact) => fact.quote),
+    [
+      "vitest.config.ts: a file the gate or the instructions read",
+      ".github/workflows/ci.yml: a file the gate or the instructions read",
+      "AGENTS.md: a file the gate or the instructions read",
+    ],
+    "a change to what checks the work, or to what tells agents how, is a fact; the code the checks read is not",
+  );
+
   // A Peer's first turn starts before start_task places it, so an empty first read must not be kept.
   let placed = false;
   const told = watchOver(() => ({
