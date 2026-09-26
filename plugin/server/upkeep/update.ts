@@ -7,6 +7,7 @@ import { readJson } from "../core/store.ts";
 import { PLUGIN_ID, nodeBin } from "../core/paths.ts";
 import { daemonLog } from "../core/logger.ts";
 import { firstUnder } from "../core/fs.ts";
+import { isRecord, sortKeys } from "../core/json.ts";
 import { plural } from "../core/text.ts";
 
 export type UpdateContext = {
@@ -17,12 +18,28 @@ export type UpdateContext = {
   reload(): void;
 };
 
-const paseoRange = (text: string | undefined): string | null => {
+type Manifest = {
+  version?: string;
+  requirements?: { paseo?: string };
+  dependencies?: unknown;
+  devDependencies?: unknown;
+  optionalDependencies?: unknown;
+};
+
+/** A package or plugin manifest as git shows it; one that is missing or does not parse is none. */
+function manifest(text: string | undefined): Manifest | undefined {
   try {
-    return (JSON.parse(text ?? "") as { requirements?: { paseo?: string } }).requirements?.paseo ?? null;
+    const value = JSON.parse(text ?? "") as unknown;
+    return isRecord(value) ? value : undefined;
   } catch {
-    return null;
+    return undefined;
   }
+}
+
+/** What npm installs from: a package that cannot be read is taken to ask for something new. */
+const needs = (text: string | undefined): string => {
+  const read = manifest(text);
+  return read ? JSON.stringify(sortKeys([read.dependencies, read.devDependencies, read.optionalDependencies])) : "?";
 };
 
 /** The version the plugin at `dir` is, as its package names it: what a seat reads raises it. */
@@ -100,14 +117,14 @@ async function readIncoming(dir: string, view: UpdateView): Promise<void> {
   view.commits = log
     ? log.split("\n").map((line) => ({ sha: line.split("\t")[0]!, subject: line.split("\t").slice(1).join("\t") }))
     : [];
-  view.installs = Boolean(
-    await out(dir, ["diff", "--name-only", "HEAD", "@{u}", "--", "package.json", "package-lock.json"]),
-  );
-  if (view.behind > 0)
-    view.next =
-      (JSON.parse((await out(dir, ["show", "@{u}:./package.json"])) ?? "{}") as { version?: string }).version ?? null;
-  const next = paseoRange(await out(dir, ["show", "@{u}:./paseo-plugin.json"]));
-  view.paseo = next !== paseoRange(readFileSync(join(dir, "paseo-plugin.json"), "utf-8")) ? next : null;
+  const incoming = await out(dir, ["show", "@{u}:./package.json"]);
+  view.installs =
+    Boolean(await out(dir, ["diff", "--name-only", "HEAD", "@{u}", "--", "package-lock.json"])) ||
+    needs(incoming) !== needs(await out(dir, ["show", "HEAD:./package.json"]));
+  if (view.behind > 0) view.next = manifest(incoming)?.version ?? null;
+  const next = manifest(await out(dir, ["show", "@{u}:./paseo-plugin.json"]))?.requirements?.paseo ?? null;
+  const now = manifest(readFileSync(join(dir, "paseo-plugin.json"), "utf-8"))?.requirements?.paseo ?? null;
+  view.paseo = next !== now ? next : null;
 }
 
 /** Moves the checkout forward only, installs what its packages now ask for, and reloads the plugin. */
