@@ -1,7 +1,7 @@
 import type { Level } from "../../domain/incident.ts";
 
 /** Every fact the code raises and its level; one that can open an incident has the title a person reads it by. */
-export const FACTS = {
+const FACTS = {
   destructive: { level: "page", title: "Ran a command that cannot be undone" },
   stuck: { level: "attend", title: "Going round in circles" },
   "no-recovery": { level: "attend", title: "Did not recover from a failure" },

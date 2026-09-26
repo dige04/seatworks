@@ -420,5 +420,5 @@ proofs pile up locally → review patches further → the debt grows while the d
 So the question to ask before letting an agent fix a list of findings is the one this list was
 compiled around: **do these findings share one missing mechanism?**
 
-For what the watch does detect today, see [The watch](ARCHITECTURE.md#the-watch); to tune it, see
-[the reference's settings](REFERENCE.md#settings).
+What the watch detects today is in `plugin/server/runtime/watch/fact-kinds.ts` and
+`plugin/server/runtime/watch/history.ts`; its settings are `attention` in `plugin/shared/settings.ts`.

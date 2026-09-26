@@ -1,37 +1,74 @@
 # AGENTS.md
 
-Seatworks is a Paseo plugin that runs a team of coding agents the **SLP** way: a Supervisor works
-with the Human, a Lead owns each lane of work, and Peers each do one task, with a Reviewer and a
-Watcher beside them. This file holds what the code will not tell you before you change it. How the
-parts fit is in `docs/ARCHITECTURE.md`; every name and value is in `docs/REFERENCE.md`.
+Seatworks is a Paseo plugin that runs a team of coding agents the **SLP** way. SLP is the core: a
+**Supervisor** works with the Human, a **Lead** owns each lane of work, and **Peers** each do one
+task. Around the core are **R**, review, which a Lead has a Reviewer do, and **W**, the watch, which
+the Watcher does. This file holds what the code will not tell you before you change it.
 
 **Nothing has shipped.** No users, no releases, nothing to stay compatible with.
 
 ## The governing rule
 
-> The plugin **serves** SLP so it works better with Paseo. It must **never constrain** how SLP works.
+The owner's words:
+
+> "Lưu ý code plugin chỉ **_hỗ trợ / phục vụ_** concept SLP làm việc tốt hơn với Paseo chứ không hạn
+> chế SLP làm việc nhé. Hiện tại tao đang thấy không có sự flexible và dự án đang quá loạn. Gần đánh
+> mất đi concept vốn có của SLP."
+
+The plugin **serves** SLP so it works better with Paseo. It must **never constrain** how SLP works.
 
 - Ask of every change: does it take a constraint off SLP, or add one? Adding one needs a reason,
   written in its commit message. When a constraint goes, delete it; never add a switch to turn it
   off.
 - SLP is a federated governance graph, not a tree. `Supervisor > Lead > Peer` is not a chain of
   command: each role holds authority on its own axis.
-- The test that keeps this true: if SLP were dropped tomorrow, would the plugin survive? A change that
-  makes the answer no is the wrong change.
+- If SLP were dropped tomorrow, the plugin must survive. A change that makes that untrue is wrong.
+- **A decision the concept does not settle is the owner's.** Ask before you code it.
+
+## SLP, R and W
+
+| Who | Owns | Speaks to |
+|---|---|---|
+| Human | Intent, priorities, external commitments; push and release | the Supervisor |
+| Supervisor | Intent interpretation, cross-boundary observation and intervention; landing lanes | the Human, the Leads; a Peer only with its Lead told first |
+| Lead | One lane: topology, sequencing, ownership, integration and **acceptance** | the Supervisor, its Peers and Reviewers |
+| Peer | One task, and the engineering judgment inside it; may refuse the Lead's framing | its Lead |
+| R: Reviewer | Nothing: its verdict is evidence the Lead weighs | its Lead |
+| W: Watcher | Nothing: it tells the Supervisor *when* to look | the Supervisor only |
+
+- **The Supervisor directs attention; it does not scan.** W tells it when a Lead or a Peer needs
+  attention. The Supervisor decides whether and how to step in: one open question, a council, a
+  hold, or the Human. It never writes code and never decides a technical result.
+- **W is one eye and two brains.** The eye reads each Lead's and Peer's work (thinking, words,
+  commands) and reports to the Supervisor when it sees an anti-pattern (`docs/ANTIPATTERNS.md`) or
+  one of SLP's moments: a Lead making an architecture decision, a Peer struggling with an unclear
+  idea, a sharp change of direction, an agent saying it was wrong. The brains are Jev, a cheap typed
+  model asked one condition at a time, and the Watcher seat, a model that judges; which of them runs
+  is settings. W never decides, never steps in, and never speaks to the seat it watches.
+- **R is evidence for acceptance.** The Lead answers for its Peers' work and starts Reviewers to
+  review it. A verdict never decides anything on its own.
+- **A lane is a team:** its Lead, its Peers and its Reviewers. One Lead runs several Peers at once,
+  and several lanes run at once, as long as they do not collide. Each seat has one mission, a Peer
+  one task and a Lead one lane; its superior ends it, never the desk.
+- **Merges are the desk's.** No seat may merge, pull, rebase, reset, check out, switch, cherry-pick,
+  stash, update a ref, push, or change working copies or branches: the git shim and each agent's
+  own rules refuse it. A Lead's `accept` puts a task in its lane's merge queue and the desk merges
+  it; the Supervisor's `land_lane` has the desk land the lane on base. A seat only settles, and
+  commits, the conflicts the desk leaves in its own copy.
+
+**Where the code is not there yet.** Read this before you trust the watch:
+- Its code facts read commands and turn length; nothing reads a seat's thinking or words.
+- `attention.judge` picks one brain, asked only at a hand-back, a review or a destructive command,
+  and only in shadow.
+- An attention-level incident about a Peer or a Reviewer goes to its Lead, not to the Supervisor.
 
 ## What the plugin may decide
 
 Only **session lifecycle, transport, routing, notification, durable state and provenance**.
 
-| Authority | Owner |
-|---|---|
-| Intent, priorities, external commitments | the Human |
-| Intent interpretation, cross-boundary observation and intervention | the Supervisor |
-| Topology, sequencing, ownership, integration and **acceptance** | the Lead |
-| Engineering judgment within scope | the Peer |
-
-- The plugin never decides acceptance. A gate or test result is evidence the Lead weighs, never a
-  veto. Writing a refusal? Check it against this table first.
+- The plugin never decides acceptance. A gate or test result is evidence: a red gate holds a merge
+  until the Lead's `accept` passes it with a reason, and a landing until the Supervisor's `land_lane`
+  does. Writing a refusal? Check it against the table above first.
 - The one constraint the concept asks for: the Supervisor may reach a Peer directly, but the desk
   always tells the Lead first. No hidden command chains.
 
@@ -45,12 +82,12 @@ These eight rules settle most questions about where a behaviour belongs.
 2. **One door to the Human.** Only the Supervisor puts a question to the Human, on their queue. What
    the panel shows is the desk's record and the Supervisor's words. When the Human types into a Lead's
    or Peer's chat, the desk tells whoever supervises.
-3. **Driven by events.** No heartbeat. A letter that asks nothing waits for one that does, so it
-   never wakes a seat on its own.
+3. **Driven by events.** No seat runs on a heartbeat. A letter that asks nothing waits for one that
+   does, so it never wakes a seat on its own. What W finds reaches the Supervisor as an event.
 4. **Evidence, not claims.** Accepting, reporting ready and landing always carry the desk's facts:
    gate, rehearsals, reviews. A seat saying "done" is a claim to check.
 5. **Layered by what can be undone.** What can be undone goes ahead; what cannot waits for the Human,
-   or is held and paged.
+   or is held, and the Supervisor hears of it at once.
 6. **What code can check is code.** A prompt keeps only judgement. An instruction that depends on the
    situation is the `Next:` line of the letter that brings the situation, not a table in a prompt.
 7. **No switch that turns a constraint off.** Two exceptions: a watch question's `mode`, which

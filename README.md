@@ -7,8 +7,6 @@ the evidence between them, and brings you in for what only you can decide.
 
 > **Pre-release.** Nothing has shipped: no releases, no compatibility promises.
 
-![How a piece of work goes](docs/images/workflow.svg)
-
 ## How a piece of work goes
 
 1. **You set the intent.** Start the Supervisor in your project and say what you want. Before new work
@@ -45,11 +43,9 @@ yours.
 | Keeps a shared record of lanes, tasks, questions and incidents | One writer per working copy | Tell a seat what the watch concluded about it |
 | Carries mail between seats, each letter ending with what it asks of its reader, and holds it until its reader can take it, for up to 7 days | A red gate stops a task merging into its lane, unless its Lead accepts it over the gate with a reason, and a lane landing, unless the Supervisor lands it over the gate with a reason | Write your project's concept for you |
 | Keeps a durable record outside your repo | A landing that touches a path you asked to see first waits for you | Write into your project's files |
-| Watches Leads and Peers, tells whoever answers for them, and pages you for what cannot be undone | Each role's permissions, where its agent allows it, and git commands only the desk runs | Push or release |
+| Watches Leads and Peers, tells whoever answers for them, and tells the Supervisor at once of what cannot be undone | Each role's permissions, where its agent allows it, and git commands only the desk runs | Push or release |
 
 ## The team
-
-![SLP: who decides what](docs/images/slp-graph.svg)
 
 | Role | Owns | Starts and ends | Default agent |
 |---|---|---|---|
@@ -59,8 +55,8 @@ yours.
 | Reviewer | A read-only review of one change | Started with its review; ends when its Lead cuts the review or the lane closes | Claude Code · `claude-opus-5` · medium |
 | Watcher | The watch's questions, one case at a time, when you choose a seat to answer them | Started when a case first needs it; let go once no lane is open | The Peer's, until you set its own |
 
-Roles are data in `plugin/roles.json`, not code, and each has the tools listed in
-[the reference](docs/REFERENCE.md#desk-verbs).
+Roles are data in `plugin/roles.json`, not code, and each has the tool set it names in
+`plugin/mcp/tools.json`.
 
 ## Supported agents
 
@@ -81,9 +77,7 @@ desk's git commands, `gh` and `paseo`. Claude Code, Codex, Oh My Pi and OpenCode
 denied `git push`, `gh`, `paseo` and starting other agents by their own rules. Pi has no command
 rules, so a Pi seat can start another agent: its `PATH` cannot refuse one, since its own agent
 starts through that same `PATH`. The shipped Claude Code settings answer in Vietnamese: change
-`language` in `plugin/harness/claude/settings.json` for another language. The details are under
-[seat directories](docs/REFERENCE.md#seat-directories) and [known
-limits](docs/REFERENCE.md#known-limits).
+`language` in `plugin/harness/claude/settings.json` for another language.
 
 ## Install
 
@@ -174,8 +168,7 @@ this destructive command asked for, does a complete hand-back's summary admit a 
 accepts a migration say it ran the invariant. On the Watcher's chip in **Team** you pick who answers:
 Jev, a small model asked over OpenRouter with your key, which stays on this machine and is never shown
 again; the Watcher seat; or nobody. Every question ships in shadow: its answers are kept in the
-project's `assessments.log` for you to label, and no seat is sent them. How the watch works is in
-[the architecture](docs/ARCHITECTURE.md#the-watch).
+project's `assessments.log` for you to label, and no seat is sent them.
 
 ## Known Paseo behaviour
 
@@ -198,15 +191,12 @@ npm run check
 ```
 
 This type-checks the code and runs every test. Don't launch seats to test a change: they are real
-agents, with real permissions, and they cost money. The evals that call a real model are in
-[the reference](docs/REFERENCE.md#evals).
+agents, with real permissions, and they cost money.
 
 ## Docs
 
 | Read | When you want |
 |---|---|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How it works inside, in one sitting |
-| [REFERENCE.md](docs/REFERENCE.md) | To look something up: verbs, letters, facts, settings, files |
 | [ANTIPATTERNS.md](docs/ANTIPATTERNS.md) | How a team of agents goes wrong, and which of those the watch can see |
 | [AGENTS.md](AGENTS.md) | The rules this code follows, before you change it |
 
