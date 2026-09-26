@@ -54,14 +54,19 @@ export async function openLane(desk: DeskServices, caller: Caller, asked: OpenLa
   const { project } = caller;
   const read = readProjectConfig(project.state);
   if ("fault" in read) return no(keptFault(read.fault).message);
-  const plan = await planOpen(project, read.config, asked);
+  const plan = await planOpen(project, read.config, asked, desk.teamFor(project).hitl.on);
   if (typeof plan === "string") return no(plan);
   seedConfig(desk.kit, project, read.config, plan);
   return plan.pending.length > 0 ? waitToOpen(desk, caller, plan) : openNow(desk, caller, plan);
 }
 
-/** Checks the call and works out where the lane works: carrying a branch on, or off which base. */
-async function planOpen(project: Project, config: ProjectConfig, asked: OpenLaneCall): Promise<Plan | string> {
+/** Checks the call and works out where the lane works: carrying a branch on, or off which base; `human` when they are in the loop. */
+async function planOpen(
+  project: Project,
+  config: ProjectConfig,
+  asked: OpenLaneCall,
+  human: boolean,
+): Promise<Plan | string> {
   const after = [...new Set(strs(asked.after).map((id) => id.trim().toUpperCase()))];
   const here = await currentBranch(project.root);
   const newBranch = str(asked.newBranch).trim();
@@ -71,7 +76,7 @@ async function planOpen(project: Project, config: ProjectConfig, asked: OpenLane
     return "onBranch carries on the branch the project's own copy is on, in that copy, so it takes no base and no isolate.";
   // A lane whose `after` has all landed opens now, in whatever the copy is now: it is asked about like any other.
   const waits = after.length > 0 ? waitsFor(loadLedger(project.state), after, true) : [];
-  const home = await homeOf(project, config, asked, Array.isArray(waits) && waits.length === 0, here);
+  const home = await homeOf(project, config, asked, Array.isArray(waits) && waits.length === 0, here, human);
   if (typeof home === "object") return home.refused;
   const args = { ...asked, onBranch: home === "onBranch" || undefined, isolate: home === "isolate" || undefined };
   const onBranch = args.onBranch === true;
@@ -89,13 +94,14 @@ async function planOpen(project: Project, config: ProjectConfig, asked: OpenLane
   return { args, place: { base, onBranch, branch: onBranch ? base : undefined }, after, pending, newBranch, here };
 }
 
-/** Where this lane works, as its call or the Human's standing choice says, or why the Human is asked first. */
+/** Where this lane works, as its call or the standing choice says, or why it must be chosen first: by the Human in the loop. */
 async function homeOf(
   project: Project,
   config: ProjectConfig,
   asked: OpenLaneCall,
   opensNow: boolean,
   here: string | undefined,
+  human: boolean,
 ): Promise<LaneHome | undefined | { refused: string }> {
   const said: LaneHome | undefined =
     asked.onBranch === true
@@ -109,8 +115,11 @@ async function homeOf(
   if (!opensNow || ownCopyHolder(Object.values(loadLedger(project.state).lanes))) return said ?? config.laneHome;
   const home = laneHomeFor(said, config, here, await uncommittedPaths(project.root));
   if (typeof home !== "object") return home;
+  const keep = "set_project laneHome keeps the choice for every lane";
   return {
-    refused: `The Human decides where this lane works, and has not said: ${home.question}. Ask them, and keep their answer for every lane with set_project laneHome if they give one.`,
+    refused: human
+      ? `The Human decides where this lane works, and has not said: ${home.question}. Ask them; ${keep} if they give one.`
+      : `Where this lane works is yours to choose, and nothing on record chose it: ${home.question}. Pass one; ${keep}.`,
   };
 }
 

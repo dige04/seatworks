@@ -18,7 +18,7 @@ async function ownCopy(root: string): Promise<OwnCheckout> {
 export const status = defineTool({
   name: "status",
   input: z.strictObject({}),
-  async handle({ lastStatus, roster }, caller) {
+  async handle({ lastStatus, roster, teamFor }, caller) {
     const ledger = loadLedger(caller.project.state);
     const seats = new Map((await roster.open()).map((seat) => [seat.id, seat]));
     const led = can(caller.role, "lead") ? leadLaneOf(ledger, caller.id) : undefined;
@@ -31,6 +31,7 @@ export const status = defineTool({
     const text = statusText(caller.project, ledger, loadConfig(caller.project.state), seats, Date.now(), {
       laneId: lane,
       copy,
+      human: teamFor(caller.project).hitl.on,
     });
     if (lastStatus.get(caller.id) === hash(text))
       return ok("Nothing has changed since you last asked: end your turn, and mail wakes you when something does.");

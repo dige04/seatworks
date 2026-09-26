@@ -63,14 +63,15 @@ export function statusText(
     waiting = [],
     held = [],
     copy,
-  }: { laneId?: string; waiting?: SeatView[]; held?: Held[]; copy?: OwnCheckout } = {},
+    human = true,
+  }: { laneId?: string; waiting?: SeatView[]; held?: Held[]; copy?: OwnCheckout; human?: boolean } = {},
 ): string {
   const lanes = Object.values(ledger.lanes).filter((lane) => (laneId ? lane.id === laneId : true));
   const open = lanes.filter((lane) => lane.status === "open");
   const pending = lanes.filter((lane) => lane.status === "waiting");
   const lines = [
     ...heading(project, config, now),
-    ...(copy ? ownCopyLines(project, ledger, config, copy) : []),
+    ...(copy ? ownCopyLines(project, ledger, config, copy, human) : []),
     ...mailLines(project, ledger, seats, now, held),
     ...waitingOnHuman(waiting),
     ...(open.length === 0
@@ -96,8 +97,17 @@ function heading(project: Project, config: ProjectConfig, now: number): string[]
   return [`# Status: ${project.root}`, "", `${setup} ${asked} ${rules}`, ""];
 }
 
-/** Names a choice for the Human only where one is real: uncommitted work, or a branch not the base, with no lane in the copy. */
-function ownCopyLines(project: Project, ledger: Ledger, config: ProjectConfig, copy: OwnCheckout): string[] {
+/**
+ * Names a choice of where lanes work only where one is real: uncommitted work, or a branch not the base, with no lane in the
+ * copy. It is the Human's while they are in the loop, and the reader's otherwise.
+ */
+function ownCopyLines(
+  project: Project,
+  ledger: Ledger,
+  config: ProjectConfig,
+  copy: OwnCheckout,
+  human: boolean,
+): string[] {
   const at = copy.branch ? `on ${copy.branch}` : `not on a branch (detached at ${copy.head ?? "an unknown commit"})`;
   const work = copy.work ? [...copy.work].sort() : undefined;
   const more = work && work.length > SHOWN_FILES ? `, and ${work.length - SHOWN_FILES} more` : "";
@@ -115,11 +125,12 @@ function ownCopyLines(project: Project, ledger: Ledger, config: ProjectConfig, c
         ? `Lane ${holder.id} is closed, and its Lead is ending a turn in it; it goes back to ${holder.base} after.`
         : "No lane is working in it.";
   const lines = ["## The project's own copy", "", `${project.root} is ${at}, ${state}.`, held];
-  if (config.laneHome)
-    lines.push(`Lanes open ${HOMES[config.laneHome]}, as the Human chose for every lane (laneHome).`);
+  if (config.laneHome) lines.push(`Lanes open ${HOMES[config.laneHome]}, as chosen for every lane (laneHome).`);
   const home = holder ? undefined : laneHomeFor(undefined, config, copy.branch, work);
   if (typeof home === "object")
-    lines.push(`The Human decides where the next lane works, before it opens: ${home.question}.`);
+    lines.push(
+      `${human ? "The Human decides" : "You choose"} where the next lane works, before it opens: ${home.question}.`,
+    );
   return [...lines, ""];
 }
 

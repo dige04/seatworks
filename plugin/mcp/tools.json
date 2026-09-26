@@ -3,7 +3,7 @@
     {
       "name": "open_lane",
       "title": "Open a lane",
-      "description": "Open a lane: one outcome, run by a new Lead whose directive is these fields. It works in the project's own copy, in a copy of its own (isolate), or waits for lanes (after); the reply says which, and names open lanes that may write the same. Refused, with the choices, when the Human must first say where it works.",
+      "description": "Open a lane: one outcome, run by a new Lead whose directive is these fields. It works in the project's own copy, in a copy of its own (isolate), or waits for lanes (after); the reply says which, and names open lanes that may write the same. Refused, with the choices, when where it works must be chosen first.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -557,7 +557,7 @@
               "newBranch",
               "isolate"
             ],
-            "description": "Where lanes work, as the Human chose, unless a call overrides: onBranch their branch, newBranch a lane branch in their copy, isolate a separate copy."
+            "description": "Where every lane works unless a call overrides: onBranch their branch, newBranch a lane branch in their copy, isolate a separate copy."
           },
           "askFirst": {
             "type": "array",
