@@ -1385,8 +1385,7 @@
           }
         },
         "required": [
-          "question",
-          "bestGuess"
+          "question"
         ]
       }
     }
