@@ -14,7 +14,6 @@ export type Incident = {
   kind: string;
   level: "page" | "attend";
   quote: string;
-  /** The quote is the seat's own text, a command it ran, which anyone may name back to it. */
   theirs?: true;
   later?: string;
   facts: string[];

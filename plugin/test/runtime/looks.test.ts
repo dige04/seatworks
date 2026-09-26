@@ -100,6 +100,11 @@ test("the watch's eye reads a seat's new words at its turn's end and while it ru
     "once its signal is on, it reaches whoever supervises",
   );
   assert.doesNotMatch(h.heard(peer).join("\n"), /INCIDENT/);
+  const asking = await h.call(sup, "supervisor", "message", {
+    to: "L1-T1",
+    text: 'You thought "A placeholder will do for the refund path." What does the refund path need?',
+  });
+  assert.equal(asking.ok, true, `the seat's own words are the Supervisor's to quote back: ${asking.text}`);
 });
 
 test("with both brains the sensor sifts and the Watcher seat judges only what it flagged or left unsure, in the words its why quotes", async (t) => {

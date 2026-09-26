@@ -143,7 +143,10 @@ async function sift(
       const verdict = verdictOf(pattern, yes);
       if (verdict !== "no") flagged.add(id);
       if (verdict === "yes")
-        found.push(finding(id, item.text, `seen by ${by.sensor.label}, ${yes!.toFixed(2)} sure, in its ${item.kind}`));
+        found.push({
+          ...finding(id, item.text, `seen by ${by.sensor.label}, ${yes!.toFixed(2)} sure, in its ${item.kind}`),
+          theirs: true,
+        });
     }
   }
   return { found, flagged };
