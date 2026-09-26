@@ -6,7 +6,7 @@ import { SAY_IN_REPORT } from "./next.ts";
 
 const theirDefault = (ask: Ask): string[] => (ask.default ? ["", `Their default: ${ask.default}`] : []);
 
-/** What whoever supervises does with an ask: a Peer's reaches it only when its Lead is gone, and a question may be the Human's. */
+/** Whoever supervises and an ask: a Peer's reaches it only when its Lead is gone, and a question may be the Human's. */
 function askNext(ask: Ask): string {
   if (ask.task)
     return `Its Lead is gone: answer ${ask.id} if you can; replace_lead puts a new Lead on the lane where it stands.`;
@@ -15,11 +15,11 @@ function askNext(ask: Ask): string {
   return `Decide and answer ${ask.id}; what only the Human can give (access, a key, spending) or a kit or setup error goes to them word for word.`;
 }
 
-/** The Lead that keeps its lane off what an irreversible question decides, until whoever supervises tells it how it goes on. */
+/** The Lead keeping its lane off an irreversible question's decision, until whoever supervises says how it goes on. */
 const keptOffBy = (question: Question) =>
   question.class === "irreversible" && question.lane ? `the Lead of ${question.lane}` : undefined;
 
-/** What the Human's word asks of whoever asked: a choice unlike what went ahead while they were silent is turned round. */
+/** What the Human's word asks of whoever asked: turn round what went ahead in their silence if they chose otherwise. */
 function answeredNext(question: Question): string {
   const lead = keptOffBy(question);
   if (question.status === "declined")
@@ -37,7 +37,6 @@ function answeredNext(question: Question): string {
   return "If their choice is not what went ahead while they were silent, turn that round, and write it into CONTEXT.md if it settles the concept";
 }
 
-/** The letters an ask sends: to whoever it is put to, the answer back, and what becomes of one left unanswered. */
 export const askLetters = {
   /** `concept` is where the project's CONTEXT.md is, when there is one: a Lead answers its Peers from it first. */
   askTo(ask: Ask, from: string, reader: "lead" | "supervisor", concept?: string): Letter {
@@ -54,7 +53,6 @@ export const askLetters = {
     );
   },
 
-  /** Whoever asked the Human is told their word from the panel, and that a lane held for it stays held until it is resumed. */
   humanAnswered(question: Question, lane: Lane | undefined): Letter {
     const word =
       question.status === "declined"
@@ -84,8 +82,8 @@ export const askLetters = {
   },
 
   /**
-   * The seat an ask was put to, told what its asker was told and by whom: the owner may answer a Lead's ask, never out of
-   * its sight. `waited` false: a Peer's ask put to the owner while its lane had no Lead, told to the Lead it has now.
+   * The seat an ask was put to, told what its asker was told and by whom: the owner may answer a Lead's ask, never out
+   * of its sight. `waited` false: a Peer's ask put to the owner while its lane had no Lead, told to its Lead now.
    */
   answeredFor(ask: Ask, by: string, leads = true, waited = true): Letter {
     const put = waited ? "which was waiting on you" : "put to the owner while your lane had no Lead";
@@ -111,7 +109,6 @@ export const askLetters = {
     );
   },
 
-  /** A decision that cannot be undone waits for the Human: the Lead keeps off what it decides and plans the rest around it. */
   pending(question: Question): Letter {
     return mail(
       "pending",
@@ -121,7 +118,7 @@ export const askLetters = {
     );
   },
 
-  /** The Lead keeping its lane off a decision hears that it is settled and nothing of the Human's words, which reach it through the owner. */
+  /** The Lead keeping its lane off a decision hears it is settled, not the Human's words: the owner brings those. */
   settled(question: Question): Letter {
     const how =
       question.status === "answered"

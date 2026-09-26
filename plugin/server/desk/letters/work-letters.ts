@@ -11,7 +11,6 @@ const waited = (head: "WAITING" | "STARTED" | "OPENED", entry: Lane | Task, what
   return `${head} ${entry.id} (${entry.title}), the ${"lane" in entry ? (after ? "task you started" : "task from your plan") : "lane you opened"}${after}: ${what}`;
 };
 
-/** A task's and a lane's course: hand-backs and rework, reports and amendments, waits, starts and holds. */
 export const workLetters = {
   /** `reader` is the Lead, or whoever supervises once the Lead is no longer seated. */
   handback(task: Task, file: string, body: string, peer: string, reader: "lead" | "supervisor"): Letter {
@@ -41,7 +40,10 @@ export const workLetters = {
     );
   },
 
-  /** `found` is what the desk read itself rather than took from the Lead: the gate, a park, what landing it waits for, what it brings, and whether review changes stand. */
+  /**
+   * `found` is what the desk read itself rather than took from the Lead: the gate, a park, what landing it waits for,
+   * what it brings, and whether review changes stand.
+   */
   report(
     lane: Lane,
     summary: string,
@@ -97,7 +99,6 @@ export const workLetters = {
     return mail("amended", [entry.id, entry.amended?.length ?? 0], text, next);
   },
 
-  /** Why a lane or task still waits, told once per reason, and what its reader can do about it. */
   held(entry: Lane | Task, why: string, next: string): Letter {
     return mail(
       "held",
@@ -136,13 +137,15 @@ export const workLetters = {
     );
   },
 
-  /** A task beside others whose lane stopped on conflicts as it was brought in at hand-back: its Peer settles them, and nothing waits on its Lead. */
+  /** A task whose lane stopped on conflicts as it was brought in at hand-back: its Peer settles them, not its Lead. */
   settling(task: Task, lane: string, conflicts: string[], by: string[]): Letter {
     const text = `SETTLING ${task.id} (${task.title}): bringing ${lane} into its branch conflicts in ${conflicts.join(", ")}${by.length > 0 ? `, changed there by ${by.join(", ")}` : ""}. Its Peer settles it in its own copy before it hands back.`;
     return fyi(mail("settling", [task.id, Date.now()], text, "Nothing now: its hand-back arrives as mail."));
   },
 
-  /** A task started beside the one at work in the lane's copy after that one's brief was written: what it holds is no longer the Peer's to write. */
+  /**
+   * A task started beside the one in the lane's copy after that one's brief: what it holds is no longer that Peer's.
+   */
   beside(started: Task): Letter {
     return mail(
       "beside",
@@ -152,7 +155,7 @@ export const workLetters = {
     );
   },
 
-  /** A lane that works beside this Lead's and may write what its own does: word only, since what both write meets at merge or landing. */
+  /** A lane beside this Lead's that may write what its own does: word only, since both meet at merge or landing. */
   laneBeside(other: Lane, paths: string[]): Letter {
     return fyi(
       mail(

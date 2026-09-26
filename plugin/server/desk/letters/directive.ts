@@ -13,7 +13,7 @@ const SHOWN_SERIAL = 8;
 export const besideText = (beside: Beside[]): string =>
   beside.map((entry) => `${entry.lane} (${capped(entry.paths, SHOWN_SERIAL)})`).join(", ");
 
-/** What the Supervisor hears of the open lanes a lane `how` beside and may write what it does; nothing when there are none. */
+/** What the Supervisor hears of the open lanes a lane `how` beside that may write what it does; nothing when none. */
 export const besideNote = (beside: Beside[], how: "opened" | "now works"): string =>
   beside.length > 0
     ? ` It ${how} beside lanes that may write what it does: ${besideText(beside)}. Their Leads and its own are told; ${BOTH_MEET}, where its Lead settles it, and between lanes it is yours.`
@@ -38,12 +38,13 @@ export async function directiveFor(
   };
 }
 
-/** Read before the directive by a Lead seated on a lane already under way. */
 function takeover(lane: Lane, was: string): string {
   return `You take over ${lane.id} from its Lead ${was}, which is gone. The lane branch, its working copy, its tasks and the asks waiting on its Lead are as that Lead left them: call status and read the branch's log before you start anything, and carry on from there rather than over it.`;
 }
 
-/** What a Lead seated on a lane already under way is told: that it takes over, then the directive, its issue read again. */
+/**
+ * What a Lead seated on a lane already under way is told: that it takes over, then the directive, its issue read anew.
+ */
 export async function takeoverFor(kit: Kit, project: Project, lane: Lane, copy: string): Promise<string> {
   const issue = await issueOf(kit.ecosystem.issues, lane.issue, project.root);
   return `${takeover(lane, lane.lead ?? "its first Lead")}\n\n${(await directiveFor(kit, project, lane, copy, issue)).text}`;
@@ -58,7 +59,6 @@ function gateRegime(project: Project): string {
     : `${config.gate} runs on the whole lane when you report it ready; merges are not gated, so the lane branch can break between reports`;
 }
 
-/** Where the Lead's copy stands, lane branch or task branch: the lane branch takes a task's work only by its merge. */
 const onLane = "Your working copy is on it save while a task works there on a branch of its own; tasks merge into it.";
 
 /** `serial` holds the paths in the lane's copy that only one writer at a time may write, as the desk will read them. */
@@ -94,7 +94,6 @@ export function directive(
   ].join("\n");
 }
 
-/** What the lane writes, what it uses and does not write, what only one writer at a time may write, and who else may write it. */
 function writes(lane: Lane, serial: string[], beside: Beside[]): string[] {
   return [
     lane.writeSet.length > 0
@@ -122,7 +121,6 @@ function branchLine(lane: Lane): string {
     : `Lane branch: ${lane.branch}, off ${lane.base}. ${onLane}`;
 }
 
-/** The concept to read first, the lane this one clears the way for, and the issue it came from, fenced as data. */
 function besides(lane: Lane, concept: string | undefined, issue: Issue | undefined): string[] {
   const parts: string[] = [];
   if (concept) {

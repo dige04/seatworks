@@ -6,7 +6,6 @@ import type { Task } from "../../domain/task.ts";
 import { type Letter, fyi, mail } from "./envelope.ts";
 import { leadGone } from "./next.ts";
 
-/** What a permission asks for, as Paseo names it. */
 const asked = (request: PendingPermission) =>
   clip([...new Set([request.name, request.title].filter(Boolean))].join(": ") || request.kind || "a request", 600);
 
@@ -14,7 +13,6 @@ const LEAD_GONE = leadGone("which can message it to continue or cut its task");
 
 const failedText = (who: string, message: string) => `FAILED: ${who} ended its turn with an error: ${message}`;
 
-/** What the desk sees of a seat, told to whoever answers for it: quiet, idle, failed, gone or waiting on the Human. */
 export const seatLetters = {
   nudge(task: Task, tool: string): Letter {
     return mail(

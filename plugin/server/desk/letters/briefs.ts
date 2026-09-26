@@ -2,7 +2,6 @@ import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { list } from "./envelope.ts";
 
-/** Who writes beside a task and what they hold. */
 function besideLine(task: Task, beside: Task[]): string {
   if (beside.length === 0) return "";
   const where = task.mode === "parallel" ? "in copies of their own or the lane's" : "in copies of their own";
@@ -12,7 +11,6 @@ function besideLine(task: Task, beside: Task[]): string {
   return `Beside you, ${where}, each merged into the lane branch once accepted: ${who}. What they write reaches your copy only as your hand-back brings the lane in: leave it to them, and ask if you need it first.`;
 }
 
-/** Where a task starts and what bounds it: hints are a start to read from; a parallel task writes in what it holds, one in the lane's copy wherever its goal reaches. */
 function whereLines(task: Task, lane: Lane): string[] {
   const start = task.hints.length > 0 ? ["Where to start reading (a start, not a fence):", list(task.hints), ""] : [];
   if (task.mode === "parallel")
@@ -51,7 +49,10 @@ export function taskBrief(task: Task, lane: Lane, beside: Task[]): string {
     .join("\n");
 }
 
-/** `change` says where the change can be read and how; the desk works it out, because where it is depends on what has happened to the task's copy and branch since. */
+/**
+ * `place` says where the change can be read and how; the desk works it out, since where it is depends on what has
+ * happened to the task's copy and branch since.
+ */
 export function reviewBrief(
   review: Task,
   target: Task | undefined,

@@ -2,9 +2,11 @@ import type { Counts } from "../../core/git-diff.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Letter, fyi, mail } from "./envelope.ts";
 
-/** The letters the merge of an accepted task sends its Lead: merged, failed, or stopped on conflicts. */
 export const mergeLetters = {
-  /** `reach` is what of its files the Lead should weigh; `last` when no other task of the lane is left to accept or cut: only then does a merge with nothing to note ask anything of the Lead. */
+  /**
+   * `reach` is what of its files the Lead should weigh; `last` when no other task of the lane is left to accept or cut:
+   * only then does a merge with nothing to note ask anything of the Lead.
+   */
   merged(task: Task, counts: Counts | undefined, reach: string[], gate: string, last: boolean): Letter {
     const lines = [
       counts?.files.length === 0
@@ -28,7 +30,10 @@ export const mergeLetters = {
       : fyi(letter("Nothing now: the next hand-back arrives as mail."));
   },
 
-  /** The Lead's accept stands while something keeps the merge from its lane: the task stays queued and merges once that clears. `clears`, when that asks for the Lead. */
+  /**
+   * The Lead's accept stands while something keeps the merge from its lane: the task stays queued and merges once that
+   * clears; `clears` when clearing it asks for the Lead.
+   */
   waits(task: Task, why: string, clears: boolean): Letter {
     const text = `MERGE WAITS ${task.id} (${task.title}): ${why}. It merges by itself once that clears, tried again as each turn ends.`;
     return clears
@@ -48,7 +53,9 @@ export const mergeLetters = {
         );
   },
 
-  /** Its gate failed on its branch with the lane brought in: `run` is the failing run when this merge ran it, and none when its hand-back did. */
+  /**
+   * Its gate failed on its branch with the lane brought in: `run` when this merge ran it, none when its hand-back did.
+   */
   red(task: Task, lane: string, note: string, run?: { tail: string; logFile: string }): Letter {
     const lines = [
       `MERGE RED ${task.id} (${task.title}): the gate failed on its branch with ${lane} brought in, the tree the lane would become. The lane branch is unchanged.`,
@@ -69,7 +76,10 @@ export const mergeLetters = {
     return mail("merge", [task.id, Date.now()], lines.join("\n"), "Clear what it names, then accept it again.");
   },
 
-  /** `settling` is how the desk's bringing the lane branch into the task's own copy went: left with its conflicts, clean, or not begun; `by`, the tasks whose merges wrote the lane's side. */
+  /**
+   * `settling` is how bringing the lane branch into the task's own copy went: left with its conflicts, clean, or not
+   * begun; `by`, the tasks whose merges wrote the lane's side.
+   */
   conflict(
     task: Task,
     conflicts: string[],

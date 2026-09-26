@@ -4,12 +4,11 @@ import { IN_QUEUE, type Task } from "../../domain/task.ts";
 import { type Letter, mail } from "./envelope.ts";
 import { SAY_IN_REPORT, leadOf } from "./next.ts";
 
-/** One sending of a message: keyed by the event, not the words, since the same instruction sent again is a second instruction. */
+/** One sending of a message: keyed by the event, not the words, since an instruction sent again is a second one. */
 export type Sending = { by: string; to: string; at: number };
 
 const sendingIds = (sending: Sending, text: string) => [sending.by, hash(sending.to, text), sending.at];
 
-/** What reaches a seat from another seat or the Human. */
 export const messageLetters = {
   /** `reader` answers only through its own tools: words it says in its turn reach nobody. */
   message(from: string, text: string, sending: Sending, reader: "worker" | "lead"): Letter {
@@ -20,7 +19,7 @@ export const messageLetters = {
     return mail("message", sendingIds(sending, text), [`MESSAGE from ${from}`, "", text].join("\n"), next);
   },
 
-  /** The Supervisor may reach a Peer directly but never out of the Lead's sight: this carries what the Lead needs to put its picture right. */
+  /** The Supervisor may reach a Peer directly, never out of the Lead's sight: this sets the Lead's picture right. */
   reconciled(lane: Lane, task: Task, peer: string, text: string, sending: Sending): Letter {
     const letter = [
       `RECONCILE ${lane.id}: the owner reached your Peer on ${task.id} directly.`,
@@ -40,7 +39,6 @@ export const messageLetters = {
     return mail("reconcile", ["message", ...sendingIds(sending, text)], letter, SAY_IN_REPORT);
   },
 
-  /** Words the Human wrote straight into a Lead's or Peer's chat, fenced as data. */
   humanWrote(lane: Lane, task: Task | undefined, seat: string, text: string): Letter {
     const closed = lane.status === "closed";
     const who = task ? `the Peer on ${task.id} (${task.title})` : `${leadOf(lane)} (${lane.title})`;

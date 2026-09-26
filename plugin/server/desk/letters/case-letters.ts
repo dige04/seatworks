@@ -1,14 +1,12 @@
 import type { Question } from "../../core/ports.ts";
 import { type Letter, list, mail } from "./envelope.ts";
 
-/** A field as the Watcher reads it: a list as a list, text as it was written, anything else as JSON. */
 function shown(value: unknown): string {
   if (Array.isArray(value)) return list(value.map(String));
   if (typeof value === "string") return value.trim() || "(empty)";
   return JSON.stringify(value);
 }
 
-/** A question as it is asked, the fields the code filled in beside it, and what each answer means. */
 function asked(name: string, question: Question): string[] {
   const { instructions } = question;
   const words = typeof instructions === "string" ? instructions : (instructions.question ?? "");
