@@ -340,3 +340,25 @@ test("with the Human out of the loop, a Lead's ask nobody answers in time goes b
   await h.tick(start + 200 * 60_000);
   assert.equal(h.ledger().asks[kept]!.status, "open", "in the loop, the Human's answer is waited for");
 });
+
+test("an ask is reminded only to a reader free to answer it: never whoever supervises, nor a Lead waiting on its own ask upward", async () => {
+  const h = harness();
+  h.projectSettings({ hitl: { on: true } });
+  const sup = h.add(SUPERVISOR, h.root, "sup");
+  const { lead, peer } = await lane(h, sup, "Remind", "Work");
+  await h.call(lead, "lead", "ask", { kind: "question", text: "Keep the old endpoint?", default: "keep it" });
+  const upward = Object.values(h.ledger().asks).at(-1)!.id;
+  await h.call(peer, "peer", "ask", { question: "Round half up?", tried: "read it", bestGuess: "half up" });
+  const fromPeer = Object.values(h.ledger().asks).at(-1)!.id;
+  for (const seat of [sup, lead]) h.agents.get(seat)!.status = "idle";
+  const start = Date.now();
+  await h.tick(start + 16 * 60_000);
+  const reminded = (seat: string, id: string) =>
+    heard(h, seat).includes(`STILL OPEN after`) && heard(h, seat).includes(`ask ${id}`);
+  assert.equal(reminded(sup, upward), false, "whoever supervises may rightly be waiting on the Human");
+  assert.equal(reminded(lead, fromPeer), false, "a Lead waiting on its own answer is not idle for want of a nudge");
+  await h.call(sup, "supervisor", "answer", { ask: upward, text: "Keep it." });
+  h.agents.get(lead)!.status = "idle";
+  await h.tick(start + 32 * 60_000);
+  assert.ok(reminded(lead, fromPeer), "once answered, it is reminded as any reader is");
+});

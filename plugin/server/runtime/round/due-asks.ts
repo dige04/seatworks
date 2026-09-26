@@ -1,12 +1,12 @@
 import type { Kit } from "../../catalog/kit/kit.ts";
-import { can, roleNamed } from "../../catalog/kit/roles.ts";
+import { can, roleNamed, seatOf } from "../../catalog/kit/roles.ts";
 import type { SeatView } from "../../core/ports.ts";
 import type { Desk } from "../../desk/desk.ts";
 import { askLetters } from "../../desk/letters/ask-letters.ts";
 import type { Project } from "../../desk/project/project.ts";
 import { ASK, type Ask } from "../../domain/ask.ts";
 import type { Lane } from "../../domain/lane.ts";
-import type { Ledger } from "../../domain/ledger.ts";
+import { type Ledger, openAsksFrom } from "../../domain/ledger.ts";
 import type { TeamSource } from "../team-source.ts";
 
 type AskDeps = { kit: Kit; desk: Desk; source: TeamSource };
@@ -32,11 +32,17 @@ export async function dueAsks(
     now - ask.openedAt >= askRemindMinutes * (maxReminders + 1) * 60_000;
   const open = Object.values(ledger.asks).filter((entry) => entry.status === "open");
   const missing = await missingOf(open.filter((ask) => !seats.has(ask.to)).map((ask) => ask.to));
+  // A reader waiting on its own answer, from above it or from the Human, is not idle for want of reminding; and whoever
+  // supervises is never reminded on a clock, since it may rightly be waiting on the Human.
+  const waitingItself = (ask: Ask) =>
+    can(seatOf(deps.kit, seats.get(ask.to)?.provider)?.role, "supervise") ||
+    openAsksFrom(ledger, ask.to).length > 0 ||
+    Object.values(ledger.questions).some((question) => question.status === "open" && question.lane === ask.lane);
   for (const ask of open) {
     const lane = ask.lane ? ledger.lanes[ask.lane] : undefined;
     if (missing.has(ask.to)) await moveAsk(deps, project, ask, lane, now);
     else if (lapses(ask)) await lapse(deps, project, ask, now);
-    else if (seats.get(ask.to)?.status === "idle" && waited(ask))
+    else if (seats.get(ask.to)?.status === "idle" && waited(ask) && !waitingItself(ask))
       await remind(deps, project, ask, lane, now, maxReminders);
   }
 }
