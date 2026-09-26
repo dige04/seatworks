@@ -120,16 +120,23 @@ test("the Human's daily allowance of questions counts every project, on the Repo
   const report = await h.rpc(contracts.report, { project: h.project.slug });
   assert.ok("numbers" in report);
   assert.deepEqual(report.numbers[0], { title: "Questions today", value: "2 of 3", detail: "across every project" });
-  assert.match((await h.call(sup, "supervisor", "ask_human", packet())).text, /^Asked the Human as H2;/);
+  const lone = (await h.call(sup, "supervisor", "ask_human", packet())).text;
+  assert.match(
+    lone,
+    /^Asked the Human as H2; it waits in their question queue\. Nothing waits for it: what it decides goes ahead/,
+  );
+  assert.doesNotMatch(lone, /lane/, "a question that names no lane says nothing of one");
   assert.match(
     (await h.call(sup, "supervisor", "ask_human", packet())).text,
     /The Human has had 3 questions in the last day \([^)]*\), and 3 is what they allow/,
   );
+  const irreversible = (await h.call(sup, "supervisor", "ask_human", packet({ class: "irreversible" }))).text;
   assert.match(
-    (await h.call(sup, "supervisor", "ask_human", packet({ class: "irreversible" }))).text,
-    /^Asked the Human as H3;/,
+    irreversible,
+    /^Asked the Human as H3; it waits in their question queue\. Nothing it decides goes ahead until they answer\. An answer/,
     "what cannot be undone is never refused for the limit, though it counts",
   );
+  assert.doesNotMatch(irreversible, /Lead|lane/, "and with no lane named, no Lead is told to keep off it");
   const counted = await h.rpc(contracts.report, { project: h.project.slug });
   assert.ok("numbers" in counted);
   assert.equal(counted.numbers[0]!.value, "4 of 3");

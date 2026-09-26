@@ -29,6 +29,15 @@ type AskHumanCall = {
   class: QuestionClass;
 };
 
+/** What goes ahead while the Human is silent on a question that names no lane. */
+const WHILE_SILENT_ALONE: Record<QuestionClass, string> = {
+  reversible:
+    "Nothing waits for it: what it decides goes ahead as you said it would if they are silent, and they can overturn that.",
+  costly:
+    "What it decides goes ahead as you said it would if they are silent; with no lane named, nothing stops for it at a report of ready.",
+  irreversible: "Nothing it decides goes ahead until they answer.",
+};
+
 const WHILE_SILENT: Record<QuestionClass, string> = {
   reversible:
     "Nothing waits for it: the lane goes on as you said it would if they are silent, and they can overturn that.",
@@ -69,8 +78,9 @@ export async function askHuman(desk: DeskServices, caller: Caller, args: AskHuma
         ? ` Its lane was not put on hold: ${parked}`
         : ` Lane ${opened.lane} is on hold for it.`;
   const raised = floor ? ` It is costly, not reversible. ${floor}` : "";
-  const silent =
-    opened.class === "costly" && opened.parked
+  const silent = !opened.lane
+    ? WHILE_SILENT_ALONE[opened.class]
+    : opened.class === "costly" && opened.parked
       ? "Its lane has already reported ready, so it stops now until they answer."
       : WHILE_SILENT[opened.class];
   return ok(
