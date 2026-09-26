@@ -4,6 +4,8 @@ import { capped, outside } from "../../core/text.ts";
 import { list } from "./envelope.ts";
 import { type Beside, besideText } from "../lanes/placement.ts";
 import type { ProjectConfig } from "../project/project.ts";
+import type { SetUp } from "../copies/slots.ts";
+import { setUpLine } from "./briefs.ts";
 
 const SHOWN_SERIAL = 8;
 
@@ -31,7 +33,8 @@ export function directive(
     beside = [],
     concept,
     issue,
-  }: { gate: string; serial: string[]; beside?: Beside[]; concept?: string; issue?: Issue },
+    setUp,
+  }: { gate: string; serial: string[]; beside?: Beside[]; concept?: string; issue?: Issue; setUp?: SetUp },
 ): string {
   return [
     `SUPERVISOR DIRECTIVE ${lane.id}: ${lane.title}`,
@@ -54,6 +57,7 @@ export function directive(
     "",
     branchLine(lane),
     `Gate: ${gate}`,
+    ...(setUp ? [setUpLine(setUp)] : []),
     ...besides(lane, concept, issue),
   ].join("\n");
 }

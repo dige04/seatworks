@@ -8,6 +8,7 @@ import { workKey } from "../claims.ts";
 import { directive, gateRegime, takeover } from "../letters/directive.ts";
 import { type Beside, besideNote, lanesBeside, tellBeside } from "./placement.ts";
 import { type Issue, issueOf } from "../../core/issues.ts";
+import type { SetUp } from "../copies/slots.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { seatTitle } from "../seats/names.ts";
 import { type Project, conceptFile, loadConfig, serialIn } from "../project/project.ts";
@@ -15,7 +16,7 @@ import { loadLedger } from "../store/ledger.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 
-type Copy = { id?: string; path: string; workspaceId?: string };
+type Copy = { id?: string; path: string; workspaceId?: string; setUp?: SetUp };
 type Seating = { ownCopy: boolean; from?: string; role?: string; parent?: string; issue?: Issue };
 type Seated = { slot: Copy; lead: string; beside: Beside[] };
 
@@ -152,7 +153,7 @@ async function launchLead(
   copy: Copy,
   leadRole: RoleSpec,
 ): Promise<Seated> {
-  const directed = await directiveFor(desk, project, lane, copy.path, how.issue);
+  const directed = await directiveFor(desk, project, lane, copy.path, how.issue, copy.setUp);
   const { ledgers, agents } = desk;
   const startSha = lane.onBranch ? await headSha(copy.path) : undefined;
   // Where the Lead works goes on record before it starts, so a lane a stop leaves without its Lead still knows.
@@ -182,6 +183,7 @@ async function directiveFor(
   lane: Lane,
   copy: string,
   issue?: Issue,
+  setUp?: SetUp,
 ): Promise<{ text: string; beside: Beside[] }> {
   const serial = await serialIn(kit, project, copy);
   const open = Object.values(loadLedger(project.state).lanes).filter(
@@ -189,7 +191,8 @@ async function directiveFor(
   );
   const beside = lanesBeside(serial, open, lane.writeSet, lane.contracts);
   const gate = gateRegime(loadConfig(project.state));
-  return { text: directive(lane, { gate, serial, beside, concept: conceptFile(project.state), issue }), beside };
+  const concept = conceptFile(project.state);
+  return { text: directive(lane, { gate, serial, beside, concept, issue, setUp }), beside };
 }
 
 /** What a Lead seated on a lane already under way is told: that it takes over, then the directive, its issue read anew. */

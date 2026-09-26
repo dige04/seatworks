@@ -33,6 +33,7 @@ export async function setProject(
     laneHome: args.laneHome ?? config.laneHome,
     askFirst: args.askFirst ? strs(args.askFirst) : config.askFirst,
     riskRules: args.riskRules ?? config.riskRules,
+    setup: args.setup === undefined ? config.setup : args.setup.trim() || undefined,
   };
   const dropped = config.askFirst.filter((path) => !next.askFirst.includes(path));
   const moved = next.laneHome !== config.laneHome;
@@ -60,8 +61,9 @@ export async function setProject(
       ? `a landing that touches ${next.askFirst.join(", ")} waits for the Human`
       : "no landing waits for the Human";
   const rules = next.riskRules ? `${next.riskRules.length} risk rules of its own` : "the kit's risk rules";
+  const setup = next.setup ? `setup ${next.setup} in each copy the desk makes` : "no setup for new copies";
   return ok(
-    `Base ${next.base ?? "unset"}; gate ${next.gate || "none"}, run per ${next.gateOn}; gate timeout ${next.gateTimeoutMinutes} minutes; lanes land as ${next.landAs}; ${home}; ${asked}; ${rules}.`,
+    `Base ${next.base ?? "unset"}; gate ${next.gate || "none"}, run per ${next.gateOn}; gate timeout ${next.gateTimeoutMinutes} minutes; ${setup}; lanes land as ${next.landAs}; ${home}; ${asked}; ${rules}.`,
   );
 }
 

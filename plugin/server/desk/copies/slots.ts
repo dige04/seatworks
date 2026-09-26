@@ -19,7 +19,8 @@ import { closeIndexes, openIndexes } from "./indexes.ts";
 import { sweepCopies } from "./sweep.ts";
 import { type Slot, nextSlotId } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
-import { type Project, gitTimeout } from "../project/project.ts";
+import { type Project, gitTimeout, loadConfig } from "../project/project.ts";
+import { runGate } from "../../core/gate.ts";
 import { errorText } from "../../core/errors.ts";
 import { firstUnder } from "../../core/fs.ts";
 import { unsavedIn } from "./unsaved.ts";
@@ -27,17 +28,29 @@ import { bringIncluded } from "./worktree-include.ts";
 
 type Holder = { lane?: string; task?: string };
 
+/** How the project's setup went in a copy it just made, for whoever works there first. */
+export type SetUp = { command: string; ok: boolean; seconds: number; failed: string; logFile: string; tail: string };
+
 export class Slots {
-  private readonly desk: Pick<DeskBase, "ledgers" | "log" | "projects" | "indexesFor">;
+  private readonly desk: Pick<DeskBase, "ledgers" | "log" | "projects" | "indexesFor" | "stopping">;
   private readonly workspaces: Workspaces;
 
-  constructor(desk: Pick<DeskBase, "ledgers" | "log" | "projects" | "indexesFor">, workspaces: Workspaces) {
+  constructor(
+    desk: Pick<DeskBase, "ledgers" | "log" | "projects" | "indexesFor" | "stopping">,
+    workspaces: Workspaces,
+  ) {
     this.desk = desk;
     this.workspaces = workspaces;
   }
 
   /** `work` is what the copy is taken for, as its workspace is named: a lane or a task, its id and title. */
-  async acquire(project: Project, branch: string, base: string, holder: Holder, work: string): Promise<Slot> {
+  async acquire(
+    project: Project,
+    branch: string,
+    base: string,
+    holder: Holder,
+    work: string,
+  ): Promise<Slot & { setUp?: SetUp }> {
     const picked = this.reserve(project, holder);
     let checkedOut = false;
     try {
@@ -45,6 +58,7 @@ export class Slots {
       checkedOut = true;
       const missed = await bringIncluded(project.root, picked.path);
       if (missed) this.desk.log(project, `working copy ${picked.id}: ${missed}`);
+      const setUp = await this.setUp(project, picked);
       await lockWorktree(
         project.root,
         picked.path,
@@ -53,13 +67,29 @@ export class Slots {
       const workspaceId = await this.workspaceFor(project, picked, work);
       recordEvent(project, { kind: "slot.taken", slot: picked.id, branch, ...holder });
       openIndexes(this.desk, project, picked, reused);
-      return { ...picked, workspaceId };
+      return { ...picked, workspaceId, setUp };
     } catch (error) {
       // The branch it made goes with the copy: left behind, it would refuse every later try at the same work.
       if (checkedOut) await this.release(project, picked.id, branch, base);
       else this.free(project, picked.id);
       throw error;
     }
+  }
+
+  /** The project's setup, run in a copy it just made before anyone works there, told which copy by its number. */
+  private async setUp(project: Project, slot: Slot): Promise<SetUp | undefined> {
+    const { setup, gateTimeoutMinutes } = loadConfig(project.state);
+    if (!setup) return undefined;
+    const logFile = join(project.state, "gates", `setup-${slot.id}-${Date.now()}.log`);
+    const copy = { SEATWORKS_COPY: slot.id.replace(/\D/g, "") };
+    const run = await runGate(setup, slot.path, logFile, gitTimeout(project), this.desk.stopping, copy);
+    const failed = run.stopped
+      ? "was stopped as the plugin stopped"
+      : run.timedOut
+        ? `timed out after ${gateTimeoutMinutes} minutes`
+        : `failed with exit ${run.code}`;
+    if (!run.ok) this.desk.log(project, `setup in working copy ${slot.id} ${failed}; its log is ${logFile}`);
+    return { command: setup, ok: run.ok, seconds: run.seconds, failed, logFile, tail: run.tail };
   }
 
   async projectWorkspace(project: Project): Promise<Workspace> {

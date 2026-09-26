@@ -13,8 +13,9 @@ import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 import { backOnLane } from "../copies/sync.ts";
+import type { SetUp } from "../copies/slots.ts";
 
-type Copy = { id?: string; path: string; workspaceId?: string };
+type Copy = { id?: string; path: string; workspaceId?: string; setUp?: SetUp };
 
 /** Seats the Peer of a task recorded running; a failure gives back its copy, sets it waiting, and is the reason. */
 export async function startPeer(
@@ -30,7 +31,7 @@ export async function startPeer(
     const peer = await agents.start(project, copy, how.role, {
       parent: how.parent,
       title: seatTitle.of(task, roleNamed(kit, how.role)!),
-      prompt: taskBrief(task, lane, besideOf(loadLedger(project.state), task)),
+      prompt: taskBrief(task, lane, besideOf(loadLedger(project.state), task), copy.setUp),
       labels: { "seatworks.lane": lane.id, "seatworks.task": task.id },
     });
     ledgers.transact(project, (ledger) => {

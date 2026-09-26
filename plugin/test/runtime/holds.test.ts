@@ -255,3 +255,23 @@ test("a copy the desk makes brings along the ignored files the project's .worktr
   assert.equal(existsSync(join(copy, "build")), false, "an ignored file it does not name stays behind");
   assert.equal(h.git(copy, "status", "--porcelain"), "", "and what it brings is ignored there too");
 });
+
+test("the project's setup runs in each copy the desk makes before its seat starts, told its copy's number, and its seat reads how it went", async () => {
+  const { h, sup, lead } = await laneWriting(["src/**"]);
+  const setup = `node -e "require('fs').writeFileSync('copy.txt', process.env.SEATWORKS_COPY)"`;
+  assert.match((await h.call(sup, "supervisor", "set_project", { setup })).text, /setup node -e/);
+  h.git(h.root, "commit", "-qm", "copies ignore it", "--allow-empty");
+  writeFileSync(join(h.root, ".git", "info", "exclude"), "copy.txt\n");
+  await h.call(lead, "lead", "add_tasks", { tasks: [planned("a", "A", { holds: ["src/**"], parallel: true })] });
+  const first = h.ledger().tasks["L1-T1"]!;
+  assert.equal(readFileSync(join(first.worktree!, "copy.txt"), "utf-8"), first.slot!.slice(1));
+  const brief = (id: string) => h.agents.get(h.ledger().tasks[id]!.peer!)!.prompt ?? "";
+  assert.match(brief("L1-T1"), /^Setup: node -e [^\n]* ran in this copy before you started, and passed in \d+s\.$/m);
+
+  await h.call(sup, "supervisor", "set_project", { setup: "echo no network >&2; exit 3" });
+  await h.call(lead, "lead", "add_tasks", { tasks: [planned("b", "B", { holds: ["test/**"], parallel: true })] });
+  assert.match(
+    brief("L1-T2"),
+    /^Setup: echo no network >&2; exit 3 ran in this copy before you started and failed with exit 3; its log is [^\n]*setup-S\d+-\d+\.log, which ends:\n\$ echo no network >&2; exit 3\nno network$/m,
+  );
+});

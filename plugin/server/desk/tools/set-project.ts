@@ -16,6 +16,7 @@ export const setProject = defineTool({
     laneHome: z.enum(LANE_HOMES).optional(),
     askFirst: z.array(z.string()).optional(),
     riskRules: z.array(RiskRule).optional(),
+    setup: z.string().optional(),
     humanSaid: z.string().optional(),
   }),
   handle: (desk, caller, args) => set(desk, caller, args),

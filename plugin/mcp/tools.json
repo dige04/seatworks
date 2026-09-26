@@ -697,6 +697,10 @@
             },
             "description": "Risk rules replacing the kit's (migrations, schemas, SQL): the whole list, or empty for none. A rule questions reviews and never holds a landing."
           },
+          "setup": {
+            "type": "string",
+            "description": "A command run in each copy the desk makes before its seat starts, like npm ci; SEATWORKS_COPY numbers the copy. Empty clears it."
+          },
           "humanSaid": {
             "type": "string",
             "description": "With the Human in the loop, their words from this chat asking to drop an askFirst path or a risk rule, or change laneHome."

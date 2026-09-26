@@ -60,6 +60,7 @@ export function runGate(
   logFile: string,
   timeoutMs: number,
   stop?: AbortSignal,
+  env: Record<string, string> = {},
 ): Promise<GateResult> {
   mkdirSync(dirname(logFile), { recursive: true });
   const started = Date.now();
@@ -69,7 +70,7 @@ export function runGate(
     // Straight to the log fd: a pipe would be inherited by leftover processes and hold "close" open indefinitely.
     const child = spawn(command, {
       cwd,
-      env: { ...process.env, CI: "1" },
+      env: { ...process.env, CI: "1", ...env },
       shell: true,
       detached: !WINDOWS,
       windowsHide: true,

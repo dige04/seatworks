@@ -1,6 +1,8 @@
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { list } from "./envelope.ts";
+import { clip } from "../../core/text.ts";
+import type { SetUp } from "../copies/slots.ts";
 
 function besideLine(task: Task, beside: Task[]): string {
   if (beside.length === 0) return "";
@@ -22,7 +24,16 @@ function whereLines(task: Task, lane: Lane): string[] {
   return [...start, `Where the change goes, callers and tests included, is yours to find${writes}.`];
 }
 
-export function taskBrief(task: Task, lane: Lane, beside: Task[]): string {
+/** How the project's setup went in the copy a seat starts in, as the first thing it knows of that copy. */
+export function setUpLine(setUp: SetUp | undefined): string {
+  if (!setUp) return "";
+  const ran = `Setup: ${setUp.command} ran in this copy before you started`;
+  return setUp.ok
+    ? `${ran}, and passed in ${setUp.seconds}s.`
+    : `${ran} and ${setUp.failed}; its log is ${setUp.logFile}, which ends:\n${clip(setUp.tail, 1200)}`;
+}
+
+export function taskBrief(task: Task, lane: Lane, beside: Task[], setUp?: SetUp): string {
   return [
     `TASK ${task.id}: ${task.title}`,
     "",
@@ -37,6 +48,7 @@ export function taskBrief(task: Task, lane: Lane, beside: Task[]): string {
     list(task.outOfScope),
     "",
     `Context: ${task.context?.trim() || "none"}`,
+    ...(setUp ? ["", setUpLine(setUp)] : []),
     task.skills && task.skills.length > 0 ? `\nSkills to open: ${task.skills.join(", ")}` : "",
     "",
     besideLine(task, beside),

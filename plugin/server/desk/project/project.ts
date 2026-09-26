@@ -33,6 +33,7 @@ export type ProjectConfig = {
   laneHome?: LaneHome;
   askFirst: string[];
   riskRules?: RiskRule[];
+  setup?: string;
 };
 
 /** `project.json` as the desk writes it: a field there that does not read is a fault, never a default in its place. */
@@ -46,6 +47,7 @@ const ProjectFile = z.strictObject({
   laneHome: z.enum(LANE_HOMES).optional(),
   askFirst: z.array(z.string()).optional(),
   riskRules: z.array(RiskRule).optional(),
+  setup: z.string().optional(),
 });
 
 /** Each field of `project.json`, as a call that sets some of them names them. */
@@ -171,6 +173,7 @@ function configOf(stored: ProjectFields): ProjectConfig {
     laneHome: stored.laneHome,
     askFirst: stored.askFirst ?? [],
     riskRules: stored.riskRules,
+    setup: stored.setup || undefined,
   };
 }
 
