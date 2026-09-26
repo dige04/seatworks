@@ -1,6 +1,7 @@
 {
   "permissions": {
     "deny": [
+      "AskUserQuestion",
       "Edit",
       "Write",
       "MultiEdit",
