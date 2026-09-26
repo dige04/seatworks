@@ -64,7 +64,7 @@ export class ToolCalls {
     return this.desk.mail.post(request.agent, callLetters.later(call, reply, true));
   }
 
-  async handle(request: ToolRequest): Promise<ToolReply> {
+  private async handle(request: ToolRequest): Promise<ToolReply> {
     const caller = await this.caller(request);
     if ("error" in caller) return no(caller.error);
     const { reply, speaks } = await this.run(caller, request);

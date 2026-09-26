@@ -231,10 +231,6 @@ export class Desk {
     return this.calls.mailLost(request, reply);
   }
 
-  handle(request: ToolRequest): Promise<ToolReply> {
-    return this.calls.handle(request);
-  }
-
   /** The plugin stops: gates still running are killed with their process groups, not left writing into a copy. */
   dispose(): void {
     this.stop.abort();

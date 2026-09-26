@@ -114,7 +114,7 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
   let n = 0;
   // `where` is the calling working copy, since several desk keys turned out shared between projects.
   const call = async (agent: string, role: string, tool: string, args: Record<string, unknown>, where = root) =>
-    runtime.desk.handle({ id: `call-${++n}`, agent, role, tool, args, cwd: where, at: Date.now() });
+    runtime.desk.answer({ id: `call-${++n}`, agent, role, tool, args, cwd: where, at: Date.now() });
   const idle = async (id: string) => {
     agents.get(id)!.status = "idle";
     runtime.outbox.turnEnded(id);
