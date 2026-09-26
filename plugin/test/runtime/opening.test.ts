@@ -119,11 +119,17 @@ test("where a lane works is the Human's call: asked when their copy is off its b
   assert.equal((await open("Standing")).ok, true);
   assert.ok(h.ledger().lanes.L4!.slot);
   assert.equal(branch(), "fix/login");
+  const offMain = await open("Off main", { base: "main" });
+  assert.equal(offMain.ok, true, offMain.text);
+  assert.deepEqual(
+    [h.ledger().lanes.L5!.base, Boolean(h.ledger().lanes.L5!.slot), branch()],
+    ["main", true, "fix/login"],
+  );
   assert.equal((await open("After it", { after: ["L4"] })).ok, true);
-  assert.equal(h.ledger().lanes.L5!.opening?.isolate, true);
+  assert.equal(h.ledger().lanes.L6!.opening?.isolate, true);
   await h.call(sup, "supervisor", "set_project", { laneHome: "onBranch", humanSaid: said });
   assert.equal((await open("Carry on")).ok, true);
-  assert.deepEqual([h.ledger().lanes.L6!.onBranch, h.ledger().lanes.L6!.branch], [true, "fix/login"]);
+  assert.deepEqual([h.ledger().lanes.L7!.onBranch, h.ledger().lanes.L7!.branch], [true, "fix/login"]);
 });
 
 test("with the Human out of the loop, where a lane works is the Supervisor's to choose, and status says so", async () => {
