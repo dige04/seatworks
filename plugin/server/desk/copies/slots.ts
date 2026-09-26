@@ -7,8 +7,10 @@ import {
   currentBranch,
   dropMerged,
   git,
+  lockWorktree,
   pristineState,
   removeWorktree,
+  unlockWorktree,
 } from "../../core/git.ts";
 import type { Workspace, Workspaces } from "../../core/ports.ts";
 import { worktreeRoot } from "../../core/paths.ts";
@@ -40,6 +42,11 @@ export class Slots {
     try {
       const reused = await this.checkOut(project, picked, branch, base);
       checkedOut = true;
+      await lockWorktree(
+        project.root,
+        picked.path,
+        `seatworks: the working copy of ${work}, which the desk removes itself`,
+      );
       const workspaceId = await this.workspaceFor(project, picked, work);
       recordEvent(project, { kind: "slot.taken", slot: picked.id, branch, ...holder });
       openIndexes(this.desk, project, picked, reused);
@@ -71,6 +78,8 @@ export class Slots {
     const slot = loadLedger(project.state).slots[slotId];
     let kept: string | undefined;
     const unsaved = slot && existsSync(slot.path) ? await unsavedIn(slot.path) : undefined;
+    // Its work is over: a copy kept for the Human is theirs to move or remove as git lets them.
+    if (slot && unsaved) await unlockWorktree(project.root, slot.path);
     if (slot) {
       closeIndexes(this.desk, project, slot);
       if (unsaved)
