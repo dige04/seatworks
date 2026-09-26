@@ -76,7 +76,9 @@ the project has no `CLAUDE.md`, and the others read `AGENTS.md`. Every seat's `P
 desk's git commands, `gh` and `paseo`. Claude Code, Codex, Oh My Pi and OpenCode seats are also
 denied `git push`, `gh`, `paseo` and starting other agents by their own rules. Pi has no command
 rules, so a Pi seat can start another agent: its `PATH` cannot refuse one, since its own agent
-starts through that same `PATH`. The shipped Claude Code settings answer in Vietnamese: change
+starts through that same `PATH`. A Codex Lead can still write the project's files: Codex's workspace
+sandbox always lets a seat write where it works, and the Lead needs that sandbox for its pages under
+the project's state. The shipped Claude Code settings answer in Vietnamese: change
 `language` in `plugin/harness/claude/settings.json` for another language.
 
 ## Install
