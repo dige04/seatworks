@@ -62,7 +62,7 @@
           },
           "newBranch": {
             "type": "string",
-            "description": "With onBranch: start this new branch where the copy is, taking its uncommitted work along, and carry that on; its name agreed with the Human."
+            "description": "With onBranch: start this new branch where the copy is, taking its uncommitted work along, and carry that on."
           },
           "writeSet": {
             "type": "array",
@@ -235,7 +235,7 @@
           },
           "why": {
             "type": "string",
-            "description": "What the Human asked that changes it, in a sentence."
+            "description": "Why it changes, in a sentence."
           },
           "outcome": {
             "type": "string",
