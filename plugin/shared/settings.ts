@@ -70,6 +70,10 @@ export const AttentionChoice = z.strictObject({
   /** How often the watch's eye reads a running seat's new words; it also reads at every turn's end. */
   lookMinutes: z.number().int().min(1).optional(),
   incidentsPerLane: z.number().int().min(0).optional(),
+  /** A signal whose latest this many marks hold fewer useful ones than `probationUseful` of them is held on probation. */
+  probationMarks: z.number().int().min(1).optional(),
+  probationUseful: z.number().min(0).max(1).optional(),
+  incidentsKept: z.number().int().min(1).optional(),
   /** Which brains read what the watch's eye sees: none, the sensor, the Watcher seat, or both (the sensor sifts, the seat judges). */
   brain: z.enum(["off", "sensor", "seat", "both"]).optional(),
   /** The sensor the brain uses, by its id in the kit's catalog. */

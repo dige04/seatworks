@@ -228,6 +228,13 @@ test("a kind most of whose last ten marks were noise is held on probation, and a
   marks(0, 9);
   await notice(h, seat(4), "stuck");
   assert.ok(told(4), "nine marks judge nothing");
+  h.projectSettings({ attention: { signals: allSignals, probationMarks: 9, probationUseful: 0.2 } });
+  marks(1, 9);
+  await notice(h, seat(5), "stuck");
+  assert.ok(!told(5), "how many marks judge, and how few useful ones hold it back, are the owner's to set");
+  marks(2, 9);
+  await notice(h, seat(6), "stuck");
+  assert.ok(told(6));
 });
 
 test("each signal is told to whoever supervises only once it is turned on; the rest are recorded in shadow, and a page always goes", async () => {

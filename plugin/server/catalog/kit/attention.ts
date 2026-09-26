@@ -13,6 +13,9 @@ export const ATTENTION: Omit<Attention, "destructive" | "testPath" | "suppressed
   longTurnMinutes: 30,
   lookMinutes: 5,
   incidentsPerLane: 2,
+  probationMarks: 10,
+  probationUseful: 0.5,
+  incidentsKept: 500,
   brain: "off",
   sensor: "",
 };

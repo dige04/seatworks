@@ -32,7 +32,8 @@ export type Placed = { where: string; lane?: Lane; task?: Task };
 function holdFor(incident: Incident, incidents: Incidents, attention: Attention, now: number): Held | undefined {
   if (incident.level === "page") return undefined;
   if (attention.signals[incident.kind] !== "on") return "shadow";
-  if (onProbation(incidents, incident.kind)) return "probation";
+  if (onProbation(incidents, incident.kind, { marks: attention.probationMarks, useful: attention.probationUseful }))
+    return "probation";
   if (spentToday(incidents, incident.lane, now) >= attention.incidentsPerLane) return "budget";
   return undefined;
 }
@@ -144,7 +145,7 @@ function openIncidents(
         opened.push({ ...incident });
       }
     }
-    forget(book);
+    forget(book, attention.incidentsKept);
     return { opened, sending };
   });
 }

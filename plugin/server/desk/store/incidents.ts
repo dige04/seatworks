@@ -115,15 +115,17 @@ export function spentToday(incidents: Incidents, lane: string | undefined, now: 
   ).length;
 }
 
-const JUDGED = 10;
-
-/** A kind whose last ten marks, noise and useful, were mostly noise; fewer than ten marks judge nothing. */
-export function onProbation(incidents: Incidents, kind: string): boolean {
+/** A kind whose latest `marks` marks, noise and useful, held fewer useful than `useful` of them; fewer marks judge nothing. */
+export function onProbation(
+  incidents: Incidents,
+  kind: string,
+  { marks, useful }: { marks: number; useful: number },
+): boolean {
   const marked = Object.values(incidents.items)
     .filter((item) => item.kind === kind && (item.label === "useful" || item.label === "noise"))
     .sort((a, b) => (b.closed ?? b.last) - (a.closed ?? a.last))
-    .slice(0, JUDGED);
-  return marked.length === JUDGED && marked.filter((item) => item.label === "useful").length / JUDGED < 0.5;
+    .slice(0, marks);
+  return marked.length === marks && marked.filter((item) => item.label === "useful").length / marks < useful;
 }
 
 export function closeSeat(incidents: Incidents, seat: string, now: number): string[] {
@@ -134,13 +136,11 @@ export function closeSeat(incidents: Incidents, seat: string, now: number): stri
   return closed;
 }
 
-const KEEP = 500;
-
-export function forget(incidents: Incidents): void {
+export function forget(incidents: Incidents, kept: number): void {
   const done = Object.values(incidents.items)
     .filter((item) => !item.open)
     .sort((a, b) => (a.closed ?? a.last) - (b.closed ?? b.last));
-  for (const item of done.slice(0, Math.max(0, done.length - KEEP))) delete incidents.items[item.id];
+  for (const item of done.slice(0, Math.max(0, done.length - kept))) delete incidents.items[item.id];
 }
 
 /**
