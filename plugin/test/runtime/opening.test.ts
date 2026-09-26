@@ -400,3 +400,13 @@ test("a Lead's directive says what its lane writes, depends on and keeps to one 
     /^One writer at a time: b\.txt, vendor\/\*\*\. A task that writes any of these works in the lane's working copy, not in parallel\.$/m,
   );
 });
+
+test("the Supervisor's status names the Human's uncommitted files as they are: a space in a name, and a rename by where it went", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  await h.call(sup, "supervisor", "set_project", { base: "main", gate: "true" });
+  writeFileSync(join(h.root, "my notes.txt"), "half done\n");
+  h.git(h.root, "mv", "a.txt", "moved -> here.txt");
+  const status = (await h.call(sup, "supervisor", "status", {})).text;
+  assert.match(status, /with 2 uncommitted files: moved -> here\.txt, my notes\.txt\./);
+});

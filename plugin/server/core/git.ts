@@ -47,22 +47,27 @@ export function cleanState(cwd: string): Promise<Cleanliness> {
   return cleanliness(cwd, ["status", "--porcelain", "--untracked-files=no"]);
 }
 
-/** Uncommitted and untracked paths, or undefined when git cannot say; `besides` excuses a change that is nobody's work. */
-export async function uncommittedPaths(
-  cwd: string,
-  besides: (path: string) => Promise<boolean> = async () => false,
-): Promise<string[] | undefined> {
-  const run = await git(cwd, ["status", "--porcelain"]);
+/**
+ * Uncommitted and untracked paths, or undefined when git cannot say. Read NUL-separated, so a path with a space or an arrow in
+ * it is itself, and a rename names where it went, not where it came from.
+ */
+export async function uncommittedPaths(cwd: string): Promise<string[] | undefined> {
+  const run = await git(cwd, ["status", "--porcelain", "-z"]);
   if (run.code !== 0) return undefined;
+  const entries = run.stdout.split("\0").filter(Boolean);
   const found: string[] = [];
-  for (const line of run.stdout.split("\n").filter(Boolean))
-    if (!(await besides(line.slice(3)))) found.push(line.slice(3));
+  for (let at = 0; at < entries.length; at++) {
+    const entry = entries[at]!;
+    found.push(entry.slice(3));
+    // A rename or copy is followed by the path it came from, which is no change of its own.
+    if (/^[RC]|^.[RC]/.test(entry)) at++;
+  }
   return found;
 }
 
 /** Nothing uncommitted or untracked, as a lane takeover requires. */
-export async function pristineState(cwd: string, besides?: (path: string) => Promise<boolean>): Promise<Cleanliness> {
-  const paths = await uncommittedPaths(cwd, besides);
+export async function pristineState(cwd: string): Promise<Cleanliness> {
+  const paths = await uncommittedPaths(cwd);
   return paths === undefined ? "unknown" : paths.length > 0 ? "dirty" : "clean";
 }
 
