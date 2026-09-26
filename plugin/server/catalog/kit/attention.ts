@@ -5,7 +5,6 @@ export const ATTENTION: Omit<Attention, "destructive" | "testPath" | "suppressed
   leadIdleMinutes: 12,
   askWaitingMinutes: 15,
   askLapseMinutes: 45,
-  signals: {},
   repeatsAt: 3,
   recoverWithin: 10,
   reworksAt: 3,

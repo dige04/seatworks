@@ -71,8 +71,6 @@ export const TeamView = z.object({
   project: z.string().nullable(),
   errors: z.array(z.string()),
   attention: Attention,
-  /** The signals worth attention the watch can raise, each with its title, to turn on or leave in shadow. */
-  signals: z.array(z.object({ kind: z.string(), title: z.string() })),
   hitl: Hitl,
   rules: z.string(),
   mcp: z.record(

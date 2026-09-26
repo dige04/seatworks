@@ -223,7 +223,7 @@ test("new choices reach a harness as a changed tool list, only where its set cha
     const saved = await h.rpc(contracts.settingsWrite, { project: h.project.slug, revision: read.revision, values });
     assert.equal(saved.status, "saved", JSON.stringify(saved));
   };
-  await save({ attention: { signals: { stuck: "on" } } });
+  await save({ attention: { reworksAt: 4 } });
   await save({ mcp: { "intellij-index": { enabled: false } } });
   await until(() => leadLine.heard.length > 1, "the change reaches the Lead's line");
   assert.deepEqual(leadLine.types(), ["welcome", "choices"], "a save that changes no choice sends nothing");

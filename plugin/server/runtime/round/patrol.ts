@@ -195,7 +195,7 @@ export class Patrol {
       const idle = now - Date.parse(lead.updatedAt);
       if (idle < leadIdleMinutes * 60_000 || this.idleFlag.get(lead.id) === lead.updatedAt) continue;
       if (activeTasks(ledger, lane.id).length > 0 || openAsksFrom(ledger, lead.id).length > 0) continue;
-      // Once per idle spell; the incident book holds it for nobody, or in shadow, and tells it when it may.
+      // Once per idle spell; the incident book holds it while nobody is seated to tell, and tells it when it may.
       this.idleFlag.set(lead.id, lead.updatedAt);
       const ending = (turns.lastEnding.get(lead.id) ?? "").replace(/\s+/g, " ").trim().slice(0, 400);
       const quote = `idle ${Math.round(idle / 60_000)} minutes with no running task, no open ask and no report of it ready; its last words: ${ending || "(nothing)"}`;

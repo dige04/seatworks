@@ -165,10 +165,7 @@ const incident = (over: Partial<WatchIncident>): WatchIncident => ({
 });
 const INCIDENTS: [Partial<WatchIncident>, string][] = [
   [{ told: true }, "told the Chief"],
-  [{ held: "budget" }, "held · the lane's limit for today is reached"],
-  [{ held: "probation" }, "held · most of this kind's last ten were marked noise"],
   [{ held: "nobody" }, "held · nobody is seated to tell"],
-  [{ held: "shadow" }, "recorded · mail is off"],
   [{}, "recorded"],
 ];
 const judge = { label: "Jev", minutes: null, detail: null };

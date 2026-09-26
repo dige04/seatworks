@@ -56,7 +56,6 @@ export const AttentionChoice = z.strictObject({
   askWaitingMinutes: z.number().int().min(1).optional(),
   /** With the Human out of the loop, how long a Lead's ask waits on whoever supervises before it goes back to the Lead. */
   askLapseMinutes: z.number().int().min(1).optional(),
-  signals: z.record(z.string(), z.enum(["shadow", "on"])).optional(),
   destructive: Pattern.optional(),
   testPath: Pattern.optional(),
   repeatsAt: z.number().int().min(2).optional(),
