@@ -53,6 +53,7 @@ test("clean up lists only what nothing will use again: seats nothing will sit in
   assert.deepEqual(await found(ctx), [], "a machine with nothing left over lists nothing");
   const current = seat("sw2-lead-claude-shop-abc123");
   const detached = seat("sw2-peer-omp-gone-def456");
+  const hyphened = seat("sw2-second-reviewer-claude-gone-def456");
   const removedRole = seat("sw2-scout-omp-shop-abc123");
   seat("sw2-peer-omp-old-fff000");
   live.push({ provider: "sw2-peer-omp", slug: "old-fff000" });
@@ -76,6 +77,7 @@ test("clean up lists only what nothing will use again: seats nothing will sit in
     await found(ctx),
     [
       ["seat", detached, "gone-def456 is not attached", null, false],
+      ["seat", hyphened, "gone-def456 is not attached", null, false],
       ["seat", removedRole, "this version has no scout role", null, false],
       ["copy", free, "the desk holds no slot for it", null, false],
       ["copy", dirty, "the desk holds no slot for it", "it has uncommitted changes", false],
