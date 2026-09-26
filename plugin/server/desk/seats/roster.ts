@@ -1,7 +1,13 @@
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { can, seatOf } from "../../catalog/kit/roles.ts";
-import { type PermissionResponse, midTurn } from "../../core/paseo.ts";
-import type { SeatLook, SeatView, Seats, StreamRow } from "../../core/ports.ts";
+import {
+  midTurn,
+  type PermissionResponse,
+  type SeatLook,
+  type Seats,
+  type SeatView,
+  type StreamRow,
+} from "../../core/ports.ts";
 import type { Intents } from "../store/intents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Project, projectOf } from "../project/project.ts";

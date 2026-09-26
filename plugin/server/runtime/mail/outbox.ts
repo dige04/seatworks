@@ -1,6 +1,5 @@
 import { KeyedQueue } from "../../core/keyed-queue.ts";
-import { midTurn } from "../../core/paseo.ts";
-import type { SeatLook, Seats } from "../../core/ports.ts";
+import { type SeatLook, type Seats, midTurn } from "../../core/ports.ts";
 import { isRecord } from "../../core/json.ts";
 import { daemonLog } from "../../core/logger.ts";
 import { keptFault, readKept, writeJson } from "../../core/store.ts";

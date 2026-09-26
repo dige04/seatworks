@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { SeatView } from "../../server/core/paseo.ts";
+import type { SeatView } from "../../server/core/ports.ts";
 import { flowView } from "../../server/desk/views/flow.ts";
 import { emptyLedger } from "../../server/domain/ledger.ts";
 import type { Project } from "../../server/desk/project/project.ts";

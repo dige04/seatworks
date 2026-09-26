@@ -1,5 +1,5 @@
 import { conflictsWith, landedRef } from "../../core/git.ts";
-import { midTurn } from "../../core/paseo.ts";
+import { midTurn } from "../../core/ports.ts";
 import { plural } from "../../core/text.ts";
 import { ASK } from "../../domain/ask.ts";
 import { LANE } from "../../domain/lane.ts";

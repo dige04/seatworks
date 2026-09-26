@@ -1,5 +1,5 @@
 import { TEAM_SERVER } from "../../catalog/kit/kit.ts";
-import type { PendingPermission } from "../../core/paseo.ts";
+import type { PendingPermission } from "../../core/ports.ts";
 import { clip } from "../../core/text.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";

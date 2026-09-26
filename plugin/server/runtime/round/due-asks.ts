@@ -1,6 +1,6 @@
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { can, roleNamed, seatOf } from "../../catalog/kit/roles.ts";
-import type { SeatView } from "../../core/ports.ts";
+import { type SeatView, midTurn } from "../../core/ports.ts";
 import { oneLine } from "../../core/text.ts";
 import { recordEvent } from "../../desk/store/event-log.ts";
 import type { Desk } from "../../desk/desk.ts";
@@ -11,7 +11,6 @@ import { ASK, type Ask } from "../../domain/ask.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, taskOfPeer } from "../../domain/ledger.ts";
 import { AT_WORK } from "../../domain/task.ts";
-import { midTurn } from "../../core/paseo.ts";
 import type { TeamSource } from "../team-source.ts";
 import { fact, findingsOf } from "../../domain/incident.ts";
 

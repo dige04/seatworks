@@ -2,7 +2,7 @@ import type { RoleSpec } from "../../catalog/kit/kit.ts";
 import { namedOrNot, roleThatCan } from "../../catalog/kit/roles.ts";
 import { errorText } from "../../core/errors.ts";
 import { headSha } from "../../core/git.ts";
-import type { SeatView } from "../../core/paseo.ts";
+import type { SeatView } from "../../core/ports.ts";
 import { outside } from "../../core/text.ts";
 import { workKey } from "../claims.ts";
 import { directive, gateRegime, takeover } from "../letters/directive.ts";

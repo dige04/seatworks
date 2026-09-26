@@ -1,4 +1,4 @@
-import { midTurn } from "../../core/paseo.ts";
+import { midTurn } from "../../core/ports.ts";
 import type { Roster } from "./roster.ts";
 
 /** Which of `ids` are mid-turn now; one that cannot be looked at counts as mid-turn, since it may be writing. */

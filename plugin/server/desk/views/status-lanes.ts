@@ -1,4 +1,4 @@
-import type { SeatView } from "../../core/paseo.ts";
+import type { SeatView } from "../../core/ports.ts";
 import { minutesSince } from "../../core/time.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, laneSpent } from "../../domain/ledger.ts";

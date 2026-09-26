@@ -1,8 +1,7 @@
 import { recordEvent } from "../store/event-log.ts";
 import { can, roleNamed, seatOf } from "../../catalog/kit/roles.ts";
 import { KeyedQueue } from "../../core/keyed-queue.ts";
-import { midTurn } from "../../core/paseo.ts";
-import type { Answer, Judge, Judgement, Question, SeatView } from "../../core/ports.ts";
+import { type Answer, type Judge, type Judgement, type Question, type SeatView, midTurn } from "../../core/ports.ts";
 import type { Agents } from "../seats/agents.ts";
 import { caseLetters } from "../letters/case-letters.ts";
 import type { DeskBase } from "../base.ts";

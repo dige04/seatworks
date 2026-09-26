@@ -1,6 +1,6 @@
 import { minutesSince } from "../../core/time.ts";
 import { createHash } from "node:crypto";
-import type { SeatView } from "../../core/paseo.ts";
+import type { SeatView } from "../../core/ports.ts";
 import { AT_WORK, SETTLED } from "../../domain/task.ts";
 import { keptCopy, keptPeers } from "../seats/kept.ts";
 import type { Lane } from "../../domain/lane.ts";

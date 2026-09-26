@@ -1,4 +1,4 @@
-import type { SeatView } from "../../core/paseo.ts";
+import type { SeatView } from "../../core/ports.ts";
 import type { DeskBase } from "../base.ts";
 import type { Project } from "../project/project.ts";
 
