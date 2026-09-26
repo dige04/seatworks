@@ -14,7 +14,7 @@ import { mergeLetters } from "../letters/merge-letters.ts";
 import { type Project, serialIn } from "../project/project.ts";
 import { reachNotes } from "./reach.ts";
 import { recordEvent } from "../store/event-log.ts";
-import { backOnLane, bringLaneIn } from "../copies/sync.ts";
+import { backOnLane, bringLaneIn, mergeSubject } from "../copies/sync.ts";
 
 type Outcome = "merged" | "stop" | "fail";
 
@@ -73,7 +73,7 @@ export class TaskMerge {
     cwd: string,
     at: string,
   ): Promise<void> {
-    const made = await mergeCommit(cwd, at, task.branch, `Merge ${task.id}: ${task.title}`);
+    const made = await mergeCommit(cwd, at, task.branch, mergeSubject(task));
     if (!made) return this.fail(project, task, lane, "git could not make the merge commit");
     const stopped = await advance(cwd, lane.branch, at, made);
     if (stopped?.why === "moved") {

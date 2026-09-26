@@ -38,6 +38,11 @@ export async function leaveCopy(lane: Lane, task: Task): Promise<{ refused?: str
 
 export type Synced = { at: string } | { conflicts: string[]; by: string[] } | { not: string };
 
+/** The subject of the commit that merges a task into its lane, which is how a conflict later names who wrote a side. */
+export const mergeSubject = (task: Pick<Task, "id" | "title">) => `Merge ${task.id}: ${task.title}`;
+
+const mergedTask = (subject: string) => /^Merge (L\d+-[TR]\d+):/.exec(subject)?.[1];
+
 /** Tasks whose merges into the lane changed `files` since this branch left it: who wrote a conflict's other side. */
 async function changedBy(cwd: string, tip: string, files: string[]): Promise<string[]> {
   // Limited to paths, git hides a merge whose tree is the side it brought in: each merge's own files name it instead.
@@ -56,7 +61,7 @@ async function changedBy(cwd: string, tip: string, files: string[]): Promise<str
       .split("\0")
       .map((part) => part.trim())
       .filter(Boolean);
-    const id = /^Merge (L\d+-[TR]\d+):/.exec(subject)?.[1];
+    const id = mergedTask(subject);
     return id && changed.some((file) => files.includes(file)) ? [id] : [];
   });
   return [...new Set(ids)];
