@@ -8,7 +8,7 @@ import { appendRecord } from "../store/records.ts";
 import type { DeskServices } from "../services.ts";
 
 /**
- * One moment of the record the watch asks about: whose it is (`subject`), which of theirs (`episode`), the state the
+ * One moment of the record review asks about, as evidence for whoever accepts the work: whose it is (`subject`), which of theirs (`episode`), the state the
  * questions read, and each question by the name it is asked under, with the check it comes from and the fields the code fills.
  */
 export type Case = {
@@ -61,7 +61,7 @@ export async function judge(services: DeskServices, project: Project, found: Cas
   try {
     await ask(services, project, found);
   } catch (error) {
-    daemonLog.error(`${project.slug}: the watch could not ask about ${found.subject}:`, error);
+    daemonLog.error(`${project.slug}: review's evidence could not be asked about ${found.subject}:`, error);
   }
 }
 

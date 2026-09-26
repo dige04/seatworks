@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { clip } from "../../core/text.ts";
-import type { Case } from "./judging.ts";
+import type { Case } from "./asking.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Project, riskRulesOf } from "../project/project.ts";

@@ -2,7 +2,6 @@ import { recordEvent } from "../store/event-log.ts";
 import type { Attention } from "../../../shared/views.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import { type Finding, type Held, deliveryOf, hold, tell, unheard } from "../../domain/incident.ts";
-import { type Moment, momentCases } from "./checks.ts";
 import {
   type Incident,
   type Incidents,
@@ -13,7 +12,6 @@ import {
   sight,
   spentToday,
 } from "../store/incidents.ts";
-import { judge } from "./judging.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { laneOfLead, taskOfPeer } from "../../domain/ledger.ts";
@@ -53,17 +51,15 @@ export function placeOf(project: Project, seat: Noticed): Placed {
   return { where: seat.title ? `${seat.title} (${seat.id})` : seat.id };
 }
 
-/** What the watch saw of a seat: the findings that open incidents, and the moment they came from, which the watch's questions read. */
+/** What the watch saw of a seat: the findings that open or sight incidents, held or told as each one's signal says. */
 export async function notice(
   services: DeskServices,
   project: Project,
   seat: Noticed,
   findings: Finding[],
-  moment?: Moment,
   now = Date.now(),
 ): Promise<{ opened: Incident[]; sent: string[]; place: Placed }> {
   const place = placeOf(project, seat);
-  for (const found of moment ? momentCases(services.kit, place, moment) : []) void judge(services, project, found);
   if (findings.length === 0) return { opened: [], sent: [], place };
   for (const finding of findings) {
     recordEvent(project, {

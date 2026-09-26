@@ -80,9 +80,14 @@ export class Watching {
 
   private noticed(watch: SeatWatch, facts: Fact[]): void {
     if (this.deps.watches().get(watch.seat.id) !== watch) return;
-    const moment = { facts, instruction: watch.window.instruction(), turn: watch.turnId };
+    const project = projectOf(watch.seat.cwd);
+    this.deps.desk.evidence(project, watch.seat, {
+      facts,
+      instruction: watch.window.instruction(),
+      turn: watch.turnId,
+    });
     this.deps.desk
-      .notice(projectOf(watch.seat.cwd), watch.seat, decide(facts), moment)
+      .notice(project, watch.seat, decide(facts))
       .catch((error) => daemonLog.error("what the watch noticed could not be recorded:", error));
   }
 

@@ -395,7 +395,7 @@ test("nothing is asked when it cannot be, and the Flow tab says who answers and 
   await handBack("fifth");
   assert.match(
     said(),
-    /the watch could not ask about L1-T1:[^]*that key is not one this sensor takes/,
+    /review's evidence could not be asked about L1-T1:[^]*that key is not one this sensor takes/,
     "a sensor that cannot be made is reported, and the desk goes on",
   );
 });

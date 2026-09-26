@@ -38,9 +38,10 @@ import { tidyRecords } from "./store/records.ts";
 import { MergeQueue } from "./tasks/merge-queue.ts";
 import { openWaiting } from "./waiting/lanes.ts";
 import { startWaiting } from "./waiting/tasks.ts";
-import type { Moment } from "./watch/checks.ts";
+import { type Moment, momentCases } from "./review/evidence.ts";
+import { judge } from "./review/asking.ts";
 import { type Look, readLook } from "./watch/brains.ts";
-import { type Noticed, closeIncidentsOf, notice, retell } from "./watch/notice.ts";
+import { type Noticed, closeIncidentsOf, notice, placeOf, retell } from "./watch/notice.ts";
 import { Watcher } from "./watch/watcher.ts";
 
 type DeskOptions = {
@@ -113,8 +114,14 @@ export class Desk {
     recordEvent(project, data);
   }
 
-  notice(project: Project, seat: Noticed, findings: Finding[], moment?: Moment): ReturnType<typeof notice> {
-    return notice(this.services, project, seat, findings, moment);
+  notice(project: Project, seat: Noticed, findings: Finding[]): ReturnType<typeof notice> {
+    return notice(this.services, project, seat, findings);
+  }
+
+  /** A moment of a seat's turn asked about as review's evidence, in shadow: what the code saw, and the instruction behind it. */
+  evidence(project: Project, seat: Noticed, moment: Moment): void {
+    for (const found of momentCases(this.services.kit, placeOf(project, seat), moment))
+      void judge(this.services, project, found);
   }
 
   /** What one look of the watch's eye read of a seat, for its brains. */
