@@ -7,7 +7,7 @@ export type Issue = { title: string; url: string; body: string };
 type IssueForm = { match: string; run: string[] };
 
 /** The command that reads `ref`, from the first form it matches; none when no form does. */
-export function issueCommand(forms: IssueForm[], ref: string): string[] | undefined {
+function issueCommand(forms: IssueForm[], ref: string): string[] | undefined {
   const text = ref.trim();
   for (const form of forms) {
     const caught = new RegExp(form.match).exec(text);

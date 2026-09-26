@@ -6,7 +6,7 @@ import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { askLetters } from "../../server/desk/letters/ask-letters.ts";
 import { reviewBrief, taskBrief } from "../../server/desk/letters/briefs.ts";
 import { directive } from "../../server/desk/letters/directive.ts";
-import { fetchIssue, issueCommand } from "../../server/core/issues.ts";
+import { fetchIssue } from "../../server/core/issues.ts";
 import { landLetters } from "../../server/desk/letters/land-letters.ts";
 import type { Ask } from "../../server/domain/ask.ts";
 import type { Lane } from "../../server/domain/lane.ts";
@@ -333,13 +333,21 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
 
 test("an issue is read by the command its form names, passed on as given when none can, and what it says cannot close the fence it is read inside or speak on the line above it", async () => {
   const { issues } = loadKit(join(import.meta.dirname, "..", "..")).ecosystem;
-  const view = ["--json", "title,url,body"];
-  assert.deepEqual(issueCommand(issues, "#12"), ["gh", "issue", "view", "12", ...view]);
-  assert.deepEqual(issueCommand(issues, "acme/shop#7"), ["gh", "issue", "view", "7", "-R", "acme/shop", ...view]);
-  assert.deepEqual(issueCommand(issues, "https://git.acme.test/acme/shop/issues/9#note"), [
-    ...["gh", "issue", "view", "9", "-R", "git.acme.test/acme/shop", ...view],
-  ]);
-  assert.equal(issueCommand(issues, "fix the bug"), undefined);
+  // Each shipped form's own arguments, run by a program that prints them back as the issue's title.
+  const echo = [process.execPath, "-e", "console.log(JSON.stringify({ title: process.argv.slice(1).join(' ') }))"];
+  const echoed = issues.map((form) => ({ ...form, run: [...echo, ...form.run.slice(1)] }));
+  const asked = async (ref: string) => {
+    const read = await fetchIssue(echoed, ref, import.meta.dirname);
+    return "error" in read ? read.error : read.title;
+  };
+  const view = "--json title,url,body";
+  assert.equal(await asked("#12"), `issue view 12 ${view}`);
+  assert.equal(await asked("acme/shop#7"), `issue view 7 -R acme/shop ${view}`);
+  assert.equal(
+    await asked("https://git.acme.test/acme/shop/issues/9#note"),
+    `issue view 9 -R git.acme.test/acme/shop ${view}`,
+  );
+  assert.equal(await asked("fix the bug"), 'no issue form in ecosystem.json reads "fix the bug"');
   const tracker = [
     {
       match: "^SHOP-(\\d+)$",
