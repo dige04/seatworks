@@ -62,7 +62,7 @@ test("where a lane works is carried by open_lane or laneHome; with neither, a co
   assert.equal(held.status, "waiting");
   assert.match(
     held.held?.why ?? "",
-    /the project's own working copy has uncommitted changes, so a lane cannot take it over/,
+    /the project's own working copy has uncommitted changes, so a lane cannot take it over; they stay until the Human commits or stashes them, and isolate true opens the lane in a copy of its own/,
   );
   assert.equal(branch(), "fix/login");
   assert.equal(readFileSync(join(h.root, "a.txt"), "utf-8"), "edited\n");
@@ -180,7 +180,9 @@ test("a lane takes the project's own copy while it is free; one that finds it ta
   assert.notEqual(h.workspaces.get(second.workspaceId!), h.root);
   assert.equal(h.workspaceProjects.get(second.workspaceId!), h.workspaceProjects.get(first.workspaceId!));
 
-  assert.equal((await h.call(sup, "supervisor", "drop_lane", { lane: "L1", reason: "wrong outcome" })).ok, true);
+  const dropped = await h.call(sup, "supervisor", "drop_lane", { lane: "L1", reason: "wrong outcome" });
+  assert.match(dropped.text, /^Lane L1 closed; the branch lane\/l1-authorization is kept\./);
+  assert.doesNotMatch(dropped.text, /Human/, "out of the loop, a reply sends nobody to the Human");
   assert.deepEqual(h.ledger().lanes.L1!.restoring!.writers, [first.lead!]);
   assert.match(
     (await open("Second")).text,

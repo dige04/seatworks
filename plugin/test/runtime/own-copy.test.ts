@@ -198,7 +198,10 @@ test("a lane carrying on the Human's branch is refused where there is none, star
   for (const extra of [{ isolate: true }, { base: "main" }])
     assert.match((await open("Odd", { onBranch: true, ...extra })).text, /so it takes no base and no isolate/);
   assert.match((await open("Alone", { newBranch: "fix/login-2" })).text, /newBranch goes with onBranch/);
-  assert.match((await open("Taken", { onBranch: true, newBranch: "main" })).text, /main already exists/);
+  assert.match(
+    (await open("Taken", { onBranch: true, newBranch: "main" })).text,
+    /^The branch main already exists: pick another name, or carry it on once the project's own copy is on it\.$/,
+  );
   h.git(h.root, "switch", "-q", "--detach");
   assert.match((await open("Nowhere", { onBranch: true })).text, /not on a branch/);
   assert.match(

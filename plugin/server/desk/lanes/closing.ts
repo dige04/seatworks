@@ -53,7 +53,7 @@ export async function closeLane(desk: DeskServices, project: Project, by: string
       const over = { overGate: args.overGate === true, reason: str(args.reason) };
       return landLane(desk, project, now, now.lanes[lane.id] ?? lane, by, over);
     };
-    const kept = { how: `the branch ${lane.branch} is kept for the Human`, note: "" };
+    const kept = { how: `the branch ${lane.branch} is kept`, note: "" };
     const landed = args.land ? await landings.run(`${project.slug}:land`, landing) : kept;
     if ("text" in landed) return landed;
     return await retire(desk, project, lane, args, landed);

@@ -89,7 +89,7 @@ async function planOpen(project: Project, config: ProjectConfig, asked: OpenLane
   if (newBranch && after.length > 0)
     return "A lane that waits cannot start a branch from the copy as it is now: that is not the copy it will open in. Wait without newBranch, and start the branch when its turn comes.";
   if (newBranch && (await branchExists(project.root, newBranch)))
-    return `The branch ${newBranch} already exists; carry it on after switching to it, or pick another name with the Human.`;
+    return `The branch ${newBranch} already exists: pick another name, or carry it on once the project's own copy is on it.`;
   const pending = after.length > 0 ? waitsFor(loadLedger(project.state), after, onBranch) : [];
   if (typeof pending === "string") return `${pending} Open this lane without waiting for it.`;
   const carried = pending.find((lane) => lane.onBranch)?.branch;

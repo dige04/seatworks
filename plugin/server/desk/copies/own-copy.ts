@@ -28,7 +28,7 @@ export class OwnCopy {
     if (copy !== "clean") {
       throw new Error(
         copy === "dirty"
-          ? "the project's own working copy has uncommitted changes, so a lane cannot take it over; ask the Human to commit or stash them, or open the lane with isolate true"
+          ? "the project's own working copy has uncommitted changes, so a lane cannot take it over; they stay until the Human commits or stashes them, and isolate true opens the lane in a copy of its own"
           : `git could not read the project's own working copy at ${project.root}, so a lane cannot take it over`,
       );
     }
