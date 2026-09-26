@@ -1,7 +1,7 @@
 import { changedFiles, diffCounts, kindOf } from "../../core/git-diff.ts";
 import { commitsAhead, git, mergeBase } from "../../core/git.ts";
 import { coverOf, globToRegex, uncovered } from "../../core/scope.ts";
-import { capped } from "../../core/text.ts";
+import { capped, plural } from "../../core/text.ts";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { fileKinds, testMarkers, weakened } from "../../catalog/kit/patterns.ts";
 import { SETTLED } from "../../domain/task.ts";
@@ -18,7 +18,7 @@ type LandGate = { set: boolean; ok: boolean };
 /** What a lane changed, from where it left its base, or where an onBranch lane began on a branch that had history before it. */
 type Change = { from?: string; files?: string[] };
 
-const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+const counted = (count: number, word: string) => `${count} ${plural(count, word, `${word}s`)}`;
 
 const SHOWN = 5;
 
@@ -132,11 +132,6 @@ export function unfinished(task: Task): boolean {
   return !SETTLED.includes(task.status) && !(task.kind === "review" && task.status === "done");
 }
 
-async function changed(root: string, range: string, filter: "D" | "M"): Promise<string[]> {
-  const run = await git(root, ["diff", "-z", "--name-only", `--diff-filter=${filter}`, range]);
-  return run.stdout.split("\0").filter(Boolean);
-}
-
 /**
  * What a lane brings onto its base, read from git and the record rather than from anything a seat said: evidence for whoever
  * lands it and for the Human, never a reason to hold it. `gate` is left out where the gate's own verdict is already given.
@@ -166,7 +161,7 @@ export async function landFacts(
         )
       : [];
   return [
-    `${commits === undefined ? "Commits unknown" : plural(commits, "commit")}; ${plural(files.length, "file")}, ${plural(lines, "line")} changed.`,
+    `${commits === undefined ? "Commits unknown" : counted(commits, "commit")}; ${counted(files.length, "file")}, ${counted(lines, "line")} changed.`,
     ...(!gate
       ? []
       : !gate.set
@@ -185,10 +180,12 @@ export async function landFacts(
 async function testFacts(kit: Kit, root: string, from: string, branch: string, files: string[]): Promise<string[]> {
   const kinds = fileKinds(kit);
   const range = `${from}..${branch}`;
-  const tests = files.filter((path) => kindOf(path, kinds) === "test");
-  const deleted = (await changed(root, range, "D")).filter((path) => kindOf(path, kinds) === "test");
+  const isTest = (path: string) => kindOf(path, kinds) === "test";
+  const tests = files.filter(isTest);
+  const deleted = (await changedFiles(root, range, "D"))?.filter(isTest);
+  const modified = (await changedFiles(root, range, "M"))?.filter(isTest);
   const weaker: string[] = [];
-  for (const path of (await changed(root, range, "M")).filter((file) => kindOf(file, kinds) === "test")) {
+  for (const path of modified ?? []) {
     const [before, after] = await Promise.all(
       [from, branch].map(async (ref) => (await git(root, ["show", `${ref}:${path}`])).stdout),
     );
@@ -197,8 +194,10 @@ async function testFacts(kit: Kit, root: string, from: string, branch: string, f
   }
   return [
     ...(tests.length > 0 ? [`Tests changed: ${tests.join(", ")}.`] : []),
-    ...deleted.map((path) => `${path} is deleted.`),
-    ...weaker,
+    ...(deleted
+      ? deleted.map((path) => `${path} is deleted.`)
+      : ["Which test files it deleted could not be read from git."]),
+    ...(modified ? weaker : ["Which test files it weakened could not be read from git."]),
   ];
 }
 

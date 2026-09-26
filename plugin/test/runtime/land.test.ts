@@ -127,24 +127,37 @@ test("work nobody committed in a lane's copy never lands, over the gate or not, 
   assert.equal(readFileSync(join(copy, "notes.txt"), "utf-8"), "half a thought\n", "the desk never deletes work");
 });
 
-test("a lane whose head git cannot read when its gate is to run is not landed, and not said to have moved", async () => {
-  const { h, lane, land, onMain } = await laneWith({ "src/cart.ts": "export const cart = 1;\n" });
+/** Runs `during` with a git first on PATH that fails the `nth` call whose words hold `words`, as git fails when it cannot read. */
+async function withGitFailing<T>(h: Harness, words: string, nth: number, during: () => Promise<T>): Promise<T> {
   const bin = tempDir("sw2-git-");
   const real = h.git(h.root, "--exec-path").trim();
-  const read = `rev-parse --verify ${lane.branch}^{commit}`;
+  const count = `n=$(($(cat "${bin}/n" 2>/dev/null || echo 0) + 1)); echo $n > "${bin}/n"`;
+  const fail = `if [ $n = ${nth} ]; then echo "fatal: cannot read" >&2; exit 128; fi`;
   writeFileSync(
     join(bin, "git"),
-    `#!/bin/sh\ncase " $* " in *" ${read} "*) n=$(($(cat "${bin}/n" 2>/dev/null || echo 0) + 1)); echo $n > "${bin}/n"; if [ $n = 2 ]; then echo "fatal: cannot read" >&2; exit 128; fi;; esac\nexec "${real}/git" "$@"\n`,
+    `#!/bin/sh\ncase " $* " in *" ${words} "*) ${count}; ${fail};; esac\nexec "${real}/git" "$@"\n`,
     { mode: 0o755 },
   );
   const path = process.env.PATH;
   process.env.PATH = `${bin}${delimiter}${path}`;
-  const refused = await land().finally(() => (process.env.PATH = path));
+  return during().finally(() => (process.env.PATH = path));
+}
+
+test("a lane whose head git cannot read when its gate is to run is not landed, and not said to have moved", async () => {
+  const { h, lane, land, onMain } = await laneWith({ "src/cart.ts": "export const cart = 1;\n" });
+  const refused = await withGitFailing(h, `rev-parse --verify ${lane.branch}^{commit}`, 2, land);
   assert.equal(refused.ok, false, refused.text);
   assert.match(refused.text, new RegExp(`^Lane L1 was not closed: git could not read ${lane.branch}`));
   assert.doesNotMatch(refused.text, /moved after its gate ran/);
   assert.equal(onMain("src/cart.ts"), false);
   assert.equal((await land()).ok, true, "once git reads it, it lands");
+});
+
+test("what git could not say of a lane's tests is evidence that it could not, never that nothing was deleted", async () => {
+  const { h, land } = await laneWith({ "test/cart.test.ts": "assert.ok(true);\n" });
+  const landed = await withGitFailing(h, "--diff-filter=D", 1, land);
+  assert.equal(landed.ok, true, landed.text);
+  assert.match(landed.text, /Which test files it deleted could not be read from git\./);
 });
 
 test("what git shows of a lane goes with its landing as evidence, and holds nothing back", async () => {

@@ -52,8 +52,8 @@ export async function diffCounts(
   return run.code === 0 ? countNumstat(run.stdout, kinds, uncounted) : undefined;
 }
 
-/** The files changed across `range`, as git diff reads it, or undefined when git cannot say. */
-export async function changedFiles(cwd: string, range: string): Promise<string[] | undefined> {
-  const run = await git(cwd, ["diff", "-z", "--name-only", range]);
+/** The files changed across `range`, only those deleted or modified when `only` says, or undefined when git cannot say. */
+export async function changedFiles(cwd: string, range: string, only?: "D" | "M"): Promise<string[] | undefined> {
+  const run = await git(cwd, ["diff", "-z", "--name-only", ...(only ? [`--diff-filter=${only}`] : []), range]);
   return run.code === 0 ? run.stdout.split("\0").filter(Boolean) : undefined;
 }
