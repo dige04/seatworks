@@ -1,4 +1,4 @@
-import { oneLine } from "../../core/text.ts";
+import { oneLine, plural } from "../../core/text.ts";
 import { type Fact, fact } from "../../domain/incident.ts";
 import { type Rules, PROSE, escapes, failed, isGate, str } from "./facts.ts";
 import type { Call, Window } from "./window.ts";
@@ -29,7 +29,7 @@ export function unverified(window: Window, rules: Rules, heard: boolean): Fact[]
   return [
     fact(
       "unverified",
-      `${written.size} file${written.size === 1 ? "" : "s"} written and \`${oneLine(named, 100)}\` not run after the last of them`,
+      `${written.size} ${plural(written.size, "file", "files")} written and \`${oneLine(named, 100)}\` not run after the last of them`,
     ),
   ];
 }
