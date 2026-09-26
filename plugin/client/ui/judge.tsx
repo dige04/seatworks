@@ -31,7 +31,7 @@ type Sensor = CatalogView["sensors"][number];
 
 type Draft = { typed: string; setDraft: (text: string) => void; field: RefObject<SettingsInputHandle | null> };
 
-/** Rows, not a component, since the card borders each child it gets: a sensor's key typed and saved, replaced or forgotten on the machine, or on a project's screen only whether there is one. */
+/** Rows, not a component, since the card borders each child it gets. */
 function keyRows(
   {
     sensor,

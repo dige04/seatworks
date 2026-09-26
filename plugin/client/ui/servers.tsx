@@ -53,7 +53,7 @@ function Tuning({
     return spec.type === "number" ? Number(text) : text;
   };
   const edited = Object.keys(draft).filter((key) => draft[key] !== String(current[key] ?? ""));
-  // An emptied field is not zero: `Number("")` is, and the port or limit the owner cleared was saved as 0.
+  // An emptied field is not zero, though `Number("")` is.
   const wrong = edited.some(
     (key) => entry.settings[key]?.type === "number" && (!draft[key].trim() || !Number.isFinite(Number(draft[key]))),
   );
@@ -88,7 +88,7 @@ function Tuning({
           disabled={disabled || wrong}
           onPress={() => {
             const settings = Object.fromEntries(edited.map((key) => [key, value(key, entry.settings[key])]));
-            // Cleared only once kept: cleared first, a refused save dropped the unsaved row and showed a value never stored.
+            // Cleared only once kept, so a refused save keeps the unsaved row.
             void Promise.resolve(save((values) => setMcp(values, entry.id, { settings }))).then((kept) => {
               if (kept !== false) setDraft({});
             });
@@ -101,7 +101,7 @@ function Tuning({
 
 export function ServersSection({ catalog, team, values, machine, layer, theme, disabled, save, addServer }: Props) {
   const ids = Object.keys(team.mcp);
-  // A removed template keeps its tab: resolving drops removed servers, which left no way to add it back.
+  // A removed template keeps its tab, since resolving drops removed servers.
   const put = catalog.mcp.map((item) => item.id).filter((id) => !ids.includes(id));
   const [active, setActive] = useState(ids[0] ?? ADD);
   const [paste, setPaste] = useState("");

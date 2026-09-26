@@ -79,7 +79,7 @@ export function useSeatworks(project?: string) {
   const [saving, setSaving] = useState(false);
   // Set by a save, cleared by its reload: the controls stay locked until drawn from what it produced.
   const settling = useRef(false);
-  // Tagged with its screen: the hook serves every screen, and an untagged refusal showed on all of them.
+  // Tagged with its screen: the hook serves every screen.
   const [refusal, setRefusal] = useState<{ of: string; text: string } | null>(null);
   // A ref, so a callback built on an earlier render still tags the screen open now.
   const here = useRef(project ?? "");
@@ -89,7 +89,7 @@ export function useSeatworks(project?: string) {
     [],
   );
   const saveError = refusal?.of === (project ?? "") ? refusal.text : null;
-  // Whether the last write went; inferring it from no error here read another screen's refusal as success.
+  // Whether the last write went, apart from any other screen's refusal.
   const [saved, setSaved] = useState<boolean | null>(null);
   const [nonce, setNonce] = useState(0);
 
@@ -127,7 +127,7 @@ export function useSeatworks(project?: string) {
         settingsError: settings.status === "ready" ? null : settings.error,
       });
     };
-    // Only a move to another screen blanks it: blanking on a save's reload remounted every section and lost its local state.
+    // Only a move to another screen blanks it, so a save's reload keeps each section's local state.
     setData((held) => (held.status === "ready" && held.of === (project ?? "") ? held : { status: "loading" }));
     load().catch((error: unknown) => {
       if (!alive) return;
@@ -144,10 +144,7 @@ export function useSeatworks(project?: string) {
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);
 
-  /**
-   * Every desk write runs inside this: locked, refusal cleared, ending in a reload the controls stay locked until;
-   * unlocking earlier let a click built on the pre-save view silently undo the save.
-   */
+  /** Every desk write runs inside this, locked until the reload it ends in: a click on the view before it cannot undo it. */
   const writing = useCallback(
     async <T>(run: () => Promise<T>, failed: T): Promise<T> => {
       setSaving(true);
@@ -236,7 +233,7 @@ export function useSeatworks(project?: string) {
           setSaveError('That snippet does not name the server; paste it as {"mcp": {"name": { … }}}.');
           return null;
         }
-        // Only to roles whose agent can reach it: otherwise it was refused, and the narrowing control appears only once saved.
+        // Only to roles whose agent can reach it: the desk refuses the rest, and the narrowing control appears once saved.
         if (data.status !== "ready") return null;
         const harnessOf = (role: string) => data.team.roles[role]?.harness;
         const reachable = data.catalog.roles

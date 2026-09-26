@@ -80,7 +80,7 @@ function useStyles(theme: PluginTheme) {
   );
 }
 
-/** A seat's chat in Paseo, where the Human answers it themselves; nothing when the seat is gone or the host cannot open one. */
+/** A seat's chat in Paseo; nothing when the seat is gone or the host cannot open one. */
 const chatOf = (navigation: Navigation, seat: FlowSeat | null) =>
   navigation && seat && seat.status !== "gone" ? () => navigation.openAgent({ agentId: seat.id }) : undefined;
 
@@ -141,7 +141,6 @@ const Node = memo(function Node({
 /** `answers` is who answers a permission prompt of this lane's seats; `human`, whether the Human is in the loop. */
 type LaneProps = { lane: FlowLane; answers: string; human: boolean; theme: PluginTheme; navigation: Navigation };
 
-/** A closed lane's Lead the Supervisor has not released yet, kept for more work with any copy of its own. */
 function KeptLead({ lane, answers, theme, navigation }: LaneProps) {
   const styles = useStyles(theme);
   return (
@@ -158,7 +157,6 @@ function KeptLead({ lane, answers, theme, navigation }: LaneProps) {
   );
 }
 
-/** An open lane's seats below its Lead: each task's, then each Peer kept idle after its task until released. */
 function Peers({ lane, answers, theme, navigation }: LaneProps) {
   const styles = useStyles(theme);
   return (

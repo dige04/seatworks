@@ -39,7 +39,6 @@ const KIND: Record<CleanItem["kind"], string> = {
   snapshot: "Copy of guides or skills",
 };
 
-/** Picked unless it holds something of the owner's, or cannot go at all. */
 const picked = (items: CleanItem[]) =>
   new Set(items.filter((item) => !item.careful && !item.held).map((item) => item.path));
 
@@ -55,7 +54,6 @@ function unitName(change: ContentChange): string {
   return last;
 }
 
-/** The version line: what runs, and what the branch it follows has. */
 function versionLine(view: UpdateView | null): { title: string; state: string } {
   if (!view) return { title: "Seatworks", state: "Reading this copy's version." };
   const now = view.version || view.head;
@@ -130,7 +128,6 @@ export function UpkeepSection({ theme }: { theme: PluginTheme }) {
   const line = versionLine(updated);
   const seen = (units: string[]) => void run("content", async () => setChanged(await content({ seen: units })));
 
-  // Only what needs the owner, one row each.
   const rows: ReactNode[] = [];
   const row = (key: string, warn: boolean, label: string, detail: string | null, actions: ReactNode) =>
     rows.push(

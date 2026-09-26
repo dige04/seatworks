@@ -33,7 +33,6 @@ function useSurfaceStyles(theme: PluginTheme, compact: boolean) {
   );
 }
 
-/** A toast once a save has finished and held. */
 function useSavedToast(saving: boolean, saved: boolean | null) {
   const toast = useToast();
   const wasSaving = useRef(false);
@@ -48,7 +47,7 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
   const [tab, setTab] = useState<DetailTab>("team");
   const [chip, setChip] = useState<string | null>(null);
   const [dialog, setDialog] = useState(false);
-  // Tagged with the screen they ran on, or another project's results showed as this one's.
+  // Tagged with the screen they ran on.
   const [checks, setChecks] = useState<{ of: string; at: string; rows: Check[] } | null>(null);
   // Tagged by project: lane ids repeat across projects, every first lane is L1.
   const [openLanes, setOpenLanes] = useState<{ of: string; lanes: string[] }>({ of: "", lanes: [] });
@@ -244,7 +243,6 @@ export function SeatworksSurface({ theme, layout, navigation }: PluginSurfacePro
             project={project}
             theme={theme}
             checks={checks?.of === (project ?? MACHINE) ? checks.rows : null}
-            // Which settings it was run against, so a report from before a save is not read as now.
             stale={checks?.of === (project ?? MACHINE) && checks.at !== settledAs}
             onChecks={(rows) => setChecks({ of: project ?? MACHINE, at: settledAs, rows })}
             runDoctor={runDoctor}

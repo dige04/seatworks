@@ -106,7 +106,6 @@ export function SetupDialog({
         setPicking(false);
         setBrowsing(answer);
       })
-      // Without this a failed call left the row dead and the footer stale.
       .catch((error: unknown) => setTrouble(message(error)));
 
   const summary = () => {
@@ -181,7 +180,6 @@ export function SetupDialog({
                     actionLabel="Use"
                     disabled={disabled}
                     onPress={() => {
-                      // The repository is what gets set up, so keep its root, not the folder.
                       setRootPath(browsing.root ?? browsing.path);
                       setBrowsing(null);
                     }}

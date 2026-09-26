@@ -100,7 +100,7 @@ export function HealthSection({ project, theme, checks, stale, onChecks, runDoct
             onPress={() =>
               void run("status", async () => {
                 const answer = await readStatus(project);
-                // A refusal is not a report: shown in the report box it read as one, in the same style.
+                // A refusal is not a report.
                 setStatusError(answer.error ?? null);
                 setStatus(answer.error ? "" : answer.text);
               })
