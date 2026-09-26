@@ -20,6 +20,7 @@ import {
 import type { Refusal } from "../refusal.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
+import { humanSaid } from "../human/said.ts";
 import { waitsFor } from "../waiting/rules.ts";
 import { openedReply, startLead } from "./lead-seat.ts";
 import { placement } from "./placement.ts";
@@ -41,6 +42,7 @@ type OpenLaneCall = {
   after?: string[];
   detourOf?: string;
   role?: string;
+  humanSaid?: string;
 };
 
 type Place = { base: string; onBranch: boolean; branch?: string };
@@ -54,6 +56,7 @@ type Plan = {
   here?: string;
   home?: LaneHome;
   decided?: string;
+  said?: string;
 };
 
 /** Opens a lane now, or records it waiting for the lanes it names; a Lead is started for one that opens. */
@@ -64,8 +67,14 @@ export async function openLane(desk: DeskServices, caller: Caller, asked: OpenLa
   const plan = await planOpen(project, read.config, asked);
   if (typeof plan === "string") return no(plan);
   seedGate(desk.kit, project, read.config);
-  return plan.pending.length > 0 ? waitToOpen(desk, caller, plan) : openNow(desk, caller, plan);
+  const quote = str(asked.humanSaid);
+  const said = quote && (await humanSaid(desk.roster, caller.id, quote)) ? quote : undefined;
+  const opened = await (plan.pending.length > 0 ? waitToOpen : openNow)(desk, caller, { ...plan, said });
+  return opened.ok && quote && !said ? ok(`${opened.text}${UNSAID}`) : opened;
 }
+
+const UNSAID =
+  "\n\nhumanSaid is no message the Human wrote in your chat, so the Lead was not given it as theirs: pass their words whole, or twenty characters and more of one, to have them reach it.";
 
 /** Checks the call and works out where the lane works: carrying a branch on, or off which base. */
 async function planOpen(project: Project, config: ProjectConfig, asked: OpenLaneCall): Promise<Plan | string> {
@@ -223,7 +232,7 @@ const detourOf = (args: OpenLaneCall): string | undefined => str(args.detourOf).
 function laneOf(
   ledger: Ledger,
   caller: Caller,
-  { args, place, home }: Pick<Plan, "args" | "place" | "home">,
+  { args, place, home, said }: Pick<Plan, "args" | "place" | "home" | "said">,
   issue: Issue | undefined,
   after?: string[],
 ): Lane {
@@ -237,6 +246,7 @@ function laneOf(
     id,
     title,
     outcome: str(args.outcome),
+    humanSaid: said,
     acceptance: strs(args.acceptance),
     appetite: str(args.appetite) || undefined,
     deadline: str(args.deadline) || undefined,

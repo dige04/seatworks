@@ -461,3 +461,34 @@ test("the Supervisor's status names the Human's uncommitted files as they are: a
   const status = (await h.call(sup, "supervisor", "status", {})).text;
   assert.match(status, /with 2 uncommitted files: moved -> here\.txt, my notes\.txt\./);
 });
+
+test("the Human's own words a lane comes from reach its Lead beside the Supervisor's reading of them, and only words they wrote", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  const said = "Guests should check out without making an account, but keep the order history for members.";
+  h.humanSays(sup, said);
+  const opened = await h.call(
+    sup,
+    "supervisor",
+    "open_lane",
+    lane("Guests", { isolate: true, outcome: "guest checkout", humanSaid: "check out without making an account" }),
+  );
+  assert.equal(opened.ok, true, opened.text);
+  const directive = h.agents.get(h.ledger().lanes.L1!.lead!)!.prompt ?? "";
+  assert.match(
+    directive,
+    /^Outcome: guest checkout\n\nThe Human's own words it comes from, which the outcome above reads: "check out without making an account"$/m,
+  );
+  const guessed = await h.call(
+    sup,
+    "supervisor",
+    "open_lane",
+    lane("Members", { isolate: true, humanSaid: "members want a faster order history page" }),
+  );
+  assert.equal(guessed.ok, true, guessed.text);
+  assert.match(
+    guessed.text,
+    /humanSaid is no message the Human wrote in your chat, so the Lead was not given it as theirs/,
+  );
+  assert.doesNotMatch(h.agents.get(h.ledger().lanes.L2!.lead!)!.prompt ?? "", /own words/);
+});

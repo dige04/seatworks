@@ -37,6 +37,9 @@ export function directive(
     `SUPERVISOR DIRECTIVE ${lane.id}: ${lane.title}`,
     "",
     `Outcome: ${lane.outcome}`,
+    ...(lane.humanSaid
+      ? ["", `The Human's own words it comes from, which the outcome above reads: "${lane.humanSaid}"`]
+      : []),
     "",
     "Acceptance:",
     list(lane.acceptance),

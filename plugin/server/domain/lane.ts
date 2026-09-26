@@ -24,6 +24,7 @@ export type Lane = {
   id: string;
   title: string;
   outcome: string;
+  humanSaid?: string;
   acceptance: string[];
   appetite?: string;
   deadline?: string;
