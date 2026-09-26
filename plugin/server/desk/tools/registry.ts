@@ -29,6 +29,7 @@ import { rework } from "./rework.ts";
 import { setProject } from "./set-project.ts";
 import { startReview } from "./start-review.ts";
 import { status } from "./status.ts";
+import { withdrawQuestion } from "./withdraw-question.ts";
 
 export const TOOLS: ToolDef[] = [
   openLane,
@@ -39,6 +40,7 @@ export const TOOLS: ToolDef[] = [
   resumeLane,
   askHuman,
   recordHumanAnswer,
+  withdrawQuestion,
   permit,
   push,
   replaceLead,

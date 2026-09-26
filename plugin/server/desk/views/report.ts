@@ -44,6 +44,13 @@ export function reportView(project: Project, questionsPerDay: number, now = Date
       detail: `on ${lane.base}`,
       minutes: minutesSince(now, lane.closedAt!),
     })),
+    withdrawn: questions
+      .filter((question) => question.answer?.by === "supervisor" && question.answer.at >= since)
+      .map((question) => ({
+        ...asked(question),
+        detail: `withdrawn by the Supervisor: ${question.answer!.text ?? "no reason given"}`,
+        minutes: minutesSince(now, question.answer!.at),
+      })),
     beyond: incidents
       .filter((incident) => incident.level === "page")
       .map((incident) => ({

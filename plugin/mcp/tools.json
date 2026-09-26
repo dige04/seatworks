@@ -452,6 +452,34 @@
       }
     },
     {
+      "name": "withdraw_question",
+      "title": "Withdraw a question",
+      "description": "Take one of your questions off the Human's queue when it no longer needs them: they read why on the Report. A lane held for it stays held until you resume it.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The question's id, like H2."
+          },
+          "why": {
+            "type": "string",
+            "description": "Why it no longer needs them, in a sentence they will read."
+          }
+        },
+        "required": [
+          "question",
+          "why"
+        ]
+      }
+    },
+    {
       "name": "permit",
       "title": "Answer a permission",
       "description": "Answer a Lead's or Peer's permission request for the Human while they are out of the loop: its seat is stopped until then. Allow what its work needs within its own copy; refuse, with why, what reaches past it. A Peer's Lead is told. Refused while the Human is in the loop.",

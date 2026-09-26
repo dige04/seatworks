@@ -155,7 +155,7 @@ export function settleQuestion(
   project: Project,
   id: string,
   choice: string,
-  given: { text?: string; by: "panel" | "chat"; quote?: string },
+  given: { text?: string; by: "panel" | "chat" | "supervisor"; quote?: string },
 ): Question | string {
   const move = choice.toLowerCase() === "decline" ? "decline" : choice.toLowerCase() === "cancel" ? "cancel" : "answer";
   const recorded = ledgers.transact(project, (ledger) => {
@@ -171,6 +171,20 @@ export function settleQuestion(
   if (typeof recorded !== "string")
     recordEvent(project, { kind: "question.answered", question: id, status: recorded.status, by: given.by });
   return recorded;
+}
+
+/** Takes a question off the Human's queue for the Supervisor, with why, which they read on the Report. */
+export function withdrawQuestion(
+  desk: Pick<DeskServices, "ledgers">,
+  caller: Caller,
+  args: { question: string; why: string },
+): ToolReply {
+  const id = args.question.trim().toUpperCase();
+  const withdrawn = settleQuestion(desk, caller.project, id, "cancel", { text: args.why.trim(), by: "supervisor" });
+  if (typeof withdrawn === "string") return no(withdrawn);
+  const lane = withdrawn.parked && withdrawn.lane ? loadLedger(caller.project.state).lanes[withdrawn.lane] : undefined;
+  const held = lane?.onHold ? ` Lane ${lane.id} is still on hold for it: resume_lane it when it may go on.` : "";
+  return ok(`${id} is off the Human's queue; they read why on the Report.${held}`);
 }
 
 /** Words as a quote is checked: spacing, a closing stop and case do not count. */

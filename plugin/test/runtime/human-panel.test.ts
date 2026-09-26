@@ -38,6 +38,7 @@ async function drawn(h: Harness, open: string[] = []) {
 
 test("a question waits in the Human's queue, and their answer, on the panel or in the Supervisor's chat, goes on record and to whoever asked", async () => {
   const { h, sup, lane } = await laneWithPeer({ hitl: { on: true } });
+  h.machineSettings({ hitl: { questionsPerDay: 10 } });
   const ask = (extra: Record<string, unknown>) => h.call(sup, "supervisor", "ask_human", packet(extra));
   const record = (question: string, choice: string, quote: string) =>
     h.call(sup, "supervisor", "record_human_answer", { question, choice, quote });
@@ -93,9 +94,6 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
   assert.deepEqual(await answer("H1", "Keep"), {
     error: "Keep is none of H1's options: Delete, Archive, or decline or cancel.",
   });
-  assert.deepEqual(await answer("H1", "cancel"), {
-    error: "Only the Supervisor cancels a question; choose one of its options, or decline it.",
-  });
   assert.deepEqual(await answer("h1", "Archive", "and keep a list of them"), {
     answered: "H1 is answered: Archive. The Supervisor has it.",
   });
@@ -118,6 +116,23 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
   assert.match(
     h.heard(sup).join("\n"),
     /HUMAN ANSWERED H3 \([^)]*\), on the panel: they declined to decide it\.\n\nNext: The call is yours now: decide it and carry that where it applies\./,
+  );
+  await ask({ question: "Rename the product?" });
+  assert.deepEqual(await answer("H4", "cancel"), { answered: "H4 is canceled. The Supervisor has it." });
+  assert.match(
+    h.heard(sup).join("\n"),
+    /HUMAN ANSWERED H4 \(Rename the product\?\), on the panel: they took it off their queue\.\n\nNext: It is off their queue: go on without it, or ask again if it still matters\./,
+  );
+  await ask({ question: "Move the database?" });
+  const withdraw = (question: string) =>
+    h.call(sup, "supervisor", "withdraw_question", { question, why: "the lane no longer touches it" });
+  assert.equal((await withdraw("H5")).text, "H5 is off the Human's queue; they read why on the Report.");
+  assert.match((await withdraw("H5")).text, /^H5 is already canceled\./);
+  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  assert.ok("withdrawn" in report);
+  assert.deepEqual(
+    report.withdrawn.map((item) => [item.title, item.detail]),
+    [["H5 · Move the database?", "withdrawn by the Supervisor: the lane no longer touches it"]],
   );
   assert.deepEqual((await drawn(h)).questions, []);
 });

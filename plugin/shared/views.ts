@@ -188,6 +188,7 @@ const ReportView = z.object({
   ahead: z.array(ReportItem),
   landed: z.array(ReportItem),
   beyond: z.array(ReportItem),
+  withdrawn: z.array(ReportItem),
   numbers: z.array(z.object({ title: z.string(), value: z.string(), detail: z.string() })),
 });
 export type ReportView = z.infer<typeof ReportView>;

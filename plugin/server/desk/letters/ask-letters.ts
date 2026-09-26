@@ -17,6 +17,8 @@ function askNext(ask: Ask): string {
 /** What the Human's word asks of whoever put the question: only a choice unlike what went ahead meanwhile turns anything round. */
 function answeredNext(question: Question): string {
   if (question.status === "declined") return "The call is yours now: decide it and carry that where it applies";
+  if (question.status === "canceled")
+    return "It is off their queue: go on without it, or ask again if it still matters";
   if (question.class === "irreversible")
     return "Carry their choice into the lane, and write it into CONTEXT.md if it settles the concept";
   if (question.answer?.choice !== question.recommend)
@@ -41,7 +43,12 @@ export const askLetters = {
 
   /** Whoever asked the Human is told their word from the panel, and that a lane held for it stays held until it is resumed. */
   humanAnswered(question: Question, lane: Lane | undefined): Letter {
-    const word = question.status === "declined" ? "they declined to decide it" : (question.answer?.choice ?? "");
+    const word =
+      question.status === "declined"
+        ? "they declined to decide it"
+        : question.status === "canceled"
+          ? "they took it off their queue"
+          : (question.answer?.choice ?? "");
     const lines = [`HUMAN ANSWERED ${question.id} (${firstLine(question.question)}), on the panel: ${word}.`];
     if (question.answer?.text) lines.push("", "Their note, their own words:", question.answer.text);
     if (lane?.onHold) lines.push("", `Lane ${lane.id} is still on hold for it.`);
