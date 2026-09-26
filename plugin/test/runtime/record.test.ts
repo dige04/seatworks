@@ -17,7 +17,8 @@ test("a Lead reads its lane and its Peers' records and keeps its own pages, and 
   assert.match(await say(lead, "lead", "status", {}), /L1-T1/);
   assert.equal(
     await say(lead, "lead", "status", {}),
-    "Nothing has changed since you last asked: end your turn, and mail wakes you when something does.",
+    "Nothing has changed since you last asked. Open lanes: L1; waiting: none; tasks not settled: L1-T1 running; open asks: 0. End your turn: mail wakes you when something does.",
+    "with the picture in a line, for a seat whose context was compacted since",
   );
   assert.match(
     await say(sup, "supervisor", "status", {}),
