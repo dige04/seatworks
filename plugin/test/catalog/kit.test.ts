@@ -122,6 +122,22 @@ const REFUSED: [string, unknown, RegExp][] = [
   ],
   [
     "roles.json",
+    { roles: [peer, { role: "twin", label: "Twin", like: "nobody", defaults: { harness: "acme" } }] },
+    /^role twin is like nobody, which is no other role in roles\.json that is its own$/,
+  ],
+  [
+    "roles.json",
+    {
+      roles: [
+        peer,
+        { role: "twin", label: "Twin", like: "peer", defaults: { harness: "acme" } },
+        { role: "triplet", label: "Triplet", like: "twin", defaults: { harness: "acme" } },
+      ],
+    },
+    /^role triplet is like twin, which is no other role in roles\.json that is its own$/,
+  ],
+  [
+    "roles.json",
     { roles: [{ ...peer, extraSkills: ["council"] }] },
     /^roles\.json is not as the kit reads it:\n✖ is not written set:name\n {2}→ at roles\[0\]\.extraSkills\[0\]$/,
   ],

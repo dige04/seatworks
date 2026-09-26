@@ -19,6 +19,9 @@ export function seatOf(
   return undefined;
 }
 
+/** The role whose files a role seats with, and whose MCP servers it is given: its own, or the one it is like. */
+export const seatedAs = (role: RoleSpec): string => role.like ?? role.role;
+
 export function can(role: RoleSpec | undefined, capability: string): boolean {
   return role?.can?.includes(capability) ?? false;
 }

@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { hiddenWordsIn } from "../../server/catalog/kit/hidden-words.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
+import { seatedAs } from "../../server/catalog/kit/roles.ts";
 import { loadCases, openedSkills, rightRun, skillCards, triggerPrompt } from "./triggers.ts";
 
 const pluginRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -13,7 +14,7 @@ test("every skill a role is given has briefs that should open it and near misses
   const cases = loadCases();
   for (const role of kit.roles) {
     const cards = skillCards(kit, role.role);
-    const own = cases[role.role] ?? [];
+    const own = cases[seatedAs(role)] ?? [];
     for (const one of own) {
       for (const name of [...one.expect, ...(one.near ? [one.near] : [])]) {
         assert.ok(cards.has(name), `${role.role} brief names ${name}, which that role is not given: ${one.brief}`);

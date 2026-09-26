@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { skillSources } from "../../server/catalog/kit/content.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
+import { seatedAs } from "../../server/catalog/kit/roles.ts";
 
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const kit = loadKit(PLUGIN);
@@ -66,7 +67,7 @@ const deskTools = new Set(Object.values(tools).flatMap((set) => set.map((tool) =
 
 test("what a seat reads keeps within its budgets: prompts, deltas, skills and their descriptions, tools and their parameters", () => {
   for (const role of kit.roles) {
-    const budget = PROMPT_BUDGET[role.role];
+    const budget = PROMPT_BUDGET[seatedAs(role)];
     assert.ok(budget, `${role.role} has no budget here: give it one`);
     const text = readFileSync(join(PLUGIN, "content", role.prompt), "utf-8");
     assert.ok(

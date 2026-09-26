@@ -285,7 +285,7 @@ test("a pasted server that names no roles is given to every role that works with
       .sort();
   const team = resolveTeam(kit, { mcp: { pasted } });
   assert.deepEqual(team.errors, []);
-  assert.deepEqual(given(team), ["lead", "peer", "reviewer", "supervisor"]);
+  assert.deepEqual(given(team), ["lead", "peer", "reviewer", "second-reviewer", "supervisor"]);
   assert.deepEqual(given(resolveTeam(kit, { mcp: { pasted: { ...pasted, roles: ["watcher"] } } })), ["watcher"]);
 });
 
@@ -296,9 +296,19 @@ test("the desk names each seat's fixed choices from the kit: who writes and with
   const skills = readdirSync(join(PLUGIN, "content", "skills", "peer")).sort();
   assert.deepEqual(choices("lead"), {
     add_tasks: { role: ["peer"], skills },
-    start_review: { role: ["reviewer"] },
+    start_review: { role: ["reviewer", "second-reviewer"] },
     note: { kind: ["plans", "council", "ultra-review", "repo-refresh"] },
   });
   assert.deepEqual(choices("supervisor"), { open_lane: { role: ["lead"] } });
   assert.deepEqual(choices("peer"), {}, "a seat is named choices only for tools it has");
+});
+
+test("a second reviewer seats as the Reviewer on the same agent, with another model, so two lenses are not one model twice", () => {
+  const team = resolveTeam(loadKit(PLUGIN));
+  const [first, second] = ["reviewer", "second-reviewer"].map((name) => team.roles[name]!);
+  assert.deepEqual(
+    [second!.role.prompt, second!.role.tools, second!.role.can, second!.harness.id],
+    [first!.role.prompt, first!.role.tools, first!.role.can, first!.harness.id],
+  );
+  assert.notEqual(second!.model?.id, first!.model?.id);
 });

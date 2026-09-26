@@ -3,6 +3,7 @@ import { basename, isAbsolute, join } from "node:path";
 import { DESK_OWNED } from "../../core/paths.ts";
 import { hiddenWordsIn } from "./hidden-words.ts";
 import type { Kit, RoleSpec } from "./kit.ts";
+import { seatedAs } from "./roles.ts";
 
 export type PromptPaths = { guides: string; state: string };
 
@@ -35,7 +36,7 @@ export function renderText(role: RoleSpec, source: string, paths: PromptPaths): 
 /** The role's prompt, then what the harness it sits on needs said against that agent's own instructions, when it ships any. */
 export function renderPrompt(kit: Kit, role: RoleSpec, harness: string, paths: PromptPaths): string {
   const prompt = renderText(role, readFileSync(contentPath(kit, role.prompt), "utf-8"), paths);
-  const delta = join(kit.dir, "harness", harness, "delta", `${role.role}.md`);
+  const delta = join(kit.dir, "harness", harness, "delta", `${seatedAs(role)}.md`);
   return existsSync(delta) ? `${prompt.trimEnd()}\n\n${renderText(role, readFileSync(delta, "utf-8"), paths)}` : prompt;
 }
 

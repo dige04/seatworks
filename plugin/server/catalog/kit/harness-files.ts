@@ -1,16 +1,17 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HarnessSpec, Kit, RoleSpec } from "./kit.ts";
+import { seatedAs } from "./roles.ts";
 
 export function roleSettingsFile(kit: Kit, harness: HarnessSpec, role: RoleSpec): string {
-  return join(kit.dir, "harness", harness.id, harness.settings.roleSource.replace("ROLE", role.role));
+  return join(kit.dir, "harness", harness.id, harness.settings.roleSource.replace("ROLE", seatedAs(role)));
 }
 
 export function harnessFileSources(kit: Kit, harness: HarnessSpec, role: RoleSpec): Record<string, string[]> {
   return Object.fromEntries(
     Object.entries(harness.files ?? {}).map(([path, sources]) => [
       path,
-      sources.map((source) => join(kit.dir, "harness", harness.id, source.replaceAll("ROLE", role.role))),
+      sources.map((source) => join(kit.dir, "harness", harness.id, source.replaceAll("ROLE", seatedAs(role)))),
     ]),
   );
 }

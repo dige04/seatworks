@@ -27,11 +27,20 @@ const Role = z.strictObject({
     .optional(),
 });
 
+/** A role that is another in all but its name and what it runs on: a second lens on another model, with no files of its own. */
+const LikeRole = z.strictObject({
+  role: text,
+  label: text,
+  description: z.string().optional(),
+  like: text,
+  defaults: z.strictObject({ harness: text, model: text.optional(), thinking: text.optional() }),
+});
+
 /** `roles.json`: the kit's roles and the attention it starts with. */
 export const RolesFile = z.strictObject({
   providerPrefix: z.string().optional(),
   attention: AttentionChoice.optional(),
-  roles: z.array(Role),
+  roles: z.array(z.union([LikeRole, Role])),
 });
 
 /** The tools Paseo gives every agent, as a list the plugin keeps in step with Paseo. */

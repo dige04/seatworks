@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { hiddenWordsIn } from "../../server/catalog/kit/hidden-words.ts";
-import { can, providerId } from "../../server/catalog/kit/roles.ts";
+import { can, providerId, seatedAs } from "../../server/catalog/kit/roles.ts";
 import { harnessFileSources } from "../../server/catalog/kit/harness-files.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { seatEnv, stateWrites } from "../../server/catalog/seat/launch.ts";
@@ -55,10 +55,12 @@ test("every role builds on every agent the kit ships, each in that agent's own t
   const agents = Object.values(kit.harnesses).flatMap((harness) => harness.provider.env?.SEATWORKS_AGENT_BIN ?? []);
   for (const { role, harness } of seatPairs(kit)) {
     const where = `${role.role} on ${harness.id}`;
-    const edits = !["reviewer", "lead", "watcher"].includes(role.role);
-    const waits = !["lead", "supervisor"].includes(role.role);
-    const searches = SEARCHES.includes(role.role);
-    const bare = role.role === "watcher";
+    // A role like another is held to that role's terms.
+    const as = seatedAs(role);
+    const edits = !["reviewer", "lead", "watcher"].includes(as);
+    const waits = !["lead", "supervisor"].includes(as);
+    const searches = SEARCHES.includes(as);
+    const bare = as === "watcher";
     assert.deepEqual(
       at(paseo, `agents.providers.${providerId(kit, role.role, harness.id)}.paseoTools`),
       { enabled: false },
@@ -77,7 +79,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
     );
     assert.equal(
       stateWrites(role, project.state).includes(join(project.state, "CONTEXT.md")),
-      role.role === "supervisor",
+      as === "supervisor",
       `${where}: only the Supervisor writes the project's concept; every other role reads it or is told it`,
     );
     if (bare) {
@@ -102,7 +104,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
     if (harness.id === "claude") {
       assert.equal(
         at(settings, "language"),
-        role.role === "supervisor" ? "vietnamese" : undefined,
+        as === "supervisor" ? "vietnamese" : undefined,
         `${where}: only the Supervisor speaks the Human's language; the rest write English, which the watch reads best`,
       );
       const deny = list(at(settings, "permissions.deny"));
@@ -135,7 +137,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       if (bare)
         for (const tool of BUILT_INS.claude!)
           assert.ok(deny.includes(tool), `${where}: a seat that touches nothing has no ${tool}`);
-      if (role.role !== "supervisor")
+      if (as !== "supervisor")
         assert.ok(
           deny.includes("Edit") || deny.includes(`Edit(${stateRoot("~")}/projects/*/CONTEXT.md)`),
           `${where}: the sandbox binds the shell only, so Claude's file tools are kept off the Human's word by name`,
@@ -155,7 +157,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       );
       assert.equal(
         at(settings, "sandbox_mode"),
-        ["reviewer", "watcher"].includes(role.role) ? "read-only" : "workspace-write",
+        ["reviewer", "watcher"].includes(as) ? "read-only" : "workspace-write",
         where,
       );
       assert.equal(
@@ -182,7 +184,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         );
       assert.equal(
         /"git", "commit"/.test(rules),
-        ["supervisor", "lead"].includes(role.role),
+        ["supervisor", "lead"].includes(as),
         `${where}: commits only where the role commits`,
       );
       assert.equal(/pattern = \["sleep"\]/.test(rules), !waits, `${where}: sleeps only where the role may`);
@@ -212,7 +214,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       );
       assert.equal(
         refuses("commit"),
-        ["supervisor", "lead", "reviewer"].includes(role.role),
+        ["supervisor", "lead", "reviewer"].includes(as),
         `${where}: commits only where the role may`,
       );
       assert.equal(denied.includes("sleep *"), !waits, `${where}: sleeps only where the role may`);
@@ -313,7 +315,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         );
       assert.equal(
         bash["git commit *"] === "deny",
-        ["supervisor", "lead", "reviewer"].includes(role.role),
+        ["supervisor", "lead", "reviewer"].includes(as),
         `${where}: commits only where the role may`,
       );
       assert.equal(bash["sleep *"] === "deny", !waits, `${where}: sleeps only where the role may`);
@@ -348,7 +350,7 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         reviewer: ["read", "bash", "grep", "find", "ls"],
         lead: ["read", "bash", "grep", "find", "ls"],
         watcher: [],
-      }[role.role as "reviewer"];
+      }[as as "reviewer"];
       assert.deepEqual(at(settings, "defaultTools"), tools, where);
       const desk = at(readConfig<unknown>(join(dir, harness.mcp.file), {}), "mcpServers.team");
       if (!role.tools)

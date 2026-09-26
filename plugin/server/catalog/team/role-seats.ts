@@ -2,7 +2,7 @@ import type { Layer } from "../../../shared/settings.ts";
 import { supportsRole } from "../kit/harness-files.ts";
 import type { HarnessSpec, Kit, ModelSpec, RoleSpec } from "../kit/kit.ts";
 import { type McpState, transportOf } from "./mcp-states.ts";
-import { agentDefault } from "../kit/roles.ts";
+import { agentDefault, seatedAs } from "../kit/roles.ts";
 
 /** What a role's seats run: a harness, model and thinking, the Human's rules for the role and its MCP servers. */
 export type RoleSeat = {
@@ -116,7 +116,7 @@ function checkTools(kit: Kit, role: RoleSpec, errors: string[]): void {
 /** The servers on for the role, in their order; one the harness cannot reach stays named, and is reported. */
 function serversFor(role: RoleSpec, harness: HarnessSpec, mcp: Record<string, McpState>, errors: string[]): string[] {
   const enabled = Object.values(mcp)
-    .filter((state) => state.enabled && state.roles.includes(role.role))
+    .filter((state) => state.enabled && state.roles.includes(seatedAs(role)))
     .sort((a, b) => (a.entry?.order ?? 100) - (b.entry?.order ?? 100));
   for (const state of enabled) {
     const transport = transportOf(state);

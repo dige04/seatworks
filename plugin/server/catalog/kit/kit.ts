@@ -14,9 +14,13 @@ type ThinkingSpec = { id: string; label: string; isDefault?: boolean };
 export type ModelSpec = { id: string; label: string; isDefault?: boolean; thinkingOptions?: ThinkingSpec[] };
 export type McpServers = Record<string, unknown>;
 
-type RoleFile = z.infer<typeof RolesFile>["roles"][number];
-/** A role as loaded: one that follows another has taken that role's defaults, so every role has its own. */
-export type RoleSpec = Omit<RoleFile, "defaults"> & { defaults: NonNullable<RoleFile["defaults"]> };
+type ListedRole = z.infer<typeof RolesFile>["roles"][number];
+type RoleFile = Exclude<ListedRole, { like: string }>;
+/**
+ * A role as loaded: one that follows another has taken that role's defaults, so every role has its own; one `like` another
+ * has taken all but its name and defaults, and seats with that role's files.
+ */
+export type RoleSpec = Omit<RoleFile, "defaults"> & { defaults: NonNullable<RoleFile["defaults"]>; like?: string };
 /** `models` is not the harness file's: Paseo lists them, and the kit holds the last list. */
 export type HarnessSpec = z.infer<typeof HarnessFile> & { models?: ModelSpec[] };
 export type McpEntry = z.infer<typeof McpFile> & { dir: string };
@@ -164,7 +168,8 @@ function loadHarnesses(dir: string): Record<string, HarnessSpec> {
 }
 
 /** Each role with its defaults, a follower taking those of the role it follows; checked against the harnesses there are. */
-function loadRoles(listed: RoleFile[], harnesses: Record<string, HarnessSpec>): RoleSpec[] {
+function loadRoles(given: ListedRole[], harnesses: Record<string, HarnessSpec>): RoleSpec[] {
+  const listed = given.map((role) => ("like" in role ? likeRole(role, given) : role));
   const roles = listed.map((role) => {
     if (role.follows === undefined) return role;
     const followed = listed.find((other) => other.role === role.follows);
@@ -191,6 +196,15 @@ function loadRoles(listed: RoleFile[], harnesses: Record<string, HarnessSpec>): 
       );
   }
   return roles as RoleSpec[];
+}
+
+/** A role like another: that role in all but its name, words and defaults. */
+function likeRole(role: Extract<ListedRole, { like: string }>, listed: ListedRole[]): RoleFile & { like: string } {
+  const liked = listed.find((other) => other.role === role.like);
+  if (!liked || liked === role || "like" in liked)
+    throw new Error(`role ${role.role} is like ${role.like}, which is no other role in roles.json that is its own`);
+  const { follows: _follows, ...own } = liked;
+  return { ...own, ...role, description: role.description ?? liked.description };
 }
 
 /** A seat's own agent is started through the PATH these go first on, and its git through the shim: neither may be refused. */
