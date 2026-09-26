@@ -2,6 +2,7 @@ import { recordEvent } from "../store/event-log.ts";
 import { join } from "node:path";
 import { runGate } from "../../core/gate.ts";
 import { unsavedIn } from "../copies/unsaved.ts";
+import type { Kit } from "../../catalog/kit/kit.ts";
 import type { DeskBase } from "../base.ts";
 import { changeOf } from "../lanes/land-facts.ts";
 import type { Lane } from "../../domain/lane.ts";
@@ -10,70 +11,86 @@ import { type Project, loadConfig, riskRulesOf, rulesFor } from "./project.ts";
 /** `ran` is whether anything ran: a lane with no gate and nothing to rehearse passes with nothing run. */
 type GateVerdict = { ok: boolean; text: string; ran: boolean };
 
-/** One command on the lane's copy, as whoever lands it reads it: passed, or how it failed with its tail and its log. */
-async function onLane(
-  { stopping }: Pick<DeskBase, "stopping">,
-  project: Project,
-  lane: Lane & { worktree: string },
-  command: string,
-  rehearsing?: string,
-): Promise<GateVerdict> {
-  const minutes = loadConfig(project.state).gateTimeoutMinutes;
-  const logFile = join(project.state, "gates", `${lane.id}-${Date.now()}.log`);
-  const result = await runGate(command, lane.worktree, logFile, minutes * 60_000, stopping);
-  recordEvent(project, {
-    kind: result.ok ? "gate.passed" : "gate.failed",
-    lane: lane.id,
-    seconds: result.seconds,
-    command,
-  });
-  const what = rehearsing ? `${command}, rehearsing that ${rehearsing},` : command;
-  if (result.ok) return { ok: true, text: `${what} passed on the lane branch in ${result.seconds}s`, ran: true };
-  const reason = result.stopped
-    ? "was stopped as the plugin stopped"
-    : result.timedOut
-      ? `timed out after ${minutes} minutes`
-      : `failed with exit ${result.code}`;
-  return {
-    ok: false,
-    text: `${what} ${reason} on the lane branch.\n\n${result.tail}\n\nFull log: ${logFile}`,
-    ran: true,
-  };
+/** One command of a gate run: the project's gate, or a risk rule's rehearsal, named as `what`. */
+type Step = { command: string; what: string };
+
+type StepRun = Step & { ok: boolean; seconds: number; tail: string; logFile: string; failed: string };
+
+/** The rehearsals of the risk rules `files` reach: a change git cannot read meets every rule, not none. */
+function rehearsals(project: Project, kit: Kit, files: string[] | undefined): Step[] {
+  const rules = riskRulesOf(project, kit).filter((rule) => rule.rehearse);
+  return (files ? rulesFor(rules, files) : rules).map((rule) => ({
+    command: rule.rehearse!,
+    what: `${rule.rehearse}, rehearsing that ${rule.invariant},`,
+  }));
 }
 
-/** The project's gate on the lane, then a rehearsal for each risk rule its change reaches: red in any is a red gate. */
+/**
+ * Runs `steps` in `cwd` in order, each logged under `id` and the run's one time, within the project's gate timeout:
+ * all of them, or up to the first that fails when `stopAtRed`.
+ */
+async function runSteps(
+  { stopping }: Pick<DeskBase, "stopping">,
+  project: Project,
+  id: string,
+  cwd: string,
+  steps: Step[],
+  stopAtRed: boolean,
+): Promise<StepRun[]> {
+  const minutes = loadConfig(project.state).gateTimeoutMinutes;
+  const at = Date.now();
+  const runs: StepRun[] = [];
+  for (const [index, step] of steps.entries()) {
+    const logFile = join(project.state, "gates", `${id}-${at}${index > 0 ? `-${index}` : ""}.log`);
+    const result = await runGate(step.command, cwd, logFile, minutes * 60_000, stopping);
+    const failed = result.stopped
+      ? "was stopped as the plugin stopped"
+      : result.timedOut
+        ? `timed out after ${minutes} minutes`
+        : `failed with exit ${result.code}`;
+    runs.push({ ...step, ok: result.ok, seconds: result.seconds, tail: result.tail, logFile, failed });
+    if (stopAtRed && !result.ok) break;
+  }
+  return runs;
+}
+
+/** The project's gate on the lane, then each rehearsal its change reaches, every one run: red in any is a red gate. */
 export async function laneGate(
   desk: Pick<DeskBase, "kit" | "stopping">,
   project: Project,
   lane: Lane,
 ): Promise<GateVerdict> {
-  const { kit } = desk;
   const { gate } = loadConfig(project.state);
-  const rules = riskRulesOf(project, kit).filter((rule) => rule.rehearse);
-  // A change git cannot read is rehearsed against every rule, rather than none.
-  const files = rules.length > 0 ? (await changeOf(project, lane)).files : [];
-  const rehearsals = files ? rulesFor(rules, files) : rules;
-  if ((!gate && rehearsals.length === 0) || !lane.worktree) return { ok: true, text: "no gate set", ran: false };
+  const rehearsing = riskRulesOf(project, desk.kit).some((rule) => rule.rehearse);
+  const files = rehearsing ? (await changeOf(project, lane)).files : [];
+  const steps = [...(gate ? [{ command: gate, what: gate }] : []), ...rehearsals(project, desk.kit, files)];
+  if (steps.length === 0 || !lane.worktree) return { ok: true, text: "no gate set", ran: false };
   const unsaved = await unsavedIn(lane.worktree);
   if (unsaved) return { ok: false, text: `the gate did not run: the lane's working copy ${unsaved}`, ran: false };
-  const copy = { ...lane, worktree: lane.worktree };
-  const verdicts: GateVerdict[] = gate ? [await onLane(desk, project, copy, gate)] : [];
-  for (const rule of rehearsals) verdicts.push(await onLane(desk, project, copy, rule.rehearse!, rule.invariant));
-  return {
-    ok: verdicts.every((verdict) => verdict.ok),
-    text: verdicts.map((verdict) => verdict.text).join("\n\n"),
-    ran: true,
-  };
+  const runs = await runSteps(desk, project, lane.id, lane.worktree, steps, false);
+  for (const run of runs)
+    recordEvent(project, {
+      kind: run.ok ? "gate.passed" : "gate.failed",
+      lane: lane.id,
+      seconds: run.seconds,
+      command: run.command,
+    });
+  const text = runs.map((run) =>
+    run.ok
+      ? `${run.what} passed on the lane branch in ${run.seconds}s`
+      : `${run.what} ${run.failed} on the lane branch.\n\n${run.tail}\n\nFull log: ${run.logFile}`,
+  );
+  return { ok: runs.every((run) => run.ok), text: text.join("\n\n"), ran: true };
 }
 
 type GateRun = { ok: boolean; note: string; tail: string; logFile: string };
 
 /**
- * The one owner of "run the gate on a task": the project's gate, then a rehearsal for each risk rule the task's `files` reach,
- * stopping at the first that fails. Undefined when this project does not gate tasks.
+ * The project's gate on a task, then a rehearsal for each risk rule the task's `files` reach, stopping at the first
+ * that fails. Undefined when this project does not gate tasks.
  */
 export async function taskGate(
-  { kit, stopping }: Pick<DeskBase, "kit" | "stopping">,
+  desk: Pick<DeskBase, "kit" | "stopping">,
   project: Project,
   taskId: string,
   cwd: string,
@@ -81,33 +98,17 @@ export async function taskGate(
 ): Promise<GateRun | undefined> {
   const config = loadConfig(project.state);
   if (!config.gate || config.gateOn !== "task") return undefined;
-  const rules = riskRulesOf(project, kit).filter((rule) => rule.rehearse);
-  // A change git cannot read is rehearsed against every rule, rather than none.
-  const rehearsals = (files ? rulesFor(rules, files) : rules).map((rule) => ({
-    command: rule.rehearse!,
-    what: `${rule.rehearse}, rehearsing that ${rule.invariant},`,
-  }));
-  const notes: string[] = [];
-  let last = { ok: true, tail: "", logFile: "" };
-  for (const [index, { command, what }] of [{ command: config.gate, what: config.gate }, ...rehearsals].entries()) {
-    const logFile = join(project.state, "gates", `${taskId}-${Date.now()}${index > 0 ? `-${index}` : ""}.log`);
-    const result = await runGate(command, cwd, logFile, config.gateTimeoutMinutes * 60_000, stopping);
-    const failed = result.stopped
-      ? "was stopped as the plugin stopped"
-      : result.timedOut
-        ? `timed out after ${config.gateTimeoutMinutes} minutes`
-        : `failed with exit ${result.code}`;
-    notes.push(
-      result.ok
-        ? `${what} passed in ${result.seconds}s`
-        : index === 0
-          ? `${what}: the gate ${failed}`
-          : `${what} ${failed}`,
-    );
-    last = { ok: result.ok, tail: result.tail, logFile };
-    if (!result.ok) break;
-  }
-  return { ...last, note: notes.join("; ") };
+  const steps = [{ command: config.gate, what: config.gate }, ...rehearsals(project, desk.kit, files)];
+  const runs = await runSteps(desk, project, taskId, cwd, steps, true);
+  const notes = runs.map((run, index) =>
+    run.ok
+      ? `${run.what} passed in ${run.seconds}s`
+      : index === 0
+        ? `${run.what}: the gate ${run.failed}`
+        : `${run.what} ${run.failed}`,
+  );
+  const last = runs.at(-1)!;
+  return { ok: last.ok, tail: last.tail, logFile: last.logFile, note: notes.join("; ") };
 }
 
 /** What the MERGED letter says about the gate, from what actually ran. */
