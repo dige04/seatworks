@@ -18,7 +18,7 @@ export async function doctor(kit: Kit, team: Team): Promise<Check[]> {
     ok: team.errors.length === 0,
     detail: team.errors.length === 0 ? "The settings resolve to a complete team." : team.errors.join("\n"),
   };
-  const checks: Check[] = [settings, ...binChecks(), ...harnessChecks(kit, team)];
+  const checks: Check[] = [settings, gitCheck(), ...harnessChecks(kit, team)];
   for (const state of Object.values(team.mcp).filter((server) => server.enabled)) {
     const check = await serverCheck(team, state);
     if (check) checks.push(check);
@@ -26,12 +26,10 @@ export async function doctor(kit: Kit, team: Team): Promise<Check[]> {
   return checks;
 }
 
-function binChecks(): Check[] {
-  return ["git", "jq"].map((bin) => {
-    // Asked once: `has` spawns a shell and blocks the loop the seats' tool calls are served on.
-    const ok = onPath(bin);
-    return { id: `bin:${bin}`, ok, detail: ok ? `${bin} is on PATH.` : `${bin} is not on PATH; seats need it.` };
-  });
+/** Git, which the desk runs itself for every lane and task; what a skill runs, its own compatibility line names. */
+function gitCheck(): Check {
+  const ok = onPath("git");
+  return { id: "bin:git", ok, detail: ok ? "git is on PATH." : "git is not on PATH; the desk and every seat need it." };
 }
 
 /** Each agent the team's seats run on: its command on PATH, and the files its harness says it needs. */

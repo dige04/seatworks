@@ -57,13 +57,17 @@ test("the doctor over the panel names what this machine lacks for the team, a se
   await setUp({ mcp: { ide: { settings: { port: partial.port } }, docs: { enabled: true, connect: at(nowhere) } } });
   const short = await checked();
   assert.equal(short.settings!.ok, true);
-  assert.equal(short["bin:jq"]!.ok, false, "a tool seats need that is not on PATH");
+  assert.deepEqual(
+    Object.keys(short).filter((id) => id.startsWith("bin:")),
+    ["bin:git"],
+    "the desk's own git: what a skill runs, its own compatibility line names",
+  );
   assert.deepEqual([short["harness:claude"]!.ok, short["harness:omp"]!.ok], [true, false], "an agent a role runs on");
   assert.equal(short["mcp:ide"]!.ok, false);
   assert.match(short["mcp:ide"]!.detail, /ide_refactor_rename/, "the IDE tool a role uses and the IDE does not offer");
   assert.equal(short["mcp:docs"]!.ok, false, "a server that does not answer");
 
-  install("jq", "omp");
+  install("omp");
   await setUp({ mcp: { ide: { settings: { port: full.port } } } });
   const whole = await call(contracts.doctor, {});
   assert.ok(
