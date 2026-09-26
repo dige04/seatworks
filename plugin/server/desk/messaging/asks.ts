@@ -98,11 +98,19 @@ export async function answerAsk(
 ): Promise<ToolReply> {
   const id = answered.ask.toUpperCase();
   const { text } = answered;
-  // Only whoever supervises reads incidents, so only its answer could carry one to the seat it is about.
-  const refused = can(caller.role, "supervise")
-    ? repeatsIncident(caller.project.state, loadLedger(caller.project.state).asks[id]?.from, text)
-    : undefined;
-  if (refused) return no(refused);
+  // Only whoever supervises reads incidents, so only its answer could carry one to a seat it is about: the asker, the
+  // seat it was put to, and the Lead of a Peer answered past it each read the answer.
+  if (can(caller.role, "supervise")) {
+    const { state } = caller.project;
+    const ledger = loadLedger(state);
+    const ask = ledger.asks[id];
+    const readers = [ask?.from, ask?.to, ask?.lane ? ledger.lanes[ask.lane]?.lead : undefined];
+    const refused = readers
+      .filter((seat) => seat !== caller.id)
+      .map((seat) => repeatsIncident(state, seat, text))
+      .find(Boolean);
+    if (refused) return no(refused);
+  }
   const result = ledgers.transact(caller.project, (ledger): { ask: Ask; waitingRole?: string } | string => {
     const ask = ledger.asks[id];
     if (!ask) return `There is no ask ${id}.`;

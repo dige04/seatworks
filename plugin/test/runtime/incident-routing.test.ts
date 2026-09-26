@@ -178,6 +178,11 @@ test("nothing reaches a seat that names or quotes an open incident about it from
     /That repeats incident I2/,
   );
   assert.match(
+    (await h.call(sup, "supervisor", "message", { to: "L1-T1", text: "Why did I2 go that way?" })).text,
+    /That repeats incident I2/,
+    "what reaches a Peer is told to its Lead too, so it is checked against both",
+  );
+  assert.match(
     (
       await h.call(sup, "supervisor", "amend_lane", {
         lane: "L1",
@@ -200,6 +205,11 @@ test("nothing reaches a seat that names or quotes an open incident about it from
   // A Lead never reads an incident, so what it says to its Peer is its own and passes: here, only by chance the same words.
   assert.equal((await h.call(lane.lead!, "lead", "message", { to: "L1-T1", text: `You hit ${quote}.` })).ok, true);
   await h.call(peer, "peer", "ask", { question: "Which rounding?", bestGuess: "half up" });
+  assert.match(
+    (await h.call(sup, "supervisor", "answer", { ask: "A1", text: "Half up, as I2 showed." })).text,
+    /That repeats incident I2/,
+    "an answer put past the Lead it was put to reaches that Lead too",
+  );
   assert.match((await h.call(sup, "supervisor", "answer", { ask: "A1", text: "Half up. Also I1." })).text, refusal);
   assert.equal((await h.call(lane.lead!, "lead", "answer", { ask: "A1", text: "Half up, I1 aside." })).ok, true);
 });
