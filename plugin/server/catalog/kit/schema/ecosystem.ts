@@ -25,6 +25,8 @@ export const EcosystemFile = z.strictObject({
   riskRules: z.array(RiskRule),
   gates: z.array(Gate),
   scriptRunners: texts,
+  /** Programs that start another by its name, such as npx: a command a seat may not start is refused through each. */
+  launchers: texts,
   unsetScript: text,
   files: z.strictObject({ test: Pattern, docs: Pattern }),
   /** How a lane's issue is read: the first form whose `match` takes the reference runs, and prints title, url and body as JSON. */

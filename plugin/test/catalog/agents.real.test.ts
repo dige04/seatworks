@@ -48,6 +48,10 @@ const at = (value: unknown, path: string): unknown =>
 const list = (value: unknown): string[] => (Array.isArray(value) ? value.map(String) : []);
 /** Every way a shell starts `agent` that each agent's rules refuse, the catalog's agents all alike. */
 const startsOf = (agent: string) => [agent, `${agent} *`, `npx ${agent} *`, `bunx ${agent} *`];
+/** What of the state root a seat's file tools keep off, which no sandbox binds: the desk's record, what replaces the kit's files, and the Human's word. */
+const KEPT = ["roles.json", "refused.json", "own/**", "projects/*/ledger.json", "projects/*/CONTEXT.md"].map(
+  (path) => `${stateRoot("~")}/${path}`,
+);
 
 test("every role builds on every agent the kit ships, each in that agent's own terms", (t) => {
   const kit = loadKit(PLUGIN);
@@ -163,10 +167,16 @@ test("every role builds on every agent the kit ships, each in that agent's own t
       if (bare)
         for (const tool of BUILT_INS.claude!)
           assert.ok(deny.includes(tool), `${where}: a seat that touches nothing has no ${tool}`);
-      if (as !== "supervisor")
+      for (const path of KEPT)
+        assert.equal(
+          deny.includes(`Edit(${path})`),
+          as !== "supervisor" || !path.endsWith("CONTEXT.md"),
+          `${where}: ${path}, as the desk's own files are kept from every seat, and the Human's word from all but the Supervisor`,
+        );
+      for (const command of Object.keys(kit.refused))
         assert.ok(
-          deny.includes("Edit") || deny.includes(`Edit(${stateRoot("~")}/projects/*/CONTEXT.md)`),
-          `${where}: the sandbox binds the shell only, so Claude's file tools are kept off the Human's word by name`,
+          deny.includes(`Bash(${command} *)`),
+          `${where}: its shell starts no ${command}, which the kit refuses`,
         );
     }
     if (harness.id === "codex") {
@@ -246,16 +256,14 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         `${where}: commits only where the role commits`,
       );
       assert.equal(/pattern = \["sleep"\]/.test(rules), !waits, `${where}: sleeps only where the role may`);
-      const names = (text: string | undefined) => [...(text ?? "").matchAll(/"([^"]+)"/g)].map((match) => match[1]!);
-      const forbidden = rules.match(
-        /prefix_rule\(pattern = \[\[([^\]]*)\]\], decision = "forbidden", justification = "Agents are started by the desk/,
-      )?.[1];
-      const through = rules.match(
-        /prefix_rule\(pattern = \[\["npx", "bunx"\], \[([^\]]*)\]\], decision = "forbidden", justification = "Agents are started by the desk/,
-      )?.[1];
+      const starts = [
+        ...rules.matchAll(/prefix_rule\(pattern = (\[[^[\]]*\]), decision = "forbidden", justification = "([^"]*)"\)/g),
+      ]
+        .filter((match) => !Object.values(kit.refused).includes(match[2]!))
+        .map((match) => (JSON.parse(match[1]!) as string[]).join(" "));
       assert.deepEqual(
-        [names(forbidden).sort(), names(through).sort()],
-        [[...agents].sort(), [...agents].sort()],
+        starts.filter((start) => !start.startsWith("git") && start !== "sleep").sort(),
+        agents.flatMap((agent) => [agent, `npx ${agent}`, `bunx ${agent}`]).sort(),
         `${where}: a seat starts no agent the catalog ships from its shell, past Paseo, and its rules name no other`,
       );
     }
@@ -395,11 +403,22 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         ["deny", as === "supervisor" ? "allow" : "deny", "allow"],
         `${where}: no subagents, only the Supervisor asks the Human directly, and nothing waiting on a person`,
       );
-      assert.equal(allowed("edit") === "deny", !edits, `${where}: edits files only where the role may`);
+      const denies = (tool: string) => {
+        const value = allowed(tool);
+        return value === "deny" || (value as Record<string, unknown> | undefined)?.["*"] === "deny";
+      };
+      assert.equal(denies("edit"), !edits, `${where}: edits files only where the role may`);
+      const edit = (allowed("edit") ?? {}) as Record<string, unknown>;
+      for (const path of KEPT)
+        assert.equal(
+          edit[path] === "deny",
+          as !== "supervisor" || !path.endsWith("CONTEXT.md"),
+          `${where}: ${path}, as on Claude, since OpenCode's edit takes paths`,
+        );
       assert.equal(allowed("websearch") === "deny", !searches, `${where}: searches the web only where the role may`);
       if (bare)
         for (const tool of [...BUILT_INS.opencode!, "bash"])
-          assert.equal(tool === "bash" ? bash["*"] : allowed(tool), "deny", `${where}: has no ${tool}`);
+          assert.ok(tool === "bash" ? bash["*"] === "deny" : denies(tool), `${where}: has no ${tool}`);
     }
     if (harness.id === "pi") {
       assert.deepEqual(

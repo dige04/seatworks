@@ -163,6 +163,71 @@ test("a seat whose harness reads its servers from a file gets that file and its 
   }
 });
 
+test("every seat's own rules refuse starting any agent the kit ships and any command it refuses, and keep its file tools off the desk's files, so one agent more needs no edit to another's", () => {
+  const kit = withAgent("acme", {
+    "harness.json": JSON.stringify({
+      id: "acme",
+      label: "Acme",
+      baseProvider: "omp",
+      configDirEnv: "ACME_DIR",
+      profileRoot: "HOME/.acme",
+      skillsDir: "skills",
+      settings: { file: "settings.json", source: "settings.json", roleSource: "settings/ROLE.settings.json" },
+      mcp: { file: "mcp.json", delivery: "file", key: "mcpServers", transports: ["stdio", "http"] },
+      provider: { env: { SEATWORKS_AGENT_BIN: "acme" } },
+      refuses: {
+        commands: { at: "permissions.deny", as: ["Bash({command})", "Bash({command} *)"] },
+        edits: { at: "permissions.deny", as: ["Edit({path})"] },
+        reads: { at: "permissions.deny", as: ["Read({path})"] },
+      },
+    }),
+    "settings.json": JSON.stringify({ permissions: { deny: ["Agent"] } }),
+    "settings/lead.settings.json": "{}",
+    "settings/peer.settings.json": "{}",
+  });
+  const home = tempDir("sw2-home-");
+  const deniedTo = (role: string) => {
+    const team = withHarness(resolveTeam(kit), role, kit.harnesses.acme!);
+    materialize(kit, team, role, home, project);
+    const dir = seatDir(kit, team.roles[role]!.role, kit.harnesses.acme!, home, project);
+    return readConfig<{ permissions: { deny: string[] } }>(join(dir, "settings.json"), { permissions: { deny: [] } })
+      .permissions.deny;
+  };
+  const peer = deniedTo("peer");
+  const state = "~/.local/share/seatworks-v3";
+  for (const rule of [
+    "Agent",
+    "Bash(acme)",
+    "Bash(claude *)",
+    "Bash(npx omp *)",
+    "Bash(bunx claude)",
+    "Bash(gh *)",
+    "Bash(paseo)",
+    `Edit(${state}/roles.json)`,
+    `Edit(${state}/refused.json)`,
+    `Edit(${state}/own/**)`,
+    `Edit(${state}/sensor/**)`,
+    `Edit(${state}/keys.json)`,
+    `Edit(${state}/projects/*/ledger.json)`,
+    `Edit(${state}/projects/*/gates/**)`,
+    `Edit(${state}/projects/*/events.*.log*)`,
+    `Edit(${state}/projects/*/plans/**)`,
+    `Read(${state}/keys.json*)`,
+    `Read(${state}/projects/*/settings.json*)`,
+  ])
+    assert.ok(peer.includes(rule), `the Peer on Acme: ${rule}`);
+  assert.equal(
+    peer.some((rule) => rule.includes("worktrees")),
+    false,
+    "the copies seats work in are theirs to change",
+  );
+  assert.deepEqual(
+    deniedTo("lead").filter((rule) => rule.includes("/plans")),
+    [],
+    "a role's own pages are its to write",
+  );
+});
+
 test("an unreadable MCP file is written again when the plugin owns it, and left alone when the harness does", (t) => {
   const said = reported(t);
   const kit = makeKit();

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { providerId } from "../../server/catalog/kit/roles.ts";
 import { applyRole, seatEnv } from "../../server/catalog/seat/launch.ts";
+import { materialize, seatDir } from "../../server/catalog/seat/seats.ts";
 import { resolveTeam } from "../../server/catalog/team/team.ts";
 import { readConfig } from "../../server/core/config-file.ts";
 import { DESK_OWNED, stateRoot } from "../../server/core/paths.ts";
@@ -13,6 +14,7 @@ import type { AgentConfig } from "../../server/core/ports.ts";
 import { BACKUP } from "../../server/upkeep/migrate.ts";
 import type { Layer } from "../../shared/settings.ts";
 import { makeKit } from "../kit.ts";
+import { tempDir } from "../tempdir.ts";
 
 const PLUGIN = fileURLToPath(new URL("../..", import.meta.url));
 const kit = makeKit();
@@ -182,9 +184,16 @@ test("a seat is handed its servers where its agent takes them at launch, its own
 
 test("a Claude seat's file tools are kept off what the desk owns and what sets up the machine's agents and the plugin, and its reads off every key and login", () => {
   const real = loadKit(PLUGIN);
+  const homeDir = tempDir("sw2-claude-home-");
+  const seat = resolveTeam(real).roles.peer!;
+  assert.equal(seat.harness.id, "claude", "the Peer the kit seats on Claude, which edits files");
+  const shop = { root: "/work/shop", slug: "shop-1a2b", state: join(stateRoot(homeDir), "projects", "shop-1a2b") };
+  materialize(real, resolveTeam(real), "peer", homeDir, shop);
   const deny =
-    readConfig<{ permissions?: { deny?: string[] } }>(join(PLUGIN, "harness", "claude", "settings.json"), {})
-      .permissions?.deny ?? [];
+    readConfig<{ permissions?: { deny?: string[] } }>(
+      join(seatDir(real, seat.role, seat.harness, homeDir, shop), seat.harness.settings.file),
+      {},
+    ).permissions?.deny ?? [];
   const denied = (tool: string, path: string) =>
     deny.some((rule) => rule.startsWith(`${tool}(`) && matchesGlob(path, rule.slice(tool.length + 1, -1)));
   const machine = stateRoot("~");

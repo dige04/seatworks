@@ -47,5 +47,20 @@
       "OMP_MCP_TIMEOUT_MS": "600000"
     },
     "profileModeId": "full"
+  },
+  "refuses": {
+    "commands": {
+      "at": "bash.patterns",
+      "as": [
+        {
+          "match": "{command}",
+          "approval": "deny"
+        },
+        {
+          "match": "{command} *",
+          "approval": "deny"
+        }
+      ]
+    }
   }
 }

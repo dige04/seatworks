@@ -42,31 +42,7 @@
       "git -C * branch -D *": "deny",
       "git branch --force": "deny",
       "git branch --force *": "deny",
-      "git -C * branch --force *": "deny",
-      "gh": "deny",
-      "gh *": "deny",
-      "paseo": "deny",
-      "paseo *": "deny",
-      "claude": "deny",
-      "claude *": "deny",
-      "npx claude *": "deny",
-      "bunx claude *": "deny",
-      "codex": "deny",
-      "codex *": "deny",
-      "npx codex *": "deny",
-      "bunx codex *": "deny",
-      "opencode": "deny",
-      "opencode *": "deny",
-      "npx opencode *": "deny",
-      "bunx opencode *": "deny",
-      "omp": "deny",
-      "omp *": "deny",
-      "npx omp *": "deny",
-      "bunx omp *": "deny",
-      "pi": "deny",
-      "pi *": "deny",
-      "npx pi *": "deny",
-      "bunx pi *": "deny"
+      "git -C * branch --force *": "deny"
     }
   }
 }

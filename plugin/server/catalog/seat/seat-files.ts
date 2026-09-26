@@ -11,6 +11,7 @@ import { projectBlock, skillProblems, skillSources } from "../kit/content.ts";
 import type { HarnessSpec, Kit, McpServers, RoleSpec } from "../kit/kit.ts";
 import { harnessFileSources, roleSettingsFile } from "../kit/harness-files.ts";
 import { projectImports, stateWrites } from "./launch.ts";
+import { refusalLines, refusalSettings } from "./refusals.ts";
 import { snapshot } from "./snapshots.ts";
 import { type Team, skillDirsFor } from "../team/team.ts";
 
@@ -81,7 +82,10 @@ export function writeRoleSettings(
     readConfigStrict<Json>(join(kit.dir, "harness", harness.id, source)),
     readConfigStrict<Json>(roleFile),
   ) as Json;
-  const extra = layered(catalog, stateWritesSetting(harness, role, seat.state, kitSettings)) as Json;
+  const extra = layered(
+    layered(catalog, stateWritesSetting(harness, role, seat.state, kitSettings)),
+    refusalSettings(kit, harness, role, seat.homeDir),
+  ) as Json;
   const wanted = layered(layered(inherited(harness, seat.homeDir), kitSettings), extra) as Json;
   record.note(writeConfigIfChanged(join(seat.dir, file), wanted), file);
 }
@@ -149,8 +153,11 @@ function stateWritesSetting(harness: HarnessSpec, role: RoleSpec, state: string 
 }
 
 export function writeFiles(kit: Kit, harness: HarnessSpec, role: RoleSpec, dir: string, record: Recorder): void {
+  const refused = refusalLines(kit, harness);
   for (const [path, sources] of Object.entries(harnessFileSources(kit, harness, role))) {
-    const text = sources.map((source) => readFileSync(source, "utf-8").trimEnd()).join("\n\n");
+    const text = [...sources.map((source) => readFileSync(source, "utf-8").trimEnd()), refused[path] ?? ""]
+      .filter(Boolean)
+      .join("\n\n");
     record.note(writeIfChanged(join(dir, path), `${text}\n`), path);
   }
 }

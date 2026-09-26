@@ -3,6 +3,9 @@ import { Json, text, texts } from "./fields.ts";
 import { Pattern } from "../../../../shared/settings.ts";
 import { McpTransport } from "./mcp.ts";
 
+/** A refusal the desk adds to a seat's settings: `as`, with each `{command}` or `{path}` filled in, laid over what is at `at`. */
+const Refusal = z.strictObject({ at: text, as: z.union([z.array(z.unknown()).min(1), Json]) });
+
 /** `harness/<id>/harness.json`: how one agent harness is set up, launched and read. */
 export const HarnessFile = z
   .strictObject({
@@ -48,6 +51,25 @@ export const HarnessFile = z
     }),
     links: z.array(z.strictObject({ link: text, target: text, optional: z.boolean().optional() })).optional(),
     files: z.record(z.string(), z.array(z.string()).min(1)).optional(),
+    /**
+     * How the agent's own rules take what the desk refuses every seat: commands its shell may not start, in its settings or
+     * as a `line` of one of its `files`, and paths its file tools may not change or read.
+     */
+    refuses: z
+      .strictObject({
+        commands: z
+          .union([
+            Refusal,
+            z.strictObject({
+              file: text,
+              line: z.string().includes("{words}", { error: "does not say where the command's words go" }),
+            }),
+          ])
+          .optional(),
+        edits: Refusal.optional(),
+        reads: Refusal.optional(),
+      })
+      .optional(),
     modelCatalog: z
       .strictObject({
         command: z.array(z.string()).min(1),
@@ -84,4 +106,11 @@ export const HarnessFile = z
   .refine((harness) => harness.mcp.delivery !== "file" || harness.mcp.key, {
     error: "delivers MCP servers in a file but names no key",
     path: ["mcp", "key"],
-  });
+  })
+  .refine(
+    (harness) => {
+      const commands = harness.refuses?.commands;
+      return !commands || !("file" in commands) || commands.file in (harness.files ?? {});
+    },
+    { error: "writes its refused commands into a file it does not lay down", path: ["refuses", "commands", "file"] },
+  );

@@ -82,5 +82,11 @@
       "SEATWORKS_HARNESS": "codex",
       "SEATWORKS_AGENT_BIN": "codex"
     }
+  },
+  "refuses": {
+    "commands": {
+      "file": "rules/seatworks.rules",
+      "line": "prefix_rule(pattern = {words}, decision = \"forbidden\", justification = {why})"
+    }
   }
 }

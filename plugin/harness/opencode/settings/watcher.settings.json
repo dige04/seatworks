@@ -1,7 +1,11 @@
 {
   "permission": {
-    "read": "deny",
-    "edit": "deny",
+    "read": {
+      "*": "deny"
+    },
+    "edit": {
+      "*": "deny"
+    },
     "glob": "deny",
     "grep": "deny",
     "list": "deny",

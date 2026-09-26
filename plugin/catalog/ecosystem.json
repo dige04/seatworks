@@ -91,6 +91,10 @@
     "yarn",
     "bun"
   ],
+  "launchers": [
+    "npx",
+    "bunx"
+  ],
   "unsetScript": "no test specified",
   "files": {
     "test": "(^|/)(tests?|__tests__|spec|specs)/|\\.(test|spec)\\.[a-z0-9]+$|(?-i:(Test|Tests|IT)\\.(java|kt|scala|cs))$|(?-i:_test\\.(go|py|rb))$|(?-i:(^|/)test_[^/]+\\.py)$",

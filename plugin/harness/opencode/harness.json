@@ -56,5 +56,26 @@
       "OPENCODE_DISABLE_LSP_DOWNLOAD": "1"
     },
     "profileModeId": "build"
+  },
+  "refuses": {
+    "commands": {
+      "at": "permission.bash",
+      "as": {
+        "{command}": "deny",
+        "{command} *": "deny"
+      }
+    },
+    "edits": {
+      "at": "permission.edit",
+      "as": {
+        "{path}": "deny"
+      }
+    },
+    "reads": {
+      "at": "permission.read",
+      "as": {
+        "{path}": "deny"
+      }
+    }
   }
 }
