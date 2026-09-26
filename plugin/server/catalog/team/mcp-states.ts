@@ -1,7 +1,7 @@
 import type { Connect, Layer, McpChoice, Scalar } from "../../../shared/settings.ts";
-import type { Kit, McpEntry, McpTransport } from "../kit/kit.ts";
+import type { Kit, McpEntry, McpTransport, RoleSpec } from "../kit/kit.ts";
 import { PASEO_SERVER, TEAM_SERVER } from "../kit/kit.ts";
-import { can } from "../kit/roles.ts";
+import { can, seatedAs } from "../kit/roles.ts";
 
 /** An MCP server as the settings leave it: on or off, for which roles, and how it connects. */
 export type McpState = {
@@ -15,6 +15,11 @@ export type McpState = {
   roles: string[];
   settings: Record<string, Scalar>;
 };
+
+/** The tools a seat of `role` is given on the server `state`: a role `like` another takes that role's. */
+export function toolsFor(state: McpState, role: RoleSpec): string[] {
+  return (state.tools ?? state.entry?.tools)?.[seatedAs(role)] ?? [];
+}
 
 export function templateRoles(entry: McpEntry): string[] {
   return entry.kind === "proxy" ? Object.keys(entry.tools ?? {}) : (entry.roles ?? []);

@@ -2,9 +2,8 @@ import { existsSync } from "node:fs";
 import type { Check } from "../../../shared/views.ts";
 import type { Kit, ProxySpec } from "../../catalog/kit/kit.ts";
 import { paseoToolsPolicy } from "../../catalog/kit/harness-files.ts";
-import { seatedAs } from "../../catalog/kit/roles.ts";
 import { connectToServer, hookTools, proxyOf } from "../../catalog/seat/servers.ts";
-import type { McpState } from "../../catalog/team/mcp-states.ts";
+import { type McpState, toolsFor } from "../../catalog/team/mcp-states.ts";
 import type { RoleSeat } from "../../catalog/team/role-seats.ts";
 import type { Team } from "../../catalog/team/team.ts";
 import { errorText } from "../../core/errors.ts";
@@ -139,10 +138,7 @@ async function proxyCheck(state: McpState, proxy: ProxySpec, users: RoleSeat[], 
   const listed = await toolNames(url, 3000);
   if (!listed.names) return { id, ok: false, detail: `No ${state.label} server answered at ${url}.${help}` };
   const exposed = new Set(listed.names);
-  const needed = new Set<string>([
-    ...hookTools(proxy),
-    ...users.flatMap((seat) => (state.tools ?? state.entry?.tools)?.[seatedAs(seat.role)] ?? []),
-  ]);
+  const needed = new Set<string>([...hookTools(proxy), ...users.flatMap((seat) => toolsFor(state, seat.role))]);
   const missing = [...needed].filter((tool) => !exposed.has(tool)).sort();
   return {
     id,

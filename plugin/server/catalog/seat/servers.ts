@@ -10,7 +10,8 @@ import {
   SEAT_KEY,
   TEAM_SERVER,
 } from "../kit/kit.ts";
-import { can, seatedAs, toolsOf } from "../kit/roles.ts";
+import { can, toolsOf } from "../kit/roles.ts";
+import { toolsFor } from "../team/mcp-states.ts";
 import { paseoToolsPolicy } from "../kit/harness-files.ts";
 import { type Team, skillDirsFor } from "../team/team.ts";
 
@@ -93,7 +94,7 @@ export function serversFor(
     const state = team.mcp[id]!;
     const { entry } = state;
     if (entry?.kind === "proxy") {
-      const tools = (state.tools ?? entry.tools)?.[seatedAs(seat.role)] ?? [];
+      const tools = toolsFor(state, seat.role);
       if (tools.length === 0) continue;
       const config = { name: id, label: state.label, instructions: entry.instructions ?? "", tools, ...proxyOf(state) };
       servers[id] = {
@@ -133,8 +134,7 @@ export function preapprovedFor(
     );
   for (const id of seat.mcp) {
     const state = team.mcp[id]!;
-    if (state.entry?.kind === "proxy")
-      approved.push(...refs(id, (state.tools ?? state.entry.tools)?.[seatedAs(seat.role)] ?? []));
+    if (state.entry?.kind === "proxy") approved.push(...refs(id, toolsFor(state, seat.role)));
   }
   return approved;
 }
