@@ -1,5 +1,7 @@
 import { join } from "node:path";
 import type { Kit } from "../../catalog/kit/kit.ts";
+import { errorText } from "../../core/errors.ts";
+import type { Seats } from "../../core/ports.ts";
 import { readJson, writeJson } from "../../core/store.ts";
 import type { Human } from "../../desk/human/human.ts";
 import type { Project } from "../../desk/project/project.ts";
@@ -9,10 +11,18 @@ import type { LandDecided, OrdersRead, QuestionAnswered, ReportRead, ReportSeen 
 import { unknownProject } from "./projects.ts";
 import type { HumanRpc } from "./rpc.ts";
 import type { TeamSource } from "../team-source.ts";
+import type { PermissionWaits } from "../permission-waits.ts";
+import type { Seated } from "../../desk/views/report-needs.ts";
 
 type Refused = { error: string };
 
-type HumanDeps = { kit: Kit; source: TeamSource; human: Human };
+type HumanDeps = {
+  kit: Kit;
+  source: TeamSource;
+  seats: Pick<Seats, "open">;
+  human: Human;
+  waits: Pick<PermissionWaits, "heardAt">;
+};
 
 /** Where the Human last marked the Report read; lost, the next Report only runs over more of the record. */
 const seenFile = (project: Project) => join(project.state, "report.json");
@@ -54,10 +64,22 @@ export class HumanPanel implements HumanRpc {
     return "error" in project ? project : ordersView(this.deps.kit, project);
   }
 
-  report(slug: string): ReportRead {
+  async report(slug: string): Promise<ReportRead> {
     const project = this.project(slug);
     if ("error" in project) return project;
-    return reportView(project, this.deps.source.teamFor(project).hitl.questionsPerDay, seenAt(project));
+    const { kit, source, seats, waits } = this.deps;
+    const seated: Seated = await seats.open().then(
+      (open) => ({ seats: open, heardAt: (seat: string, request: string) => waits.heardAt(seat, request) }),
+      (error: unknown) => ({ error: errorText(error) }),
+    );
+    const { hitl } = source.teamFor(project);
+    return reportView(project, {
+      kit,
+      questionsPerDay: hitl.questionsPerDay,
+      human: hitl.on,
+      from: seenAt(project),
+      seated,
+    });
   }
 
   /** `until` is the end of the page they read, so what came after it stays for the next; a page older than the mark moves nothing. */

@@ -41,6 +41,7 @@ import { Seating } from "./seat/seating.ts";
 import { TeamSocket } from "./seat/team-socket.ts";
 import { TeamSource } from "./team-source.ts";
 import { TurnRules } from "./turns.ts";
+import { PermissionWaits } from "./permission-waits.ts";
 import { Watches } from "./watch/watches.ts";
 import { watchView } from "./panel/watch-view.ts";
 import { Watching } from "./watching.ts";
@@ -57,6 +58,7 @@ export class Runtime implements HostHooks {
   readonly desk: Desk;
   readonly panel: Panel;
   private readonly keys = new SeatKeys();
+  private readonly waits = new PermissionWaits();
   private readonly socket: TeamSocket;
   private readonly source: TeamSource;
   private readonly seating: Seating;
@@ -171,7 +173,7 @@ export class Runtime implements HostHooks {
         adopt,
       }),
       upkeep: new UpkeepPanel({ kit, source, seats }),
-      human: new HumanPanel({ kit, source, human: this.desk.human }),
+      human: new HumanPanel({ kit, source, seats, human: this.desk.human, waits: this.waits }),
     };
   }
 
@@ -230,6 +232,7 @@ export class Runtime implements HostHooks {
 
   async archived(agent: HookAgent): Promise<void> {
     this.keys.forget(agent.id);
+    this.waits.forget(agent.id);
     this.outbox.archived(agent.id);
     this.turns.forget(agent.id);
     this.watches.drop(agent.id);
@@ -272,6 +275,7 @@ export class Runtime implements HostHooks {
   }
 
   permissionRequested(event: PermissionRequested): Promise<void> {
+    if (event.request.id) this.waits.asked(event.agent.id, event.request.id);
     return this.turns.permission(event);
   }
 

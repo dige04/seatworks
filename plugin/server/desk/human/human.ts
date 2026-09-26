@@ -1,10 +1,7 @@
-import type { OrdersView, ReportView } from "../../../shared/views.ts";
 import { settleQuestion, tellKeptOff } from "./questions.ts";
 import { askLetters } from "../letters/ask-letters.ts";
-import { reportView } from "../views/report.ts";
 import { decideLand } from "../lanes/land-decision.ts";
 import { loadLedger } from "../store/ledger.ts";
-import { ordersView } from "../views/orders.ts";
 import type { Project } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 
@@ -37,13 +34,5 @@ export class Human {
       ok: true,
       text: `${id} is ${settled.status}${settled.status === "answered" ? `: ${choice}` : ""}. ${told}`,
     };
-  }
-
-  orders(project: Project): OrdersView {
-    return ordersView(this.services.kit, project);
-  }
-
-  report(project: Project): ReportView {
-    return reportView(project, this.services.teamFor(project).hitl.questionsPerDay);
   }
 }

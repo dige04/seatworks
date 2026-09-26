@@ -64,9 +64,14 @@ function ProjectReport({ project, human, theme }: { project: string; human: bool
     <>
       <Part
         title="Needs you"
-        hint="On Flow, where you answer them."
+        hint="What holds up the most first. Questions and landings you answer on Flow; a permission, in the seat's chat in Paseo."
         items={value.needs}
         none="Nothing waits for you."
+      />
+      <Part
+        title="Decided for you"
+        hint="Pushes, work taken over a red gate, and permissions answered for you; a reason is in the words of whoever decided."
+        items={value.decided}
       />
       <Part
         title="Went ahead on its recommendation"

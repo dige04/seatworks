@@ -5,7 +5,10 @@ import { test } from "node:test";
 import { configFile } from "../../server/desk/project/project.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { settle } from "./fake-timeline.ts";
+import type { Pending } from "./fake-paseo.ts";
 import { harness, laneWithPeer } from "./harness.ts";
+import { laneWith } from "./landable.ts";
+import { tempDir } from "../tempdir.ts";
 
 type Harness = ReturnType<typeof harness>;
 
@@ -167,6 +170,12 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
     ],
     "what the Supervisor put on record from the chat, beside what they wrote, for them to check",
   );
+  const answers = report.numbers.find((row) => row.title === "Your answers");
+  assert.deepEqual(
+    [answers?.value, answers?.detail],
+    ["2 of 2 took the recommendation", "median 0 min to answer"],
+    "how often their answer was the one recommended, and how fast they gave it",
+  );
   assert.deepEqual((await drawn(h)).questions, []);
 });
 
@@ -196,11 +205,19 @@ test("Orders reads back the Human's standing orders and the project's concept, a
   });
 });
 
-test("the Report tells the last day from the record: what needs the Human, what went ahead, what landed, and what could not be undone", async () => {
-  const { h, sup, timeline } = await laneWithPeer({ hitl: { on: true } });
+test("the Report tells from the record what needs the Human, widest stop first, what went ahead, what landed, and what could not be undone", async () => {
+  const { h, sup, lane, peer, timeline } = await laneWithPeer({ hitl: { on: true } });
   await h.call(sup, "supervisor", "ask_human", packet({ lane: "L1", class: "irreversible" }));
   await h.call(sup, "supervisor", "ask_human", packet({ question: "Dates as ISO?" }));
   await h.call(sup, "supervisor", "ask_human", packet({ question: "Rename the product?", class: "irreversible" }));
+  for (const [seat, title] of [
+    [peer, "Bash: npm install"],
+    [lane.lead!, "Bash: rm -rf build"],
+  ] as const) {
+    const asked: Pending = { id: `p-${seat}`, kind: "tool", name: "Bash", title };
+    h.agents.get(seat)!.pending.push(asked);
+    await h.permission(seat, asked);
+  }
   timeline.beat("turn_started", "t1");
   const push = { type: "shell", command: "git push --force origin main" };
   timeline.add({ type: "tool_call", callId: "c1", name: "Bash", status: "running", detail: push }, "t1");
@@ -211,9 +228,12 @@ test("the Report tells the last day from the record: what needs the Human, what 
   assert.deepEqual(
     report.needs.map((item) => [item.title, item.detail]),
     [
-      ["H1 · Delete old invoices, or keep them archived?", "irreversible · L1"],
-      ["H3 · Rename the product?", "irreversible"],
+      ["L1 · Lead · Build waits for your permission: Bash: rm -rf build", "stops the Lead of L1"],
+      ["H1 · Delete old invoices, or keep them archived?", "irreversible · L1 · stops what it decides"],
+      ["H3 · Rename the product?", "irreversible · stops what it decides"],
+      ["L1-T1 · Peer · Clean build waits for your permission: Bash: npm install", "stops the Peer on L1-T1"],
     ],
+    "what stops the most comes first",
   );
   assert.deepEqual(
     report.ahead.map((item) => [item.title, item.detail]),
@@ -229,6 +249,7 @@ test("the Report tells the last day from the record: what needs the Human, what 
       ["Questions today", "3 of 3"],
       ["Landings", "0 landed"],
       ["Incidents", "1"],
+      ["Your answers", "none yet"],
     ],
   );
 
@@ -260,6 +281,44 @@ test("the Report tells the last day from the record: what needs the Human, what 
   const kept = await landing.rpc(contracts.report, { project: landing.project.slug });
   assert.ok("window" in kept);
   assert.equal(kept.window.from, until, "an older page marked read later never takes the window back");
+});
+
+test("with the Human out of the loop, the Report lists what was decided for them, and only the Supervisor's own wait needs them", async () => {
+  const { h, sup, lane, land } = await laneWith({ "a.txt": "cart\n" });
+  const remote = tempDir("sw2-remote-");
+  h.git(remote, "init", "-q", "--bare");
+  h.git(h.root, "remote", "add", "origin", remote);
+  h.git(h.root, "config", "branch.main.remote", "origin");
+  h.git(h.root, "config", "branch.main.merge", "refs/heads/main");
+  const asked: Pending = { id: "p-1", kind: "tool", name: "Bash", title: "Bash: npm install" };
+  h.agents.get(lane.lead!)!.pending.push(asked);
+  await h.permission(lane.lead!, asked);
+  const permitted = { from: "L1", request: "p-1", allow: true, why: "it stays in its copy" };
+  assert.equal((await h.call(sup, "supervisor", "permit", permitted)).ok, true);
+  await h.call(sup, "supervisor", "set_project", { gate: "false" });
+  assert.equal((await land()).ok, false);
+  const over = { lane: "L1", overGate: true, reason: "the gate is broken, not the cart" };
+  assert.equal((await h.call(sup, "supervisor", "land_lane", over)).ok, true);
+  assert.equal((await h.call(sup, "supervisor", "push", { tag: "v1.0.0", message: "the cart" })).ok, true);
+  const grilling: Pending = { id: "q-1", kind: "question", name: "AskUserQuestion", title: "Who is the cart for?" };
+  h.agents.get(sup)!.pending.push(grilling);
+  await h.permission(sup, grilling);
+
+  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  assert.ok("decided" in report);
+  assert.deepEqual(
+    report.decided.map((item) => [item.title, item.detail]),
+    [
+      ["Allowed a permission for the Lead of L1", "by the Supervisor"],
+      ["L1 landed over a red gate", "by the Supervisor"],
+      ["Pushed main to origin, tagged v1.0.0", "by the Supervisor"],
+    ],
+  );
+  assert.deepEqual(
+    report.needs.map((item) => [item.title, item.detail]),
+    [["sup waits for your answer: Who is the cart for?", "stops the Supervisor"]],
+    "a seat's permission is the Supervisor's to give while the Human is out of the loop",
+  );
 });
 
 test("the Flow tab draws the machine as the ledger and Paseo have it, and an unchanged poll costs nothing", async () => {
