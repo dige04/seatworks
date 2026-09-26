@@ -35,6 +35,7 @@ export class Outbox {
   private readonly awaiting = new Map<string, number>();
   private readonly started = new Map<string, number>();
   private readonly sentKeys = new Map<string, number>();
+  private readonly gone = new Set<string>();
 
   /** Keyed on the reader too: desk ids are unique only per project, and this one file serves them all. */
   private static held(letter: { to: string; key: string }): string {
@@ -91,16 +92,20 @@ export class Outbox {
     return sent.has(stored.id) ? "sent" : "held";
   }
 
+  /** A seat starting a turn is there to read, an archived one Paseo started again included. */
   turnStarted(agentId: string, now = Date.now()): void {
     this.started.set(agentId, now);
+    this.gone.delete(agentId);
   }
 
   turnEnded(agentId: string): void {
     this.forget(agentId);
   }
 
+  /** A seat Paseo archived takes nothing more: its mail waits for someone to pass it on, and it is not looked up again. */
   archived(agentId: string): void {
     this.forget(agentId);
+    this.gone.add(agentId);
   }
 
   private forget(agentId: string): void {
@@ -120,7 +125,7 @@ export class Outbox {
   pump(to: string): Promise<Set<string>> {
     return this.perSeat.run(to, async () => {
       const mine = this.pending(to);
-      if (mine.length === 0) return new Set<string>();
+      if (mine.length === 0 || this.gone.has(to)) return new Set<string>();
       // Held, not thrown: mail must not be lost, and one unanswerable address must not stop the round.
       const seat = await this.seats.look(to).catch(() => undefined);
       if (!seat) return new Set<string>();

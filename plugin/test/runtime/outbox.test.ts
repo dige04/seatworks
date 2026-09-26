@@ -10,6 +10,7 @@ type FakeAgent = {
   status: string;
   pendingPermissions: { title?: string; name?: string }[];
   archivedAt: string | null;
+  looked?: number;
   sent: string[];
   steered: string[];
   kinds: string[][];
@@ -19,6 +20,7 @@ function fakeSeats(agents: Record<string, FakeAgent>): Pick<Seats, "look" | "sen
   return {
     async look(id: string) {
       const agent = agents[id]!;
+      agent.looked = (agent.looked ?? 0) + 1;
       return { id, status: agent.status, pendingPermissions: agent.pendingPermissions, archivedAt: agent.archivedAt };
     },
     async send(id: string, text: string, kinds: string[], into?: "steer" | "interrupt") {
@@ -86,6 +88,13 @@ test("a letter goes to its seat when the seat can take it, and until then is hel
   assert.equal(await post("asking", "x", "t"), "held", "a seat with a pending permission receives nothing");
   assert.equal(await post("archived", "y", "t"), "held", "nor does an archived one");
   assert.deepEqual([outbox.pending("asking").length, outbox.pending("archived").length], [1, 1], "neither's is lost");
+  const looked = agents.archived.looked;
+  assert.equal(await post("archived", "z", "t"), "held");
+  assert.equal(agents.archived.looked, looked, "an archived seat is not looked up again, round after round");
+  agents.archived.archivedAt = null;
+  outbox.turnStarted("archived", Date.now() - 2 * 60_000);
+  outbox.turnEnded("archived");
+  assert.equal(await post("archived", "w", "t"), "sent", "until Paseo starts it again");
   assert.equal(await post("gone", "x", "a report nobody can read yet"), "held", "an address is no failure");
   assert.equal(outbox.pending("gone").length, 1);
   assert.equal(await post("real", "y", "and this still goes out"), "sent");
