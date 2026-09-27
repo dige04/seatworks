@@ -260,7 +260,7 @@ test("a copy the desk made is locked in git, marked as the desk's, while its wor
 test("a copy the desk makes brings along the ignored files the project's .worktreeinclude names, and no others", async () => {
   const { h, lead } = await laneWriting(["src/**"]);
   writeFileSync(join(h.root, ".gitignore"), ".env\nconfig/local.json\nbuild/\n");
-  writeFileSync(join(h.root, ".worktreeinclude"), ".env\nconfig/local.json\n");
+  writeFileSync(join(h.root, ".worktreeinclude"), ".env\nconfig/local.json\ndrafts/\n");
   h.git(h.root, "add", ".gitignore", ".worktreeinclude");
   h.git(h.root, "commit", "-qm", "what copies take along");
   writeFileSync(join(h.root, ".env"), "KEY=local\n");
@@ -268,11 +268,14 @@ test("a copy the desk makes brings along the ignored files the project's .worktr
   writeFileSync(join(h.root, "config", "local.json"), "{}\n");
   mkdirSync(join(h.root, "build"));
   writeFileSync(join(h.root, "build", "out.js"), "built\n");
+  mkdirSync(join(h.root, "drafts"));
+  writeFileSync(join(h.root, "drafts", "idea.md"), "the Human's own draft\n");
   await h.call(lead, "lead", "add_tasks", { tasks: [planned("a", "A", { holds: ["src/**"], parallel: true })] });
   const copy = h.ledger().tasks["L1-T1"]!.worktree!;
   assert.equal(readFileSync(join(copy, ".env"), "utf-8"), "KEY=local\n");
   assert.equal(readFileSync(join(copy, "config", "local.json"), "utf-8"), "{}\n");
   assert.equal(existsSync(join(copy, "build")), false, "an ignored file it does not name stays behind");
+  assert.equal(existsSync(join(copy, "drafts")), false, "and a file it names that git does not ignore is no copy's");
   assert.equal(h.git(copy, "status", "--porcelain"), "", "and what it brings is ignored there too");
 });
 
