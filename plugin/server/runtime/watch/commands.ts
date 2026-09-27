@@ -67,6 +67,9 @@ type At = "start" | "scratch" | "elsewhere";
 
 const inside = (path: string) => !/^(?:[/\\~$%`]|[A-Za-z]:)/.test(path) && !CLIMBS.test(path);
 
+/** Git's own folder, which a copy the desk made needs to stay one. */
+const GIT = /^(?:\.\/)?\.git(?:[/\\]|$)/;
+
 /** Whether a path is scratch space: $TMPDIR, /tmp, the machine's temporary directory, or what the same command made. */
 function scratchIn(made: ReturnType<typeof madeBy>, temp?: string) {
   const scratch = (target: string): boolean => {
@@ -100,11 +103,16 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
       continue;
     }
     const targets = targetsOf(words);
-    const removesScratch =
+    // In a copy the desk made for this seat alone, what it removes there is its own; throwing work away with git still pages.
+    const removesOwn =
       words[0] === "rm" &&
       targets.length > 0 &&
-      targets.every((target) => scratch(target) || (at === "scratch" && inside(target)));
-    if (rules.destructive.test(part) && !removesScratch)
+      targets.every(
+        (target) =>
+          scratch(target) ||
+          (inside(target) && (at === "scratch" || (at === "start" && rules.ownCopy === true && !GIT.test(target)))),
+      );
+    if (rules.destructive.test(part) && !removesOwn)
       return [fact("destructive", around(oneLine(part, Infinity), rules.destructive, 200))];
   }
   return [];

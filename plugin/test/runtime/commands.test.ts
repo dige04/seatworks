@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { StreamMessage } from "../../server/adapters/paseo/stream.ts";
 import type { Rules } from "../../server/runtime/watch/facts.ts";
+import { settle } from "./fake-timeline.ts";
+import { harness } from "./harness.ts";
+import { noticesOf } from "./noticed.ts";
 import { again, fixture, opening, piRow, play, rules } from "./seat-replay.ts";
 
 /** What the watch pages of one shell command a seat ran, as its quotes. */
@@ -103,4 +106,38 @@ test("a relative rm after cd into scratch in the same command removes scratch", 
   assert.equal(paged(`cd "$TMPDIR" && rm -rf ../src`).length, 1, "climbing out of it is not");
   assert.equal(paged(`cd "$TMPDIR" && cd ~/work && rm -rf dist`).length, 1, "nor after a cd elsewhere");
   assert.equal(paged(`cd "$TMPDIR" || true; rm -rf probe`).length, 1, "a cd that may have failed moves nothing");
+});
+
+test("in a seat's own desk-made copy, removing relative paths is not a page, while throwing work away still is", async (t) => {
+  // p-on I13: a Peer removed the data files its own server run had just made in its lane's copy.
+  const own = rules({ ownCopy: true });
+  assert.deepEqual(paged("rm -f data/accounts.json data/sessions.json", own), []);
+  assert.deepEqual(paged("cd test && rm -rf fixtures/tmp", own), []);
+  for (const command of ["git reset --hard", "git clean -fd", "rm -rf ../other", "rm -rf .git", "cd ~/x && rm -rf y"])
+    assert.equal(paged(command, own).length, 1, command);
+
+  for (const isolate of [true, false]) {
+    const h = harness();
+    const noticed = noticesOf(h, t);
+    const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+    const scope = { acceptance: ["a"], outOfScope: ["the rest"] };
+    await h.call(sup, "supervisor", "open_lane", { title: "Server", outcome: "a server", ...scope, isolate });
+    const lead = h.ledger().lanes.L1!.lead!;
+    await h.call(lead, "lead", "add_tasks", { tasks: [{ key: "t", title: "Serve", goal: "g", ...scope }] });
+    await h.tick();
+    const timeline = h.timelineOf(h.ledger().tasks["L1-T1"]!.peer!);
+    timeline.beat("turn_started", "t1");
+    for (const [id, command] of ["rm -f data/accounts.json", "git reset --hard"].entries())
+      timeline.add(
+        { type: "tool_call", callId: `c${id}`, name: "Bash", status: "running", detail: { type: "shell", command } },
+        "t1",
+      );
+    await settle();
+    await noticed();
+    assert.deepEqual(
+      h.events("watch.fact").map((event) => event.quote),
+      isolate ? ["git reset --hard"] : ["rm -f data/accounts.json", "git reset --hard"],
+      isolate ? "in a lane's own copy" : "in the Human's checkout",
+    );
+  }
 });

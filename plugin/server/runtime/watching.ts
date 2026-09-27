@@ -1,4 +1,5 @@
 import { tmpdir } from "node:os";
+import { resolve } from "node:path";
 import type { Kit } from "../catalog/kit/kit.ts";
 import { watchPatterns } from "../catalog/kit/ecosystem-patterns.ts";
 import { TEAM_SERVER } from "../catalog/kit/kit.ts";
@@ -31,12 +32,16 @@ export class Watching {
     const attention = this.deps.source.teamFor(project).attention;
     let scope: string[] | undefined;
     let placed = false;
+    let ownCopy = false;
     try {
       const ledger = loadLedger(project.state);
       const task = taskOfPeer(ledger, seat.id);
-      scope =
-        task?.kind !== "code" ? undefined : task.mode === "parallel" ? task.holds : ledger.lanes[task.lane]?.writeSet;
-      placed = Boolean(task ?? laneOfLead(ledger, seat.id));
+      const lane = task ? ledger.lanes[task.lane] : laneOfLead(ledger, seat.id);
+      scope = task?.kind !== "code" ? undefined : task.mode === "parallel" ? task.holds : lane?.writeSet;
+      placed = Boolean(task ?? lane);
+      // A slot is a copy the desk made; a lane without one works in the Human's own checkout.
+      const copy = task?.slot ? task.worktree : lane?.slot && task?.mode !== "parallel" ? lane.worktree : undefined;
+      ownCopy = copy !== undefined && resolve(copy) === resolve(seat.cwd);
     } catch (error) {
       this.deps.desk.event(project, { kind: "watch.unbriefed", agent: seat.id, error: errorText(error) });
     }
@@ -52,6 +57,7 @@ export class Watching {
         cwd: seat.cwd,
         temp: tmpdir(),
         scope,
+        ownCopy,
         repeatsAt: attention.repeatsAt,
         recoverWithin: attention.recoverWithin,
         refusalsAt: attention.refusalsAt,

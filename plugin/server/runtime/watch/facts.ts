@@ -7,7 +7,8 @@ import type { Call, Unit } from "./window.ts";
 
 /**
  * `skipped` and `assertion` are global, since they are counted; `runners` are the commands whose first word says little;
- * `scope` is a parallel task's holds or its lane's write set, and empty or none is anywhere in its copy.
+ * `scope` is a parallel task's holds or its lane's write set, and empty or none is anywhere in its copy; `ownCopy` when the
+ * seat works in a copy the desk made for its task or lane alone, never the Human's checkout.
  */
 export type Rules = {
   destructive: RegExp;
@@ -23,6 +24,7 @@ export type Rules = {
   cwd?: string;
   temp?: string;
   scope?: string[];
+  ownCopy?: boolean;
   repeatsAt: number;
   recoverWithin: number;
   refusalsAt: number;
