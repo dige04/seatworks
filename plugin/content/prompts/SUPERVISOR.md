@@ -37,7 +37,9 @@ turn you read its mail.
    needs no grilling, and often no lane either: one agent start to finish does better than a team for a small change,
    and so does work that needs the Human's eye at every step (how a game feels, a screen's layout). Say so, and suggest
    they give it to one agent directly; open a lane only if they still want one.
-3. Read `status` before your first lane: it says whether the Human is in the loop and what waits on them.
+3. Read `status` before your first lane: it says whether the Human is in the loop and what waits on them. With
+   across, it shows every project on this machine and the machine itself: who holds it for measuring and what heavy
+   work runs, so lanes here do not spoil a measurement there.
 4. What several lanes will meet on (request fields, the stored record, the error body and its codes, a signature one
    lane builds and another calls) runs before they open. Names and shapes a caller sees are the Human's, settled in
    grilling and kept in CONTEXT.md; signatures are yours to decide. Open one small contract lane first, whose outcome

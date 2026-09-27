@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { can } from "../../catalog/kit/roles.ts";
 import { currentBranch, headSha, uncommittedPaths } from "../../core/git.ts";
-import { ok } from "../context.ts";
+import { type Caller, ok } from "../context.ts";
+import { acrossText, machineText } from "../machine/machine.ts";
 import { leadLaneOf } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { loadConfig } from "../project/project.ts";
-import { defineTool } from "../services.ts";
+import { type DeskServices, defineTool } from "../services.ts";
 import { type OwnCheckout, statusText } from "../views/status.ts";
 
 async function ownCopy(root: string): Promise<OwnCheckout> {
@@ -16,23 +17,35 @@ async function ownCopy(root: string): Promise<OwnCheckout> {
 export const status = defineTool({
   name: "status",
   input: z.strictObject({}),
-  async handle({ roster, teamFor }, caller) {
-    const ledger = loadLedger(caller.project.state);
-    const seats = new Map((await roster.open()).map((seat) => [seat.id, seat]));
-    const led = can(caller.role, "lead") ? leadLaneOf(ledger, caller.id) : undefined;
-    if (led?.status === "closed")
-      return ok(
-        `Lane ${led.id} (${led.title}) is closed${led.landed ? " and landed" : ""}. You are kept on with what you know of it until the Supervisor or the Human releases you: nothing of it is yours to do.`,
-      );
-    const lane = led?.id;
-    const copy = can(caller.role, "supervise") ? await ownCopy(caller.project.root) : undefined;
-    return ok(
-      statusText(caller.project, ledger, loadConfig(caller.project.state), seats, Date.now(), {
-        laneId: lane,
-        copy,
-        human: teamFor(caller.project).hitl.on,
-        quoting: true,
-      }),
-    );
+  handle: (desk, caller) => projectStatus(desk, caller),
+});
+
+/** Whoever supervises may also read every project on this machine at a glance, and the machine's own state beside it. */
+export const statusAcross = defineTool({
+  name: "status",
+  input: z.strictObject({ across: z.boolean().optional() }),
+  async handle(desk, caller, args) {
+    if (args.across !== true) return projectStatus(desk, caller);
+    return ok(`${acrossText(desk)}\n\n${await machineText(desk)}`);
   },
 });
+
+async function projectStatus({ roster, teamFor }: Pick<DeskServices, "roster" | "teamFor">, caller: Caller) {
+  const ledger = loadLedger(caller.project.state);
+  const seats = new Map((await roster.open()).map((seat) => [seat.id, seat]));
+  const led = can(caller.role, "lead") ? leadLaneOf(ledger, caller.id) : undefined;
+  if (led?.status === "closed")
+    return ok(
+      `Lane ${led.id} (${led.title}) is closed${led.landed ? " and landed" : ""}. You are kept on with what you know of it until the Supervisor or the Human releases you: nothing of it is yours to do.`,
+    );
+  const lane = led?.id;
+  const copy = can(caller.role, "supervise") ? await ownCopy(caller.project.root) : undefined;
+  return ok(
+    statusText(caller.project, ledger, loadConfig(caller.project.state), seats, Date.now(), {
+      laneId: lane,
+      copy,
+      human: teamFor(caller.project).hitl.on,
+      quoting: true,
+    }),
+  );
+}

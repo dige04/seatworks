@@ -770,14 +770,19 @@
     {
       "name": "status",
       "title": "Project status",
-      "description": "The current status of every lane, task and open ask in this project.",
+      "description": "The current status of every lane, task and open ask in this project; with across, every project on this machine at a glance and the machine's own state.",
       "annotations": {
         "readOnlyHint": true,
         "openWorldHint": false
       },
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "across": {
+            "type": "boolean",
+            "description": "Every project on this machine, with the machine's load and who holds it for measuring."
+          }
+        }
       }
     },
     {

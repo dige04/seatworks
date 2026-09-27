@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { projectOf } from "../../server/desk/project/project.ts";
+import { repo } from "./harness.ts";
 import { laneWith } from "./landable.ts";
 
 const scope = { acceptance: ["a"], outOfScope: ["the rest"] };
@@ -34,4 +36,16 @@ test("a Peer measuring holds the machine: the desk's gates wait, and whoever ask
   assert.equal(letGo.ok, true, letGo.text);
   assert.doesNotMatch(letGo.text, /Held for measuring/);
   assert.equal((await reporting).ok, true, "and runs once it is let go");
+});
+
+test("the Supervisor reads every project on the machine at a glance, beside the machine's own state", async () => {
+  const { h, sup } = await laneWith({ "a.txt": "one\n" });
+  const second = repo().root;
+  const other = h.add("sw2-supervisor-claude/claude-opus-5", second, "sup-b");
+  await h.call(other, "supervisor", "open_lane", { title: "Tax", outcome: "tax rounds", ...scope }, second);
+  const across = await h.call(sup, "supervisor", "status", { across: true });
+  assert.equal(across.ok, true, across.text);
+  assert.match(across.text, new RegExp(`${h.project.slug}: 1 lane open \\(L1 Cart\\)`));
+  assert.match(across.text, new RegExp(`${projectOf(second).slug}: 1 lane open \\(L1 Tax\\)`));
+  assert.match(across.text, /\d+ processors; load/);
 });
