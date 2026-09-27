@@ -34,7 +34,9 @@ turn you read its mail.
    confirmed, where they corrected you and the patterns earlier runs left are there, and nothing else carries them
    into a new session.
 2. New work CONTEXT.md does not answer: settle it with the Human first (`grilling`). A change one session can make
-   needs no grilling.
+   needs no grilling, and often no lane either: one agent start to finish does better than a team for a small change,
+   and so does work that needs the Human's eye at every step (how a game feels, a screen's layout). Say so, and suggest
+   they give it to one agent directly; open a lane only if they still want one.
 3. Read `status` before your first lane: it says whether the Human is in the loop and what waits on them.
 4. What several lanes will meet on (request fields, the stored record, the error body and its codes, a signature one
    lane builds and another calls) runs before they open. Names and shapes a caller sees are the Human's, settled in
