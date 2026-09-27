@@ -135,3 +135,31 @@ test("a seat as Paseo creates, opens and archives it: prompt, key, seat director
     assert.equal(await settled(fresh.reached()), true, `${name} brings Paseo's API`);
   }
 });
+
+test("the create that first brings Paseo's API waits for the provider pass it unblocks, twenty seconds at most", async (t) => {
+  const h = harness();
+  const request = { request: { config: { provider: "sw2-lead-claude", cwd: h.root }, env: {} } };
+  const connected = (providers: Promise<void>) => {
+    const host = new PaseoHost();
+    const hooks = new Map<string, Hook>();
+    const register = (name: string, hook: Hook) => void hooks.set(name, hook);
+    host.connect({ before: register, on: register } as unknown as PluginServerContext, h.runtime, providers);
+    return () => hooks.get("agent.create")!(request, { paseo: h.paseo });
+  };
+  let reconciled = () => {};
+  const create = connected(new Promise<void>((resolve) => (reconciled = resolve)));
+  // After a reload, Paseo resolves the seat's provider as soon as this hook returns: one not yet written is refused.
+  const first = Promise.resolve(create());
+  assert.equal(await settled(first), false, "the first waits for the pass");
+  assert.ok((create() as Made).env[SEAT_KEY], "a later one does not");
+  reconciled();
+  assert.ok(((await first) as Made).env[SEAT_KEY]);
+
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const stuck = Promise.resolve(connected(new Promise<void>(() => {}))());
+  const due = () => Promise.race([stuck.then(() => true), new Promise((resolve) => setImmediate(resolve, false))]);
+  t.mock.timers.tick(19_999);
+  assert.equal(await due(), false);
+  t.mock.timers.tick(1);
+  assert.ok(((await stuck) as Made).env[SEAT_KEY], "a pass that never ends holds no seat past Paseo's hook limit");
+});

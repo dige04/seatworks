@@ -21,9 +21,9 @@ export default function contribute(server: PluginServerContext) {
   } catch (error) {
     return refused(server, `the kit in ${dir} failed to load: ${errorText(error)}`, error);
   }
-  void runtime.prepare();
+  const providers = runtime.prepare();
   registerRpc(host.answering(server), runtime.panel);
-  host.connect(server, runtime);
+  host.connect(server, runtime, providers);
   runtime.start();
   return () => runtime.dispose();
 }

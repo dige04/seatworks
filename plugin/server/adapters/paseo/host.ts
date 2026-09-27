@@ -22,6 +22,16 @@ function agentToolsUrl(): string | undefined {
   return `http://${host}:${tcp[2]!}/mcp/agents`;
 }
 
+/** How long the create that brings Paseo's API waits for the provider pass: under the daemon's thirty seconds for a hook. */
+const PROVIDERS_WAIT_MS = 20_000;
+
+/** Settles when `promise` does, or after `ms` whatever it does. */
+function atMost(promise: Promise<void>, ms: number): Promise<void> {
+  let timer: NodeJS.Timeout | undefined;
+  const late = new Promise<void>((resolve) => (timer = setTimeout(resolve, ms)));
+  return Promise.race([promise.catch(() => undefined), late]).finally(() => clearTimeout(timer));
+}
+
 /** Paseo hands the plugin its API only with a hook or a panel call, so each one binds it before the plugin acts. */
 export class PaseoHost implements Host {
   readonly seats;
@@ -71,12 +81,19 @@ export class PaseoHost implements Host {
       : { error: `nothing answered at ${url}: ${listed.error ?? "no tool list"}` };
   }
 
-  connect(server: PluginServerContext, hooks: HostHooks): void {
+  /** `providers` settles once the provider pass that waits for Paseo's API has written what the teams seat on. */
+  connect(server: PluginServerContext, hooks: HostHooks, providers?: Promise<void>): void {
     server.before("agent.create", ({ request }, context) => {
+      const first = !this.connected();
       this.bind(context.paseo);
-      const made = hooks.create(request.config, request.env ?? {});
-      // The plugin's config type is narrower than Paseo's, and the daemon checks what a hook returns.
-      return { ...request, config: made.config as typeof request.config, env: made.env };
+      const create = () => {
+        const made = hooks.create(request.config, request.env ?? {});
+        // The plugin's config type is narrower than Paseo's, and the daemon checks what a hook returns.
+        return { ...request, config: made.config as typeof request.config, env: made.env };
+      };
+      // Paseo looks the seat's provider up as soon as this returns, and after a reload the create that brings the API
+      // is what lets that pass write it; a patch lands in Paseo's registry before its answer comes back.
+      return first && providers ? atMost(providers, PROVIDERS_WAIT_MS).then(create) : create();
     });
     server.before("agent.session_open", ({ request }, context) => {
       this.bind(context.paseo);
