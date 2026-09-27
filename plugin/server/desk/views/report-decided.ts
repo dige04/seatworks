@@ -7,11 +7,16 @@ import { seatPhrase } from "./report-seats.ts";
 
 /**
  * What a seat decided that would have been the Human's to watch: pushes and tags, merges and landings over a red gate,
- * permissions given or refused for them, asks a Lead settles for want of an answer, oldest first; the reasons are the words of whoever decided.
+ * permissions given or refused for them, asks a Lead settles for want of an answer, the Supervisor's choices in a
+ * directive and what a Lead reported it decided or assumed, oldest first; the reasons are the words of whoever decided.
  */
 export function decidedFor(kit: Kit, ledger: Ledger, events: DatedEvent[], now: number): ReportItem[] {
   const who = (id: string) => seatPhrase(kit, ledger, id);
   const by = (id: string, reason?: string) => `by ${who(id)}${reason ? `: ${reason}` : ""}`;
+  const leadOf = (lane: string) => {
+    const lead = ledger.lanes[lane]?.lead;
+    return lead ? who(lead) : `the Lead of ${lane}`;
+  };
   return events.flatMap((event): ReportItem[] => {
     const minutes = minutesSince(now, event.at);
     switch (event.kind) {
@@ -39,6 +44,25 @@ export function decidedFor(kit: Kit, ledger: Ledger, events: DatedEvent[], now: 
             minutes,
           },
         ];
+      case "lane.report":
+        return [
+          ...(event.decided ?? []).map((line) => ({
+            title: `${event.lane}: ${line}`,
+            detail: `decided by ${leadOf(event.lane)}`,
+            minutes,
+          })),
+          ...(event.assumed ?? []).map((line) => ({
+            title: `${event.lane}: ${line}`,
+            detail: `assumed by ${leadOf(event.lane)}, not checked`,
+            minutes,
+          })),
+        ];
+      case "lane.opened":
+        return (ledger.lanes[event.lane]?.choices ?? []).map((line) => ({
+          title: `${event.lane}: ${line}`,
+          detail: `chosen by ${who(ledger.lanes[event.lane]!.opener)}, for its Lead to question`,
+          minutes,
+        }));
       case "permission.answered":
         return [
           {

@@ -1411,7 +1411,7 @@
         "properties": {
           "summary": {
             "type": "string",
-            "description": "Branch contents, acceptance proof, what is carried, and each decision or assumption a reader could question or that reaches past the lane, with why."
+            "description": "Branch contents, acceptance proof and what is carried; decisions and assumptions go in their own fields."
           },
           "ready": {
             "type": "boolean",
@@ -1423,6 +1423,20 @@
               "type": "string"
             },
             "description": "Known gaps carried forward."
+          },
+          "decided": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Each decision of yours a reader could question or that reaches past the lane, as \"X because Y\"."
+          },
+          "assumed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Each assumption of yours nobody checked, as \"X, unchecked\"."
           }
         },
         "required": [

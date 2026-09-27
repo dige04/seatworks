@@ -14,7 +14,7 @@ import { recordEvent } from "../store/event-log.ts";
 import { midTurnAmong } from "../seats/writing.ts";
 import { unsavedIn } from "../copies/unsaved.ts";
 
-type ReportCall = { summary: string; ready: boolean; carried?: string[] };
+type ReportCall = { summary: string; ready: boolean; carried?: string[]; decided?: string[]; assumed?: string[] };
 
 type Gate = Awaited<ReturnType<typeof laneGate>>;
 
@@ -87,10 +87,11 @@ async function tell(
   const parked = ready ? await parkAtCheckpoint(desk, project, lane) : undefined;
   const ahead = ready ? await readAhead(desk, project, lane) : { asks: [], facts: [], changes: false };
   const found = { gate, parked: parked && `It is on hold: ${parked}.`, ...ahead };
-  const letter = workLetters.report(lane, str(args.summary), ready, strs(args.carried), found);
+  const own = { decided: strs(args.decided), assumed: strs(args.assumed) };
+  const letter = workLetters.report(lane, str(args.summary), ready, strs(args.carried), found, own);
   const posted = await desk.mail.post(to, letter);
   const text = posted === "nobody" ? letter.text : undefined;
-  recordEvent(project, { kind: "lane.report", lane: lane.id, ready, gate: gate?.ok, to: to ?? null, text });
+  recordEvent(project, { kind: "lane.report", lane: lane.id, ready, gate: gate?.ok, to: to ?? null, text, ...own });
   if (posted === "nobody")
     return ok(
       `Nobody supervising this project is seated, so the report reached no one. It is kept in ${project.state}/events.log for whoever comes back; there is nothing to wait for until someone does.`,

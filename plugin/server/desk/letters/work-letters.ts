@@ -56,13 +56,17 @@ export const workLetters = {
       facts: string[];
       changes?: boolean;
     },
+    own: { decided: string[]; assumed: string[] } = { decided: [], assumed: [] },
   ): Letter {
     const lines = [`REPORT ${lane.id} (${lane.title}): ${ready ? "ready to land" : "not ready"}`];
     if (found.parked) lines.push("", found.parked);
     if (found.gate) lines.push("", `Gate: ${found.gate.text}`);
     if (found.asks.length > 0) lines.push("", `Landing it waits for the Human. ${found.asks.join(" ")}`);
     if (found.facts.length > 0) lines.push("", "What the desk read of it:", list(found.facts));
-    lines.push("", clip(summary, 2000), "", "Carried:", list(carried));
+    lines.push("", clip(summary, 2000));
+    if (own.decided.length > 0) lines.push("", "Decided:", list(own.decided));
+    if (own.assumed.length > 0) lines.push("", "Assumed, unchecked:", list(own.assumed));
+    lines.push("", "Carried:", list(carried));
     const next = !ready
       ? "Reply only if it needs a decision of yours or changes one."
       : found.parked

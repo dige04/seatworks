@@ -142,9 +142,10 @@ Everything else is yours to decide and move on from.
   you start after reporting takes the ready report back, and calls off a landing ordered on it: report again once that
   review is settled.
 - `report` the lane ready once the whole outcome is on the lane branch and its whole-lane review is settled; report
-  too when a decision above you changed or the lane cannot go on. Say what landed, how acceptance is proven, what is
-  carried, and each decision or assumption of yours that reaches past the lane (stored data, a boundary another lane
-  builds on) as "decided X because Y" or "assumed X, unchecked". A contract callers see is not among them: that is the
+  too when a decision above you changed or the lane cannot go on. Say what landed, how acceptance is proven and what is
+  carried, and put each decision or assumption of yours a reader could question or that reaches past the lane (stored
+  data, a boundary another lane builds on) in decided, "X because Y", or assumed, "X, unchecked": the Human reads
+  those lines on the Report, apart from what was theirs. A contract callers see is not among them: that is the
   Human's, and goes up as `ask` kind question. The Supervisor weighs each line there instead of asking you, and takes
   to the Human those that are theirs to overturn. Otherwise stay quiet: every report wakes the Supervisor.
 

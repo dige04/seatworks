@@ -106,3 +106,33 @@ test("a challenge the plan was kept against reaches the Human's report and the n
     /- The Lead of L1 disputed "A parachute cannot stop it\."; the Supervisor kept the plan as not worth stopping for: not worth a new lane now\./,
   );
 });
+
+test("what a Lead and the Supervisor chose on their own reaches the Human's report, apart from what the Human decided", async () => {
+  const { h, sup, lane } = await laneWithPeer();
+  const opened = await h.call(sup, "supervisor", "open_lane", {
+    title: "Brakes",
+    outcome: "the bike stops",
+    acceptance: ["stops in 5 m"],
+    choices: ["rim brakes, since the frame takes them"],
+    isolate: true,
+  });
+  assert.equal(opened.ok, true, opened.text);
+  const said = await h.call(lane.lead!, "lead", "report", {
+    summary: "progress",
+    ready: false,
+    decided: ["cents as integers, because floats drifted in the totals"],
+    assumed: ["the tax table is current, unchecked"],
+  });
+  assert.equal(said.ok, true, said.text);
+  await h.idle(sup);
+  assert.match(
+    h.agents.get(sup)!.sent.at(-1)!,
+    /Decided:\n- cents as integers, because floats drifted in the totals\n\nAssumed, unchecked:\n- the tax table is current, unchecked/,
+  );
+  const decided = (await h.report()).decided.map((item) => [item.title, item.detail]);
+  assert.deepEqual(decided, [
+    ["L2: rim brakes, since the frame takes them", "chosen by the Supervisor, for its Lead to question"],
+    ["L1: cents as integers, because floats drifted in the totals", "decided by the Lead of L1"],
+    ["L1: the tax table is current, unchecked", "assumed by the Lead of L1, not checked"],
+  ]);
+});

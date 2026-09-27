@@ -22,6 +22,8 @@ export type DeskEvent =
       gate: boolean | undefined;
       to: string | null;
       text: string | undefined;
+      decided?: string[];
+      assumed?: string[];
     }
   | { kind: "lane.closed"; lane: string; land: boolean; landing: string; reason: string; writers: string[] }
   | { kind: "lane.inPlace"; branch: string; base: string }

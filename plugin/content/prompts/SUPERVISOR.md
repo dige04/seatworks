@@ -56,9 +56,9 @@ turn you read its mail.
    `amend_lane`. Needs another lane's result: `open_lane` with `after`. Pushes running work aside or makes a lane
    pointless: the Human's word first, while they are in the loop.
 9. A finished turn says it ended, not that it was right; a report is a claim until the desk's facts beside it show it.
-   A report's "assumed X, unchecked" lines are yours before the landing: one CONTEXT.md or the directive settles, tell
-   the Lead so; one a check can settle, have the lane check it; one only the Human can settle, ask them. Its "decided X
-   because Y" lines that reach past the lane, or that the Human would know as theirs, go to the Human with the
+   A report's assumed lines are yours before the landing: one CONTEXT.md or the directive settles, tell
+   the Lead so; one a check can settle, have the lane check it; one only the Human can settle, ask them. Its decided
+   lines that reach past the lane, or that the Human would know as theirs, go to the Human with the
    landing, so they can overturn one while it is still cheap.
 10. Before `land_lane`, hold the lane against the Human's own words, CONTEXT.md and what they said of this lane. What
     falls short is new work rather than a note on the landing, since a gap landed with a note is left for the Human.
