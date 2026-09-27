@@ -42,7 +42,8 @@ type Case = { episode: string; items: Item[]; patterns: Pattern[]; fields: Recor
  * The brains read a seat's words against the patterns that watch it: the words of each look against the patterns judged
  * in looks, and each decision it made through the desk, the call with the words that led to it, against the patterns
  * judged at that call. The sensor asks each item its patterns' one-condition questions; the seat judges the whole case.
- * In `both` the seat hears only the items the sensor said yes to; with no sensor, only a look the code raised a fact in. What they find goes
+ * In `both` the seat hears only the items the sensor said yes to, or in a decision was unsure of; with no sensor, every
+ * decision and a look the code raised a fact in. What they find goes
  * to the incident book, which tells whoever supervises; every answer is kept for labels.
  */
 export async function readLook(services: Services, project: Project, seat: Noticed, look: Look): Promise<void> {
@@ -127,8 +128,8 @@ async function judgeCase(
   if (brains.mode === "sensor") return sifted?.found ?? [];
   if (!brains.seat) return [];
   // Two stages: the seat judges only what a first stage flagged, the sensor's flags or, with no sensor, a look the code
-  // raised a fact in; the call a decision is judged at always goes with what was flagged in it.
-  const raised = one.facts.some((kind) => factTitle(kind) !== undefined);
+  // raised a fact in and every decision; the call a decision is judged at always goes with what was flagged in it.
+  const raised = one.episode !== "look" || one.facts.some((kind) => factTitle(kind) !== undefined);
   const judged = sifted ? one.patterns.filter(([id]) => sifted.flagged.has(id)) : raised ? one.patterns : [];
   if (judged.length === 0) return [];
   const flagged = sifted ? new Set(judged.flatMap(([id]) => sifted.flagged.get(id)!)) : undefined;
@@ -260,8 +261,15 @@ async function sift(
     const against = pattern.missingFrom && mine.find((entry) => entry.item.kind === pattern.missingFrom);
     const words = against ? mine.filter((entry) => entry !== against) : mine;
     if (against?.verdict === "yes") continue;
-    const said = words.filter((entry) => entry.verdict === "yes").map((entry) => entry.item);
-    if (said.length > 0) flagged.set(id, said);
+    // A decision is rare and worth its recall, so there an unsure answer flags too; a look only on a yes.
+    const said = words.filter(
+      (entry) => entry.verdict === "yes" || (episode !== "look" && entry.verdict === "unclear"),
+    );
+    if (said.length > 0)
+      flagged.set(
+        id,
+        said.map((entry) => entry.item),
+      );
     if (pattern.level === "note" || (against && against.verdict !== "no")) continue;
     for (const { item, verdict, likely } of words)
       if (verdict === "yes")
