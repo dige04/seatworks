@@ -301,12 +301,12 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     [settledLane.wakes, next(settledLane)],
     [
       undefined,
-      "If its outcome is met, start the whole-lane review (start_review with scope lane), then report it ready.",
+      "If its outcome is met, have the whole lane reviewed if it needs it (start_review with scope lane), then report it ready.",
     ],
   );
   assert.match(
     mergeLetters.merged(task, changed, [], "passed", { base: "main", conflicts: ["src/pricing.js"] }).text,
-    /main conflicts with it in src\/pricing\.js, so it does not land as it is: a Peer takes main in with git merge --no-edit main on its task's branch and commits what it settles\.\n\nNext: Have a task take main in first; then start the whole-lane review \(start_review with scope lane\) and report it ready\./,
+    /main conflicts with it in src\/pricing\.js, so it does not land as it is: a Peer takes main in with git merge --no-edit main on its task's branch and commits what it settles\.\n\nNext: Have a task take main in first; then have the whole lane reviewed if it needs it \(start_review with scope lane\) and report it ready\./,
     "landing would stop on it, and only a task's Peer can take the base in",
   );
   const noted = mergeLetters.merged(task, changed, ["src/other.js"], "passed");

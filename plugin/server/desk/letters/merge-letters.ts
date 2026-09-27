@@ -9,7 +9,7 @@ export type Settled = { base?: string; conflicts: string[] };
 function whatIsLeft({ base, conflicts }: Settled): { said: string[]; next: string } {
   const said = ["Every task of the lane is settled."];
   // Its last merge is this one, so no review of the whole lane has read the lane as it now stands.
-  const review = "start the whole-lane review (start_review with scope lane)";
+  const review = "have the whole lane reviewed if it needs it (start_review with scope lane)";
   if (!base || conflicts.length === 0) return { said, next: `If its outcome is met, ${review}, then report it ready.` };
   said.push(
     `${base} conflicts with it in ${conflicts.join(", ")}, so it does not land as it is: a Peer takes ${base} in with git merge --no-edit ${base} on its task's branch and commits what it settles.`,
