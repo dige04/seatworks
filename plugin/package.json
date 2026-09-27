@@ -1,7 +1,7 @@
 {
   "name": "seatworks-v2-paseo-plugin",
   "private": true,
-  "version": "3.0.0-dev.237",
+  "version": "3.0.0-dev.238",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json",

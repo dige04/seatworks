@@ -10,10 +10,10 @@
       "brief"
     ],
     "instructions": "Does `text` state a decision about how the system is built?",
-    "seat": "Does the Lead state a decision about how the system is built: a structure, boundary, data shape or technology the rest will build on?",
+    "seat": "Does the Lead take a decision of its own about how the system is built (a structure, boundary, data shape or technology the rest will build on) that neither `goal`, `acceptance` nor `instruction` already states, and that it is not reporting or asking up in the same words?",
     "criteria": {
       "true": "It settles a structure, a boundary, a data shape or a technology that other work will build on.",
-      "false": "It plans steps, reports progress, or decides something local to one change."
+      "false": "It plans steps, reports progress, decides something local to one change, restates what its directive, an answer it was sent or the Human's settled word already fixes, or states the decision in a report or ask that goes up."
     },
     "next": "A Lead settling how the system is built is a decision its lane owns. Nothing, if the directive or CONTEXT.md settles it; else ask the Lead one open question about what it weighed. Then mark_incident it.",
     "yes": 0.8,
@@ -73,10 +73,10 @@
       "said"
     ],
     "instructions": "Does `text` say something the agent did or claimed earlier was wrong?",
-    "seat": "Does the agent say that something it did or claimed earlier was wrong, after it had reported the work done, while it is being sent back, or while it goes round in circles?",
+    "seat": "Does the agent say that something it did or claimed earlier was wrong, when nothing it was sent (a rework, a review or its Lead's message) named that fault to it?",
     "criteria": {
       "true": "It says an earlier step, result or claim of its own was wrong or false.",
-      "false": "It says nothing of its own earlier work being wrong."
+      "false": "It concedes a fault a rework, a review or its task named to it, or says nothing of its own earlier work being wrong."
     },
     "gate": [
       "handed-back",
@@ -193,11 +193,11 @@
     "reads": [
       "brief"
     ],
-    "instructions": "Does `text` tell the worker which files, functions or approach to use?",
-    "seat": "Does a brief the Lead wrote tell the Peer which files, functions or approach to use, rather than the outcome and its limits?",
+    "instructions": "Does `text` tell the worker how to build the change: the functions to write or the approach to take?",
+    "seat": "Does a brief the Lead wrote tell the Peer how to build the change (the functions to write, the algorithm, the structure) beyond what `goal`, `acceptance` or `instruction` already fix?",
     "criteria": {
-      "true": "It names the files to change, the functions to write or the way to build it.",
-      "false": "It gives the outcome, acceptance and limits, and leaves where and how to the worker."
+      "true": "It names the functions to write, the algorithm or the structure of the change.",
+      "false": "It gives the outcome, acceptance and limits, including the paths the task holds, the write set and names or shapes its directive fixes, and leaves how to the worker."
     },
     "yes": 0.8,
     "no": 0.2
@@ -216,7 +216,7 @@
     "seat": "Does the Lead offer its Peer a fixed set of options to pick from, such as A or B, rather than an open question?",
     "criteria": {
       "true": "It asks the worker to choose among options it lists.",
-      "false": "It asks an open question, or gives no options."
+      "false": "It asks an open question, or gives no options, or the options are copied from its directive, which left that choice open."
     },
     "yes": 0.8,
     "no": 0.2
