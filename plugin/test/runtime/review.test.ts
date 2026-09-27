@@ -159,6 +159,28 @@ test("the lane's last task merging wakes its Lead, a review that came back being
   assert.doesNotMatch(merged.text, /hand-back arrives/, "no hand-back is coming");
 });
 
+test("a merge while another task of the lane is still open asks nothing of the Lead, and says nothing of what the lane still needs", async () => {
+  const { h, lane, lead } = await opened("Rounding");
+  await h.call(lead, "lead", "add_tasks", {
+    tasks: [
+      { key: "t", title: "Round", goal: "g", ...scope, hints: ["round.js"] },
+      { key: "u", title: "Floor", goal: "g", ...scope, hints: ["floor.js"] },
+    ],
+  });
+  h.commit(lane.worktree!, "round.js", "export const round = Math.round;\n");
+  const peer = h.ledger().tasks["L1-T1"]!.peer!;
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "rounded" });
+  await h.idle(peer);
+  h.agents.get(lead)!.status = "running";
+  assert.equal((await h.call(lead, "lead", "accept", { task: "L1-T1" })).ok, true);
+  await h.runtime.desk.settled(h.project);
+  assert.notEqual(h.ledger().tasks["L1-T2"]!.status, "merged");
+  const merged = h.runtime.outbox.pending(lead).find((letter) => letter.text.startsWith("MERGED L1-T1"));
+  assert.ok(merged);
+  assert.equal(merged.wakes, false, "L1-T2 is still open, so this merge is not the lane's last");
+  assert.doesNotMatch(merged.text, /Every task of the lane is settled/);
+});
+
 test("the review of the whole lane is marked so, and reads the lane's change from its base against the lane's acceptance", async () => {
   const { h, lane, lead } = await opened("Rounding");
   h.commit(lane.worktree!, "round.js", "export const round = Math.round;\n");
