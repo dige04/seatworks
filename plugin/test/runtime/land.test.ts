@@ -475,7 +475,14 @@ test("the lane that audits what goes out hears of each landing on its base, as m
     audit: true,
   });
   assert.equal(audit.ok, true, audit.text);
-  const [work, auditor] = [h.ledger().lanes.L1!, h.ledger().lanes.L2!];
+  const other = await h.call(sup, "supervisor", "open_lane", {
+    title: "Other",
+    outcome: "b.txt changes",
+    ...scope,
+    isolate: true,
+  });
+  assert.equal(other.ok, true, other.text);
+  const [work, auditor, bystander] = [h.ledger().lanes.L1!, h.ledger().lanes.L2!, h.ledger().lanes.L3!];
   assert.equal(auditor.audit, true);
   h.commit(work.worktree!, "a.txt", "changed\n");
   await h.call(work.lead!, "lead", "report", { summary: "done", ready: true });
@@ -489,5 +496,10 @@ test("the lane that audits what goes out hears of each landing on its base, as m
     h.runtime.outbox.pending(work.lead!).some((letter) => letter.text.startsWith("LANDED L1 (Work) on main")),
     false,
     "only the audit's Lead",
+  );
+  assert.equal(
+    h.runtime.outbox.pending(bystander.lead!).some((letter) => letter.text.startsWith("LANDED L1 (Work) on main")),
+    false,
+    "not another lane open on the same base",
   );
 });
