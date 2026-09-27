@@ -159,6 +159,30 @@ test("the lane's last task merging wakes its Lead, a review that came back being
   assert.doesNotMatch(merged.text, /hand-back arrives/, "no hand-back is coming");
 });
 
+test("the review of the whole lane is marked so, and reads the lane's change from its base against the lane's acceptance", async () => {
+  const { h, lane, lead } = await opened("Rounding");
+  h.commit(lane.worktree!, "round.js", "export const round = Math.round;\n");
+  const both = await h.call(lead, "lead", "start_review", { task: "L1-T9", scope: "lane", focus: "Does it hold?" });
+  assert.equal(both.ok, false, "a task's review is not the lane's");
+  const started = await h.call(lead, "lead", "start_review", { scope: "lane", focus: "Does the lane hold?" });
+  assert.equal(started.ok, true, started.text);
+  const review = h.ledger().tasks["L1-R1"]!;
+  assert.deepEqual([review.scope, review.acceptance], ["lane", ["a"]]);
+  const tip = h.git(h.root, "rev-parse", lane.branch).trim();
+  assert.match(
+    h.agents.get(review.peer!)!.prompt!,
+    new RegExp(
+      `^REVIEW L1-R1 of lane L1: Rounding\\n\\nYour working copy holds ${lane.branch} at ${tip.slice(0, 7)}; see its change with git diff main\\.\\.\\.${tip}\\.\\n\\nAcceptance it must meet:\\n- a\\n`,
+    ),
+  );
+  await h.call(lead, "lead", "start_review", { focus: "What would break the rounding?" });
+  assert.equal(
+    h.ledger().tasks["L1-R2"]!.scope,
+    undefined,
+    "a scout's or a council seat's question is not the lane's review",
+  );
+});
+
 test("a lane reported ready carries what its reviews leave standing, and each fact goes once the record settles it", async () => {
   const { h, sup, lane, lead } = await opened("Rounding");
   await h.call(lead, "lead", "add_tasks", {

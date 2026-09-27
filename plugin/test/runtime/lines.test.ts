@@ -118,10 +118,12 @@ test("a seat's line to the desk carries its choices and its calls, and a call st
   await h.tick();
   assert.match(seat.steered.join("\n"), /MERGED L1-T1/, "the next round delivers what waited");
 
+  // Mailed, or ridden along with the reply to a later call on a line, which carries what is held for its seat.
+  const lines = [heard];
   const mailed = (tool: string) =>
     within(5000, () =>
       new RegExp(`ANSWER to your ${tool} call, which was stopped on your side before its answer reached you\\.`).test(
-        h.heard(lead).join("\n"),
+        [...h.heard(lead), ...lines.flat().map((said) => said.text ?? "")].join("\n"),
       ),
     );
   say({ type: "call", id: "status", tool: "status", args: {} });
@@ -137,6 +139,7 @@ test("a seat's line to the desk carries its choices and its calls, and a call st
   const host = new PaseoHost();
   h.restart(host);
   const reloaded = await lineOf(h, t);
+  lines.push(reloaded.heard);
   reloaded.say(addTask("a", "Waits", "x.txt"));
   reloaded.say(addTask("b", "Stopped", "y.txt"));
   reloaded.say({ type: "cancel", id: "b" });

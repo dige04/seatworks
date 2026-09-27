@@ -102,7 +102,7 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
       range: `git diff ${lane.branch}...HEAD`,
     }),
     reviewBrief({ ...task, id: "L1-R3", kind: "review" }, undefined, "Is the lane sound?", {
-      where: `Your working copy is on ${lane.branch}.`,
+      where: `Your working copy is on ${lane.branch}`,
     }),
     workLetters.rework(task, "fix it"),
     seatLetters.nudge(task, "done"),

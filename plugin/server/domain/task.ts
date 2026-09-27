@@ -72,6 +72,8 @@ export type Task = {
   id: string;
   lane: string;
   kind: "code" | "review";
+  /** A review of the whole lane, against its acceptance, as its Lead asked for before READY; not a scout's or a council's. */
+  scope?: "lane";
   mode: "lane" | "parallel";
   of?: string;
   asked?: string[];

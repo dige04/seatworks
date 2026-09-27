@@ -19,8 +19,11 @@ import { type Project, riskRulesOf, rulesFor } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 
-/** A start_review call as the tool takes it: one task, or the whole lane when `task` is left out. */
-type ReviewCall = { task?: string; focus: string; title?: string; role?: string };
+/**
+ * A start_review call as the tool takes it: one task; or the lane branch, as the review of the whole lane when `scope` is
+ * lane, else for an open question such as a scout's or a council seat's.
+ */
+type ReviewCall = { task?: string; scope?: "lane"; focus: string; title?: string; role?: string };
 
 /** What a review reads: the commit its copy holds, how its brief names that, and the range that is the change. */
 type Reading = { at: string; where: string; spec?: string };
@@ -28,6 +31,7 @@ type Reading = { at: string; where: string; spec?: string };
 type Planned = {
   lane: Lane;
   target?: Task;
+  whole: boolean;
   role: RoleSpec;
   asked: string[];
   reading: Reading;
@@ -63,17 +67,19 @@ async function plan(desk: DeskServices, caller: Caller, args: ReviewCall): Promi
   const held = holdRefusal(lane);
   if (held) return held;
   const named = str(args.task);
+  const whole = args.scope === "lane";
+  if (named && whole) return "A review of a task is not the review of the whole lane: give task or scope, not both.";
   const target = named ? findTask(ledger, named) : undefined;
   if (named && (!target || target.lane !== lane.id || target.kind !== "code"))
     return `${named} is not a code task in your lane.`;
-  const reading = target ? await taskReading(project, target, lane) : await laneReading(project, lane);
+  const reading = target ? await taskReading(project, target, lane) : await laneReading(project, lane, whole);
   if (typeof reading === "string") return reading;
   // No fallback to a plain worker: a stand-in could rewrite what it is asked to judge.
   const lens = str(args.role);
   const role = roleThatCan(desk.kit, "review", lens || undefined);
   if (!role) return namedOrNot(desk.kit, "review", lens, "review, so there is nobody to ask a read-only question of");
   const asked = await askedOf(desk, project, lane, reading);
-  return { lane, target, role, asked, reading };
+  return { lane, target, whole, role, asked, reading };
 }
 
 /** A review as recorded, with whether the lane had a READY it took back and the landing ordered on it that it called off. */
@@ -90,7 +96,7 @@ function record(
   title: string,
   focus: string,
 ): Recorded | string {
-  const { lane, target, asked, reading } = planned;
+  const { lane, target, whole, asked, reading } = planned;
   return ledgers.transact(project, (current): Recorded | string => {
     const now = current.lanes[lane.id];
     if (now?.status !== "open") return `Lane ${lane.id} closed while its review was being set up.`;
@@ -103,12 +109,13 @@ function record(
       id,
       lane: lane.id,
       kind: "review",
+      ...(whole ? { scope: "lane" as const } : {}),
       mode: "lane",
       of: target?.id,
       asked: asked.length > 0 ? asked : undefined,
       title: title || (target ? `Review ${target.id}` : clip(focus.split(/\r?\n/)[0] ?? "Review", 50)),
       goal: focus,
-      acceptance: target?.acceptance ?? [],
+      acceptance: target?.acceptance ?? (whole ? lane.acceptance : []),
       hints: [],
       holds: [],
       outOfScope: [],
@@ -164,6 +171,7 @@ async function seat(
       prompt: reviewBrief(review, target, focus, {
         where: reading.where,
         range: reading.spec && `git diff ${reading.spec}`,
+        lane: lane.title,
       }),
       labels: { "seatworks.lane": lane.id, "seatworks.task": review.id },
     });
@@ -208,11 +216,14 @@ async function taskReading(project: Project, target: Task, lane: Lane): Promise<
   };
 }
 
-/** A review of the whole lane reads its branch as it is now. */
-async function laneReading(project: Project, lane: Lane): Promise<Reading | string> {
+/** A review on the lane reads its branch as it is now; the review of the whole lane, its change from where it began. */
+async function laneReading(project: Project, lane: Lane, whole: boolean): Promise<Reading | string> {
   const at = await headSha(project.root, lane.branch);
   if (!at) return `git could not read ${lane.branch}, so there is nothing to review yet.`;
-  return { at, where: `Your working copy holds ${lane.branch} at ${at.slice(0, 7)}.` };
+  const where = `Your working copy holds ${lane.branch} at ${at.slice(0, 7)}`;
+  if (!whole) return { at, where };
+  const from = lane.onBranch ? lane.startSha && `${lane.startSha}..` : `${lane.base}...`;
+  return { at, where, ...(from ? { spec: `${from}${at}` } : {}) };
 }
 
 /** The questions of every risk rule the reviewed change reaches; a change git cannot read is asked them all. */
