@@ -9,23 +9,16 @@ export type Letter = { id: string; to: string; key: string; text: string; at: nu
 const isLetter = (value: unknown): value is Letter =>
   isRecord(value) && typeof value.to === "string" && typeof value.at === "number";
 type Compose = (seat: SeatLook, letters: Letter[]) => string;
-/**
- * `steers`: the seat's harness takes a text into a running turn instead of replacing it; `calling`: the seat waits on a desk
- * call, where a text steered in reads as the call cut short; `delivered`: letters reached their seat, at `at`; `dropped`:
- * a letter given up on, and why.
- */
+/** `delivered`: letters reached their seat, at `at`; `dropped`: a letter given up on, and why; `holding`: its lane is held. */
 export type Rules = {
   dropped?: (letter: Letter, now: number, why: string) => void;
   delivered?: (letters: Letter[], at: number) => void;
-  steers?: (seat: SeatLook) => boolean;
-  calling?: (agentId: string) => boolean;
   holding?: (seat: SeatLook) => boolean;
 };
 
 const KEEP_MS = 7 * 24 * 3_600_000;
 const DUPLICATE_MS = 30 * 60_000;
 const GRACE_MS = 10 * 60_000;
-const SETTLE_MS = 60_000;
 /** How long an archived seat may yet be started again for the mail that asks something of it. */
 const GONE_MS = 24 * 3_600_000;
 /** Rounds a seat must be missing from Paseo, each listing the rest, before its mail is given up. */
@@ -37,7 +30,6 @@ export class Outbox {
   private readonly seats: Pick<Seats, "look" | "send">;
   private readonly rules: Rules;
   private readonly awaiting = new Map<string, number>();
-  private readonly started = new Map<string, number>();
   private readonly sentKeys = new Map<string, number>();
   private readonly gone = new Set<string>();
   private readonly misses = new Map<string, number>();
@@ -132,8 +124,7 @@ export class Outbox {
   }
 
   /** A seat starting a turn is there to read, an archived one Paseo started again included. */
-  turnStarted(agentId: string, now = Date.now()): void {
-    this.started.set(agentId, now);
+  turnStarted(agentId: string): void {
     this.gone.delete(agentId);
   }
 
@@ -149,7 +140,6 @@ export class Outbox {
 
   private forget(agentId: string): void {
     this.awaiting.delete(agentId);
-    this.started.delete(agentId);
   }
 
   /** Every letter not yet sent, with when it is given up on: nothing else is sent a gone seat's mail. */
@@ -217,21 +207,15 @@ export class Outbox {
       if (this.rules.holding?.(seat)) return new Set<string>();
       const since = this.awaiting.get(to);
       const waiting = since !== undefined && Date.now() - since < GRACE_MS;
-      // A turn this desk never saw start — one running across a restart — is not known to be settled.
-      const began = this.started.get(to);
-      const steer =
-        seat.status === "running" &&
-        began !== undefined &&
-        Date.now() - began >= SETTLE_MS &&
-        this.rules.steers?.(seat) === true &&
-        this.rules.calling?.(to) !== true;
-      if (!steer && (midTurn(seat.status) || waiting)) return new Set<string>();
+      // Never into a turn under way: a seat cut into while it thinks or writes loses the thought, and several hand-backs
+      // steered in one by one scatter it. Its queue waits for the turn's end, or rides the reply to its next desk call.
+      if (midTurn(seat.status) || waiting) return new Set<string>();
       // Word that asks nothing of an idle seat waits for a letter that does, or for a turn it is already in.
-      if (!steer && mine.every((letter) => letter.wakes === false)) return new Set<string>();
+      if (mine.every((letter) => letter.wakes === false)) return new Set<string>();
       const text = this.compose(seat, mine);
       const kinds = [...new Set(mine.map((letter) => letter.key.split(":")[0]!))];
       try {
-        await this.seats.send(to, text, kinds, steer ? "steer" : undefined);
+        await this.seats.send(to, text, kinds);
       } catch (error) {
         // Kept for the next pump: what posted it has already happened, and a retry would do it twice.
         daemonLog.error(`mail for ${to} was not taken:`, error);

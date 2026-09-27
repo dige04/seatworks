@@ -16,7 +16,6 @@ export const HarnessFile = z
     profileRoot: text,
     contextFile: text.optional(),
     skillsDir: text,
-    steers: z.boolean().optional(),
     /** `profile`: where a role's settings name a permission profile (`key`), each path is granted `value` in it (`at`). */
     stateWrites: z
       .strictObject({

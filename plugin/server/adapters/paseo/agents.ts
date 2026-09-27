@@ -23,7 +23,7 @@ type Handle = ReturnType<PaseoApi["agents"]["ref"]>;
 const timelineOf = (handle: Handle): TimelineHandle => handle.timeline as unknown as TimelineHandle;
 
 /** The daemon takes `activeTurnBehavior` though the SDK's type leaves it out. */
-type SendOptions = NonNullable<Parameters<Handle["send"]>[1]> & { activeTurnBehavior?: "steer" | "interrupt" };
+type SendOptions = NonNullable<Parameters<Handle["send"]>[1]> & { activeTurnBehavior?: "interrupt" };
 
 const reach = (bound: Bound): PaseoApi => {
   const paseo = bound();
@@ -73,7 +73,7 @@ export function seatsOn(bound: Bound): Seats {
       await handle.refresh();
       return lookOf(handle);
     },
-    async send(id: string, text: string, kinds: string[], into?: "steer" | "interrupt"): Promise<void> {
+    async send(id: string, text: string, kinds: string[], into?: "interrupt"): Promise<void> {
       // The id is how `sentBy` knows the desk sent it.
       const options: SendOptions = { messageId: deskId(kinds), ...(into ? { activeTurnBehavior: into } : {}) };
       await ref(id).send(text, options);

@@ -156,7 +156,6 @@ async function deliver(
   now: number,
 ): Promise<string[]> {
   const { kit, incidents, mail, roster, teamFor } = services;
-  const steers = seatOf(kit, seat.provider)?.harness.steers === true;
   const human = teamFor(project).hitl.on;
   let to: string | undefined;
   try {
@@ -182,7 +181,7 @@ async function deliver(
       const pattern = kit.patterns[incident.kind];
       const title = pattern?.title ?? factTitle(incident.kind);
       const next = pattern?.next ?? factNext(incident.kind);
-      const words = { steers, human, ...(title ? { title } : {}), ...(next ? { next } : {}) };
+      const words = { human, ...(title ? { title } : {}), ...(next ? { next } : {}) };
       await mail.post(to, watchLetters.incident(incident, place, words));
       told.push(incident.id);
     } catch (error) {

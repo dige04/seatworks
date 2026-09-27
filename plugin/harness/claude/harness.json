@@ -11,7 +11,6 @@
       "error": "InputValidationError[^\"]*could not be parsed as JSON"
     }
   },
-  "steers": true,
   "mcp": {
     "file": ".claude.json",
     "delivery": "launch",

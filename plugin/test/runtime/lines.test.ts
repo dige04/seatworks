@@ -96,7 +96,7 @@ test("a seat's line to the desk carries its choices and its calls, and a call st
   const choices = heard.find((said) => said.type === "choices");
   assert.equal(skills(choices).includes("ide-index-mcp"), false, "without the server, its skill is no choice");
 
-  // As seen live: a Lead well into a long turn accepts, and the merge mails it MERGED before that turn ends.
+  // As seen live: a Lead well into a long turn accepts, and the merge's MERGED waits for that turn to end.
   await h.call(lead, "lead", "add_tasks", {
     tasks: [{ key: "t", title: "Clean build", goal: "g", acceptance: ["a"], hints: ["a.txt"], outOfScope: ["z"] }],
   });
@@ -105,7 +105,7 @@ test("a seat's line to the desk carries its choices and its calls, and a call st
   await h.call(peer, "peer", "done", { outcome: "complete", summary: "a" });
   h.agents.get(peer)!.status = "idle";
   seat.status = "running";
-  h.runtime.outbox.turnStarted(lead, Date.now() - 2 * 60_000);
+  h.runtime.outbox.turnStarted(lead);
   say({ type: "call", id: "accept", tool: "accept", args: { task: "L1-T1" } });
   assert.match((await result("accept")).text ?? "", /L1-T1 is in the merge queue/);
   await h.runtime.desk.settled(h.project);
@@ -116,7 +116,10 @@ test("a seat's line to the desk carries its choices and its calls, and a call st
   say({ type: "taken", id: "accept" });
   assert.ok(await within(2000, () => !socket.calling(lead)));
   await h.tick();
-  assert.match(seat.steered.join("\n"), /MERGED L1-T1/, "the next round delivers what waited");
+  assert.deepEqual(merged(), [], "nor once the call is done: the turn is still its own to think and write in");
+  await h.idle(lead);
+  assert.deepEqual(seat.steered, [], "nothing was steered into it");
+  assert.match(seat.sent.join("\n"), /MERGED L1-T1/, "what waited goes once its turn ends");
 
   // Mailed, or ridden along with the reply to a later call on a line, which carries what is held for its seat.
   const lines = [heard];

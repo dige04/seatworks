@@ -169,10 +169,10 @@ const KEEP: Keep[] = [
   },
   {
     id: "keep-15a",
-    title: "the outbox sends into a running turn only when it can steer",
+    title: "the outbox never sends into a running turn: a seat's queue waits for the turn's end or its next desk call",
     file: "server/runtime/mail/outbox.ts",
     check: "contains",
-    anchor: "if (!steer && (midTurn(seat.status) || waiting)) return new Set<string>();",
+    anchor: "if (midTurn(seat.status) || waiting) return new Set<string>();",
   },
   {
     id: "keep-15b",

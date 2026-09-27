@@ -89,10 +89,8 @@ export class Runtime implements HostHooks {
     this.source = new TeamSource(kit);
     this.seating = new Seating(kit, this.source, { node: nodeBin(), socket: deskSocket() });
     const rules = {
-      ...mailRules(
-        kit,
-        (agentId) => this.socket.calling(agentId),
-        (agentId) => this.registry.known().find((project) => loadLedger(project.state).agents[agentId]),
+      ...mailRules(kit, (agentId) =>
+        this.registry.known().find((project) => loadLedger(project.state).agents[agentId]),
       ),
       // A Watcher's case has its time from when it arrives, not from when it was posted.
       delivered: (letters: { key: string }[], at: number) => this.desk.watcher.delivered(letters, at),

@@ -133,7 +133,7 @@
     {
       "name": "message",
       "title": "Message a Lead or Peer",
-      "description": "Send one decision or one question to a Lead (lane id) or, only when its Lead cannot carry it, a Peer (task id; its Lead is told). It arrives inside a running turn on agents that take that, else when the turn ends. Refused if it quotes an open incident about that seat.",
+      "description": "Send one decision or one question to a Lead (lane id) or, only when its Lead cannot carry it, a Peer (task id; its Lead is told). It arrives when that seat's turn ends or with its next desk call's reply, never inside a turn; hold_lane cuts one short. Refused if it quotes an open incident about that seat.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1073,7 +1073,7 @@
     {
       "name": "message",
       "title": "Message a Peer or a reviewer",
-      "description": "Send one of your Peers or reviewers, by its task or review id, one message. It arrives when that seat can take it: inside a running turn on agents that take that, else when its turn ends.",
+      "description": "Send one of your Peers or reviewers, by its task or review id, one message. It never cuts into a turn: it arrives when that seat's turn ends, or with the reply to its next desk call.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,

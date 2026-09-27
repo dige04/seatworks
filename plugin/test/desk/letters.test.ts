@@ -149,7 +149,7 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     seatLetters.gone(task, "lead"),
     seatLetters.failed("agent-3", 1, "Peer agent-3", "overloaded", "lead"),
     seatLetters.permission("agent-3", "Peer agent-3", { id: "p1", name: "Bash", title: "npm install" }, "lead"),
-    watchLetters.incident(incident, { lane, task }, { steers: true, human: true }),
+    watchLetters.incident(incident, { lane, task }, { human: true }),
     workLetters.amended(lane, amendment, "lead"),
     seatLetters.notStarted(task),
     workLetters.held(task, "L1-T1 is not accepted yet.", "It starts by itself."),
@@ -275,11 +275,8 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
   );
   assert.match(next(workLetters.rework(task, "fix it")), /or say with evidence why not/);
   const page = { ...incident, level: "page" as const };
-  assert.match(
-    next(watchLetters.incident(page, { lane, task }, { steers: true, human: true })),
-    /hold_lane it and tell the Human/,
-  );
-  const alone = next(watchLetters.incident(page, { lane, task }, { steers: true, human: false }));
+  assert.match(next(watchLetters.incident(page, { lane, task }, { human: true })), /hold_lane it and tell the Human/);
+  const alone = next(watchLetters.incident(page, { lane, task }, { human: false }));
   assert.match(
     alone,
     /^If it may reach past the lane unasked, hold_lane it\. Decide what follows and put it in your report/,

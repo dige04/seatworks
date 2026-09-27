@@ -6,7 +6,7 @@ import { stateRoot } from "../../server/core/paths.ts";
 import { sentBy } from "../../server/core/sent-by.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { tempDir } from "../tempdir.ts";
-import { harness } from "./harness.ts";
+import { harness, laneWithPeer } from "./harness.ts";
 import { book } from "./noticed.ts";
 
 type Harness = ReturnType<typeof harness>;
@@ -339,9 +339,9 @@ test("a call that runs longer than a seat can wait is answered once by mail, and
   assert.match(heard(h, lead), new RegExp(`Gate: ${gate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} passed`));
 });
 
-test("mail reaches a running seat inside its turn where its harness can take it there, and waits where it cannot", async (t) => {
+test("mail never reaches a running seat inside its turn, whatever its agent: it waits for the turn's end, then comes as one", async (t) => {
   const h = harness();
-  // omp takes mail only between turns.
+  // Seats on an agent that could take a message mid-turn and on one that could not are held alike.
   writeFileSync(
     join(h.project.state, "settings.json"),
     JSON.stringify({ roles: { peer: { harness: "omp", model: "glm-5" } } }),
@@ -350,22 +350,29 @@ test("mail reaches a running seat inside its turn where its harness can take it 
   const { lead, peer } = await lane(h, sup, "Pricing", "Round");
   assert.deepEqual([h.agents.get(lead)!.status, h.agents.get(peer)!.status], ["running", "running"]);
 
-  // Paseo turns a steer the provider cannot take yet into replacing the turn, so a new turn is left alone.
   t.mock.timers.enable({ apis: ["Date"], now: Date.now() });
   await h.beginTurn(lead);
   await h.beginTurn(peer);
-  const early = await h.call(sup, "supervisor", "message", { to: "L1", text: "Is the premise right?" });
-  assert.match(early.text, /Queued for the Lead of L1/);
-  t.mock.timers.tick(2 * 60_000);
-  await h.tick();
-  assert.match(h.agents.get(lead)!.steered.join("\n"), /Is the premise right\?/, "delivered once the turn has settled");
-
-  const toLead = await h.call(sup, "supervisor", "message", { to: "L1", text: "Stop: the premise is wrong." });
-  assert.match(toLead.text, /Delivered to the Lead of L1/);
-  assert.match(h.agents.get(lead)!.steered.join("\n"), /the premise is wrong/, "the Lead's harness takes it mid-turn");
+  t.mock.timers.tick(10 * 60_000);
+  for (const text of ["Is the premise right?", "Stop: the premise is wrong."]) {
+    const told = await h.call(sup, "supervisor", "message", { to: "L1", text });
+    assert.match(told.text, /Queued for the Lead of L1/, "however long its turn has run");
+  }
   const toPeer = await h.call(lead, "lead", "message", { to: "L1-T1", text: "Stop: the premise is wrong." });
   assert.match(toPeer.text, /Queued for the Peer on L1-T1/);
-  assert.deepEqual(h.agents.get(peer)!.sent, [], "the Peer's harness cannot, and sending would replace its turn");
+  await h.tick();
+  for (const seat of [lead, peer])
+    assert.deepEqual(
+      [h.agents.get(seat)!.steered, h.agents.get(seat)!.sent.filter((text) => /premise/.test(text))],
+      [[], []],
+      "nothing cuts into a turn it thinks or writes in",
+    );
+  await h.idle(lead);
+  assert.match(
+    h.agents.get(lead)!.sent.at(-1)!,
+    /^2 messages[^]*Is the premise right\?[^]*Stop: the premise is wrong\./,
+    "its queue comes as one message once the turn ends",
+  );
 });
 
 test("with the Human out of the loop, a Lead's ask nobody answers in time goes back to the Lead to settle, and whoever supervises hears so", async () => {
@@ -454,4 +461,26 @@ test("mail given up for a seat that is gone is on its project's record", async (
     h.events("mail.dropped").map((event) => [event.to, event.key, event.why]),
     [[lead, "closed:L1", "its seat has been archived a day"]],
   );
+});
+
+test("a Lead in a running turn is never cut into: its Peers' hand-backs wait in its queue and reach it as one, when its turn ends", async () => {
+  const { h, lane, peer } = await laneWithPeer();
+  const lead = lane.lead!;
+  await h.call(lead, "lead", "add_tasks", {
+    tasks: [{ key: "b", title: "Receipt", goal: "g", acceptance: ["b"], holds: ["b.txt"], parallel: true }],
+  });
+  const other = h.ledger().tasks["L1-T2"]!.peer!;
+  await h.idle(lead);
+  const seat = h.agents.get(lead)!;
+  const before = seat.sent.length;
+  seat.status = "running";
+  h.runtime.outbox.turnStarted(lead);
+  h.commit(lane.worktree!, "a.txt", "A\n");
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "a" });
+  await h.call(other, "peer", "done", { outcome: "complete", summary: "b" });
+  await h.tick();
+  assert.deepEqual(seat.steered, [], "nothing is steered into a turn it is thinking or writing in");
+  assert.equal(seat.sent.length, before, "nor sent in place of it");
+  await h.idle(lead);
+  assert.match(seat.sent.at(-1)!, /^2 messages[^]*HANDBACK L1-T1 [^]*HANDBACK L1-T2 /, "both, in one message");
 });
