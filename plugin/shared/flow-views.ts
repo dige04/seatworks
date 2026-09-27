@@ -23,6 +23,13 @@ const FlowTask = z.object({
   held: z.string().nullable(),
   peer: FlowSeat.nullable(),
   handback: z.number().nullable(),
+  /** What the task is briefed to: the Lead's goal, the choices open to its Peer's question, and what nobody knows yet. */
+  brief: z.object({
+    goal: z.string(),
+    choices: z.array(z.string()),
+    unknowns: z.array(z.string()),
+    settled: z.boolean(),
+  }),
 });
 export type FlowTask = z.infer<typeof FlowTask>;
 /** A Peer kept idle after its task was accepted, until its Lead releases it. */

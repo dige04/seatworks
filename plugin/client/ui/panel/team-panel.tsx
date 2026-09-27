@@ -3,7 +3,7 @@ import type { PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
 import { ScrollView } from "@getpaseo/plugin/client/react-native";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import type { FlowLane, FlowView } from "../../../shared/flow-views.ts";
+import type { FlowLane, FlowTask, FlowView } from "../../../shared/flow-views.ts";
 import type { CatalogView } from "../../../shared/views.ts";
 import { type Answers, laneLine, seatLine, seatName, taskLine } from "../../format/flow.ts";
 import type { Tone } from "../../format/tone.ts";
@@ -60,6 +60,26 @@ function SeatLine({
   );
 }
 
+/** The brief a task works to, under its seat: its goal, then what is open to question and what nobody knows yet. */
+function BriefLines({ brief, theme }: { brief: FlowTask["brief"]; theme: PluginTheme }) {
+  const muted = { fontSize: FONT.small, color: theme.colors.foregroundMuted, paddingLeft: 14 };
+  const lines = [
+    brief.goal,
+    ...(brief.choices.length > 0 ? [`Chosen, open to question: ${brief.choices.join("; ")}`] : []),
+    ...(brief.unknowns.length > 0 ? [`Not known yet: ${brief.unknowns.join("; ")}`] : []),
+    ...(brief.settled ? ["Builds to what is settled"] : []),
+  ];
+  return (
+    <View style={{ paddingBottom: 4 }}>
+      {lines.map((line) => (
+        <Text key={line} style={muted} numberOfLines={2}>
+          {line}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 function laneItem(
   lane: FlowLane,
   flow: FlowView,
@@ -87,14 +107,16 @@ function laneItem(
           theme={theme}
         />
         {lane.tasks.map((task) => (
-          <SeatLine
-            key={task.id}
-            who={`${task.peer ? seatName(task.peer) : task.kind} ${task.id}`}
-            line={taskLine(task, answers)}
-            agentId={task.peer?.id ?? null}
-            navigation={navigation}
-            theme={theme}
-          />
+          <View key={task.id}>
+            <SeatLine
+              who={`${task.peer ? seatName(task.peer) : task.kind} ${task.id}`}
+              line={taskLine(task, answers)}
+              agentId={task.peer?.id ?? null}
+              navigation={navigation}
+              theme={theme}
+            />
+            <BriefLines brief={task.brief} theme={theme} />
+          </View>
         ))}
       </View>
     ),

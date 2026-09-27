@@ -73,6 +73,12 @@ function tasksByLane(
       held: (task.startHeld ?? task.mergeHeld)?.why ?? null,
       peer,
       handback: task.handback ? minutes(now, task.handback.at) : null,
+      brief: {
+        goal: task.goal,
+        choices: task.choices ?? [],
+        unknowns: task.unknowns ?? [],
+        settled: task.settled === true,
+      },
     };
     held.set(task.lane, [...(held.get(task.lane) ?? []), built]);
   }

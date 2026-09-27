@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { contracts } from "../../shared/rpc.ts";
 import { harness, laneWithPeer } from "./harness.ts";
 
 const scope = { acceptance: ["a"], outOfScope: ["the rest"] };
@@ -306,4 +307,20 @@ test("a brief says whether the task builds to what is settled or may reopen its 
   assert.equal(planned.ok, true, planned.text);
   assert.match(briefOf(h, "L1-T1"), /This task is open: a premise or choice above may be reopened with evidence/);
   assert.match(briefOf(h, "L1-T2"), /This task builds to what is settled: raise a choice only when the code shows/);
+});
+
+test("the Team tab shows the brief each task works to: its goal, what was chosen and what is not known", async () => {
+  const { h } = await laneWithPeer(undefined, undefined, {
+    goal: "the bike stops in 5 m",
+    choices: ["a parachute, the first design drawn"],
+    unknowns: ["whether rim brakes fit: read the frame drawing"],
+  });
+  const read = await h.rpc(contracts.flow, { project: h.project.slug, open: ["L1"] });
+  assert.ok("lanes" in read);
+  assert.deepEqual(read.lanes[0]!.tasks[0]!.brief, {
+    goal: "the bike stops in 5 m",
+    choices: ["a parachute, the first design drawn"],
+    unknowns: ["whether rim brakes fit: read the frame drawing"],
+    settled: false,
+  });
 });
