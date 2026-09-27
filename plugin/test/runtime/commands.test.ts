@@ -155,3 +155,22 @@ test("Windows removals are read as the shell's own, and what counts as scratch i
   );
   assert.equal(paged("rm -rf /tmp/run", rules({ scratch: /^\/scratch\// })).length, 1);
 });
+
+test("what else throws work or data away is paged: stashes, discarded changes, deleting finds, killed processes, deleted rows and torn-down infrastructure", () => {
+  for (const command of [
+    "git stash drop",
+    "git stash clear",
+    "git checkout -- .",
+    "git restore .",
+    "find . -name '*.log' -delete",
+    "pkill node",
+    "killall node",
+    "kill -9 4242",
+    `psql -c "DELETE FROM orders"`,
+    "terraform destroy -auto-approve",
+    "kubectl -n shop delete pod api",
+  ])
+    assert.equal(paged(command).length, 1, command);
+  for (const command of ["git stash", "git checkout main", "git restore src/a.ts", "find . -name '*.log'", "kill 4242"])
+    assert.deepEqual(paged(command), [], command);
+});
