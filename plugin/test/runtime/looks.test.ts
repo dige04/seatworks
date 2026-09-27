@@ -520,6 +520,29 @@ test("the seat judges only what a first stage flagged: the items the sensor flag
   assert.equal(seat.asked.length, before + 2, "one the code raised a fact in is");
 });
 
+test("with the seat alone reading, a sensor set up is never asked, and the seat judges the decision and the look the code raised a fact in", async (t) => {
+  const sensed = brain({ "pre-solves": 0.9, "stand-in": 0.9 });
+  const seat = brain({});
+  const { h, lane } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  brains("seat");
+  t.mock.method(h.runtime.desk.watcher, "judge", () => seat.judge);
+  const looked = looksOf(h, t);
+  const stream = h.timelineOf(lane.lead!);
+  const write = { type: "write", filePath: "src/cart.js", content: "x" };
+  stream.beat("turn_started", "l1");
+  stream.add({ type: "user_message", text: "Go on.", clientMessageId: "sw2-message-l1" }, "l1");
+  stream.add({ type: "reasoning", text: "I will stub the cart myself." }, "l1");
+  stream.add({ type: "tool_call", callId: "w", name: "Write", status: "completed", detail: write }, "l1");
+  stream.beat("turn_completed", "l1");
+  await looked();
+  assert.deepEqual(
+    sensed.asked.map((entry) => Object.keys(entry.questions)),
+    [["instruction_kind"]],
+    "the sensor is asked no pattern: only the instruction's kind, which is review's moment, not the watch's",
+  );
+  assert.deepEqual(seat.asked.map((entry) => entry.state.call ?? "look").toSorted(), ["add_tasks", "look"]);
+});
+
 test("in a decision case what the sensor is unsure of goes to the seat too; in a look only what it said yes to", async (t) => {
   const sensed = brain({ "pre-solves": 0.5, struggling: 0.5 });
   const seat = brain({});

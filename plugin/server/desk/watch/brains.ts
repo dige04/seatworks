@@ -121,8 +121,9 @@ async function judgeCase(
   const { brains, attention } = services.teamFor(project);
   const sensor = brains.sensor?.key ? services.sensorFor(brains.sensor.sensor, brains.sensor.key) : undefined;
   const about = { subject, episode: one.episode };
+  // The team gives a sensor only to modes it reads in, so the seat alone never has one.
   const sifted =
-    sensor && brains.sensor && brains.mode !== "seat"
+    sensor && brains.sensor
       ? await sift(project, about, brains.sensor, sensor, one.items, one.patterns, asked, attention.quoteChars)
       : undefined;
   if (brains.mode === "sensor") return sifted?.found ?? [];
