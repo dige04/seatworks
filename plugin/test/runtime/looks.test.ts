@@ -192,6 +192,63 @@ test("a Lead's brief is judged once, at the add_tasks that wrote it, on what the
   assert.equal(sensed.asked.length, before, "with the brain off, nothing is asked");
 });
 
+test("a review briefed to report only certainties is judged at start_review against the Lead's own doubt, as evidence on the code's fact", async (t) => {
+  const sensed = brain({ "steered-review": 0.9 });
+  const seat = brain(
+    { "steered-review": 0.9 },
+    { "steered-review": 'It fears "a race in the drain" and asks for certainties.' },
+  );
+  const { h, sup, lane } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  brains("both");
+  t.mock.method(h.runtime.desk.watcher, "judge", () => seat.judge);
+  const looked = looksOf(h, t);
+  const lead = lane.lead!;
+  const stream = h.timelineOf(lead);
+  const review = async (id: string, focus: string, patrolled = true) => {
+    stream.beat("turn_started", id);
+    stream.add({ type: "reasoning", text: `The drain change may race under concurrent requests (${id}).` }, id);
+    stream.add({ type: "assistant_message", text: `Starting review ${id}.`, messageId: id }, id);
+    await h.call(lead, "lead", "start_review", { focus });
+    if (patrolled) await h.tick();
+    stream.beat("turn_completed", id);
+    await looked();
+  };
+  await review("l1", "Review the lane as a whole.");
+  assert.equal(sensed.asked.filter((entry) => "steered-review" in entry.questions).length, 0, "an open brief is not");
+
+  await review("l2", "Second round. Report only what you are sure of.");
+  const read = sensed.asked.find((entry) => "steered-review" in entry.questions)!;
+  const judged = seat.asked.find((entry) => "steered-review" in entry.questions)!;
+  assert.match(String(read.state.text), /^focus: Second round\. Report only what you are sure of\.$/);
+  assert.deepEqual(
+    judged.state.items,
+    [
+      "[thought] The drain change may race under concurrent requests (l2).",
+      "[said] Starting review l2.",
+      "[call] focus: Second round. Report only what you are sure of.",
+    ],
+    "the words since its last decision, beside the call",
+  );
+  assert.equal(judged.state.call, "start_review");
+  const certain = Object.values(book(h)).filter((item) => item.kind === "certainty-only");
+  assert.equal(certain.length, 1);
+  assert.match(certain[0]!.evidence?.join() ?? "", /steered-review: It fears "a race in the drain"/);
+  assert.match(
+    (await h.call(sup, "supervisor", "incidents", {})).text,
+    /certainty-only[^\n]*; also read: steered-review: It fears "a race in the drain"/,
+    "whoever supervises reads it beside the fact",
+  );
+  assert.equal(Object.values(book(h)).filter((item) => item.kind === "steered-review").length, 0, "not a second");
+
+  await h.call(sup, "supervisor", "mark_incident", { id: certain[0]!.id, verdict: "useful" });
+  await review("l3", "Third round: only confirmed bugs, no speculation.", false);
+  assert.equal(
+    Object.values(book(h)).filter((item) => item.kind === "steered-review").length,
+    1,
+    "with no incident of the fact open, as before the patrol raises it, it opens its own",
+  );
+});
+
 test("a decision about how the system is built is judged at the Lead's report, the report beside the words that led to it", async (t) => {
   const sensed = brain({ "big-decision": 0.5 }, {}, /array on the order/);
   const seat = brain({});

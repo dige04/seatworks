@@ -2,7 +2,7 @@ import { recordEvent } from "../store/event-log.ts";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
 import { type Finding, type Incident, deliveryOf, factNext, factTitle, tell, unheard } from "../../domain/incident.ts";
-import { closeSeat, forget, settledAsNoise, sight } from "../store/incidents.ts";
+import { closeSeat, forget, openFor, settledAsNoise, sight } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Ledger, laneOfLead, taskOfPeer } from "../../domain/ledger.ts";
@@ -116,6 +116,13 @@ function openIncidents(
         ...(finding.theirs && { theirs: finding.theirs }),
         ...(finding.brain && { brain: finding.brain }),
       };
+      const joined = finding.joins ? openFor(book, seat.id, finding.joins) : undefined;
+      if (joined) {
+        joined.evidence = [...(joined.evidence ?? []), `${finding.kind}: ${finding.quote}`];
+        joined.facts = [...new Set([...joined.facts, ...finding.facts])];
+        recordEvent(project, { kind: "incident.evidence", id: joined.id, agent: seat.id, finding: finding.kind });
+        continue;
+      }
       if (settledAsNoise(book, sighting, now)) continue;
       const { incident, opened: isNew } = sight(book, sighting, now);
       if (deliveryOf(incident) !== "told" && tell(incident, now)) sending.push({ ...incident });

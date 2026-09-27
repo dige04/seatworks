@@ -69,7 +69,7 @@ export const ChecksFile = z.record(
  * What the brains read a seat's own words for: whom it watches, what it reads, the sensor's one-condition question on an
  * item's `text` (none when only the seat can judge) and the seat's on the whole case, the signs a yes needs, and its
  * level. With `tools` it is judged only at those desk calls, on the call and the words that led to it, and never in a
- * look.
+ * look; `joins` names a fact whose open incident a yes adds its quote to rather than opening one of its own.
  */
 const Pattern = z
   .strictObject({
@@ -80,8 +80,9 @@ const Pattern = z
     instructions: text.includes("`text`").optional(),
     seat: text,
     criteria: z.strictObject({ true: text, false: text }),
-    gate: z.array(z.enum(["stuck", "reworked", "handed-back", "edit-before-look"])).optional(),
+    gate: z.array(z.enum(["stuck", "reworked", "handed-back", "edit-before-look", "certainty-only"])).optional(),
     tools: z.array(text).min(1).optional(),
+    joins: text.optional(),
     level: z.enum(["attend", "note"]).optional(),
     next: text.optional(),
     yes: unit,

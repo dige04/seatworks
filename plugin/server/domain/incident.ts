@@ -7,7 +7,8 @@ export type Level = "page" | "attend" | "note";
 
 /**
  * What a watch saw that the desk books as an incident; `theirs` when its quote is only the seat's words or command, and
- * `brain` when a brain read it rather than the code measured it: a brain may add to what the code saw, never stand in for it.
+ * `brain` when a brain read it rather than the code measured it: a brain may add to what the code saw, never stand in for
+ * it, and so it `joins` the code's open incident of that kind as evidence rather than opening its own beside it.
  */
 export type Finding = {
   kind: string;
@@ -16,6 +17,7 @@ export type Finding = {
   facts: string[];
   theirs?: true;
   brain?: true;
+  joins?: string;
 };
 
 export type Incident = {
@@ -31,6 +33,7 @@ export type Incident = {
   theirs?: true;
   brain?: true;
   later?: string;
+  evidence?: string[];
   facts: string[];
   opened: number;
   last: number;

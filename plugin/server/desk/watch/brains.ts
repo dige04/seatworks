@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { PatternSpec } from "../../catalog/kit/kit.ts";
+import { recordPatterns } from "../../catalog/kit/ecosystem-patterns.ts";
 import { can, seatOf } from "../../catalog/kit/roles.ts";
 import type { Judge, Question } from "../../core/ports.ts";
 import { clip } from "../../core/text.ts";
@@ -52,9 +53,13 @@ export async function readLook(services: Services, project: Project, seat: Notic
     ...(place.task?.reworks ? ["reworked"] : []),
     ...(place.task?.handback ? ["handed-back"] : []),
   ];
+  const certainty = recordPatterns(kit).certainty;
   const watching = (items: Item[], judged: (pattern: PatternSpec) => boolean): Pattern[] => {
     const read = new Set(items.map((item) => item.kind));
-    const known = new Set(signs);
+    const known = new Set([
+      ...signs,
+      ...(items.some((item) => item.kind === "call" && certainty.test(item.text)) ? ["certainty-only"] : []),
+    ]);
     return Object.entries(kit.patterns).filter(
       ([, pattern]) =>
         judged(pattern) &&
@@ -198,6 +203,7 @@ async function sift(
             `seen by ${by.sensor.label}, ${(answer as { likely: number }).likely.toFixed(2)} sure, in its ${item.kind}`,
           ),
           theirs: true,
+          ...(pattern.joins ? { joins: pattern.joins } : {}),
         });
     }
   }
@@ -219,7 +225,12 @@ async function weigh(
   if (!judged) return [];
   return patterns.flatMap(([id, pattern]) =>
     holds(pattern, judged.answers[id]) === "yes" && pattern.level !== "note"
-      ? [finding(id, judged.why?.[id] ?? "", quote, "judged by the Watcher seat")]
+      ? [
+          {
+            ...finding(id, judged.why?.[id] ?? "", quote, "judged by the Watcher seat"),
+            ...(pattern.joins ? { joins: pattern.joins } : {}),
+          },
+        ]
       : [],
   );
 }

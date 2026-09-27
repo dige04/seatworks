@@ -17,7 +17,8 @@ function line(item: Incident): string {
   const state = item.open ? sent : ["closed", sent, item.label ? `marked ${item.label}` : "not marked"].join(", ");
   const seen = item.count > 1 ? ` (seen ${item.count} times, last ${at(item.last)})` : "";
   const later = item.later !== undefined ? `; seen after you were told: ${oneLine(item.later, 200)}` : "";
-  return `- ${item.id} [${item.level}, ${state}] ${item.where}, agent ${item.seat}: ${item.kind}${seen} — ${oneLine(item.quote, 300)}${later}`;
+  const evidence = (item.evidence ?? []).map((quote) => `; also read: ${oneLine(quote, 300)}`).join("");
+  return `- ${item.id} [${item.level}, ${state}] ${item.where}, agent ${item.seat}: ${item.kind}${seen} — ${oneLine(item.quote, 300)}${later}${evidence}`;
 }
 
 function briefs(state: string, shown: Incident[]): string[] {
