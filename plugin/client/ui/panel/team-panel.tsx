@@ -7,7 +7,7 @@ import type { FlowLane, FlowView } from "../../../shared/flow-views.ts";
 import type { CatalogView } from "../../../shared/views.ts";
 import { type Answers, laneLine, seatLine, seatName, taskLine } from "../../format/flow.ts";
 import type { Tone } from "../../format/tone.ts";
-import { incidentLines, judgeWords } from "../../format/watch.ts";
+import { caseLines, incidentLines, judgeWords } from "../../format/watch.ts";
 import { useFlow } from "../../state/flow.ts";
 import { useWorkspaceProject } from "../../state/workspace-project.ts";
 import { DisclosureList, type DisclosureItem } from "../kit/disclosure.tsx";
@@ -142,8 +142,9 @@ function TeamList({
         </View>
       ),
     });
-  const judge = judgeWords(flow.watch.judge, roleLabel(catalog, "judge", "role that judges"));
-  const counts = incidentLines(flow.watch.incidents, supervisor);
+  const judgeRole = roleLabel(catalog, "judge", "role that judges");
+  const judge = judgeWords(flow.watch.judge, judgeRole);
+  const counts = [...incidentLines(flow.watch.incidents, supervisor), ...caseLines(flow.watch.cases, judgeRole)];
   return (
     <View style={{ gap: 10 }}>
       <Text style={styles.head}>{`${slug} · ${working.length} line${working.length === 1 ? "" : "s"}`}</Text>

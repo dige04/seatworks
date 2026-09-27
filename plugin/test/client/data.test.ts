@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { KEPT, type Layer } from "../../shared/settings.ts";
 import { laneLine, seatLine } from "../../client/format/flow.ts";
-import { incidentLines, judgeWords } from "../../client/format/watch.ts";
+import { caseLines, incidentLines, judgeWords } from "../../client/format/watch.ts";
 import {
   dropMcp,
   keptRoles,
@@ -211,9 +211,15 @@ const JUDGES: [WatchJudge, ReturnType<typeof judgeWords>][] = [
 ];
 
 test("the watch card says in words where an incident has got to and who answers the watch's questions, and how that stands, naming roles as the kit labels them", () => {
-  assert.deepEqual(incidentLines({ told: 2, held: 1, recorded: 0 }, "Chief"), [
+  assert.deepEqual(incidentLines({ told: 2, held: 1, recorded: 0, closed: 3 }, "Chief"), [
     "2 told the Chief",
     "1 held · nobody is seated to tell",
+    "3 told and closed since the report was read",
+  ]);
+  assert.deepEqual(caseLines({ waiting: 1, expired: 4, dropped: 0, superseded: 2 }, "Judge"), [
+    "1 waiting on the Judge",
+    "4 expired unjudged",
+    "2 folded into a newer case",
   ]);
   for (const [state, words] of JUDGES) assert.deepEqual(judgeWords(state, "Judge"), words, state.state);
 });

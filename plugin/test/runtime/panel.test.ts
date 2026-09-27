@@ -38,7 +38,7 @@ test("what the watch sees reaches whoever supervises, the Team tab shows what wa
   assert.ok("watch" in held);
   assert.deepEqual(
     held.watch.incidents,
-    { told: 2, held: 1, recorded: 0 },
+    { told: 2, held: 1, recorded: 0, closed: 0 },
     "the Human sees how many incidents stand where, not the cases, which are W's for whoever supervises",
   );
   Object.assign(h.agents.get(sup)!, { archivedAt: null });

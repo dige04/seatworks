@@ -75,8 +75,11 @@ export const FlowQuestion = z.object({
   minutes: z.number(),
 });
 export type FlowQuestion = z.infer<typeof FlowQuestion>;
-/** How many open incidents stand where: told whoever supervises, held while nobody is seated to tell, or only recorded. */
-const WatchCounts = z.object({ told: z.number(), held: z.number(), recorded: z.number() });
+/**
+ * How many open incidents stand where: told whoever supervises, held while nobody is seated to tell, or only recorded;
+ * and how many told were closed since the Human last read the report.
+ */
+const WatchCounts = z.object({ told: z.number(), held: z.number(), recorded: z.number(), closed: z.number() });
 export type WatchCounts = z.infer<typeof WatchCounts>;
 /** Who answers the watch's questions, and how that stands: off, a sensor with no key, nothing asked yet, its last answer, or its last failure. */
 const WatchJudge = z.object({
@@ -86,8 +89,14 @@ const WatchJudge = z.object({
   detail: z.string().nullable(),
 });
 export type WatchJudge = z.infer<typeof WatchJudge>;
-/** What the code noticed about the seats and nobody has marked yet, and who answers the watch's questions. */
-const WatchView = z.object({ incidents: WatchCounts, judge: WatchJudge });
+/**
+ * The Watcher's cases nobody judged: waiting now, and since the Human last read the report, expired with no answer,
+ * dropped for want of a Watcher or a Supervisor, and folded into a newer case.
+ */
+const WatchCases = z.object({ waiting: z.number(), expired: z.number(), dropped: z.number(), superseded: z.number() });
+export type WatchCases = z.infer<typeof WatchCases>;
+/** What the code noticed about the seats and nobody has marked yet, the cases left unjudged, and who answers the watch's questions. */
+const WatchView = z.object({ incidents: WatchCounts, cases: WatchCases, judge: WatchJudge });
 export type WatchView = z.infer<typeof WatchView>;
 const FlowView = z.object({
   project: z.string(),

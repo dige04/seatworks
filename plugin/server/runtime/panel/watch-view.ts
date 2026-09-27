@@ -1,10 +1,13 @@
 import { minutesSince } from "../../core/time.ts";
 import { join } from "node:path";
-import type { WatchJudge, WatchView } from "../../../shared/flow-views.ts";
+import type { WatchCases, WatchJudge, WatchView } from "../../../shared/flow-views.ts";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import type { Team } from "../../catalog/team/team.ts";
 import { lastBytes } from "../../core/gate.ts";
+import { readJson } from "../../core/store.ts";
 import { loadIncidents } from "../../desk/store/incidents.ts";
+import { eventsSince } from "../../desk/views/events-since.ts";
+import { seenAt } from "./report-seen.ts";
 import type { Project } from "../../desk/project/project.ts";
 
 /** Which brains read for the project and how that stands, as the last answer the watch kept says; a line by another is not theirs. */
@@ -35,15 +38,32 @@ function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJu
     : { label, state: "answering", minutes, detail: null };
 }
 
-/** What the panel shows of a project's watch: how many incidents stand where, and who answers its questions. */
+/** The Watcher's cases nobody judged: those waiting now, and since `from` those given up or folded into a newer one. */
+function unjudged(project: Project, team: Team, from: number): WatchCases {
+  const waiting = readJson<unknown>(join(project.state, "watch-cases.json"), []);
+  const cases = { waiting: Array.isArray(waiting) ? waiting.length : 0, expired: 0, dropped: 0, superseded: 0 };
+  for (const event of eventsSince(project.state, from)) {
+    if (event.kind === "watch.superseded") cases.superseded += 1;
+    else if (event.kind === "watch.unasked" && event.by === team.brains.seat)
+      cases[/^(no answer within|never reached)/.test(event.error) ? "expired" : "dropped"] += 1;
+  }
+  return cases;
+}
+
+/**
+ * What the panel shows of a project's watch: how many incidents stand where, how many cases went unjudged, and who
+ * answers its questions; what closed or went unjudged counts since the Human last read the report.
+ */
 export function watchView(project: Project, team: Team, kit: Kit, now = Date.now()): WatchView {
-  const incidents = { told: 0, held: 0, recorded: 0 };
+  const from = seenAt(project) ?? 0;
+  const incidents = { told: 0, held: 0, recorded: 0, closed: 0 };
   for (const item of Object.values(loadIncidents(project.state).items)) {
-    if (!item.open) continue;
-    incidents[item.told !== undefined ? "told" : item.held ? "held" : "recorded"] += 1;
+    if (item.open) incidents[item.told !== undefined ? "told" : item.held ? "held" : "recorded"] += 1;
+    else if (item.told !== undefined && (item.closed ?? item.last) >= from) incidents.closed += 1;
   }
   return {
     incidents,
+    cases: unjudged(project, team, from),
     judge: judgeLine(project, team, kit, now),
   };
 }

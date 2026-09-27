@@ -1,13 +1,26 @@
-import type { WatchCounts, WatchJudge } from "../../shared/flow-views.ts";
+import type { WatchCases, WatchCounts, WatchJudge } from "../../shared/flow-views.ts";
+
+const counted = (lines: [number, string][]) =>
+  lines.flatMap(([count, state]) => (count > 0 ? [`${count} ${state}`] : []));
 
 /** How many incidents stand where, one line each that has any; `supervisor` is the kit's label for the role told. */
 export function incidentLines(counts: WatchCounts, supervisor: string): string[] {
-  const lines: [number, string][] = [
+  return counted([
     [counts.told, `told the ${supervisor}`],
     [counts.held, "held · nobody is seated to tell"],
     [counts.recorded, "recorded"],
-  ];
-  return lines.flatMap(([count, state]) => (count > 0 ? [`${count} ${state}`] : []));
+    [counts.closed, "told and closed since the report was read"],
+  ]);
+}
+
+/** How many of the Watcher's cases went unjudged, one line each that has any; `judge` is the kit's label for the role. */
+export function caseLines(cases: WatchCases, judge: string): string[] {
+  return counted([
+    [cases.waiting, `waiting on the ${judge}`],
+    [cases.expired, "expired unjudged"],
+    [cases.dropped, `dropped with no ${judge} to take them`],
+    [cases.superseded, "folded into a newer case"],
+  ]);
 }
 
 /** Who answers the watch's questions and how that stands, in words and a tone; `judgeRole` is the Team chip it is set on. */

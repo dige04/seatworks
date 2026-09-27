@@ -5,7 +5,8 @@ import { test } from "node:test";
 import { stateRoot } from "../../server/core/paths.ts";
 import { settle } from "./fake-timeline.ts";
 import { type harness, heldRound, laneWithPeer, nobodySeated } from "./harness.ts";
-import { book, hookAgent } from "./noticed.ts";
+import { contracts } from "../../shared/rpc.ts";
+import { book, hookAgent, notice } from "./noticed.ts";
 
 type Harness = ReturnType<typeof harness>;
 
@@ -343,4 +344,39 @@ test("a case still waiting when the plugin restarts is answered all the same, an
   await h.tick(Date.now() + 31 * 60_000);
   await settle();
   assert.equal(kept(h.project.state).at(-1)!.unasked, "never reached the Watcher", "and one kept is given up in time");
+});
+
+test("the Team tab counts the cases nobody judged since the Human last read the report, and the incidents told and closed", async (t) => {
+  const { h, sup, lane, thinks, judge } = await watched();
+  const watch = async () => {
+    const flow = await h.rpc(contracts.flow, { project: h.project.slug });
+    assert.ok("watch" in flow);
+    return flow.watch;
+  };
+  thinks("The parser is missing, so I'll build a stub for it.");
+  await until(() => watchersOf(h).length === 1, "a Watcher is seated for the case");
+  const [watcher] = watchersOf(h);
+  assert.deepEqual((await watch()).cases, { waiting: 1, expired: 0, dropped: 0, superseded: 0 });
+  assert.equal((await judge(watcher!.id, watcher!.prompt!, "no")).ok, true);
+
+  const start = Date.now();
+  t.mock.timers.enable({ apis: ["Date"], now: start });
+  watcher!.status = "running";
+  thinks("A placeholder will do for the refund path.");
+  await until(() => h.runtime.outbox.pending(watcher!.id).length === 1, "the case waits in the outbox");
+  thinks("And a stub for the tax table.");
+  await until(() => h.events("watch.superseded").length === 1, "the newer folds it in");
+  t.mock.timers.setTime(start + 31 * 60_000);
+  await h.tick(start + 31 * 60_000);
+  await settle();
+  const incident = await notice(h, lane.lead!, "lane-idle", "attend", "idle");
+  await h.call(sup, "supervisor", "mark_incident", { id: incident.opened[0]!.id, verdict: "noise" });
+  const seen = await watch();
+  assert.deepEqual(seen.cases, { waiting: 0, expired: 1, dropped: 0, superseded: 1 });
+  assert.equal(seen.incidents.closed, 1);
+
+  t.mock.timers.setTime(start + 32 * 60_000);
+  await h.rpc(contracts.reportSeen, { project: h.project.slug, until: Date.now() });
+  const after = await watch();
+  assert.deepEqual([after.cases, after.incidents.closed], [{ waiting: 0, expired: 0, dropped: 0, superseded: 0 }, 0]);
 });
