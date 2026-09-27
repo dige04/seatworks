@@ -416,6 +416,7 @@ test("the Team tab counts the cases nobody judged since the Human last read the 
   const [watcher] = watchersOf(h);
   assert.deepEqual((await watch()).cases, { waiting: 1, expired: 0, dropped: 0, superseded: 0 });
   assert.equal((await judge(watcher!.id, watcher!.prompt!, "no")).ok, true);
+  assert.equal((await watch()).cases.waiting, 0, "an answered case waits no more");
 
   const start = Date.now();
   t.mock.timers.enable({ apis: ["Date"], now: start });
