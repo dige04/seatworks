@@ -4,7 +4,7 @@ import type { Seen, SeatView, Seats, Stream } from "../../core/ports.ts";
 import { sentBy } from "../../core/sent-by.ts";
 import { onDetail } from "./commands.ts";
 import { type Fact, fact } from "../../domain/incident.ts";
-import { Evasion, Recovery, Refusals, type Rules, onSettle, stuck } from "./facts.ts";
+import { Evasion, Recovery, Refusals, type Rules, monologue, onSettle, stuck } from "./facts.ts";
 import { type HandedBack, contradicted, editBeforeLook, unverified } from "./turn-facts.ts";
 import type { Quirks } from "../../catalog/kit/timeline.ts";
 import { type Unit, Window } from "./window.ts";
@@ -104,6 +104,7 @@ export class SeatWatch {
     }
     const rules = this.rules();
     if (!rules) return [];
+    if (!change.call) return this.fresh(this.spoken(row.item.type, rules));
     const call = change.call;
     const facts =
       !call || call.pseudo
@@ -123,6 +124,19 @@ export class SeatWatch {
       else this.told.delete("stuck");
     }
     return this.fresh(facts, change.call?.id);
+  }
+
+  /** What a row with no call shows: a seat talking with no call between, or its context compacted again and again. */
+  private spoken(type: unknown, rules: Rules): Fact[] {
+    const since = this.window.sinceInstruction();
+    const talking = monologue(since, rules.monologueAt);
+    const compacted = since.filter((unit) => unit.kind === "compaction").length;
+    return [
+      ...(talking ? [fact("stuck", talking)] : []),
+      ...(type === "compaction" && compacted === rules.compactionsAt
+        ? [fact("context-pressure", `its context compacted ${compacted} times since its instruction`)]
+        : []),
+    ];
   }
 
   lookDue(now: number, minutes: number): boolean {

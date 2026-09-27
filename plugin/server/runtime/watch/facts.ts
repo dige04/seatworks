@@ -42,6 +42,8 @@ export type Rules = {
   recoverWithin: number;
   refusalsAt: number;
   stuckWithin: number;
+  monologueAt: number;
+  compactionsAt: number;
 };
 
 export const str = (value: unknown): string => (typeof value === "string" ? value : "");
@@ -123,6 +125,13 @@ export function stuck(units: Unit[], rules: Pick<Rules, "repeatsAt" | "stuckWith
       return `alternating between two actions ${n} times: ${oneLine(describe(cycle[0]!), 60)} / ${oneLine(describe(cycle[1]!), 60)}`;
   }
   return undefined;
+}
+
+/** Thoughts and sayings in a row, `at` of them or more, with no call between: talking where it should be trying. */
+export function monologue(units: Unit[], at: number): string | undefined {
+  const last = units.findLastIndex((unit) => unit.kind !== "thought" && unit.kind !== "said");
+  const run = units.length - 1 - last;
+  return run >= at ? `${at} thoughts and sayings with no call between them` : undefined;
 }
 
 function describe(call: Call): string {

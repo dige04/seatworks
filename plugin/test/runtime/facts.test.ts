@@ -326,3 +326,29 @@ test("a command refused, then run again through a shell, an eval or a script the
     "another command is not",
   );
 });
+
+test("a seat thinking and talking with no call between, or compacting again and again, is told once while it lasts", () => {
+  const words = (seq: number, count: number) =>
+    Array.from({ length: count }, (_, index) => {
+      const copy = again(done, `x${seq + index}`, seq + index);
+      // Thoughts in a row are one; a thought and a saying, or two sayings, are two.
+      const item =
+        index % 2 === 0
+          ? { type: "reasoning", text: `Thinking, step ${index}.` }
+          : { type: "assistant_message", text: `Saying, step ${index}.`, messageId: `m${seq + index}` };
+      Object.assign(copy.event, { item });
+      return copy;
+    });
+  const compacted = (seq: number) => {
+    const copy = again(done, `k${seq}`, seq);
+    Object.assign(copy.event, { item: { type: "compaction" } });
+    return copy;
+  };
+  const circling = found(words(2, 12), "stuck").map((fact) => fact.quote);
+  assert.deepEqual(circling, ["10 thoughts and sayings with no call between them"]);
+  assert.deepEqual(found([...words(2, 5), run("a", 7, "ls", true), ...words(8, 5)], "stuck"), [], "a call breaks it");
+  assert.deepEqual(
+    found([compacted(2), compacted(3), compacted(4)], "context-pressure").map((fact) => fact.quote),
+    ["its context compacted 2 times since its instruction"],
+  );
+});

@@ -65,6 +65,8 @@ export class Watching {
         recoverWithin: attention.recoverWithin,
         refusalsAt: attention.refusalsAt,
         stuckWithin: attention.stuckWithin,
+        monologueAt: attention.monologueAt,
+        compactionsAt: attention.compactionsAt,
       },
       heard: () => {
         try {

@@ -28,6 +28,8 @@ export const rules = (extra: Partial<Rules> = {}): Rules => ({
   recoverWithin: 10,
   refusalsAt: 3,
   stuckWithin: 20,
+  monologueAt: 10,
+  compactionsAt: 2,
   ...extra,
 });
 

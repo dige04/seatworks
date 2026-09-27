@@ -100,8 +100,12 @@ export const AttentionChoice = z.strictObject({
   quietChars: z.number().int().min(0).optional(),
   /** How full a seat's context may get, as its agent reports it, before the watch says so. */
   contextShare: z.number().gt(0).max(1).optional(),
+  /** Times a seat's context is compacted since its instruction before the watch says so. */
+  compactionsAt: z.number().int().min(1).optional(),
   /** How many of a seat's latest steps are read for going round in circles. */
   stuckWithin: z.number().int().min(2).optional(),
+  /** Thoughts and sayings in a row with no call between them that make a seat talking round in circles. */
+  monologueAt: z.number().int().min(2).optional(),
   /** How often the watch's eye reads a running seat's new words; it also reads at every turn's end. */
   lookMinutes: z.number().int().min(1).optional(),
   /** How much of each word, thought or brief the brains read, and of what a brain found an incident quotes. */
