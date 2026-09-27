@@ -40,8 +40,9 @@ question of its own, with a scenario at its edge:
 - the name of each field a caller sends or reads, one name for one thing across the whole interface.
 
 One condition per question: a question with two gets one answer, and the other rides on it unasked. Settled, these go
-into CONTEXT.md, and every lane builds against the same words at once instead of waiting on the code of the one
-before: a test written against a contract nobody settled invents one.
+into CONTEXT.md, and where several lanes will meet on them, a small contract lane makes them run before those lanes
+open, so they build against code rather than paper: a test written against a contract nobody settled invents one,
+and a contract nobody ran is found wrong only once every lane has built on it.
 
 ## Rounds
 
@@ -79,7 +80,7 @@ Create it with the first settled answer, not before.
 ## Read-back
 
 Before the first lane opens, give the Human one screen to correct: the lanes you will open, each with
-its outcome and acceptance, the contracts the lanes meet on (those above, and the module signatures you chose), what you assumed, the defaults you will take for them when a question
+its outcome and acceptance, the contracts the lanes meet on (those above, and the module signatures you chose) and the contract lane that runs them first, what you assumed, the defaults you will take for them when a question
 comes up while they are away, and what will bring them back (a question only they can answer, an act
 that cannot be undone). With it, settle what the desk keeps for every lane: where lanes work when their copy makes that a question (`set_project` `laneHome`, their words as `humanSaid` while they are in the loop), and which paths no landing
 touches before the Human looks while they are in the loop (`set_project` `askFirst`). Offer the ones

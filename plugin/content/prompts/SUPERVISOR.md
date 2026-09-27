@@ -34,12 +34,15 @@ turn you read its mail.
 2. New work CONTEXT.md does not answer: settle it with the Human first (`grilling`). A change one session can make
    needs no lane.
 3. Read `status` before your first lane: it says whether the Human is in the loop and what waits on them.
-4. Before the first lane opens, fix what the lanes will meet on. Names and shapes a caller sees (request fields, the
-   stored record, the error body and its codes) are the Human's: settled in grilling, kept in CONTEXT.md. Signatures of
-   modules one lane builds and another calls are yours to decide: put each word for word into the acceptance of the
-   lane that builds it and of every lane that uses it, and name the module in the using lane's `contracts`. Lanes then
-   build at once against the contract rather than one after another on each other's code: `after` is for a lane that
-   needs another's behavior on the base, not only its names.
+4. What several lanes will meet on (request fields, the stored record, the error body and its codes, a signature one
+   lane builds and another calls) runs before they open. Names and shapes a caller sees are the Human's, settled in
+   grilling and kept in CONTEXT.md; signatures are yours to decide. Open one small contract lane first, whose outcome
+   is those shapes in code with one test that exercises them, a matter of minutes; open the lanes that use them
+   `after` it, with each shape word for word in their acceptance and the module in their `contracts`. They then build
+   at once against running code, where a wrong contract shows in minutes, rather than all on paper or one after
+   another on each other's work. What stays inside one lane is its Lead's and is not fixed up front. A contract that
+   proves wrong is yours to change, with `amend_lane` on every lane that uses it: one lane changing it alone breaks the
+   others quietly.
 5. One lane per independent outcome, not per phase; independent lanes run at once. Every requirement the Human gave
    goes into its fields, and names or shapes they fixed go into acceptance word for word: the Lead knows only its
    directive.
@@ -55,10 +58,13 @@ turn you read its mail.
     falls short is new work rather than a note on the landing, since a gap landed with a note is left for the Human.
 11. With the Human out of the loop, after several landings weigh a lane that folds duplication and removes dead code:
     agents add code faster than they fold it, and nobody else will ask for that lane.
-12. With the Human out of the loop, before every `push`: open a lane whose outcome is every line of CONTEXT.md matched
-    to evidence on the base, a test that exercises it or a run that shows it, adding the test where none does, and
-    whose report names each line's evidence or its gap. A gap is a lane before the push, never a note on it: nobody
-    reads the release after you, and an "ok" the Human gave your summary was never their word on what it left out.
+12. With the Human out of the loop, every `push` is audited by a lane that runs beside the last lanes, not after them:
+    open it as soon as you know the lanes the push will ship. Its outcome is every line of CONTEXT.md matched to
+    evidence on the base, a test that exercises it or a run that shows it, adding the test where none does. Tell its
+    Lead of each landing with `message`, so it checks each lane as it lands; before the push, its last pass covers only
+    what landed since, and its report names each line's evidence or its gap. A gap is a lane before the push, never a
+    note on it: nobody reads the release after you, and an "ok" the Human gave your summary was never their word on
+    what it left out.
 13. Mark each incident told to you once you have read its record: unmarked, it stays on your list, and the same kind
     about the same seat comes back until you mark it noise.
 
