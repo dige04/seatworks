@@ -10,12 +10,14 @@ import type { Letter } from "../letters/envelope.ts";
 import { type Project, projectOf } from "../project/project.ts";
 import type { Roster } from "../seats/roster.ts";
 
+/** A case asked and not yet answered: `sent` once posted to a Watcher, `delivered` once that Watcher was given it. */
 type Waiting = {
   project: string;
   within: number;
   provider: string;
   questions: Record<string, Question>;
   sent?: { seat: string; at: number };
+  delivered?: number;
   answered(judged: Judgement): void;
   failed(error: Error): void;
 };
@@ -71,10 +73,13 @@ export class Watcher {
       this.waiting.set(id, { project: project.slug, within, provider: role, questions, answered, failed }),
     );
     try {
-      const seat = await this.deliver(project, role, caseLetters.case(id, subject, state, questions));
+      const { seat, started } = await this.deliver(project, role, caseLetters.case(id, subject, state, questions));
       const provider = (await this.roster.look(seat)).provider;
       const entry = this.waiting.get(id);
-      if (entry) Object.assign(entry, { provider: provider ?? role, sent: { seat, at: Date.now() } });
+      const at = Date.now();
+      // A Watcher seated for a case is given it as its prompt.
+      if (entry)
+        Object.assign(entry, { provider: provider ?? role, sent: { seat, at }, ...(started && { delivered: at }) });
     } catch (error) {
       this.waiting.delete(id);
       throw error;
@@ -82,16 +87,28 @@ export class Watcher {
     return answer;
   }
 
+  /** Cases whose letters reached their Watcher at `at`, which may be while they are still being posted: from then on they have the time they are given. */
+  delivered(letters: { key: string }[], at: number): void {
+    for (const letter of letters) {
+      const entry = this.waiting.get(letter.key.replace(/^case:/, ""));
+      if (entry) entry.delivered ??= at;
+    }
+  }
+
   /** One case after another per project, so two at once seat one Watcher, not two. */
-  private deliver(project: Project, role: string, letter: Letter): Promise<string> {
+  private deliver(project: Project, role: string, letter: Letter): Promise<{ seat: string; started: boolean }> {
     return this.lines.run(project.slug, () => this.deliverOne(project, role, letter));
   }
 
-  private async deliverOne(project: Project, role: string, letter: Letter): Promise<string> {
+  private async deliverOne(
+    project: Project,
+    role: string,
+    letter: Letter,
+  ): Promise<{ seat: string; started: boolean }> {
     const seated = await this.roster.holderOf(project, "judge");
-    if (!seated) return this.start(project, role, letter.text);
+    if (!seated) return { seat: await this.start(project, role, letter.text), started: true };
     await this.desk.mail.post(seated, letter);
-    return seated;
+    return { seat: seated, started: false };
   }
 
   private async start(project: Project, role: string, prompt: string): Promise<string> {
@@ -142,15 +159,24 @@ export class Watcher {
     return undefined;
   }
 
-  /** Each round, `open` listed after `now`: a case sent too long ago, or whose Watcher is gone, is given up; a Watcher no case can come to is let go. */
+  /**
+   * Each round, `open` listed after `now`: a case is given up when its Watcher is gone, when its time has run since its
+   * Watcher got it, or when it never got it in twice that time; a Watcher no case can come to is let go.
+   */
   async tend(project: Project, open: Map<string, SeatView>, now: number): Promise<void> {
     for (const [id, entry] of this.waiting) {
       if (entry.project !== project.slug || !entry.sent) continue;
       // Only a listing read after the case was sent can say its Watcher is gone.
       const gone = entry.sent.at < now && !open.has(entry.sent.seat);
-      if (!gone && now - entry.sent.at < entry.within * 60_000) continue;
+      const minutes = (now - (entry.delivered ?? entry.sent.at)) / 60_000;
+      if (!gone && minutes < entry.within * (entry.delivered === undefined ? 2 : 1)) continue;
       this.waiting.delete(id);
-      entry.failed(new Error(gone ? "the Watcher it was sent to is gone" : `no answer within ${entry.within} minutes`));
+      const why = gone
+        ? "the Watcher it was sent to is gone"
+        : entry.delivered === undefined
+          ? "never reached the Watcher"
+          : `no answer within ${entry.within} minutes`;
+      entry.failed(new Error(why));
     }
     const judged = this.desk.teamFor(project).brains.seat !== undefined;
     if (judged && Object.values(loadLedger(project.state).lanes).some((lane) => lane.status === "open")) return;

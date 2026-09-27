@@ -137,6 +137,7 @@ test("the Watcher's life: seated for a case, answering by the rules, kept while 
   h.projectSettings({ attention: { watcherAnswerMinutes: 5 } });
   thinks("Rounded, third time.");
   await until(() => /third time/.test(mailed()), "the third case is sent");
+  await h.idle(watcher!.id);
   await h.tick(Date.now() + 6 * 60_000);
   await settle();
   assert.equal(
@@ -238,4 +239,40 @@ test("cases at once seat one Watcher, and a case is given up only when nobody ca
     true,
     `a round whose listing was read before its Watcher was seated gave it up: ${answered.text}`,
   );
+});
+
+test("a case's time runs from when its Watcher got it, and one it never got is given up at twice that", async (t) => {
+  const { h, thinks, judge } = await watched();
+  thinks("The parser is missing, so I'll build a stub for it.");
+  await until(() => watchersOf(h).length === 1, "a Watcher is seated for the case");
+  const [watcher] = watchersOf(h);
+  assert.equal((await judge(watcher!.id, watcher!.prompt!, "no")).ok, true);
+  const start = Date.now();
+  t.mock.timers.enable({ apis: ["Date"], now: start });
+  const at = async (minutes: number) => {
+    t.mock.timers.setTime(start + minutes * 60_000);
+    await h.tick(start + minutes * 60_000);
+    await settle();
+  };
+  const held = () => h.runtime.outbox.pending(watcher!.id);
+
+  // Held behind a long turn: what counts is when it arrives, not when it was posted.
+  watcher!.status = "running";
+  thinks("Second pass at the parser.");
+  await until(() => held().length === 1, "the case waits in the outbox");
+  await at(16);
+  assert.equal(kept(h.project.state).length, 1, "past its time since it was posted, it still waits");
+  await h.idle(watcher!.id);
+  assert.equal(held().length, 0, "until its Watcher gets it");
+  await at(30);
+  const second = h.heard(watcher!.id).join("\n");
+  assert.equal((await judge(watcher!.id, second, "no")).ok, true, "and is answered within its time since it came");
+
+  watcher!.status = "running";
+  thinks("Third pass at the parser.");
+  await until(() => held().length === 1, "the next case waits in the outbox");
+  await at(59);
+  assert.equal(kept(h.project.state).length, 2, "short of twice its time, it waits");
+  await at(61);
+  assert.equal(kept(h.project.state).at(-1)!.unasked, "never reached the Watcher", "past it, it is given up");
 });

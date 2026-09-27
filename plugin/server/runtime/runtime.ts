@@ -88,11 +88,15 @@ export class Runtime implements HostHooks {
     this.makeIndex = options.codeIndex ?? codeIndex;
     this.source = new TeamSource(kit);
     this.seating = new Seating(kit, this.source, { node: nodeBin(), socket: deskSocket() });
-    const rules = mailRules(
-      kit,
-      (agentId) => this.socket.calling(agentId),
-      (agentId) => this.registry.known().find((project) => loadLedger(project.state).agents[agentId]),
-    );
+    const rules = {
+      ...mailRules(
+        kit,
+        (agentId) => this.socket.calling(agentId),
+        (agentId) => this.registry.known().find((project) => loadLedger(project.state).agents[agentId]),
+      ),
+      // A Watcher's case has its time from when it arrives, not from when it was posted.
+      delivered: (letters: { key: string }[], at: number) => this.desk.watcher.delivered(letters, at),
+    };
     this.outbox = new Outbox(options.outboxFile ?? join(stateRoot(), "outbox.json"), composeMail, host.seats, rules);
     const log = (project: Project, line: string) => this.log(project, line);
     const remember = (project: Project) => this.remember(project);
