@@ -1,6 +1,6 @@
 ---
 name: planning-lanes
-description: "Decides how a high-risk lane is built before any task starts: whether it is high-risk at all, the final contract written first, where the work splits into tasks, which design choices to settle, and how to get back if it fails, kept as the lane's plan page. Use when a lane touches auth, money, data loss, migrations, concurrency or a shared contract, or needs more than one task. Not for a one-task lane that leaves nothing behind."
+description: "Decides how a high-risk lane is built before any task starts: whether it is high-risk at all, the final contract written first, where the work splits into tasks, which design choices to settle, and how to get back if it fails, kept as the lane's plan page. Use when a lane touches auth, money, data loss, migrations, concurrency or a shared contract. Not for a lane without such risk, however many tasks it splits into."
 ---
 
 # Planning lanes
@@ -23,14 +23,13 @@ A label alone does not make a lane high-risk; material impact does. A normal lan
 
 ## Find out first
 
-The plan rests on what the code shows, not on what you expect it to show, so the lane's scout answers before the page is written: where the outcome lands and what calls it, the constraints and edge cases the code holds, and which premises of the directive it could not bear out. Its findings fill Known; what it could not check fills Assumed, each with the task that checks it first. A finding that contradicts the directive goes up with `ask` before a task rests on it; a question its answer opens goes back to the same scout with `message`, not into your own reading of the code.
+The plan rests on what the code shows, not on what you expect it to show, so the lane's scout answers before the page is written. Its findings fill Known; what it could not check fills Assumed, each with the task that checks it first. A finding that contradicts the directive goes up with `ask` before a task rests on it; a question its answer opens goes back to the same scout with `message`, not into your own reading of the code.
 
 ## Split for agents
 
 Split the way the work divides, not by a count: pieces that do not call each other run as parallel tasks, and the one that wires them waits for both.
 
 - Split only for a reason you can name: work whose paths do not meet and can run in parallel, a mechanical fan-out too big for one sitting, separately accepted deliverables, or shipped production state that needs a staged change.
-- A seam every piece meets in (a router, a registry, an error convention, a shared config) is a reason for a small first task that builds it and one path through it, not for one task holding the whole lane: behind it, pieces whose files do not meet run in parallel, each holding their own.
 - Never split by layer, to show progress, or into phases that keep a half-built state compiling: one writer changes a contract with all its callers and tests.
 - A task may leave the build red for the next only where the gate runs on the lane. By default it runs on each task, so each hands back green or is accepted over the gate with a reason; the directive's Gate line says which.
 - Parallel tasks resting on the same unchecked assumption about the environment or a contract: run one first, the rest `after` it, so a wrong assumption costs one task, not all of them.
