@@ -76,16 +76,26 @@ export async function readLook(services: Services, project: Project, seat: Notic
   const instruction = look.instruction ? { instruction: clip(look.instruction.text, attention.lookItemChars) } : {};
   const concept = conceptOf(project, attention.conceptChars);
   const rules = rulesOf(place, concept);
-  // A pattern asked each rule is one question a line, so no answer weighs two conditions.
-  const each = (patterns: Pattern[]): Pattern[] =>
+  // A pattern asked each rule is one question a line, so no answer weighs two conditions, and only on the few lines the
+  // call shares words with: a long list of lines read at once is where a model loses what matters.
+  const each = (patterns: Pattern[], text: string): Pattern[] =>
     patterns.flatMap(([id, pattern]): Pattern[] =>
-      pattern.each ? rules.map((rule, index) => [`${id}#${index + 1}`, pattern, rule]) : [[id, pattern]],
+      pattern.each
+        ? nearest(rules, text, attention.ruleLines, attention.ruleWordsShared).map((rule, index) => [
+            `${id}#${index + 1}`,
+            pattern,
+            rule,
+          ])
+        : [[id, pattern]],
     );
   const cases: Case[] = [
     { episode: "look", items: words, patterns: watching(words, (pattern) => !pattern.tools), fields: instruction },
     ...(decided?.calls ?? []).map((call) => {
       const items: Item[] = [...decided!.words, { kind: "call", text: clip(call.text, attention.decisionChars) }];
-      const patterns = each(watching(items, (pattern) => pattern.tools?.includes(call.tool) === true));
+      const patterns = each(
+        watching(items, (pattern) => pattern.tools?.includes(call.tool) === true),
+        call.text,
+      );
       return { episode: call.tool, items, patterns, fields: { ...instruction, call: call.tool } };
     }),
   ];
@@ -182,6 +192,27 @@ const asQuestion = ([, pattern, rule]: Pattern, words: string): Question => ({
   instructions: rule === undefined ? words : { question: words, rule },
   criteria: pattern.criteria,
 });
+
+/** Words that say nothing of what a line is about. */
+const STOPWORDS = new Set(
+  "the and for with that this from into onto than then when what which while who whom whose are was were been being have has had does did not nor but its it's their them they there these those our your you can could should would will shall may might must any all each every some such only also very just more most other same both either neither over under once here where why how about after before again".split(
+    " ",
+  ),
+);
+
+const contentWords = (text: string) =>
+  new Set((text.toLowerCase().match(/[a-z][a-z0-9_-]{2,}/g) ?? []).filter((word) => !STOPWORDS.has(word)));
+
+/** At most `limit` of `rules`, those sharing the most content words with `text` first, none sharing fewer than `least`. */
+function nearest(rules: string[], text: string, limit: number, least: number): string[] {
+  const words = contentWords(text);
+  return rules
+    .map((rule, index) => ({ rule, index, shared: [...contentWords(rule)].filter((word) => words.has(word)).length }))
+    .filter((entry) => entry.shared >= least)
+    .sort((a, b) => b.shared - a.shared || a.index - b.index)
+    .slice(0, limit)
+    .map((entry) => entry.rule);
+}
 
 /** The lines a pattern asked `each` rule is asked against: the concept file's statements, then what the seat's work asks. */
 function rulesOf({ task, lane }: Placed, concept: string | undefined): string[] {

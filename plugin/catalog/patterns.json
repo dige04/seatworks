@@ -323,8 +323,6 @@
       "false": "Nothing in it goes against `rule`."
     },
     "tools": [
-      "add_tasks",
-      "amend_task",
       "report",
       "done"
     ],

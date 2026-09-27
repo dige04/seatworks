@@ -417,7 +417,7 @@ test("a Lead's look is read beside its lane's directive whole and the Human's se
   assert.match(String(read.state.context), /every amount is whole cents/, "and the concept file");
 });
 
-test("a decision is asked against each line of the concept and its directive, one line to a question", async (t) => {
+test("a report is asked against the few lines of the concept and its directive it shares words with, one line to a question", async (t) => {
   const asked: Asked[] = [];
   const judge: Judge = {
     async ask(state, questions) {
@@ -434,37 +434,41 @@ test("a decision is asked against each line of the concept and its directive, on
   };
   const { h, lane } = await laneWithPeer(undefined, { sensor: () => judge });
   brains("sensor");
-  writeFileSync(
-    join(h.project.state, "CONTEXT.md"),
-    "# Shop\n\n## Behavior\n\n- Every amount is whole cents.\n- A refund never exceeds its order's total.\n",
-  );
+  const concept = [
+    "- Every stored price amount is whole cents.",
+    "- A refund never exceeds its order's total.",
+    ...["one", "two", "three", "four", "five"].map((n) => `- Stored price rule ${n} holds for every order.`),
+  ];
+  writeFileSync(join(h.project.state, "CONTEXT.md"), `# Shop\n\n## Behavior\n\n${concept.join("\n")}\n`);
   const looked = looksOf(h, t);
   const stream = h.timelineOf(lane.lead!);
-  await h.call(lane.lead!, "lead", "add_tasks", {
-    tasks: [
-      {
-        key: "p",
-        title: "Prices",
-        goal: "Store prices as dollars with two decimals",
-        acceptance: ["a"],
-        outOfScope: ["b"],
-      },
-    ],
-  });
-  stream.beat("turn_started", "l1");
-  stream.add({ type: "assistant_message", text: "Laid out prices.", messageId: "l-m1" }, "l1");
-  stream.beat("turn_completed", "l1");
-  await looked();
-  const read = asked.find((entry) => /dollars/.test(String(entry.state.text)))!;
-  const rules = Object.entries(read.questions)
-    .filter(([id]) => id.startsWith("contradicts#"))
-    .map(([, question]) => (question.instructions as Record<string, string>).rule);
+  const turn = async (id: string) => {
+    stream.beat("turn_started", id);
+    stream.add({ type: "assistant_message", text: "Done.", messageId: id }, id);
+    stream.beat("turn_completed", id);
+    await looked();
+  };
+  const brief = { key: "p", title: "Prices", goal: "Store prices as dollars", acceptance: ["a"], outOfScope: ["b"] };
+  await h.call(lane.lead!, "lead", "add_tasks", { tasks: [brief] });
+  await turn("l1");
+  const contradicts = (entry: Asked) =>
+    Object.entries(entry.questions)
+      .filter(([id]) => id.startsWith("contradicts#"))
+      .map(([, question]) => (question.instructions as Record<string, string>).rule);
+  assert.deepEqual(asked.flatMap(contradicts), [], "a brief is not asked it");
+
+  await h.call(lane.lead!, "lead", "report", { summary: "Every stored price amount is now in dollars.", ready: false });
+  await turn("l2");
+  const read = asked.find((entry) => /dollars/.test(String(entry.state.text)) && contradicts(entry).length > 0)!;
   assert.deepEqual(
-    rules,
-    ["Every amount is whole cents.", "A refund never exceeds its order's total.", "a.txt changes", "a"],
-    "each line of the concept, then the lane's outcome and acceptance",
+    contradicts(read),
+    [
+      "Every stored price amount is whole cents.",
+      ...["one", "two", "three", "four"].map((n) => `Stored price rule ${n} holds for every order.`),
+    ],
+    "the lines sharing the most words first, at most five, and none that shares none",
   );
   const found = Object.values(book(h)).filter((item) => item.kind === "contradicts");
   assert.equal(found.length, 1);
-  assert.match(found[0]!.facts.join(), /against: Every amount is whole cents\./);
+  assert.match(found[0]!.facts.join(), /against: Every stored price amount is whole cents\./);
 });
