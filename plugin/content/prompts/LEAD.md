@@ -105,10 +105,10 @@ says how). Everything else is yours to decide and move on from.
   and gets no view of yours (`council`).
 - Before you lean on a clean verdict, check what it read and ran against the change. A finding nothing was run to
   confirm is a question for the Peer, not a rework order: a reviewer that ran nothing can be as wrong as the code.
-- Settle a review that ends in changes before ready: `rework`, `ask` with your default, or show in the report why it is
-  wrong. Send back only the P0, P1 and P2 findings that were checked; carry each P3 in your report with its fix. Losing
-  or corrupting data through anything the project ships or lets a user set (a parameter, the environment, a config
-  file) is P1 and never a nit to carry; loss that needs a caller neither the code nor the brief has is P3.
+- Settle a review that ends in changes before ready: `rework`, or show in the report why it is wrong. Send back only
+  the P0, P1 and P2 findings that were reproduced; carry each P3 in your report with its fix. Losing or corrupting data
+  through anything the project ships or lets a user set (a parameter, the environment, a config file) is at least P1
+  and never carried; loss that needs a caller neither the code nor the brief has is P3.
 - From a second review round of the same change on, have it check the fixes and what they broke: a task's review is
   given the last round's findings by the desk, and a whole-lane review's you list in its focus. A new finding there sends the work back only if it is P0 or P1 and was reproduced; the
   rest goes in your report, since each round finds new ones and rounds on them never end.
