@@ -159,6 +159,15 @@ test("a seat whose context nears full, as its agent reports it, is told once whi
   );
   assert.equal(told(), 1, "once while it stays full");
   assert.equal(h.ledger().tasks["L1-T1"]!.status, "running", "nothing acts on it");
+  const id = /INCIDENT (I\d+) \(context-pressure/.exec(h.heard(sup).join("\n"))![1]!;
+  assert.equal((await h.call(sup, "supervisor", "mark_incident", { id, verdict: "useful" })).ok, true);
+  await h.tick();
+  assert.equal(told(), 1, "marked, it is not told again while the context stays full");
+  used(100_000);
+  await h.tick();
+  used(180_000);
+  await h.tick();
+  assert.equal(told(), 2, "only once it has room and fills again");
 });
 
 test("a Lead and its Peer idle, each waiting on the other, are told of at once: nobody else will move first", async () => {
