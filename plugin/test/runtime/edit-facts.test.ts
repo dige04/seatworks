@@ -229,3 +229,15 @@ test("an edit that adds a string shaped like a secret, or a read of a secret fil
     ],
   );
 });
+
+test("an edit that adds an entry to a dependency manifest is noted, and one that changes the rest is not", () => {
+  const dependency = (oldString: string, newString: string) =>
+    play([...opening(), edit("e1", 2, { filePath: "package.json", oldString, newString })], rules())
+      .filter((fact) => fact.kind === "dependency")
+      .map((fact) => fact.quote);
+  assert.deepEqual(dependency('"zod": "^4.6.4"', '"zod": "^4.6.4",\n    "left-pad": "^1.3.0"'), [
+    'package.json: adds "left-pad": "^1.3.0"',
+  ]);
+  assert.deepEqual(dependency('"version": "1.0.0"', '"version": "2.0.0"'), [], "a version is not a dependency");
+  assert.deepEqual(dependency('"test": "node --test"', '"test": "node --test test/"'), [], "nor a script");
+});

@@ -106,7 +106,10 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
       at = pieces[2 * index + 1] === "&&" || to === at ? to : "elsewhere";
       continue;
     }
-    if (touchesSecret(words, part, rules)) found.push(fact("secret", around(oneLine(part, Infinity), undefined, 200)));
+    const quoted = around(oneLine(part, Infinity), undefined, 200);
+    if (touchesSecret(words, part, rules)) found.push(fact("secret", quoted));
+    if (rules.boundary.test(part) || runsOutside(words, rules, scratch)) found.push(fact("boundary", quoted));
+    if (rules.dependencyInstall.test(part)) found.push(fact("dependency", quoted));
     const targets = targetsOf(words);
     // In a copy the desk made for this seat alone, what it removes there is its own; throwing work away with git still pages.
     const removesOwn =
@@ -121,6 +124,15 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
       found.push(fact("destructive", around(oneLine(part, Infinity), rules.destructive, 200)));
   }
   return found;
+}
+
+/** A script run by its interpreter from a path outside the seat's copy and outside scratch space. */
+function runsOutside(words: string[], rules: Rules, scratch: (path: string) => boolean): boolean {
+  if (!rules.interpreter.test(words[0] ?? "")) return false;
+  const script = words.slice(1).find((word) => !word.startsWith("-"));
+  if (!script || scratch(script) || inside(script)) return false;
+  const path = script.replace(/^(?:~|\$\{?HOME\}?)(?=\/)/, "/home");
+  return !(rules.cwd && isAbsolute(path) && !relative(rules.cwd, path).startsWith(".."));
 }
 
 /** A command that reads, prints, dumps or stages a secret: a secret path among what it reads, or a command that shows secrets. */

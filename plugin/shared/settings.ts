@@ -66,6 +66,13 @@ export const AttentionChoice = z.strictObject({
   secretPath: Pattern.optional(),
   secretCommand: Pattern.optional(),
   secretString: Pattern.optional(),
+  /** Sending data out or running a download (`boundary`), and the programs that run a script (`interpreter`), paged on one outside the copy. */
+  boundary: Pattern.optional(),
+  interpreter: Pattern.optional(),
+  /** An install of a named package, a dependency manifest, and an entry in one: a new dependency is noted. */
+  dependencyInstall: Pattern.optional(),
+  dependencyManifest: Pattern.optional(),
+  dependencyEntry: Pattern.optional(),
   testPath: Pattern.optional(),
   repeatsAt: z.number().int().min(2).optional(),
   /** Steps after a failed command with neither it nor the gate passing, before the watch calls it no recovery. */

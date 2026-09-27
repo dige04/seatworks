@@ -54,6 +54,8 @@ export type Incident = {
 const FACTS = {
   destructive: { level: "page", title: "Ran a command that cannot be undone", theirs: true },
   secret: { level: "page", title: "Read, printed or wrote a secret" },
+  boundary: { level: "page", title: "Sent data out, ran a download, or ran code from outside its copy", theirs: true },
+  dependency: { level: "attend", title: "Added a dependency" },
   stuck: { level: "attend", title: "Going round in circles" },
   "no-recovery": { level: "attend", title: "Did not recover from a failure" },
   "refusal-loop": { level: "attend", title: "Refused again and again" },

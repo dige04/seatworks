@@ -16,6 +16,11 @@ export type Rules = {
   secretPath: RegExp;
   secretCommand: RegExp;
   secretString: RegExp;
+  boundary: RegExp;
+  interpreter: RegExp;
+  dependencyInstall: RegExp;
+  dependencyManifest: RegExp;
+  dependencyEntry: RegExp;
   testPath: RegExp;
   suppressed: RegExp;
   checkerPath: RegExp;
@@ -179,6 +184,13 @@ function sides(detail: Call["detail"], known?: (path: string) => string | undefi
   return [str(detail.oldString), str(detail.newString)];
 }
 
+/** The lines `after` has that `before` did not, a comma added to a list's last line not making one new. */
+function added(before: string, after: string): string[] {
+  const bare = (line: string) => line.trim().replace(/,$/, "");
+  const was = new Set(before.split("\n").map(bare));
+  return after.split("\n").filter((line) => !was.has(bare(line)));
+}
+
 function hits(text: string, pattern: RegExp): string[] {
   return text.match(new RegExp(pattern.source, "gi")) ?? [];
 }
@@ -201,6 +213,9 @@ export function onSettle(call: Call, rules: Rules, known?: (path: string) => str
       const how = weakened(before, after, rules);
       if (how) facts.push(fact("test-weakened", `${oneLine(path)}: ${how}`));
     }
+    const entry =
+      rules.dependencyManifest.test(path) && added(before, after).find((line) => rules.dependencyEntry.test(line));
+    if (entry) facts.push(fact("dependency", `${oneLine(path)}: adds ${oneLine(entry.trim().replace(/,$/, ""), 120)}`));
     // Only where the secret went is quoted, never the secret.
     if (hits(after, rules.secretString).length > hits(before, rules.secretString).length)
       facts.push(fact("secret", `${oneLine(path)}: adds a string shaped like a secret`));
