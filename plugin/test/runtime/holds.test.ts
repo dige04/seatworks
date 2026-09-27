@@ -220,6 +220,23 @@ test("git the desk runs never runs a hook or a command a seat could plant in the
   assert.deepEqual(readdirSync(marks), []);
 });
 
+test("git the desk runs never runs a command planted in a copy's own worktree config either", async () => {
+  const { h, lead } = await laneWriting(["src/**"]);
+  const marks = tempDir("sw2-planted-");
+  const copy = h.ledger().lanes.L1!.worktree!;
+  h.git(h.root, "config", "core.repositoryFormatVersion", "1");
+  h.git(h.root, "config", "extensions.worktreeConfig", "true");
+  h.git(copy, "config", "--worktree", "filter.mine.smudge", `sh -c 'touch "${join(marks, "smudge")}"; cat'`);
+  writeFileSync(join(h.root, ".git", "info", "attributes"), "src/** filter=mine\n");
+  await h.call(lead, "lead", "add_tasks", { tasks: [planned("a", "A", { holds: ["src/**"], parallel: true })] });
+  await handBack(h, "L1-T1", ["src/a.ts"]);
+  await h.call(lead, "lead", "accept", { task: "L1-T1" });
+  await h.runtime.desk.settled(h.project);
+  assert.equal(h.ledger().tasks["L1-T1"]!.status, "merged");
+  assert.equal(readFileSync(join(copy, "src", "a.ts"), "utf-8"), "src/a.ts\n", "the merge wrote the file");
+  assert.deepEqual(readdirSync(marks), []);
+});
+
 test("a copy the desk made is locked in git, marked as the desk's, while its work goes on, and let go with it", async () => {
   const { h, lead } = await laneWriting(["src/**"]);
   await h.call(lead, "lead", "add_tasks", { tasks: [planned("a", "A", { holds: ["src/**"], parallel: true })] });
