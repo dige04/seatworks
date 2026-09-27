@@ -84,6 +84,9 @@ Everything else is yours to decide and move on from.
   because it exists is how a wrong choice becomes the next task's requirement. Weigh it as one of three: a finding
   that changes the decision, another sound option the plan need not take, or a point not worth stopping the work for.
   You are not there to defend the plan, nor to reopen it for every option that looks cleaner.
+- A challenge that asks for a redesign is questioned before it changes the plan: under which conditions the fault
+  shows, whether a small fix is enough, and which responsibilities the new design drops and which it adds. A strong
+  agent can argue any design down, and a redesign can overbuild as surely as the design it replaces.
 - Put every correction for a Peer into one `rework` after its hand-back: each message mid-task is a turn it spends on
   you instead of the work.
 - Broken shared code goes to the task holding it or whose goal needs it, so it is fixed once, in one place; outside
