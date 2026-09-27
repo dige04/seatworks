@@ -7,7 +7,7 @@ the evidence between them, and brings you in for what only you can decide.
 
 > **Pre-release.** Nothing has shipped: no releases, no compatibility promises.
 
-![Who does what: you, the Supervisor, a Lead per lane with its Peers and Reviewers, the watch, and the desk under them](docs/images/team.svg)
+![Seatworks at a glance: you, the Supervisor, a Lead per lane with its Peers, review and the watch around them, and the desk under them](docs/images/overview.svg)
 
 ## How a piece of work goes
 
@@ -41,7 +41,7 @@ the evidence between them, and brings you in for what only you can decide.
    audits the push runs beside the last lanes, checking each line of `CONTEXT.md` against what
    ships. Every seat's own `git` refuses to push.
 
-![A lane, from open to landed: open, scout, split, work, review, accept, whole-lane review, report ready, land](docs/images/lane.svg)
+![A lane, from open to landed, one step a row: who acts, and who the desk hands it to](docs/images/flow.svg)
 
 ## What it does, and what it doesn't
 
@@ -58,6 +58,10 @@ yours.
 
 ## The team
 
+SLP is not a chain of command: each role decides what is its own, and the plugin decides none of it.
+
+![SLP: what the Supervisor, a Lead and a Peer each own, decide and never do](docs/images/slp.svg)
+
 | Role       | Owns                                                                                                               | Starts and ends                                                                                                                | Default agent                          |
 | ---------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
 | Supervisor | Your intent, across lanes: opens, lands and drops them, answers Leads, and is the only seat that asks you anything | You start it                                                                                                                   | Claude Code · `claude-opus-5` · high   |
@@ -69,6 +73,15 @@ yours.
 
 Roles are data in `plugin/roles.json`, not code, and each has the tool set it names in
 `plugin/mcp/tools.json`.
+
+## Review
+
+A Lead asks a Reviewer for a scout's answer before it splits a lane, a review of one task's change, a review of the
+whole lane against its acceptance before it reports ready, or a lens of a council. The Reviewer works in a copy of its
+own, proves each acceptance behaviour with a check it ran, rates every defect from P0 to P3 and changes nothing. Its
+verdict is evidence: the Lead sends reproduced P0 to P2 back, carries P3 in its report, and decides.
+
+![Review is evidence, not a verdict: what a Lead asks for, what the Reviewer does, and how the Lead weighs it](docs/images/review.svg)
 
 ## Supported agents
 
@@ -156,6 +169,10 @@ everything it keeps lives under `~/.local/share/seatworks-v3/`.
 
 ## When the team needs you
 
+Whether you are in the loop is one switch, `hitl.on`, off by default:
+
+![The Human in the loop is one switch: what reaches you in the loop, and what the Supervisor decides out of it](docs/images/hitl.svg)
+
 Seatworks plugs into Paseo's own places rather than a screen of its own:
 
 - **The Supervisor's chat** is where you meet the work. A question for you is a card drawn like
@@ -226,6 +243,13 @@ wrong and which of them the watch catches.
   Put the key where the agent keeps its own (`~/.pi/agent/auth.json` for Pi).
 - **Paseo keeps a project for a folder you have deleted.** List them with `paseo project ls` and remove
   one with `paseo project delete <id>`.
+
+## How it is built
+
+One plugin inside Paseo's daemon. Each seat is an agent in a directory of its own, and reaches the desk through its
+team MCP server over one socket; the desk keeps the record outside your repository and runs git for everyone.
+
+![How it is built: the Paseo app, the seats, the plugin inside the daemon, and what is kept on disk](docs/images/architecture.svg)
 
 ## Development
 
