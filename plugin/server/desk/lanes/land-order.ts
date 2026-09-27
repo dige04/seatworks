@@ -50,8 +50,8 @@ async function land(desk: DeskServices, project: Project, laneId: string, order:
 }
 
 /**
- * A landing that broke rather than answering: whoever ordered it waits on LANDED or NOT LANDED, so it is told, and any
- * order the attempt left is cleared, as nothing would carry it out or say it had failed.
+ * A landing that broke rather than answering: whoever ordered it waits on LANDED or NOT LANDED, so it is told. Its order
+ * left the record when the turns in its way ended, so nothing carries it out again unasked.
  */
 async function failed(
   desk: DeskServices,
@@ -61,10 +61,7 @@ async function failed(
   error: string,
 ): Promise<void> {
   desk.log(project, `the landing of ${laneId} ordered earlier failed: ${error}`);
-  const lane = desk.ledgers.setLane(project, laneId, (entry) => {
-    delete entry.landing;
-    return { ...entry };
-  });
+  const lane = loadLedger(project.state).lanes[laneId];
   if (lane) await desk.mail.post(order.by, landLetters.failed(lane, error));
 }
 
