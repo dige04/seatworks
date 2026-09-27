@@ -105,16 +105,18 @@ export const landLetters = {
     );
   },
 
+  /** Each wakes whoever supervises: what the Human decided changes where the lane stands, which it would otherwise tell them wrong. */
   landDecided(lane: Lane, how: "landed" | "blocked" | "again" | "changed" | "sent back", text: string): Letter {
     const told = (said: string, next: string) => mail("land", [lane.id, how, Date.now()], said, next);
     if (how === "landed")
-      return fyi(told(`LANDED ${lane.id} (${lane.title}) after the Human approved it: ${text}`, "Nothing now."));
+      return told(
+        `LANDED ${lane.id} (${lane.title}) after the Human approved it: ${text}`,
+        `Know it when you next speak of ${lane.id}; nothing of it waits on you.`,
+      );
     if (how === "sent back")
-      return fyi(
-        told(
-          `SENT BACK ${lane.id} (${lane.title}) by the Human: ${ended(text || "no reason was given")} The lane stays open, and its Lead has the note.`,
-          "Nothing now.",
-        ),
+      return told(
+        `SENT BACK ${lane.id} (${lane.title}) by the Human: ${ended(text || "no reason was given")} The lane stays open, and its Lead has the note.`,
+        `Know it when you next speak of ${lane.id}; its Lead acts on the note.`,
       );
     if (how === "again")
       return told(

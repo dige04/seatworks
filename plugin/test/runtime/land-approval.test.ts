@@ -66,12 +66,11 @@ test("a lane touching a path the Human asked to be asked about first waits for t
     [h.ledger().lanes.L1!.status, h.ledger().lanes.L1!.landed, h.ledger().lanes.L1!.landApproval],
     ["closed", true, undefined],
   );
-  await h.idle(sup);
   assert.match(
-    h.heard(sup).join("\n"),
+    h.agents.get(sup)!.sent.join("\n"),
     /LANDED L1 \(Cart\) after the Human approved it: fine, it only renames\. Lane L1 closed/,
+    "the Supervisor, idle, hears at once what the Human decided, so it never tells them it still waits",
   );
-  assert.doesNotMatch(h.agents.get(sup)!.sent.join("\n"), /LANDED L1/);
 });
 
 test("a landing sent back stays open without its READY, and held again is approved as the card showed it: before a READY, over a red gate", async () => {
@@ -90,6 +89,7 @@ test("a landing sent back stays open without its READY, and held again is approv
     [[sup, `${h.project.slug}:L1`, "L1", "waits"]],
     "the held landing is a card in the chat",
   );
+  await h.idle(sup);
   assert.match(await decide(h, false, "put the login change behind a flag."), /Lane L1 is sent back to its Lead/);
   assert.deepEqual(
     await card(),
@@ -103,8 +103,11 @@ test("a landing sent back stays open without its READY, and held again is approv
     h.agents.get(lane.lead!)!.sent.join("\n"),
     /LAND SENT BACK L1 \(Cart\): put the login change behind a flag\. The lane stays open\.\n\nNext: Act on the note, then report the lane ready again\./,
   );
-  await h.idle(sup);
-  assert.match(h.heard(sup).join("\n"), /SENT BACK L1 \(Cart\) by the Human: put the login change behind a flag/);
+  assert.match(
+    h.agents.get(sup)!.sent.join("\n"),
+    /SENT BACK L1 \(Cart\) by the Human: put the login change behind a flag/,
+    "sent, not held for a letter that asks",
+  );
 
   await h.call(sup, "supervisor", "set_project", { gate: "false" });
   const reason = "the Supervisor judged the red gate safe";
