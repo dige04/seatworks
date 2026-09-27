@@ -31,12 +31,15 @@ the evidence between them, and brings you in for what only you can decide.
    every lane becomes a standing order: the paths you want to see before they land, and where lanes
    work.
 2. **The team works, and you may leave.** The Supervisor opens each lane with an outcome and
-   acceptance criteria, and the plugin starts its Lead. Unless the change is small, the Lead first
-   has a Reviewer scout the code, then splits the lane into tasks by the files they change, each
-   done by a Peer of its own on a branch of its own. It has Reviewers read the work, and accepts it,
-   which merges it into the lane, sends it back or cuts it. The last task merging wakes the Lead for
-   a review of the whole lane against its acceptance. A Lead with a question asks the Supervisor and
-   carries on with its default meanwhile; a Peer asks its Lead, with its best guess. A decision only
+   acceptance criteria, keeping apart what must hold, what it chose and what nobody knows yet, and the
+   plugin starts its Lead. Where a split would be blind, the Lead first has a Reviewer scout the
+   code, then splits the lane into tasks by the files they change, each done by a Peer of its own on
+   a branch of its own, with a brief in the same three parts. Where a doubt calls for a reader, it
+   has a Reviewer, an Architect or an Auditor read the work, and accepts it, which merges it into the
+   lane, sends it back or cuts it. A Peer whose evidence shows a premise or a choice of its brief
+   does not fit challenges it, and whoever answers says why the plan changes or stands. A Lead with a
+   question asks the Supervisor and carries on with its default meanwhile; a Peer asks its Lead, with
+   its best guess. A Peer measuring holds the machine, so no gate runs under its numbers. A decision only
    you can make goes on your question queue, with the Supervisor's recommendation and what goes
    ahead while you are silent. A command that cannot be undone reaches the Supervisor at once, to
    hold the lane if it must.
@@ -82,6 +85,8 @@ SLP is not a chain of command: each role decides what is its own, and the plugin
 | Peer       | One task, and the engineering judgement inside it                                                                  | Started with its task; stays after the task is accepted until its Lead releases it or the lane closes, and never takes another | Claude Code · `claude-opus-5` · medium |
 | Reviewer   | A review of one change, or an answer on the lane's code (a scout before a split, a council lens), in its own copy  | Started with its review; ends when its Lead cuts the review or the lane closes                                                 | Claude Code · `claude-opus-5` · medium |
 | Second reviewer | A Reviewer on another model, so two review lenses are not one model read twice                                | As the Reviewer                                                                                                                | Claude Code · `claude-sonnet-5` · medium |
+| Architect  | A judgment on a hard design decision: the designs the code allows, what each costs, drops and adds                 | As the Reviewer                                                                                                                | Claude Code · `claude-opus-5` · medium |
+| Auditor    | Whether a lane's tests and end-to-end runs prove what they claim, by running them and breaking the behaviour       | As the Reviewer                                                                                                                | Claude Code · `claude-opus-5` · medium |
 | Watcher    | The watch's questions, one case at a time, when you choose a seat to answer them                                   | Started when a case first needs it; let go once no lane is open                                                                | The Peer's, until you set its own      |
 
 Roles are data in `plugin/roles.json`, not code, and each has the tool set it names in
@@ -89,8 +94,10 @@ Roles are data in `plugin/roles.json`, not code, and each has the tool set it na
 
 ## Review
 
-A Lead asks a Reviewer for a scout's answer before it splits a lane, a review of one task's change, a review of the
-whole lane against its acceptance before it reports ready, or a lens of a council. The Reviewer works in a copy of its
+A Lead asks for a review when a doubt a reader can settle calls for one, not by rote: a scout's answer where a split
+would be blind, a review of one task's change, a review of the whole lane where its tasks met in code nobody read
+whole, a lens of a council, an Architect's judgment on a hard design, or an Auditor's run of the lane's proof. The
+Report counts how many reviews changed the work, so one that seldom does can be dropped. The Reviewer works in a copy of its
 own, proves each acceptance behaviour with a check it ran, rates every defect from P0 to P3 and changes nothing. Its
 verdict is evidence: the Lead sends reproduced P0 to P2 back, carries P3 in its report, and decides.
 
@@ -182,7 +189,9 @@ everything it keeps lives under `~/.local/share/seatworks-v3/`.
 
 ## When the team needs you
 
-Whether you are in the loop is one switch, `hitl.on`, off by default:
+Whether you are in the loop is one switch, `hitl.on`, off by default. In the loop or out of it, a
+change to what a lane is for, or its spend past the appetite it was opened with, is yours: the
+Supervisor asks you.
 
 ![The Human in the loop is one switch: what reaches you in the loop, and what the Supervisor decides out of it](docs/images/hitl.svg)
 
@@ -197,13 +206,17 @@ Seatworks plugs into Paseo's own places rather than a screen of its own:
   line where it stands once it is settled. The report card is read from the record and written by no
   agent, from where you last marked it read: what needs you, what was decided for you (pushes and
   tags, merges and landings over a red gate with their reasons, permissions given or refused, asks a
-  Lead settled when nobody answered), what went ahead on a recommendation, what landed, what could
-  not be undone, how often your answers took the recommendation and how fast, how many of a review's
-  findings the next review found resolved, and what each lane spent, as its agents report it.
+  Lead settled when nobody answered, the Supervisor's own choices and what each Lead decided or
+  assumed), each challenge the plan was kept against and why, your own words to a Lead or Peer and
+  whether they reached the plan, what went ahead on a recommendation, what landed, what could not be
+  undone, how often your answers took the recommendation and how fast, how many of a review's
+  findings the next review found resolved, how many reviews changed the work and challenges changed
+  the plan, the asks Leads sent up by kind, and what each lane spent, as its agents report it.
 - **A pill above every seat's chat** counts what waits for you in its project, and opens the same
   cards, so you can answer from whichever chat is open.
 - **The Team tab**, beside Files and Changes, is the team at a glance: a line a lane, with what it is
-  doing or who it waits on, opened to its seats; a seat opens its chat.
+  doing or who it waits on, opened to its seats, each task with the brief it works to; a seat opens
+  its chat.
 - **The Seatworks page** in Paseo's sidebar is for setup only: your projects, **Add project**, and for
   each project **Team** (an agent per role, the watch, and whether you are in the loop), **Rules**
   (the paths you see first, the risk rules, where lanes work, and `CONTEXT.md`, read only: you change

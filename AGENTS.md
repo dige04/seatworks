@@ -67,8 +67,9 @@ The plugin **serves** SLP so it works better with Paseo. It must **never constra
   Lead may `reseat` a task: a fresh Peer on the same branch and copy, briefed from the record. A base
   that conflicts with a lane is never left half merged: its Lead has the facts, and the Supervisor
   chooses whose task takes the base in on its own branch.
-- **The Human in the loop is a setting**, `hitl.on`, off by default. Off, only the concept goes to
-  the Human, through the Supervisor's grilling; the Supervisor decides the rest, answers the seats'
+- **The Human in the loop is a setting**, `hitl.on`, off by default. Off, the concept goes to the
+  Human through the Supervisor's grilling, and so does a change to what a lane is for or what it
+  costs past its appetite; the Supervisor decides the rest, answers the seats'
   permission prompts with `permit`, and pushes with `push`. On, their question queue, standing orders
   and landing approvals apply. Code that waits for the Human reads the flag.
 
