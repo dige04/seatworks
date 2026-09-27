@@ -62,6 +62,7 @@ const FACTS = {
   },
   stuck: { level: "attend", title: "Going round in circles" },
   "no-recovery": { level: "attend", title: "Did not recover from a failure" },
+  flaky: { level: "attend", title: "A check that failed, then passed with no edit between" },
   "refusal-loop": { level: "attend", title: "Refused again and again" },
   "test-weakened": { level: "attend", title: "A test or check weakened" },
   suppressed: { level: "attend", title: "Silenced a check instead of fixing it" },
@@ -87,6 +88,8 @@ const FACTS = {
   "brief-pasted": { level: "attend", title: "A brief carrying a pasted history" },
   "review-unchecked": { level: "attend", title: "A review accepted with nothing run, or changed files unread" },
   "brief-prewritten": { level: "attend", title: "A brief that writes the answer out" },
+  "detour-late": { level: "attend", title: "A detour opened after the lane it clears was sent back" },
+  "reviews-fanned": { level: "attend", title: "Reviews fanned out with none reconciled" },
   stalled: {
     level: "attend",
     title: "A task stalled: quiet, or stopped on a refused call",

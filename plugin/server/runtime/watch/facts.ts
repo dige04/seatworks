@@ -272,22 +272,28 @@ function head(command: string, runners: Set<string>): string {
   return words.slice(0, /^(run|exec|-m|x|dlx)$/.test(words[1] ?? "") ? 3 : 2).join(" ");
 }
 
+/**
+ * A failure followed until it or the gate passes: `no-recovery` when it goes on too long, and `flaky` when the very
+ * command passes with no edit since it failed, a red two runs disagree about.
+ */
 export class Recovery {
-  private open: { command: string; head: string; steps: number; told: boolean } | undefined;
+  private open: { command: string; head: string; steps: number; told: boolean; edited: boolean } | undefined;
 
   step(call: Call, rules: Rules): Fact[] {
     const shell = call.detail.type === "shell";
     const command = str(call.detail.command);
     const bad = failed(call);
     if (shell && bad && (!this.open || head(command, rules.runners) !== this.open.head)) {
-      this.open = { command, head: head(command, rules.runners), steps: 0, told: false };
+      this.open = { command, head: head(command, rules.runners), steps: 0, told: false, edited: false };
       return [];
     }
     if (!this.open) return [];
     if (shell && !bad && (head(command, rules.runners) === this.open.head || isGate(call, rules.gates))) {
+      const flaky = command === this.open.command && !this.open.edited;
       this.open = undefined;
-      return [];
+      return flaky ? [fact("flaky", `\`${oneLine(command, 100)}\` failed, then passed with no edit between`)] : [];
     }
+    if (call.detail.type === "edit" || call.detail.type === "write") this.open.edited = true;
     this.open.steps += 1;
     if (this.open.told || this.open.steps < rules.recoverWithin) return [];
     this.open.told = true;

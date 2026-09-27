@@ -1,4 +1,5 @@
 import { oneLine } from "../../core/text.ts";
+import type { Lane } from "../../domain/lane.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { SETTLED } from "../../domain/task.ts";
@@ -31,7 +32,7 @@ function prewritten(text: string, { code, step, then, fileMember }: Reading["pre
   return then.test(read) || fileMember.test(read);
 }
 
-type LaneRecord = { here: Task[]; ledger: Ledger; reading: Reading };
+type LaneRecord = { lane: Lane; here: Task[]; ledger: Ledger; reading: Reading };
 
 type Found = [FactKind, string] | undefined;
 
@@ -44,7 +45,7 @@ export function deskFacts(ledger: Ledger, reading: Reading): LaneFact[] {
   return Object.values(ledger.lanes)
     .filter((lane) => lane.status === "open" && lane.lead)
     .flatMap((lane) => {
-      const record = { here: tasks.filter((task) => task.lane === lane.id), ledger, reading };
+      const record = { lane, here: tasks.filter((task) => task.lane === lane.id), ledger, reading };
       return LANE_FACTS.map((find) => find(record))
         .filter((found): found is [FactKind, string] => found !== undefined)
         .map(([kind, quote]) => ({ seat: lane.lead!, fact: fact(kind, quote) }));
@@ -141,6 +142,30 @@ function briefPrewritten({ here, reading }: LaneRecord): Found {
   ];
 }
 
+/** A detour opened only after this lane's tasks were sent back: what should have come first came late. */
+function detourLate({ lane, here, ledger }: LaneRecord): Found {
+  const late = Object.values(ledger.lanes).flatMap((detour) => {
+    if (detour.detourOf !== lane.id) return [];
+    const before = here.filter((task) => (task.sentBack ?? []).some((sent) => sent.at < detour.openedAt));
+    return before.length > 0
+      ? [
+          `${detour.id} was opened to clear the way for this lane after ${before.map((task) => task.id).join(", ")} had been sent back`,
+        ]
+      : [];
+  });
+  return late.length > 0 ? ["detour-late", late.join("; ")] : undefined;
+}
+
+/** Reviews fanned out with nobody reconciling them: as many open at once as make a pile, none handed back. */
+function reviewsFanned({ here, reading }: LaneRecord): Found {
+  const open = here.filter((task) => task.kind === "review" && !task.handback && !settled(task));
+  if (open.length < reading.reviewsAt) return undefined;
+  return [
+    "reviews-fanned",
+    `${open.length} reviews open at once, none handed back: ${open.map((task) => task.id).join(", ")}`,
+  ];
+}
+
 /** Each fact the record can show of a lane, in the order they are raised. */
 const LANE_FACTS = [
   reworkLoop,
@@ -149,4 +174,6 @@ const LANE_FACTS = [
   reviewsUnconverged,
   certaintyOnly,
   briefPrewritten,
+  detourLate,
+  reviewsFanned,
 ];

@@ -222,3 +222,26 @@ test("a brief that writes the work out, or a review told to report only certaint
   for (const [goal, expected, why] of focuses)
     assert.deepEqual(kinds(ledgerOf([task({ id: "L1-R1", kind: "review", of: "L1-T1", goal })])), expected, why);
 });
+
+test("a detour opened after the lane it clears the way for was sent back, and reviews fanned out with none reconciled, are read from the record", () => {
+  const sent = task({ id: "L1-T1", reworks: 2, sentBack: [{ at: 100, text: "again" }] });
+  const late = ledgerOf([sent]);
+  late.lanes.L2 = lane({ id: "L2", lead: "lead-2", detourOf: "L1", openedAt: 200 });
+  assert.deepEqual(
+    [quote(late, "detour-late").seat, quote(late, "detour-late").fact.quote],
+    ["lead-1", "L2 was opened to clear the way for this lane after L1-T1 had been sent back"],
+  );
+  const early = ledgerOf([sent]);
+  early.lanes.L2 = lane({ id: "L2", lead: "lead-2", detourOf: "L1", openedAt: 50 });
+  assert.ok(!kinds(early).includes("detour-late"), "a detour opened before any sending-back came first");
+
+  const reviews = ["R1", "R2", "R3"].map((id) => task({ id: `L1-${id}`, kind: "review", of: `L1-T${id.at(-1)}` }));
+  assert.equal(
+    quote(ledgerOf(reviews), "reviews-fanned").fact.quote,
+    "3 reviews open at once, none handed back: L1-R1, L1-R2, L1-R3",
+  );
+  const back = reviews.map((review, index) =>
+    index === 0 ? { ...review, status: "done" as const, handback: handback("accept") } : review,
+  );
+  assert.ok(!kinds(ledgerOf(back)).includes("reviews-fanned"), "one reconciled, they no longer pile up");
+});

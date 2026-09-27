@@ -352,3 +352,18 @@ test("a seat thinking and talking with no call between, or compacting again and 
     ["its context compacted 2 times since its instruction"],
   );
 });
+
+test("a command that failed and then passed with no edit between is a red two runs disagree about", () => {
+  const flaky = (messages: StreamMessage[]) => found(messages, "flaky").map((fact) => fact.quote);
+  assert.deepEqual(flaky([run("a", 2, "npm test", false), run("b", 3, "npm test", true)]), [
+    "`npm test` failed, then passed with no edit between",
+  ]);
+  const edited = again(piRow(11), "w", 3, (detail) =>
+    Object.assign(detail, { type: "edit", filePath: "src/a.ts", oldString: "a", newString: "b" }),
+  );
+  assert.deepEqual(
+    flaky([run("a", 2, "npm test", false), edited, run("b", 4, "npm test", true)]),
+    [],
+    "a fix is no flake",
+  );
+});
