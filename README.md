@@ -7,6 +7,8 @@ the evidence between them, and brings you in for what only you can decide.
 
 > **Pre-release.** Nothing has shipped: no releases, no compatibility promises.
 
+![Who does what: you, the Supervisor, a Lead per lane with its Peers and Reviewers, the watch, and the desk under them](docs/images/team.svg)
+
 ## How a piece of work goes
 
 1. **You set the intent.** Start the Supervisor in your project and say what you want. Before new work
@@ -16,23 +18,30 @@ the evidence between them, and brings you in for what only you can decide.
    every lane becomes a standing order: the paths you want to see before they land, and where lanes
    work.
 2. **The team works, and you may leave.** The Supervisor opens each lane with an outcome and
-   acceptance criteria, and the plugin starts its Lead. The Lead splits the lane into tasks, each
-   done by a Peer of its own on a branch of its own, has Reviewers read the work, and accepts it,
-   sends it back or cuts it. A Lead with a question asks the Supervisor and carries on with its
-   default meanwhile; a Peer asks its Lead, with its best guess. A decision only you can make goes
-   on your question queue, with the Supervisor's recommendation and what goes ahead while you are
-   silent. A command that cannot be undone reaches the Supervisor at once, to hold the lane if it
-   must.
+   acceptance criteria, and the plugin starts its Lead. Unless the change is small, the Lead first
+   has a Reviewer scout the code, then splits the lane into tasks by the files they change, each
+   done by a Peer of its own on a branch of its own. It has Reviewers read the work, and accepts it,
+   which merges it into the lane, sends it back or cuts it. The last task merging wakes the Lead for
+   a review of the whole lane against its acceptance. A Lead with a question asks the Supervisor and
+   carries on with its default meanwhile; a Peer asks its Lead, with its best guess. A decision only
+   you can make goes on your question queue, with the Supervisor's recommendation and what goes
+   ahead while you are silent. A command that cannot be undone reaches the Supervisor at once, to
+   hold the lane if it must.
 3. **Lanes land on your base.** When a Lead reports its lane ready, the plugin runs your test
    command (the gate), and the rehearsal of each risk rule the lane's change reaches, where the rule
    has one. The Supervisor lands the lane: the plugin merges in your base if it moved, runs the gate
-   on the result, and lands the lane on your local base branch. A lane that touches a path you asked
-   to see first waits for your approval.
+   on the result, and lands the lane on your local base branch. If a seat's turn is in the way, the
+   landing becomes a standing order: the plugin lands the lane once that turn ends and tells the
+   Supervisor LANDED, or NOT LANDED and why. A lane that touches a path you asked to see first waits
+   for your approval.
 4. **You come back to a report.** A card in the Supervisor's chat tells you, from the record and since
    you last marked it read: what needs you, what was decided for you, what went ahead on a
-   recommendation, what landed. Pushing and releasing are yours while you are
-   in the loop, and the Supervisor's while you are not, which the plugin runs for it and never forces;
-   every seat's own `git` refuses to push.
+   recommendation, what landed. Pushing and releasing are yours while you are in the loop, and the
+   Supervisor's while you are not, which the plugin runs for it and never forces; then a lane that
+   audits the push runs beside the last lanes, checking each line of `CONTEXT.md` against what
+   ships. Every seat's own `git` refuses to push.
+
+![A lane, from open to landed: open, scout, split, work, review, accept, whole-lane review, report ready, land](docs/images/lane.svg)
 
 ## What it does, and what it doesn't
 
@@ -55,6 +64,7 @@ yours.
 | Lead       | One lane: its tasks, their order, and what is accepted                                                             | Started with its lane; stays after the lane closes until the Supervisor releases it                                            | Claude Code · `claude-opus-5` · medium |
 | Peer       | One task, and the engineering judgement inside it                                                                  | Started with its task; stays after the task is accepted until its Lead releases it or the lane closes, and never takes another | Claude Code · `claude-opus-5` · medium |
 | Reviewer   | A review of one change, or an answer on the lane's code (a scout before a split, a council lens), in its own copy  | Started with its review; ends when its Lead cuts the review or the lane closes                                                 | Claude Code · `claude-opus-5` · medium |
+| Second reviewer | A Reviewer on another model, so two review lenses are not one model read twice                                | As the Reviewer                                                                                                                | Claude Code · `claude-sonnet-5` · medium |
 | Watcher    | The watch's questions, one case at a time, when you choose a seat to answer them                                   | Started when a case first needs it; let go once no lane is open                                                                | The Peer's, until you set its own      |
 
 Roles are data in `plugin/roles.json`, not code, and each has the tool set it names in
@@ -177,21 +187,32 @@ the loop asks you at most three questions a day across all projects (`questionsP
 
 ## The watch
 
-The watch reads each Lead's and Peer's new thinking, words and briefs every few minutes while it
-works and when its turn ends. Code turns what it can count or match into facts, such as a destructive
-command, going round in circles, a test that lost its assertions or a task sent back again and again.
-What takes judgement goes to a brain, which checks the new text against a catalog of patterns: a
-Lead settling how the system is built, a Peer struggling with what something means, an agent
-dropping its approach or saying it was wrong, a brief that tells a Peer how. On the Watcher's chip in **Team** you
-pick the brains: Jev, a small model asked over OpenRouter with your key, which stays on this machine
-and is never shown again; the Watcher seat; both, where Jev sifts and the seat judges; or none, which
-leaves the code's facts.
+The watch only sees and reports; what to do about it is the Supervisor's. It reads three things:
+each Lead's and Peer's new thinking, words and calls, every few minutes while it works and when its
+turn ends; each decision a seat makes through the desk, as it makes it (an accept, a sending-back, a
+ready report, a brief, a review's verdict); and each lane's record.
+
+Code turns what it can count or match into facts: a destructive command, a secret, data sent off the
+machine, a test that lost its assertions, going round in circles, a task sent back again and again,
+an accept with nothing read since the hand-back, a review that accepted with nothing run, a lane
+reported ready with no push-back from any seat. What takes judgement goes to the brains, which ask
+the new text one condition at a time from a catalog of patterns (`catalog/patterns.json`): a Lead
+settling how the system is built, a Peer struggling with what something means or building a stand-in
+for something missing, an agent dropping its approach or saying it was wrong, a brief that tells a
+Peer how, a decision against a line of `CONTEXT.md`. On the Watcher's chip in **Team** you pick the
+brains: Jev, a small model asked over OpenRouter with your key, which stays on this machine and is
+never shown again; the Watcher seat; both, where Jev sifts and the seat judges only what it flagged;
+or none, which leaves the code's facts.
 
 Everything the watch finds becomes an **incident** and goes to the Supervisor, which decides whether
-and how to step in. There is no switch per signal: the Supervisor marks each incident `useful`,
-`noise` or `unknown`, and a kind it marked noise is not told again about the same seat and task. The
-seat an incident is about never hears of it, and the watch speaks to no one else. The brains' answers
-are kept in the project's `assessments.log`.
+and how to step in: nothing, one open question, a council, a hold, or you. There is no switch per
+signal: the Supervisor marks each incident `useful`, `noise` or `unknown`, and a kind it marked noise
+is not told again about the same seat and task. The seat an incident is about never hears of it, and
+the watch speaks to no one else. The brains' questions and answers are kept in the project's
+`assessments.log`. [ANTIPATTERNS.md](docs/ANTIPATTERNS.md) lists the ways a team of agents goes
+wrong and which of them the watch catches.
+
+![The watch sees and reports: what it reads, how it reads it, and who decides](docs/images/watch.svg)
 
 ## Known Paseo behaviour
 

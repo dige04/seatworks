@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" role="img" aria-label="The watch reads three things: each Lead&#x27;s and Peer&#x27;s turns, the decisions they make through the desk, and each lane&#x27;s record. Code turns what it can count or match into facts. Patterns that need judgement go to the brains: a sensor asked one condition at a time, the Watcher seat judging what it flagged, or both. Everything found becomes an incident for the Supervisor, which marks it useful, noise or unknown and decides whether and how to step in. The seat an incident is about never hears of it.">
+<title>The watch reads three things: each Lead&#x27;s and Peer&#x27;s turns, the decisions they make through the desk, and each lane&#x27;s record. Code turns what it can count or match into facts. Patterns that need judgement go to the brains: a sensor asked one condition at a time, the Watcher seat judging what it flagged, or both. Everything found becomes an incident for the Supervisor, which marks it useful, noise or unknown and decides whether and how to step in. The seat an incident is about never hears of it.</title>
+<style>svg{--bg:#ffffff;--panel:#f6f8fa;--line:#d0d7de;--soft:#e6eaef;--ink:#1f2328;--muted:#59636e;--faint:#818b98;--shadow:rgba(31,35,40,0.10);--slate-fill:#f6f8fa;--slate:#8c959f;--slate-ink:#1f2328;--violet-fill:#f7f1ff;--violet:#8250df;--violet-ink:#6639ba;--blue-fill:#eef6ff;--blue:#0969da;--blue-ink:#0550ae;--green-fill:#eefbf1;--green:#1a7f37;--green-ink:#116329;--teal-fill:#ebf9f7;--teal:#0f766e;--teal-ink:#0b5e57;--rose-fill:#fff0f7;--rose:#bf3989;--rose-ink:#99286e;--amber-fill:#fff8e1;--amber:#9a6700;--amber-ink:#7d4e00;--red-fill:#fff1f0;--red:#cf222e;--red-ink:#a40e26;}@media (prefers-color-scheme: dark){svg{--bg:#0d1117;--panel:#151b23;--line:#30363d;--soft:#262c36;--ink:#e6edf3;--muted:#9198a1;--faint:#6e7681;--shadow:rgba(0,0,0,0);--slate-fill:#1c2128;--slate:#6e7681;--slate-ink:#e6edf3;--violet-fill:#231b35;--violet:#a371f7;--violet-ink:#d2a8ff;--blue-fill:#0f2238;--blue:#4493f8;--blue-ink:#79c0ff;--green-fill:#10261a;--green:#3fb950;--green-ink:#7ee787;--teal-fill:#0c2826;--teal:#2bb5a5;--teal-ink:#5eead4;--rose-fill:#2e1424;--rose:#db61a2;--rose-ink:#ff9bce;--amber-fill:#2b2108;--amber:#d29922;--amber-ink:#e3b341;--red-fill:#2d1417;--red:#f85149;--red-ink:#ff7b72;}}text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;fill:var(--ink)}.mono{font-family:ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;white-space:pre}.canvas{fill:var(--bg);stroke:var(--line)}.h1{font-size:21px;font-weight:650;letter-spacing:-0.01em}.lede{font-size:13.5px;fill:var(--muted)}.group{fill:var(--panel);stroke:var(--line)}.group-label{font-size:11px;font-weight:650;letter-spacing:0.08em;fill:var(--muted)}.node{stroke-width:1.4;filter:drop-shadow(0 1px 2px var(--shadow))}.title{font-size:14px;font-weight:620}.sub{font-size:12px;fill:var(--muted)}.note{font-size:12px;fill:var(--muted)}.strong{fill:var(--ink);font-weight:620}.edge{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.dash{stroke-dasharray:5 4}.pill-text{font-size:11.5px;font-weight:620}.chip{stroke-width:1}.chip-text{font-size:11px;font-weight:560}.badge-text{font-size:11px;font-weight:700;fill:var(--bg)}.rule{stroke:var(--line);stroke-width:1}.elabel{font-size:11px;fill:var(--muted);paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}.step{font-size:11px;font-weight:700;fill:var(--bg)}</style>
+<defs><marker id="a-slate" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9 z" style="fill:var(--slate)"/></marker><marker id="a-violet" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9 z" style="fill:var(--violet)"/></marker><marker id="a-blue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9 z" style="fill:var(--blue)"/></marker><marker id="a-green" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9 z" style="fill:var(--green)"/></marker><marker id="a-teal" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9 z" style="fill:var(--teal)"/></marker><marker id="a-rose" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9 z" style="fill:var(--rose)"/></marker><marker id="a-amber" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9 z" style="fill:var(--amber)"/></marker><marker id="a-red" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9 z" style="fill:var(--red)"/></marker></defs>
+<rect class="canvas" x="0.5" y="0.5" width="959" height="519" rx="18"/>
+<text class="h1" x="32" y="46">The watch sees and reports</text>
+<text class="lede" x="32" y="70">What the code can count is a fact; what takes judgement goes to the brains. Either way the Supervisor decides.</text>
+<rect class="group" x="24" y="92" width="250" height="400" rx="14" style="fill:var(--slate-fill);fill-opacity:0.55;stroke:var(--slate);stroke-opacity:0.25"/>
+<text class="group-label" x="40" y="114" style="fill:var(--slate-ink)">WHAT IT READS</text>
+<rect class="node" x="40" y="124" width="218" height="92" rx="10" style="fill:var(--slate-fill);stroke:var(--slate);stroke-opacity:0.6"/>
+<text class="title" x="149.0" y="149.5" text-anchor="middle" style="fill:var(--slate-ink)">Turns</text>
+<text class="sub" x="149.0" y="166.5" text-anchor="middle">each Lead&#x27;s and Peer&#x27;s</text>
+<text class="sub" x="149.0" y="183.5" text-anchor="middle">thinking, words and calls,</text>
+<text class="sub" x="149.0" y="200.5" text-anchor="middle">every few minutes</text>
+<rect class="node" x="40" y="234" width="218" height="92" rx="10" style="fill:var(--slate-fill);stroke:var(--slate);stroke-opacity:0.6"/>
+<text class="title" x="149.0" y="259.5" text-anchor="middle" style="fill:var(--slate-ink)">Decisions</text>
+<text class="sub" x="149.0" y="276.5" text-anchor="middle">accept · rework · report ·</text>
+<text class="sub" x="149.0" y="293.5" text-anchor="middle">a brief · a review&#x27;s done,</text>
+<text class="sub" x="149.0" y="310.5" text-anchor="middle">as each is made</text>
+<rect class="node" x="40" y="344" width="218" height="92" rx="10" style="fill:var(--slate-fill);stroke:var(--slate);stroke-opacity:0.6"/>
+<text class="title" x="149.0" y="378.0" text-anchor="middle" style="fill:var(--slate-ink)">The lane&#x27;s record</text>
+<text class="sub" x="149.0" y="395.0" text-anchor="middle">the ledger: sendings-back,</text>
+<text class="sub" x="149.0" y="412.0" text-anchor="middle">reviews, detours, gate runs</text>
+<rect class="group" x="304" y="92" width="330" height="400" rx="14" style="fill:var(--rose-fill);fill-opacity:0.55;stroke:var(--rose);stroke-opacity:0.25"/>
+<text class="group-label" x="320" y="114" style="fill:var(--rose-ink)">HOW IT READS</text>
+<rect class="node" x="322" y="124" width="294" height="116" rx="10" style="fill:var(--rose-fill);stroke:var(--rose);stroke-opacity:0.6"/>
+<text class="title" x="469.0" y="153.0" text-anchor="middle" style="fill:var(--rose-ink)">Code facts</text>
+<text class="sub" x="469.0" y="170.0" text-anchor="middle">destructive command · secret · data off</text>
+<text class="sub" x="469.0" y="187.0" text-anchor="middle">the machine · a weakened test · round in</text>
+<text class="sub" x="469.0" y="204.0" text-anchor="middle">circles · accepted unread · sent back</text>
+<text class="sub" x="469.0" y="221.0" text-anchor="middle">again and again · no push-back …</text>
+<rect class="node" x="322" y="268" width="294" height="72" rx="10" style="fill:var(--rose-fill);stroke:var(--rose);stroke-opacity:0.6"/>
+<text class="title" x="469.0" y="292.0" text-anchor="middle" style="fill:var(--rose-ink)">Sensor</text>
+<text class="sub" x="469.0" y="309.0" text-anchor="middle">asks each pattern&#x27;s one condition</text>
+<text class="sub" x="469.0" y="326.0" text-anchor="middle">of each item, and flags</text>
+<rect class="node" x="322" y="360" width="294" height="72" rx="10" style="fill:var(--rose-fill);stroke:var(--rose);stroke-opacity:0.6"/>
+<text class="title" x="469.0" y="384.0" text-anchor="middle" style="fill:var(--rose-ink)">Watcher seat</text>
+<text class="sub" x="469.0" y="401.0" text-anchor="middle">judges only what the sensor</text>
+<text class="sub" x="469.0" y="418.0" text-anchor="middle">flagged, or left unsure in a decision</text>
+<path class="edge" d="M469,340 L469,356" style="stroke:var(--rose)" marker-end="url(#a-rose)"/>
+<text class="note" x="322" y="458" text-anchor="start">attention.brain: sensor, seat, both or off</text>
+<rect class="group" x="664" y="92" width="272" height="400" rx="14" style="fill:var(--violet-fill);fill-opacity:0.55;stroke:var(--violet);stroke-opacity:0.25"/>
+<text class="group-label" x="680" y="114" style="fill:var(--violet-ink)">WHO DECIDES</text>
+<rect class="node" x="684" y="150" width="232" height="72" rx="10" style="fill:var(--violet-fill);stroke:var(--violet);stroke-opacity:0.6"/>
+<text class="title" x="800.0" y="174.0" text-anchor="middle" style="fill:var(--violet-ink)">Incident book</text>
+<text class="sub" x="800.0" y="191.0" text-anchor="middle">one per project; a kind marked</text>
+<text class="sub" x="800.0" y="208.0" text-anchor="middle">noise is not told again</text>
+<rect class="node" x="684" y="262" width="232" height="88" rx="10" style="fill:var(--violet-fill);stroke:var(--violet);stroke-opacity:0.6"/>
+<text class="title" x="800.0" y="285.5" text-anchor="middle" style="fill:var(--violet-ink)">Supervisor</text>
+<text class="sub" x="800.0" y="302.5" text-anchor="middle">marks useful · noise · unknown;</text>
+<text class="sub" x="800.0" y="319.5" text-anchor="middle">then nothing, a question,</text>
+<text class="sub" x="800.0" y="336.5" text-anchor="middle">a council, a hold, or you</text>
+<path class="edge" d="M800,222 L800,258" style="stroke:var(--violet)" marker-end="url(#a-violet)"/>
+<text class="note strong" x="684" y="390" text-anchor="start">Never told to the seat it</text>
+<text class="note" x="684" y="407" text-anchor="start">is about. No switch per signal.</text>
+<text class="note" x="684" y="424" text-anchor="start">The watch never steps in.</text>
+<path class="edge" d="M260,160 L318,160" style="stroke:var(--slate)" marker-end="url(#a-slate)"/>
+<path class="edge" d="M260,262 L318,200" style="stroke:var(--slate)" marker-end="url(#a-slate)"/>
+<path class="edge" d="M260,380 L318,222" style="stroke:var(--slate)" marker-end="url(#a-slate)"/>
+<path class="edge dash" d="M260,186 L318,288" style="stroke:var(--slate)" marker-end="url(#a-slate)"/>
+<path class="edge dash" d="M260,296 L318,304" style="stroke:var(--slate)" marker-end="url(#a-slate)"/>
+<text class="elabel" x="289" y="318" text-anchor="middle">patterns</text>
+<path class="edge" d="M618,182 L680,182" style="stroke:var(--rose)" marker-end="url(#a-rose)"/>
+<path class="edge" d="M618,396 L650,396 L650,200 L680,200" style="stroke:var(--rose)" marker-end="url(#a-rose)"/>
+</svg>
