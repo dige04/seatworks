@@ -4,7 +4,7 @@ import { coverOf, globToRegex, uncovered } from "../../core/scope.ts";
 import { capped, plural } from "../../core/text.ts";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { fileKinds, testMarkers, weakened } from "../../catalog/kit/ecosystem-patterns.ts";
-import { SETTLED } from "../../domain/task.ts";
+import { openWork } from "../../domain/task.ts";
 import { loadIncidents } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, tasksOf } from "../../domain/ledger.ts";
@@ -137,11 +137,6 @@ export function askFirstHits(project: Project, change: Change): AskHit[] {
   });
 }
 
-/** Work closing a lane would lose: a code task not merged, or a review still reading; one that handed back is done. */
-export function unfinished(task: Task): boolean {
-  return !SETTLED.includes(task.status) && !(task.kind === "review" && task.status === "done");
-}
-
 /**
  * What a lane brings onto its base, read from git and the record rather than from anything a seat said: evidence for
  * whoever lands it and the Human, never a reason to hold it. `gate` is left out where its own verdict is given.
@@ -249,7 +244,7 @@ function recordFacts(project: Project, ledger: Ledger, lane: Lane): string[] {
     ...tasks
       .filter((task) => task.status === "merged" && task.handback?.gate?.ok === false)
       .map((task) => `${task.id} was accepted over its red gate: ${task.handback!.gate!.note}.`),
-    ...tasks.filter(unfinished).map((task) => `${task.id} is ${task.status}: landing cuts it.`),
+    ...tasks.filter(openWork).map((task) => `${task.id} is ${task.status}: landing cuts it.`),
     ...open.map((incident) => `Incident ${incident.id} on this lane is still open: ${incident.kind}.`),
     ...tasks
       .filter((task) => task.kind === "review" && task.handback)

@@ -132,6 +132,33 @@ test("a review hands back a verdict and its findings, answers what the project's
   assert.equal(reviews(h).length, count, "and nothing recorded or seated for it");
 });
 
+test("the lane's last task merging wakes its Lead, a review that came back being no work left, and says what the lane still needs", async () => {
+  const { h, lane, lead } = await opened("Rounding");
+  await h.call(lead, "lead", "add_tasks", {
+    tasks: [{ key: "t", title: "Round", goal: "g", ...scope, hints: ["round.js"] }],
+  });
+  h.commit(lane.worktree!, "round.js", "export const round = Math.round;\n");
+  const peer = h.ledger().tasks["L1-T1"]!.peer!;
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "rounded" });
+  await h.idle(peer);
+  await h.call(lead, "lead", "start_review", { task: "L1-T1", focus: "Is the rounding right?" });
+  const reviewer = reviews(h).at(-1)!.peer!;
+  assert.equal((await h.call(reviewer, "reviewer", "done", { verdict: "accept", answer: "Right." })).ok, true);
+  await h.idle(lead);
+  // It accepts mid-turn, and the merge's word waits for that turn to end.
+  h.agents.get(lead)!.status = "running";
+  assert.equal((await h.call(lead, "lead", "accept", { task: "L1-T1" })).ok, true);
+  await h.runtime.desk.settled(h.project);
+  const merged = h.runtime.outbox.pending(lead).find((letter) => letter.text.startsWith("MERGED L1-T1"));
+  assert.ok(merged);
+  assert.notEqual(merged.wakes, false, "it asks something of the Lead, so its turn ending sends it");
+  assert.match(
+    merged.text,
+    /Every task of the lane is settled\.\n\nNext: If its outcome is met, have the whole lane reviewed \(start_review, no task\), then report it ready\./,
+  );
+  assert.doesNotMatch(merged.text, /hand-back arrives/, "no hand-back is coming");
+});
+
 test("a lane reported ready carries what its reviews leave standing, and each fact goes once the record settles it", async () => {
   const { h, sup, lane, lead } = await opened("Rounding");
   await h.call(lead, "lead", "add_tasks", {

@@ -44,6 +44,11 @@ export const HOLDS_COPY: readonly TaskStatus[] = [
 ];
 export const ACTIVE: readonly TaskStatus[] = ["running", "rework", "queued", "merging"];
 
+/** Work a task still stands for: a code task not merged or cut, or a review still reading; one that handed back is done. */
+export function openWork(task: Task): boolean {
+  return !SETTLED.includes(task.status) && !(task.kind === "review" && task.status === "done");
+}
+
 /** How a review marks a finding an earlier review of the same work made. */
 export type Mark = "resolved" | "open" | "wrong";
 

@@ -135,9 +135,9 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     ),
     workLetters.handback(task, "/h.md", "Outcome: complete", "agent-3", "lead"),
     workLetters.handback({ ...task, kind: "review" }, "/h.md", "Verdict: accept", "agent-4", "lead"),
-    ...[true, false].flatMap((last) => [
-      mergeLetters.merged(task, counts, outside, "passed", last),
-      mergeLetters.merged(task, undefined, [], "passed", last),
+    ...[{ base: "main", conflicts: ["a.js"] }, undefined].flatMap((settled) => [
+      mergeLetters.merged(task, counts, outside, "passed", settled),
+      mergeLetters.merged(task, undefined, [], "passed", settled),
     ]),
     ...(["left", "clean", { not: "it has uncommitted changes" }] as const).map((settling) =>
       mergeLetters.conflict(task, ["a.js"], lane.branch, settling),
@@ -257,13 +257,7 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     next(workLetters.handback(task, "/h.md", "Outcome: complete", "agent-7", "lead")),
     /^Judge it by what the work did/,
   );
-  const testHeavy = mergeLetters.merged(
-    task,
-    { src: 1, test: 5, docs: 0, files: ["src/pricing.js"] },
-    [],
-    "passed",
-    false,
-  );
+  const testHeavy = mergeLetters.merged(task, { src: 1, test: 5, docs: 0, files: ["src/pricing.js"] }, [], "passed");
   assert.deepEqual(
     [next(testHeavy), testHeavy.wakes],
     ["Nothing now: the next hand-back arrives as mail.", false],
@@ -302,15 +296,17 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
   );
 
   const changed = { src: 10, test: 5, docs: 0, files: ["src/pricing.js"] };
-  const settledLane = mergeLetters.merged(task, changed, [], "passed", true);
+  const settledLane = mergeLetters.merged(task, changed, [], "passed", { base: "main", conflicts: [] });
   assert.deepEqual(
     [settledLane.wakes, next(settledLane)],
-    [
-      undefined,
-      "Every task of the lane is settled: if its outcome is complete, have the whole lane reviewed (start_review, no task), then report it ready.",
-    ],
+    [undefined, "If its outcome is met, have the whole lane reviewed (start_review, no task), then report it ready."],
   );
-  const noted = mergeLetters.merged(task, changed, ["src/other.js"], "passed", false);
+  assert.match(
+    mergeLetters.merged(task, changed, [], "passed", { base: "main", conflicts: ["src/pricing.js"] }).text,
+    /main conflicts with it in src\/pricing\.js, so it does not land as it is: a Peer takes main in with git merge --no-edit main on its task's branch and commits what it settles\.\n\nNext: Have a task take main in first; then have the whole lane reviewed/,
+    "landing would stop on it, and only a task's Peer can take the base in",
+  );
+  const noted = mergeLetters.merged(task, changed, ["src/other.js"], "passed");
   assert.deepEqual([noted.wakes, next(noted)], [undefined, "Act on a note only if it matters to the lane."]);
   const started = workLetters.started(
     { ...task, after: ["L1-T0"] },
@@ -321,7 +317,7 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     [false, "Nothing now: its hand-back arrives as mail."],
     "a task starting by itself asks nothing of its Lead",
   );
-  const quiet = mergeLetters.merged(task, changed, [], "passed", false);
+  const quiet = mergeLetters.merged(task, changed, [], "passed");
   assert.deepEqual(
     [quiet.wakes, next(quiet)],
     [false, "Nothing now: the next hand-back arrives as mail."],
