@@ -12,6 +12,9 @@ lives. Read it at the start of a session and match what you see against it befor
 | A rule for code in this repository | a `message` asking the Lead to put it in `AGENTS.md` through a task |
 | What the project does or how it behaves, as the Human settled it | `CONTEXT.md` beside this file |
 | A pattern, new or seen again | a row below |
+| What the Human wants to be woken for, in their words | a line under When to wake the Human |
+| A default the Human confirmed at read-back | a line under Confirmed defaults |
+| The Human correcting what you told them | a dated line under Corrections |
 | A change to a prompt, skill, role setting or profile | a diff for the Human |
 
 ## Working method
@@ -27,6 +30,12 @@ lives. Read it at the start of a session and match what you see against it befor
 - When it gets long, the answer is to fold rows into the pattern they are all instances of, not to
   drop the oldest to stay under a number. A `verified` row whose fix has held for weeks has done its
   work and can go.
+
+## When to wake the Human
+
+## Confirmed defaults
+
+## Corrections
 
 ## Patterns
 

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { skillSources } from "../../server/catalog/kit/content.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { hiddenWordsIn } from "../../server/catalog/kit/hidden-words.ts";
+import { RECORDS } from "../../server/core/paths.ts";
 
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const kit = loadKit(PLUGIN);
@@ -187,5 +188,56 @@ test("seat text names only what that seat can reach and what exists: its own too
           `${role.role}'s prompt names ${heading}, a word in capitals that is no acronym, file or variable, so a letter the desk does not send`,
         );
     }
+  }
+});
+
+test("seat text names only logs the desk keeps, and every notebook section it sends a line to is in the page the desk seeds", () => {
+  const texts = files(join(PLUGIN, "content"), ".md").map((file) => [file, readFileSync(file, "utf-8")] as const);
+  const kept = new Set(RECORDS.map((name) => `${name}.log`));
+  const seeded = readFileSync(join(PLUGIN, "content", "records", "notebook.md"), "utf-8");
+  for (const [file, text] of texts) {
+    for (const [, log] of text.matchAll(/(?:\$SEATWORKS_STATE|\{\{state\}\})\/([\w-]+\.log)\b/g))
+      assert.ok(kept.has(log!), `${file} sends a seat to ${log}, which the desk never writes`);
+    for (const [, section] of text.matchAll(/\bunder\s+([A-Z][a-z]+(?:\s+[A-Za-z]+)*?)\s+in\s+the\s+notebook\b/g))
+      assert.match(
+        seeded,
+        new RegExp(`^## ${section}$`, "m"),
+        `${file} keeps lines under ${section} in the notebook, which the seeded page has no section for`,
+      );
+  }
+});
+
+test("the severities the Lead and the reviewers name are the review tool's own, and what a Peer or reviewer reads never sends it to the concept file its copy lacks", () => {
+  const done = tools.reviewer!.find((tool) => tool.name === "done")!;
+  const severity = (done.inputSchema?.properties?.findings?.items?.properties?.severity ?? {}) as Schema & {
+    enum?: string[];
+  };
+  const levels = new Set(severity.enum ?? []);
+  assert.ok(levels.size > 0, "the review tool rates findings");
+  for (const role of kit.roles.filter((entry) => entry.role === "lead" || entry.prompt === "prompts/REVIEWER.md")) {
+    const text = readFileSync(join(PLUGIN, "content", role.prompt), "utf-8");
+    const named = new Set([...text.matchAll(/\bP\d\b/g)].map(([level]) => level));
+    assert.deepEqual(
+      [...named].filter((level) => !levels.has(level)),
+      [],
+      `${role.role}: a severity the review tool does not take is one no finding can carry`,
+    );
+    assert.deepEqual(
+      [...levels].filter((level) => !named.has(level)),
+      [],
+      `${role.role}: every severity a finding can carry says what it means for the lane`,
+    );
+  }
+  for (const role of kit.roles.filter((entry) => entry.hidesWords?.includes("supervisor"))) {
+    const texts = [
+      [role.prompt, readFileSync(join(PLUGIN, "content", role.prompt), "utf-8")],
+      ...[...skillSources(kit, role).values()].map((dir) => [dir, readFileSync(join(dir, "SKILL.md"), "utf-8")]),
+    ] as const;
+    for (const [where, text] of texts)
+      assert.doesNotMatch(
+        text,
+        /CONTEXT\.md/,
+        `${where} names the concept file, which is not in the ${role.role}'s copy: it reads the concept as its brief quotes it`,
+      );
   }
 });

@@ -46,7 +46,8 @@
     { "brief": "OWNER DIRECTIVE L4: Replace cookie sessions with signed tokens across the API gateway and the three services that read sessions today.", "expect": ["planning-lanes"]},
     { "brief": "OWNER DIRECTIVE L3: Split the billing module into invoicing and payments. The checkout flow calls both, and the refund job writes to the same ledger table.", "expect": ["planning-lanes"]},
     { "brief": "OWNER DIRECTIVE L5: Fix the typo in the label of the checkout button.", "expect": [], "near": "planning-lanes" },
-    { "brief": "OWNER DIRECTIVE L6: Add a --verbose flag to the export command that prints each step it takes.", "expect": [], "near": "planning-lanes" }
+    { "brief": "OWNER DIRECTIVE L6: Add a --verbose flag to the export command that prints each step it takes.", "expect": [], "near": "planning-lanes" },
+    { "brief": "OWNER DIRECTIVE L7: Add CSV, JSON and XML downloads to the reports page, each format its own module beside the others.", "expect": [], "near": "planning-lanes" }
   ],
   "peer": [
     { "brief": "Goal: checkout sometimes returns 500 since yesterday's deploy. Nobody knows why. Find the cause and fix it.", "expect": ["diagnosing-bugs"] },

@@ -1,6 +1,6 @@
 ---
 name: planning-lanes
-description: "Decides how a high-risk lane is built before any task starts: whether it is high-risk at all, the final contract written first, where the work splits into tasks, which design choices to settle, and how to get back if it fails, kept as the lane's plan page. Use when a lane touches auth, money, data loss, migrations, concurrency or a shared contract, or needs more than one task. Not for a one-task lane that leaves nothing behind."
+description: "Decides how a high-risk lane is built before any task starts: whether it is high-risk at all, the final contract written first, where the work splits into tasks, which design choices to settle, and how to get back if it fails, kept as the lane's plan page. Use when a lane touches auth, money, data loss, migrations, concurrency or a shared contract. Not for a lane without such risk, however many tasks it splits into."
 ---
 
 # Planning lanes
@@ -21,6 +21,10 @@ A lane is high-risk when it materially changes:
 
 A label alone does not make a lane high-risk; material impact does. A normal lane needs no plan page: its directive and acceptance are the plan.
 
+## Find out first
+
+The plan rests on what the code shows, not on what you expect it to show, so the lane's scout answers before the page is written. Its findings fill Known; what it could not check fills Assumed, each with the task that checks it first. A finding that contradicts the directive goes up with `ask` before a task rests on it; a question its answer opens goes back to the same scout with `message`, not into your own reading of the code.
+
 ## Split for agents
 
 Split the way the work divides, not by a count: pieces that do not call each other run as parallel tasks, and the one that wires them waits for both.
@@ -38,7 +42,7 @@ Settle every choice that changes ownership, public behavior, safety, compatibili
 
 ## The plan page
 
-Keep it with `note` in plans, as `$SEATWORKS_STATE/plans/<lane>.md`, from the template in [references/plan-page.md](references/plan-page.md): outcome, final contract, one row per task with why it is separate, what is known and what is assumed, intermediate states, decisions, the end check, and getting back. It holds the present only, under 80 lines, replacing lines rather than adding them, so a successor can resume the lane from it.
+Keep it with `note` in plans, as `$SEATWORKS_STATE/plans/<lane>.md`, from the template in [references/plan-page.md](references/plan-page.md): outcome, final contract, one row per task with why it is separate, what is known and what is assumed, intermediate states, decisions, the end check, and getting back. It holds the present only, under 80 lines, replacing lines rather than adding them, so a successor can resume the lane from it; a hand-back that changes what you know changes the page in the same turn.
 
 Nobody approves a plan before its tasks start. Where a wrong plan would cost the rework of several tasks, put the plan page to `council` first.
 

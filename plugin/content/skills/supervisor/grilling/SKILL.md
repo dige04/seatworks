@@ -16,11 +16,34 @@ architecture across lanes are yours: decide them, list them at the foot of the r
 **Assumed**, one line each, so the Human can overturn one, and do not ask; how a lane is built is its
 Lead's.
 
+**Assumed** holds only what no user or caller would notice. A line that changes what a caller sends or gets back, how
+long something lasts, or what a repeat does is behavior, so it is a question: an "ok" to the whole list is no answer on
+the behavior inside one of its lines, and the lanes build that line as if it were.
+
 A fact the repository or the tools can give you is never a question: read only what settles it, and ask the rest of the round meanwhile.
 
 Some constraints leave no trace in the repository, so ask for each the work reaches, early: a budget or deadline, a
 stack or service it must use, the scale it must bear, who uses it, a contract others already depend on, and the shape
 of data that already exists. Missed, each one is found only when a lane built without it has to be built again.
+
+## Contracts callers meet
+
+When the work has an interface others call (an API, a file format, a command), ask each of these it reaches as a
+question of its own, with a scenario at its edge:
+
+- the body of an error a caller gets;
+- the code for each kind of error;
+- how long a repeated request is recognized as the same one;
+- what a repeat with the same key and a different body gets;
+- whether the user can end a session;
+- when a session ends by itself;
+- how long data is kept;
+- what happens to data once that time is up;
+- the name of each field a caller sends or reads, one name for one thing across the whole interface.
+
+One condition per question: a question with two gets one answer, and the other rides on it unasked. Settled, these go
+into CONTEXT.md before any lane builds on them, since a test written against a contract nobody settled invents one;
+what several lanes meet on then runs first in a contract lane, as your working loop says.
 
 ## Rounds
 
@@ -58,7 +81,7 @@ Create it with the first settled answer, not before.
 ## Read-back
 
 Before the first lane opens, give the Human one screen to correct: the lanes you will open, each with
-its outcome and acceptance, what you assumed, the defaults you will take for them when a question
+its outcome and acceptance, the contracts the lanes meet on (those above, and the module signatures you chose) and the contract lane that runs them first, what you assumed, the defaults you will take for them when a question
 comes up while they are away, and what will bring them back (a question only they can answer, an act
 that cannot be undone). With it, settle what the desk keeps for every lane: where lanes work when their copy makes that a question (`set_project` `laneHome`, their words as `humanSaid` while they are in the loop), and which paths no landing
 touches before the Human looks while they are in the loop (`set_project` `askFirst`). Offer the ones
@@ -67,8 +90,10 @@ this work reaches among access (auth, login, session, passwords, secrets, creden
 they keep or drop each, and nothing waits for them unless they keep one. Name the risk rules this work
 reaches (the kit's put a question to every review of migrations, schemas and SQL; `set_project`
 `riskRules` replaces them), and ask for a command that rehearses one, such as a migration run twice on a
-copy, where they have one. A correction is a settled answer like any other; what they want to be woken
-for, in their words, goes in `$SEATWORKS_STATE/notebook.md`, kept with `note` as well.
+copy, where they have one. A correction is a settled answer like any other. In their words, what they want to be
+woken for goes under When to wake the Human in the notebook, `$SEATWORKS_STATE/notebook.md`, and each default they
+confirmed under Confirmed defaults in the notebook, kept with `note` as well: read the page first and keep its rows,
+since `note` replaces the whole page.
 
 ## Ends in
 
