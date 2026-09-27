@@ -86,31 +86,31 @@ def units(rows: list[dict], rules: dict | None) -> list[dict]:
     return found
 
 
-def assign(unit_ids: list[str], directive_ids: list[str], scout_count: int, overlap: int, directive_overlap: int) -> list[dict]:
-    scouts = [{"id": f"scout-{index:02d}", "units": [], "directives": []} for index in range(1, scout_count + 1)]
+def assign(unit_ids: list[str], directive_ids: list[str], hunter_count: int, overlap: int, directive_overlap: int) -> list[dict]:
+    hunters = [{"id": f"hunter-{index:02d}", "units": [], "directives": []} for index in range(1, hunter_count + 1)]
     cursor = 0
     for key, ids, width in (("units", unit_ids, overlap), ("directives", directive_ids, directive_overlap)):
-        width = min(width, scout_count)
+        width = min(width, hunter_count)
         for item in ids:
             for offset in range(width):
-                scouts[(cursor + offset) % scout_count][key].append(item)
-            cursor = (cursor + width) % scout_count
+                hunters[(cursor + offset) % hunter_count][key].append(item)
+            cursor = (cursor + width) % hunter_count
     pool_key, pool = ("units", unit_ids) if unit_ids else ("directives", directive_ids)
-    for index, scout in enumerate(scouts):
-        if pool and not scout["units"] and not scout["directives"]:
-            scout[pool_key].append(pool[index % len(pool)])
-    return scouts
+    for index, hunter in enumerate(hunters):
+        if pool and not hunter["units"] and not hunter["directives"]:
+            hunter[pool_key].append(pool[index % len(pool)])
+    return hunters
 
 
 def cell(text: str) -> str:
     return text.replace("|", "\\|")
 
 
-def markdown(meta: dict, found: list[dict], rows: list[dict], scouts: list[dict]) -> str:
+def markdown(meta: dict, found: list[dict], rows: list[dict], hunters: list[dict]) -> str:
     holders: dict[str, list[str]] = {}
-    for scout in scouts:
-        for unit_id in scout["units"]:
-            holders.setdefault(unit_id, []).append(scout["id"])
+    for hunter in hunters:
+        for unit_id in hunter["units"]:
+            holders.setdefault(unit_id, []).append(hunter["id"])
     reasons = {row["path"]: row["reason"] for row in rows}
     lines = [
         f"# Ultra Review: {meta['review_name']} Round {meta['round']}",
@@ -127,18 +127,18 @@ def markdown(meta: dict, found: list[dict], rows: list[dict], scouts: list[dict]
         "Previous reports found (read them before ruling):",
         "\n".join(f"- {path}" for path in meta["prior_reports"]) or "- none",
         "",
-        "Warnings given to scouts: TODO, or none",
+        "Warnings given to hunters: TODO, or none",
         "",
         "## Coverage",
         "",
     ]
     if found:
-        lines += ["| File | Unit | Scouts | Status |", "|---|---|---|---|"]
+        lines += ["| File | Unit | Hunters | Status |", "|---|---|---|---|"]
         for unit in found:
             for path in unit["files"]:
                 label = unit["id"] if reasons.get(path) is None else f"{unit['id']} ({reasons[path]})"
-                scouts_text = ", ".join(holders.get(unit["id"], []))
-                lines.append(f"| `{cell(path)}` | {label} | {scouts_text} | TODO reviewed, or skipped: reason |")
+                hunters_text = ", ".join(holders.get(unit["id"], []))
+                lines.append(f"| `{cell(path)}` | {label} | {hunters_text} | TODO reviewed, or skipped: reason |")
     else:
         lines.append("TODO every file in scope and its status: reviewed, or skipped with a reason.")
     lines += [
@@ -174,18 +174,18 @@ def markdown(meta: dict, found: list[dict], rows: list[dict], scouts: list[dict]
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Create an ultra-review round report with its coverage ledger and scout assignment."
+        description="Create an ultra-review round report with its coverage ledger and hunter assignment."
     )
     parser.add_argument("--workspace", default=".", help="repository root")
     parser.add_argument("--report-dir", required=True, help="directory for round reports, outside the repository")
     parser.add_argument("--review-name", required=True, help="review name shared by every round")
     parser.add_argument("--scope", required=True, help="the scope, as the review brief states it")
-    parser.add_argument("--review-brief", required=True, help="the brief file the scouts are given; the report stamps its sha256")
-    parser.add_argument("--scout-count", type=int, default=10)
+    parser.add_argument("--review-brief", required=True, help="the brief file the hunters are given; the report stamps its sha256")
+    parser.add_argument("--hunter-count", type=int, default=10)
     parser.add_argument("--directive-count", type=int, default=0, help="numbered directives D01.. in the brief")
     parser.add_argument("--concern-count", type=int, default=0, help="numbered concerns G01.. in the brief, when it has no directives")
-    parser.add_argument("--overlap", type=int, default=2, help="scouts per unit")
-    parser.add_argument("--directive-overlap", type=int, default=3, help="scouts per directive")
+    parser.add_argument("--overlap", type=int, default=2, help="hunters per unit")
+    parser.add_argument("--directive-overlap", type=int, default=3, help="hunters per directive")
     parser.add_argument("--ocr-preview", help="JSON from ocr delegate preview or ocr scan --preview")
     parser.add_argument("--ocr-rules", help="JSON from ocr delegate rule")
     parser.add_argument("--date", default=None, help="yy-mm-dd; defaults to today")
@@ -205,10 +205,10 @@ def main() -> int:
         print(f"--review-brief is not a file: {brief}", file=sys.stderr)
         return 2
     # Hashed here rather than asked for: a hex string nothing on hand produces is a hex string that
-    # gets invented, and the stamp is worth having only if it is the brief the scouts were given.
+    # gets invented, and the stamp is worth having only if it is the brief the hunters were given.
     brief_sha256 = hashlib.sha256(brief.read_bytes()).hexdigest()
-    if args.scout_count <= 0 or args.directive_count < 0 or args.overlap <= 0 or args.directive_overlap <= 0:
-        print("--scout-count, --overlap and --directive-overlap must be positive, --directive-count non-negative", file=sys.stderr)
+    if args.hunter_count <= 0 or args.directive_count < 0 or args.overlap <= 0 or args.directive_overlap <= 0:
+        print("--hunter-count, --overlap and --directive-overlap must be positive, --directive-count non-negative", file=sys.stderr)
         return 2
     date_slug = args.date or dt.datetime.now().strftime("%y-%m-%d")
     if not re.fullmatch(r"\d{2}-\d{2}-\d{2}", date_slug):
@@ -225,9 +225,9 @@ def main() -> int:
     rows = ledger(read_json(args.ocr_preview, "--ocr-preview"))
     found = units(rows, read_json(args.ocr_rules, "--ocr-rules"))
     # Concerns are handed out the way directives are. With no preview and no directives the pool was
-    # empty, and every scout came back with nothing to read, which is the fallback the skill describes.
+    # empty, and every hunter came back with nothing to read, which is the fallback the skill describes.
     directives = [f"D{index:02d}" for index in range(1, args.directive_count + 1)] + [f"G{index:02d}" for index in range(1, max(0, args.concern_count) + 1)]
-    scouts = assign([unit["id"] for unit in found], directives, args.scout_count, args.overlap, args.directive_overlap)
+    hunters = assign([unit["id"] for unit in found], directives, args.hunter_count, args.overlap, args.directive_overlap)
     meta = {
         "review_name": review_name,
         "round": round_number,
@@ -243,8 +243,8 @@ def main() -> int:
     if not args.dry_run:
         report_dir.mkdir(parents=True, exist_ok=True)
         with report_path.open("w", encoding="utf-8", newline="\n") as handle:
-            handle.write(markdown(meta, found, rows, scouts))
-    print(json.dumps({**meta, "dry_run": bool(args.dry_run), "units": found, "scouts": scouts}, indent=2))
+            handle.write(markdown(meta, found, rows, hunters))
+    print(json.dumps({**meta, "dry_run": bool(args.dry_run), "units": found, "hunters": hunters}, indent=2))
     return 0
 
 
