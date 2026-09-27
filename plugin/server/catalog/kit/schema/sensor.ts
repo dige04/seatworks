@@ -67,7 +67,7 @@ export const ChecksFile = z.record(
 
 /**
  * What the brains read a seat's own words for: whom it watches, what it reads, the sensor's one-condition question on an
- * item's `text` (none when only the seat can judge) and the seat's on the whole case, the signs a yes needs, and its
+ * item's `text`, the first stage every pattern has, and the seat's on what the sensor flagged, the signs a yes needs, and its
  * level. With `tools` it is judged only at those desk calls, on the call and the words that led to it, and never in a
  * look; `each: "rule"` asks it once for each line of the concept file and of what the work asks, the line in `rule`;
  * `missingFrom: "call"` has a yes on the words hold only where the call itself answers no; and `joins` names a fact
@@ -78,7 +78,7 @@ const Pattern = z
     title: text,
     watches: z.array(text).min(1),
     reads: z.array(z.enum(["thought", "said", "call"])).min(1),
-    instructions: text.includes("`text`").optional(),
+    instructions: text.includes("`text`"),
     seat: text,
     criteria: z.strictObject({ true: text, false: text }),
     gate: z.array(z.enum(["stuck", "reworked", "handed-back", "edit-before-look", "certainty-only"])).optional(),

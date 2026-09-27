@@ -42,7 +42,7 @@ type Case = { episode: string; items: Item[]; patterns: Pattern[]; fields: Recor
  * The brains read a seat's words against the patterns that watch it: the words of each look against the patterns judged
  * in looks, and each decision it made through the desk, the call with the words that led to it, against the patterns
  * judged at that call. The sensor asks each item its patterns' one-condition questions; the seat judges the whole case.
- * In `both` the seat hears only what the sensor flagged or left unsure, and what only it can judge. What they find goes
+ * In `both` the seat hears only what the sensor flagged or left unsure. What they find goes
  * to the incident book, which tells whoever supervises; every answer is kept for labels.
  */
 export async function readLook(services: Services, project: Project, seat: Noticed, look: Look): Promise<void> {
@@ -127,9 +127,7 @@ async function judgeCase(
   if (brains.mode === "sensor") return sifted?.found ?? [];
   if (!brains.seat) return [];
   const judged =
-    sifted && brains.mode === "both"
-      ? one.patterns.filter(([id, pattern]) => sifted.flagged.has(id) || !pattern.instructions)
-      : one.patterns;
+    sifted && brains.mode === "both" ? one.patterns.filter(([id]) => sifted.flagged.has(id)) : one.patterns;
   if (judged.length === 0) return [];
   const state = {
     seat: place.where,
@@ -240,9 +238,9 @@ async function sift(
 ): Promise<{ found: Finding[]; flagged: Set<string> }> {
   const read: { id: string; item: Item; verdict: "yes" | "no" | "unclear"; likely: number }[] = [];
   for (const item of items) {
-    const mine = patterns.filter(([, pattern]) => pattern.instructions && pattern.reads.includes(item.kind));
+    const mine = patterns.filter(([, pattern]) => pattern.reads.includes(item.kind));
     if (mine.length === 0) continue;
-    const questions = Object.fromEntries(mine.map((entry) => [entry[0], asQuestion(entry, entry[1].instructions!)]));
+    const questions = Object.fromEntries(mine.map((entry) => [entry[0], asQuestion(entry, entry[1].instructions)]));
     const state = { text: item.text, ...asked };
     const judged = await askKept(project, WATCH, { subject, episode, by: by.id, state }, judge, questions);
     if (!judged) continue;

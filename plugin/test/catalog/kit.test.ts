@@ -206,6 +206,12 @@ const REFUSED: [string, unknown, RegExp][] = [
     { drift: { ...struggling, instructions: "Does the agent drift?" } },
     /^patterns\.json is not as the kit reads it:\n✖ .*`text`.*\n {2}→ at drift\.instructions$/,
   ],
+  [
+    "catalog/patterns.json",
+    // The sensor's question is the first stage: a pattern only the seat could judge would be judged unflagged.
+    { drift: Object.fromEntries(Object.entries(struggling).filter(([field]) => field !== "instructions")) },
+    /^patterns\.json is not as the kit reads it:\n✖ .*\n {2}→ at drift\.instructions$/,
+  ],
 ];
 
 test("a kit file that breaks its contract is refused as the kit loads, naming the file and what is wrong, and one that keeps it loads", () => {
