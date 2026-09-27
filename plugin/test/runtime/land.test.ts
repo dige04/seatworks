@@ -457,3 +457,33 @@ test("with the Human out of the loop, getting what landed out is the Supervisor'
   h.projectSettings({ hitl: { on: true } });
   assert.match((await push()).text, /^Pushing and releasing are the Human's while they are in the loop/);
 });
+
+test("the lane that audits what goes out hears of each landing on its base, as mail that asks it to look", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  const scope = { acceptance: ["a"], outOfScope: ["the rest"] };
+  await h.call(sup, "supervisor", "open_lane", { title: "Work", outcome: "a.txt changes", ...scope });
+  const audit = await h.call(sup, "supervisor", "open_lane", {
+    title: "Audit",
+    outcome: "main does what CONTEXT.md says before it is pushed",
+    ...scope,
+    isolate: true,
+    audit: true,
+  });
+  assert.equal(audit.ok, true, audit.text);
+  const [work, auditor] = [h.ledger().lanes.L1!, h.ledger().lanes.L2!];
+  assert.equal(auditor.audit, true);
+  h.commit(work.worktree!, "a.txt", "changed\n");
+  await h.call(work.lead!, "lead", "report", { summary: "done", ready: true });
+  h.agents.get(work.lead!)!.status = "idle";
+  assert.equal((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).ok, true);
+  const told = h.runtime.outbox.pending(auditor.lead!).find((letter) => letter.text.startsWith("LANDED L1"));
+  assert.ok(told, "held for its turn to end, as it is running");
+  assert.notEqual(told.wakes, false, "it asks the audit to look");
+  assert.match(told.text, /^LANDED L1 \(Work\) on main: squashed lane\/l1-work into one commit on main/);
+  assert.equal(
+    h.runtime.outbox.pending(work.lead!).some((letter) => letter.text.startsWith("LANDED L1 (Work) on main")),
+    false,
+    "only the audit's Lead",
+  );
+});

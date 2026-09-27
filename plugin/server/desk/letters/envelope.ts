@@ -19,6 +19,7 @@ type Kind =
   | "answer"
   | "answeredFor"
   | "ask"
+  | "audit"
   | "amended"
   | "baseconflict"
   | "basemoved"

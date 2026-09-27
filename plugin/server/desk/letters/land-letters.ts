@@ -93,6 +93,16 @@ export const landLetters = {
     );
   },
 
+  /** Another lane landed on the base the audit lane reads: new there, so the audit looks at it before it goes out. */
+  landedForAudit(landed: Lane, how: string): Letter {
+    return mail(
+      "audit",
+      [landed.id],
+      `LANDED ${landed.id} (${landed.title}) on ${landed.base}: ${how}. Your lane audits what goes out from ${landed.base}, and this is new there.`,
+      `Take what it brought to ${landed.base} into your audit.`,
+    );
+  },
+
   /** Another lane landed on this one's base, which now conflicts with it: word ahead of the landing that finds it. */
   baseMoved(landed: Lane, lane: Lane, conflicts: string[]): Letter {
     const text = `BASE MOVED ${lane.id} (${lane.title}): ${landed.id} (${landed.title}) landed on ${lane.base}, which now conflicts with ${lane.branch} in ${conflicts.join(", ")}. Nothing was merged.`;

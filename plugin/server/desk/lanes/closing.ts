@@ -120,6 +120,7 @@ async function retire(
   const reason = str(args.reason);
   recordEvent(project, { kind: "lane.closed", lane: lane.id, land: args.land, landing: landed.how, reason, writers });
   const moved = args.land && !lane.onBranch ? await tellBaseMoved(desk, project, lane) : "";
+  if (args.land && !lane.onBranch) await tellAudit(desk, project, lane, landed.how);
   const read = readProjectConfig(project.state);
   const base = "config" in read ? read.config.base : undefined;
   const sends = base ? `push sends ${base}` : "push sends the project's base, once set_project names it,";
@@ -150,6 +151,19 @@ async function tellBaseMoved({ mail }: Pick<DeskServices, "mail">, project: Proj
   return hit.length > 0
     ? `\n\n${landed.base} now conflicts with lanes still open: ${hit.join("; ")}. Their Leads have the facts; who takes ${landed.base} in for each is yours to choose.`
     : "";
+}
+
+/** The open lane that audits what goes out from the base a landing moved, if one does, hears what landed there. */
+async function tellAudit(
+  { mail }: Pick<DeskServices, "mail">,
+  project: Project,
+  landed: Lane,
+  how: string,
+): Promise<void> {
+  const audits = Object.values(loadLedger(project.state).lanes).filter(
+    (other) => other.status === "open" && other.audit && other.base === landed.base && other.id !== landed.id,
+  );
+  for (const audit of audits) await mail.post(audit.lead, landLetters.landedForAudit(landed, how));
 }
 
 /**

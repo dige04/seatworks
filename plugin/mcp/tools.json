@@ -96,6 +96,10 @@
           "humanSaid": {
             "type": "string",
             "description": "The Human's words from this chat the lane comes from, whole or twenty characters of a message; its Lead reads them as theirs."
+          },
+          "audit": {
+            "type": "boolean",
+            "description": "True for the lane that audits what lands on its base before it goes out: its Lead hears of each landing there."
           }
         },
         "required": [

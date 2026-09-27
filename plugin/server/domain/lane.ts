@@ -54,6 +54,8 @@ export type Lane = {
   slot?: string;
   writeSet: string[];
   contracts: string[];
+  /** The lane that audits what lands on its base before it goes out: its Lead hears of each landing there. */
+  audit?: true;
   lead?: string;
   workspaceId?: string;
   opener: string;
