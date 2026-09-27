@@ -206,6 +206,30 @@ test("a landing ordered while a turn was in the way is not carried out on a lane
   );
 });
 
+test("a landing ordered while a turn was in the way that its gate then refuses is told NOT LANDED, with why", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  await h.call(sup, "supervisor", "set_project", { gate: "test -f NEVER", gateOn: "lane" });
+  await h.call(sup, "supervisor", "open_lane", { title: "Numbers", outcome: "a.txt gains words", ...scope });
+  const lane = h.ledger().lanes.L1!;
+  h.commit(h.root, "a.txt", "one\ntwo\nthree\nfour\n");
+  h.commitTo("main", "other.txt", "main moved\n");
+  await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  assert.match((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).text, /^Lane L1 lands once /);
+  await h.idle(sup);
+  h.agents.get(lane.lead!)!.status = "idle";
+  await h.endTurn(lane.lead!, "reported");
+  await h.runtime.desk.settled(h.project);
+  await h.idle(sup);
+  assert.equal(h.ledger().lanes.L1!.status, "open");
+  const sent = h.agents.get(sup)!.sent.join("\n");
+  assert.match(
+    sent,
+    /NOT LANDED L1 \(Numbers\): Lane L1 was not closed: test -f NEVER failed with exit 1 on the lane branch\./,
+  );
+  assert.doesNotMatch(sent, /^LANDED L1/m);
+});
+
 test("an ordered landing that fails when the desk carries it out wakes whoever ordered it with NOT LANDED and the error, and is not ordered again", async () => {
   const h = harness();
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
