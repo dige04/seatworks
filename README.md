@@ -14,6 +14,12 @@ the evidence between them, and brings you in for what only you can decide.
 
 > **Pre-release.** Nothing has shipped: no releases, no compatibility promises.
 
+<p align="center">
+  <a href="docs/video/seatworks.mp4"><img alt="Play the film: Seatworks in 75 seconds" src="docs/video/poster.jpg" width="720" /></a>
+  <br />
+  <sub>▶ <a href="docs/video/seatworks.mp4">Seatworks in 75 seconds</a>: the plugin, the SLP seats, the desk, and a night of work</sub>
+</p>
+
 ![Seatworks at a glance: you, the Supervisor, a Lead per lane with its Peers, review and the watch around them, and the desk under them](docs/images/overview.svg)
 
 ## How a piece of work goes
