@@ -132,6 +132,30 @@ test("work nobody committed in a lane's copy never lands, over the gate or not, 
   assert.deepEqual(h.ledger().left ?? {}, {});
 });
 
+test("a gate that could not run because work nobody committed turned up while the lane was landing is no verdict overGate passes", async (t) => {
+  const { h, sup, lane, onMain } = await laneWith({ "a.txt": "cart\n" }, [], { isolate: true });
+  const copy = lane.worktree!;
+  // main moved on, so landing first takes it into the lane's copy, asking who is at work there first.
+  h.commit(h.root, "b.txt", "main moved\n");
+  const { roster } = (h.runtime.desk as unknown as { services: { roster: { look(id: string): Promise<unknown> } } })
+    .services;
+  const look = roster.look.bind(roster);
+  // Asked by the landing's merge of main, after the landing found the copy clean and before the gate looks.
+  t.mock.method(roster, "look", async (id: string) => {
+    if (new Error().stack?.includes("writing.ts")) writeFileSync(join(copy, "notes.txt"), "written while it landed\n");
+    return look(id);
+  });
+  const over = await h.call(sup, "supervisor", "land_lane", { lane: "L1", overGate: true, reason: "judged safe" });
+  assert.equal(over.ok, false, over.text);
+  assert.match(
+    over.text,
+    /^Lane L1 was not closed: the gate did not run: the lane's working copy has work uncommitted \(\?\? notes\.txt\)\nland_lane it again once it can run, or drop_lane it\./,
+  );
+  assert.equal(h.ledger().lanes.L1!.status, "open");
+  assert.equal(h.git(h.root, "show", "main:a.txt"), "one\ntwo\nthree\n", "nothing landed");
+  assert.equal(onMain("b.txt"), true);
+});
+
 test("in the Human's own checkout, files git does not track are theirs: a fact for whoever lands, never a stop, while changes to tracked files still stop READY and landing", async () => {
   const h = harness();
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
