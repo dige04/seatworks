@@ -192,7 +192,8 @@ test("a lane reported ready carries what its reviews leave standing, and each fa
   await h.call(h.ledger().tasks["L1-T1"]!.peer!, "peer", "done", { outcome: "complete", summary: "rounded" });
   await h.idle(h.ledger().tasks["L1-T1"]!.peer!);
   const start = async (task?: string) => {
-    await h.call(lead, "lead", "start_review", { ...(task ? { task } : {}), focus: "Is the rounding right?" });
+    const which = task ? { task } : { scope: "lane" };
+    await h.call(lead, "lead", "start_review", { ...which, focus: "Is the rounding right?" });
     return reviews(h).at(-1)!.peer!;
   };
   const handBack = async (reviewer: string, verdict: string) => {
@@ -250,6 +251,42 @@ test("a lane reported ready carries what its reviews leave standing, and each fa
     "the Lead's own acceptance stands on the record, for whoever lands it to weigh",
   );
   assert.match(told(), /^land_lane it if acceptance is met/, "a review of the whole lane accepted it since");
+});
+
+test("only the lane's own review counts as the review of the whole lane, and only one that read it after its last merge", async () => {
+  const { h, lane, lead } = await opened("Rounding");
+  const merge = async (key: string, file: string) => {
+    await h.call(lead, "lead", "add_tasks", { tasks: [{ key, title: key, goal: "g", ...scope, hints: [file] }] });
+    const task = Object.values(h.ledger().tasks).find((entry) => entry.title === key)!;
+    h.commit(lane.worktree!, file, `${key}\n`);
+    await h.call(task.peer!, "peer", "done", { outcome: "complete", summary: key });
+    await h.idle(task.peer!);
+    await h.call(lead, "lead", "accept", { task: task.id });
+    await h.runtime.desk.settled(h.project);
+    return task.id;
+  };
+  const review = async (which: Record<string, unknown>) => {
+    await h.call(lead, "lead", "start_review", { ...which, focus: "Does it hold?" });
+    await h.call(reviews(h).at(-1)!.peer!, "reviewer", "done", { verdict: "accept", answer: "It holds." });
+    await new Promise((resolve) => setTimeout(resolve, 2));
+  };
+  const ready = async () => (await h.call(lead, "lead", "report", { summary: "done", ready: true })).text;
+
+  await merge("one", "one.js");
+  await review({});
+  assert.match(
+    await ready(),
+    /No review of the whole lane is on record\./,
+    "a scout's question is not the lane's review",
+  );
+  await review({ scope: "lane" });
+  assert.doesNotMatch(await ready(), /No review of the whole lane/);
+  const last = await merge("two", "two.js");
+  assert.match(
+    await ready(),
+    new RegExp(`No review of the whole lane after its last merge, ${last}\\.`),
+    "a review of the lane before its last merge read a lane it no longer is",
+  );
 });
 
 test("a review's changes stand until a hand-back after them or a review accepting the task answers them, and only then does the report stop asking", async () => {
@@ -429,7 +466,7 @@ test("a verdict names the commit it read, and accepting or landing says how far 
   );
   await h.runtime.desk.settled(h.project);
 
-  await h.call(lead, "lead", "start_review", { focus: "Does the lane hold together?" });
+  await h.call(lead, "lead", "start_review", { scope: "lane", focus: "Does the lane hold together?" });
   const tip = h.git(h.root, "rev-parse", lane.branch).trim();
   await h.call(reviews(h).at(-1)!.peer!, "reviewer", "done", { verdict: "accept", answer: "It does." });
   h.commit(lane.worktree!, "b.txt", "after the review\n");

@@ -91,6 +91,7 @@ export type Task = {
   slot?: string;
   startSha?: string;
   mergeSha?: string;
+  mergedAt?: number;
   status: TaskStatus;
   openedAt: number;
   updatedAt: number;

@@ -174,7 +174,7 @@ export class TaskMerge {
     const serial = await serialIn(this.desk.kit, project, cwd);
     this.desk.ledgers.transact(project, (ledger) => {
       const entry = ledger.tasks[task.id];
-      if (entry) Object.assign(entry, { mergeSha: merged.after, updatedAt: Date.now() });
+      if (entry) Object.assign(entry, { mergeSha: merged.after, mergedAt: Date.now(), updatedAt: Date.now() });
       // The lane branch moved: what its Lead reported ready is not what it holds now.
       if (merged.after !== merged.before) delete ledger.lanes[lane.id]?.ready;
     });
