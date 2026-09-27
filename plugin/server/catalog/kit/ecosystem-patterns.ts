@@ -44,6 +44,7 @@ export function watchPatterns(kit: Kit, attention: Attention) {
     secretCommand: new RegExp(attention.secretCommand, "i"),
     secretString: new RegExp(attention.secretString),
     boundary: new RegExp(attention.boundary, "i"),
+    localHost: new RegExp(attention.localHost, "i"),
     interpreter: new RegExp(attention.interpreter, "i"),
     dependencyInstall: new RegExp(attention.dependencyInstall, "i"),
     dependencyManifest: new RegExp(attention.dependencyManifest),

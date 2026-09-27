@@ -89,6 +89,12 @@ function scratchIn(made: ReturnType<typeof madeBy>, { scratch: named, temp }: Ru
   return scratch;
 }
 
+/** A command whose every address is on this machine, as a seat trying the server it built: nothing leaves. */
+function onlyLocal(words: string[], rules: Pick<Rules, "localHost">): boolean {
+  const addresses = words.filter((word) => /^[a-z]+:\/\//i.test(word) || rules.localHost.test(word));
+  return addresses.length > 0 && addresses.every((word) => rules.localHost.test(word));
+}
+
 export function onDetail(call: Call, rules: Rules): Fact[] {
   if (call.detail.type !== "shell") return [];
   // A command at a time: removing a commit message's temp file once paged a Lead.
@@ -108,7 +114,8 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
     }
     const quoted = around(oneLine(part, Infinity), undefined, 200);
     if (touchesSecret(words, part, rules)) found.push(fact("secret", quoted));
-    if (rules.boundary.test(part) || runsOutside(words, rules, scratch)) found.push(fact("boundary", quoted));
+    if ((rules.boundary.test(part) && !onlyLocal(words, rules)) || runsOutside(words, rules, scratch))
+      found.push(fact("boundary", quoted));
     if (rules.dependencyInstall.test(part)) found.push(fact("dependency", quoted));
     if (skipsHooks(words) || rules.guardCommand.test(part) || writesGuard(words, rules))
       found.push(fact("guard", quoted));

@@ -70,6 +70,8 @@ export const AttentionChoice = z.strictObject({
   secretString: Pattern.optional(),
   /** Sending data out or running a download (`boundary`), and the programs that run a script (`interpreter`), paged on one outside the copy. */
   boundary: Pattern.optional(),
+  /** An address on this machine: data sent there does not leave it, so `boundary` passes it. */
+  localHost: Pattern.optional(),
   interpreter: Pattern.optional(),
   /** An install of a named package, a dependency manifest, and an entry in one: a new dependency is noted. */
   dependencyInstall: Pattern.optional(),

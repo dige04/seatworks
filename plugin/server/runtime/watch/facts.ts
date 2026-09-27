@@ -18,6 +18,7 @@ export type Rules = {
   secretCommand: RegExp;
   secretString: RegExp;
   boundary: RegExp;
+  localHost: RegExp;
   interpreter: RegExp;
   dependencyInstall: RegExp;
   dependencyManifest: RegExp;

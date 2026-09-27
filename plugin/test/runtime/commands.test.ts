@@ -219,6 +219,10 @@ test("sending data out, running a download or code from outside the copy is page
     assert.equal(raised("boundary", command, cwd).length, 1, command);
   for (const command of [
     "curl -s https://registry.npmjs.org/zod",
+    // A seat trying the server it just built: the data never leaves the machine.
+    `curl -s -X POST -d '{"lines":[]}' http://127.0.0.1:3000/checkout`,
+    "curl -X POST localhost:8080/api/orders",
+    "curl --data x http://[::1]:3000/refund",
     "node scripts/check.js",
     "node /work/scripts/check.js",
     `node "$TMPDIR"/probe413.mjs`,
