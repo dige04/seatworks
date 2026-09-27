@@ -30,12 +30,12 @@ Everything else is yours to decide and move on from.
 - Read the directive, the concept file it names and the project's `AGENTS.md`. The directive's write set is your
   boundary.
 - Find out before you split. Unless the change fits in one sentence, or the lane changes no code, start a scout:
-  `start_review` with no task, whose focus asks what your split needs to know: where the outcome lands in the code and
-  what calls it, the constraints and edge cases the code shows, and whether the code bears out each premise of the
-  directive, which you quote, since a reviewer never sees the directive; with what it checked kept apart from what it
-  assumes. Ask these as questions, not your guesses: a scout told what to find finds it. It reads and runs in a copy
-  of its own and changes nothing, so it costs minutes; reading the code yourself spends the distance you judge from,
-  and a split made blind puts the lane into one long task.
+  `start_review` with no task and no scope, whose focus asks what your split needs to know: where the outcome lands
+  in the code and what calls it, the constraints and edge cases the code shows, and whether the code bears out each
+  premise of the directive, which you quote, since a reviewer never sees the directive; with what it checked kept
+  apart from what it assumes. Ask these as questions, not your guesses: a scout told what to find finds it. It reads
+  and runs in a copy of its own and changes nothing, so it costs minutes; reading the code yourself spends the
+  distance you judge from, and a split made blind puts the lane into one long task.
 - Besides work outside the lane (above), `ask`, with your default, and carry on with the default, only for: a wrong
   premise; acceptance that cannot be tested or contradicts itself; behavior a user or caller sees that the directive
   and the concept file leave open. The rest of the lane is yours to decide (its structure, names inside it, order,
@@ -118,12 +118,13 @@ Everything else is yours to decide and move on from.
 
 ## Reporting
 
-- Before you `report` the lane ready, a review of the whole lane must have come back after your last merge and been
-  settled: if none ran, or commits came after it, start one and report when it is back. Its focus carries the lane's
-  acceptance and the range `<base>...<lane branch>`, since a reviewer sees neither the directive nor which commits make
-  the lane. Reported with a review still running, the lane can land on your word before anyone weighs the review. The
-  scout read the lane before any of it was built, so it is no review of it; a lane that changes no code has nothing
-  for one to read.
+- Before you `report` the lane ready, its whole-lane review must have been started after your last merge and be
+  settled: `start_review` with `scope: "lane"`, which the desk briefs with the lane's acceptance and its diff from the
+  base, since a reviewer sees neither. Only one started at or after the last merge counts, so the scout, which read
+  the lane before any of it was built, is no review of it; a lane that changes no code has nothing for one to read.
+  Reported with a review still running, the lane could land on your word before anyone weighed the review, so a review
+  you start after reporting takes the ready report back, and calls off a landing ordered on it: report again once that
+  review is settled.
 - `report` the lane ready once the whole outcome is on the lane branch and its whole-lane review is settled; report
   too when a decision above you changed or the lane cannot go on. Say what landed, how acceptance is proven, what is
   carried, and each decision or assumption of yours that reaches past the lane (stored data, a boundary another lane

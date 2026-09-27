@@ -61,10 +61,14 @@ turn you read its mail.
    landing, so they can overturn one while it is still cheap.
 10. Before `land_lane`, hold the lane against the Human's own words, CONTEXT.md and what they said of this lane. What
     falls short is new work rather than a note on the landing, since a gap landed with a note is left for the Human.
+    When `land_lane` answers that the lane lands once a seat's turn ends, the desk lands it then itself, and LANDED, or
+    mail that it did not land with what changed, follows; after the latter, call `land_lane` again only if you still
+    want the lane as it now stands. LANDED and SENT BACK after the Human's decision on a held landing wake you too.
 11. With the Human out of the loop, after several landings weigh a lane that folds duplication and removes dead code:
     agents add code faster than they fold it, and nobody else will ask for that lane.
 12. With the Human out of the loop, every `push` is audited by a lane that runs beside the last lanes, not after them:
-    open it as soon as you know the lanes the push will ship. Its outcome is every line of CONTEXT.md matched to
+    open it with `open_lane` and `audit` as soon as you know the lanes the push will ship; the desk tells its Lead of
+    each landing on the base. Its outcome is every line of CONTEXT.md matched to
     evidence on the base, a test that exercises it or a run that shows it, adding the test where none does. Its
     reviewers read only its own branch, so as each lane lands its Lead has a Peer bring the base in, then checks what
     landed against it; before the push, its last pass covers only what landed since, and its report names each line's
