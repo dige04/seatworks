@@ -297,3 +297,13 @@ test("a directive and a brief keep apart what must hold, what was chosen and may
   assert.equal(amended.ok, true, amended.text);
   assert.deepEqual(h.ledger().lanes.L1!.unknowns, []);
 });
+
+test("a brief says whether the task builds to what is settled or may reopen its premises", async () => {
+  const { h, lead } = await lane();
+  const planned = await h.call(lead, "lead", "add_tasks", {
+    tasks: [task("find", ["a.txt"]), task("build", ["b.txt"], { parallel: true, settled: true })],
+  });
+  assert.equal(planned.ok, true, planned.text);
+  assert.match(briefOf(h, "L1-T1"), /This task is open: a premise or choice above may be reopened with evidence/);
+  assert.match(briefOf(h, "L1-T2"), /This task builds to what is settled: raise a choice only when the code shows/);
+});

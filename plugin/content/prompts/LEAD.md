@@ -66,6 +66,9 @@ Everything else is yours to decide and move on from.
 - Copy names and shapes the directive fixes word for word into constraints: reworded, the Peer treats them as its own
   choice. The directive's choices go into choices, still open to question. Quote the concept file the same way, the
   lines the task touches, and name no file for them: the Peer's copy has none, so your quote is all it gets.
+- Mark a task settled when it builds to a contract already settled or checks an invariant: a narrow brief fits there.
+  Leave it open when it finds out what to build: discovery needs the right to reopen a premise, and a narrow brief
+  there hides the part of the design nobody settled.
 - Name paths relative to the repository: a Peer works in a copy of its own, where your absolute path is someone else's
   file.
 - Context holds facts found and approaches ruled out with why: a reason can be argued with,

@@ -87,6 +87,8 @@ export type Task = {
   constraints?: string[];
   choices?: string[];
   unknowns?: string[];
+  /** Builds to a settled contract or checks an invariant, rather than finding out what to build. */
+  settled?: true;
   context?: string;
   skills?: string[];
   peer?: string;

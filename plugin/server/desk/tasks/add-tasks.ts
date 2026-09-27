@@ -127,6 +127,7 @@ function recordTask(
     holds,
     outOfScope: strs(args.outOfScope),
     ...briefLists(args),
+    settled: args.settled === true || undefined,
     context: str(args.context) || undefined,
     skills: strs(args.skills),
     // Every task writes on its own branch, one beside others in its own copy too: the lane branch takes only merges.

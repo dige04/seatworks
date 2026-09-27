@@ -979,6 +979,10 @@
                   "type": "boolean",
                   "description": "Run beside the lane's writer in a working copy of its own; give what it holds in holds."
                 },
+                "settled": {
+                  "type": "boolean",
+                  "description": "True when it builds to a settled contract or checks an invariant, a narrow brief; left out, its Peer may reopen premises and choices."
+                },
                 "after": {
                   "type": "array",
                   "items": {

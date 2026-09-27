@@ -16,6 +16,7 @@ const Asked = z.strictObject({
   unknowns: z.array(z.string()).optional(),
   skills: z.array(z.string()).optional(),
   parallel: z.boolean().optional(),
+  settled: z.boolean().optional(),
   after: z.array(z.string()).optional(),
   role: z.string().optional(),
 });

@@ -53,6 +53,10 @@ export function taskBrief(task: Task, lane: Lane, beside: Task[], setUp?: SetUp)
     list(task.acceptance),
     ...briefListLines(task, "Chosen so far, each yours to question with evidence that it does not fit the goal:"),
     "",
+    task.settled
+      ? "This task builds to what is settled: raise a choice only when the code shows it cannot hold."
+      : "This task is open: a premise or choice above may be reopened with evidence, and what you find may change the plan.",
+    "",
     ...whereLines(task, lane),
     "",
     "Out of scope:",
