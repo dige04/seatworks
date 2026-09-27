@@ -53,6 +53,7 @@ export type Incident = {
  */
 const FACTS = {
   destructive: { level: "page", title: "Ran a command that cannot be undone", theirs: true },
+  secret: { level: "page", title: "Read, printed or wrote a secret" },
   stuck: { level: "attend", title: "Going round in circles" },
   "no-recovery": { level: "attend", title: "Did not recover from a failure" },
   "refusal-loop": { level: "attend", title: "Refused again and again" },
@@ -120,7 +121,7 @@ export const fact = (kind: FactKind, quote: string): Fact => ({
   ...("theirs" in FACTS[kind] ? { theirs: true as const } : {}),
 });
 
-const FIRST: FactKind[] = ["destructive", "stuck", "no-recovery", "long-turn"];
+const FIRST: FactKind[] = ["destructive", "secret", "stuck", "no-recovery", "long-turn"];
 
 const rank = ({ kind, level }: Finding) =>
   (level === "page" ? 0 : 100) + (FIRST.includes(kind as FactKind) ? FIRST.indexOf(kind as FactKind) : FIRST.length);

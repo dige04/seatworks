@@ -205,3 +205,27 @@ test("a hand-back is read against what the turn ran after its last edit", () => 
   const masked = play(turn(wrote), rules({ gates: [secret] }), "complete").find((fact) => fact.kind === "unverified");
   assert.doesNotMatch(masked!.quote, /ghp_0123/, "the gate named in the fact is masked like any other quote");
 });
+
+test("an edit that adds a string shaped like a secret, or a read of a secret file, is paged without quoting it", () => {
+  const key = ["sk", "proj", "A1b2C3d4E5f6G7h8I9j0K1l2M3n4"].join("-");
+  const facts = play(
+    [
+      ...opening(),
+      edit("e1", 2, {
+        filePath: "src/client.ts",
+        oldString: "const key = process.env.KEY;",
+        newString: `const key = "${key}";`,
+      }),
+      file("Read", 3, { type: "read", filePath: "/work/.env", content: "KEY=1" }),
+      edit("e2", 4, { filePath: "src/other.ts", oldString: "a", newString: "b" }),
+    ],
+    rules(),
+  ).filter((fact) => fact.kind === "secret");
+  assert.deepEqual(
+    facts.map((fact) => [fact.level, fact.quote]),
+    [
+      ["page", "src/client.ts: adds a string shaped like a secret"],
+      ["page", "read /work/.env"],
+    ],
+  );
+});

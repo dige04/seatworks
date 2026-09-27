@@ -62,6 +62,10 @@ export const AttentionChoice = z.strictObject({
   destructive: Pattern.optional(),
   /** Where removing is scratch clean-up rather than a page: a path it matches, read case by case as it is written. */
   scratch: Pattern.optional(),
+  /** A path that holds a secret, a command that reads or dumps secrets, and a string shaped like one: reading, printing or writing one is paged. */
+  secretPath: Pattern.optional(),
+  secretCommand: Pattern.optional(),
+  secretString: Pattern.optional(),
   testPath: Pattern.optional(),
   repeatsAt: z.number().int().min(2).optional(),
   /** Steps after a failed command with neither it nor the gate passing, before the watch calls it no recovery. */

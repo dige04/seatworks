@@ -13,6 +13,9 @@ import type { Call, Unit } from "./window.ts";
 export type Rules = {
   destructive: RegExp;
   scratch: RegExp;
+  secretPath: RegExp;
+  secretCommand: RegExp;
+  secretString: RegExp;
   testPath: RegExp;
   suppressed: RegExp;
   checkerPath: RegExp;
@@ -188,6 +191,8 @@ export function onSettle(call: Call, rules: Rules, known?: (path: string) => str
   if (bad && !rules.desk?.(call))
     facts.push(fact(isGate(call, rules.gates) ? "gate-failed" : "call-failed", oneLine(describe(call))));
   const writes = detail.type === "edit" || detail.type === "write";
+  if (detail.type === "read" && !bad && rules.secretPath.test(str(detail.filePath)))
+    facts.push(fact("secret", `read ${oneLine(str(detail.filePath))}`));
   const both = writes && !bad ? sides(detail, known) : undefined;
   if (both) {
     const path = str(detail.filePath);
@@ -196,6 +201,9 @@ export function onSettle(call: Call, rules: Rules, known?: (path: string) => str
       const how = weakened(before, after, rules);
       if (how) facts.push(fact("test-weakened", `${oneLine(path)}: ${how}`));
     }
+    // Only where the secret went is quoted, never the secret.
+    if (hits(after, rules.secretString).length > hits(before, rules.secretString).length)
+      facts.push(fact("secret", `${oneLine(path)}: adds a string shaped like a secret`));
     if (!PROSE.test(path)) {
       const was = hits(before, rules.suppressed);
       const now = hits(after, rules.suppressed);

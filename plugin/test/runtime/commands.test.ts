@@ -7,11 +7,13 @@ import { harness } from "./harness.ts";
 import { noticesOf } from "./noticed.ts";
 import { again, fixture, opening, piRow, play, rules } from "./seat-replay.ts";
 
-/** What the watch pages of one shell command a seat ran, as its quotes. */
-const paged = (command: string, given: Rules = rules()) =>
+/** What the watch raises of `kind` on one shell command a seat ran, as its quotes. */
+const raised = (kind: string, command: string, given: Rules = rules()) =>
   play([...opening(), again(piRow(11), "c", 2, (detail) => Object.assign(detail, { command }))], given)
-    .filter((fact) => fact.kind === "destructive")
+    .filter((fact) => fact.kind === kind)
     .map((fact) => fact.quote);
+
+const paged = (command: string, given: Rules = rules()) => raised("destructive", command, given);
 
 test("an irreversible command is paged the moment it is known, quoted where it is irreversible, and scratch clean-up is not one", () => {
   const rewritten = fixture("claude").map(
@@ -173,4 +175,31 @@ test("what else throws work or data away is paged: stashes, discarded changes, d
     assert.equal(paged(command).length, 1, command);
   for (const command of ["git stash", "git checkout main", "git restore src/a.ts", "find . -name '*.log'", "kill 4242"])
     assert.deepEqual(paged(command), [], command);
+});
+
+test("a command that reads, prints, dumps or stages a secret is paged, and one on an example file is not", () => {
+  for (const command of [
+    "cat .env",
+    "source .env.local",
+    "cat ~/.ssh/id_ed25519",
+    "aws sts get-caller-identity; cat ~/.aws/credentials",
+    "gh auth token",
+    "security find-generic-password -s npm -w",
+    "env",
+    "printenv",
+    "env | grep KEY",
+    "git add .env",
+    "Get-Content .env",
+    "cat config/credentials.json",
+  ])
+    assert.equal(raised("secret", command).length, 1, command);
+  for (const command of ["cat .env.example", "cp .env.example .env", "env NODE_ENV=test node x.js", "echo done"])
+    assert.deepEqual(raised("secret", command), [], command);
+  assert.equal(
+    play(
+      [...opening(), again(piRow(11), "c", 2, (detail) => Object.assign(detail, { command: "cat .env" }))],
+      rules(),
+    )[0]!.level,
+    "page",
+  );
 });

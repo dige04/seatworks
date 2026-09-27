@@ -96,6 +96,7 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
   const parts = pieces.filter((_, index) => index % 2 === 0);
   const scratch = scratchIn(madeBy(parts), rules);
   let at: At = "start";
+  const found: Fact[] = [];
   for (const [index, part] of parts.entries()) {
     const words = shellWords(part);
     if (words[0] === "cd" || words[0] === "pushd" || words[0] === "popd") {
@@ -105,6 +106,7 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
       at = pieces[2 * index + 1] === "&&" || to === at ? to : "elsewhere";
       continue;
     }
+    if (touchesSecret(words, part, rules)) found.push(fact("secret", around(oneLine(part, Infinity), undefined, 200)));
     const targets = targetsOf(words);
     // In a copy the desk made for this seat alone, what it removes there is its own; throwing work away with git still pages.
     const removesOwn =
@@ -115,10 +117,19 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
           scratch(target) ||
           (inside(target) && (at === "scratch" || (at === "start" && rules.ownCopy === true && !GIT.test(target)))),
       );
-    if (rules.destructive.test(part) && !removesOwn)
-      return [fact("destructive", around(oneLine(part, Infinity), rules.destructive, 200))];
+    if (rules.destructive.test(part) && !removesOwn && !found.some((seen) => seen.kind === "destructive"))
+      found.push(fact("destructive", around(oneLine(part, Infinity), rules.destructive, 200)));
   }
-  return [];
+  return found;
+}
+
+/** A command that reads, prints, dumps or stages a secret: a secret path among what it reads, or a command that shows secrets. */
+function touchesSecret(words: string[], part: string, rules: Rules): boolean {
+  const command = words[0]?.toLowerCase() ?? "";
+  if (command === "rm" || command === "remove-item") return false;
+  // What cp and mv write to is not read.
+  const read = command === "cp" || command === "mv" ? words.slice(1, -1) : words.slice(1);
+  return rules.secretCommand.test(part.trim()) || read.some((word) => rules.secretPath.test(word));
 }
 
 /** Cuts around the match, not from the front: what makes a long command irreversible is often at its end. */
