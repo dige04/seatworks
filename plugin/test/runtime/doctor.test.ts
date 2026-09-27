@@ -39,10 +39,11 @@ test("the doctor over the panel names what this machine lacks for the team, a se
       chmodSync(join(bins, name), 0o755);
     }
   };
-  // Claude as it answers `auth status`: logged in only by a token in its env, and only in a settings folder of its own.
+  // Claude as it answers `auth status`: logged in only by a token in its env, and only in a settings folder of its own;
+  // logged out, it still prints its answer but exits 1.
   const claudeAuth = () => {
     const script = `#!/bin/sh
-if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && [ -d "$CLAUDE_CONFIG_DIR" ] && [ "$CLAUDE_CONFIG_DIR" != "$HOME/.claude" ]; then echo '{"loggedIn": true}'; else echo '{"loggedIn": false}'; fi
+if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && [ -d "$CLAUDE_CONFIG_DIR" ] && [ "$CLAUDE_CONFIG_DIR" != "$HOME/.claude" ]; then echo '{"loggedIn": true}'; else echo '{"loggedIn": false}'; exit 1; fi
 `;
     writeFileSync(join(bins, "claude"), script);
     chmodSync(join(bins, "claude"), 0o755);
