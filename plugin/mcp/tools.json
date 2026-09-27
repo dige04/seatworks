@@ -987,8 +987,8 @@
     },
     {
       "name": "message",
-      "title": "Message a Peer",
-      "description": "Send one of your Peers (by task id) one message. It arrives when the Peer can take it: inside a running turn on agents that take that, else when its turn ends.",
+      "title": "Message a Peer or a reviewer",
+      "description": "Send one of your Peers or reviewers, by its task or review id, one message. It arrives when that seat can take it: inside a running turn on agents that take that, else when its turn ends.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1000,7 +1000,7 @@
         "properties": {
           "to": {
             "type": "string",
-            "description": "Task id of one of your Peers, like L1-T2."
+            "description": "Task or review id of one of your seats, like L1-T2 or L1-R1."
           },
           "text": {
             "type": "string",
@@ -1131,7 +1131,7 @@
     {
       "name": "amend_task",
       "title": "Amend a task",
-      "description": "Change what a task asks while its Peer works on it. Give only the fields that change; the old values are kept with why, and the Peer reads the change at its next turn. A task whose contract changed is better cut and started again.",
+      "description": "Change what a task asks, while it waits to start or its Peer works on it. Give only the fields that change; the old values are kept with why, and the Peer reads the change at its next turn. A task whose contract changed is better cut and started again.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1296,11 +1296,11 @@
         "properties": {
           "summary": {
             "type": "string",
-            "description": "What the lane branch holds, how acceptance is proven, and what is carried."
+            "description": "Branch contents, acceptance proof, what is carried, and each decision or assumption a reader could question or that reaches past the lane, with why."
           },
           "ready": {
             "type": "boolean",
-            "description": "True when the lane branch holds the whole outcome; your accepted merges land, the gate runs, and its verdict goes with the report."
+            "description": "True when the whole-lane review after the last merge is settled and the branch holds the whole outcome; the gate runs, its verdict going along."
           },
           "carried": {
             "type": "array",
@@ -1503,13 +1503,13 @@
           },
           "findings": {
             "type": "array",
-            "description": "Each defect you traced.",
+            "description": "Each defect you traced. An unreal caller is one neither the code nor the brief has; a minor defect is P3 too.",
             "items": {
               "type": "object",
               "properties": {
                 "severity": {
                   "type": "string",
-                  "description": "P0 breaks the goal, data or security as is; P1 fails for real inputs; P2 fails at an edge; P3 minor.",
+                  "description": "P0 breaks goal, data or security now; P1 fails real inputs or loses reachable data; P2 fails a reachable edge; P3 needs an unreal caller.",
                   "enum": [
                     "P0",
                     "P1",
