@@ -76,7 +76,11 @@ export class ToolCalls {
       ok: reply.ok,
       reply: text,
     });
-    if (reply.ok) this.heardFrom(caller, speaks);
+    if (reply.ok) {
+      this.heardFrom(caller, speaks);
+      // A decision made through the desk is judged at the seat's next look, on what the call itself says.
+      this.desk.decisions.took(caller.id, request.tool, request.args ?? {});
+    }
     return reply;
   }
 

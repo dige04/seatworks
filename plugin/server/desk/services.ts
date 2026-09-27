@@ -7,6 +7,7 @@ import type { OwnCopy } from "./copies/own-copy.ts";
 import type { Roster } from "./seats/roster.ts";
 import type { Slots } from "./copies/slots.ts";
 import type { Teardowns } from "./seats/teardown.ts";
+import type { Decisions } from "./watch/decisions.ts";
 import type { Watcher } from "./watch/watcher.ts";
 
 export type DeskServices = DeskBase & {
@@ -17,6 +18,7 @@ export type DeskServices = DeskBase & {
   agents: Agents;
   merges: MergeQueue;
   watcher: Watcher;
+  decisions: Decisions;
 };
 
 /**

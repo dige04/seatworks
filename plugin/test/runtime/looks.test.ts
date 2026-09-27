@@ -147,7 +147,7 @@ test("with both brains the sensor sifts and the Watcher seat judges only what it
   );
 });
 
-test("a Lead's look reads the briefs it wrote since, against what watches a Lead, and a brain off reads nothing", async (t) => {
+test("a Lead's brief is judged once, at the add_tasks that wrote it, on what the call says, and a brain off reads nothing", async (t) => {
   const sensed = brain({ "pre-solves": 0.9 }, {}, /src\/cart\.ts/);
   const { h, lane } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
   brains("sensor");
@@ -159,25 +159,75 @@ test("a Lead's look reads the briefs it wrote since, against what watches a Lead
   });
   const stream = h.timelineOf(lead);
   stream.beat("turn_started", "l1");
-  stream.add({ type: "assistant_message", text: "Laid out the totals task.", messageId: "l-m1" }, "l1");
+  stream.add({ type: "assistant_message", text: "Laid out the totals task in src/cart.ts.", messageId: "l-m1" }, "l1");
   stream.beat("turn_completed", "l1");
   await looked();
-  const read = sensed.asked.find((entry) => String(entry.state.text).startsWith("L1-T2: totals add up"))!;
-  assert.ok(read, "the brief as its Peer reads it");
-  assert.match(String(read.state.text), /Edit src\/cart\.ts, add a sum\(\)\.\nHints: src\/cart\.ts/);
-  assert.ok("pre-solves" in read.questions && !("stand-in" in read.questions), "what watches a Lead, not a Peer");
+  const asked = () => sensed.asked.filter((entry) => "pre-solves" in entry.questions);
+  const read = asked().find((entry) => /src\/cart\.ts/.test(String(entry.state.text)))!;
+  assert.match(
+    String(read.state.text),
+    /goal: totals add up[^]*hints:\n\s+- src\/cart\.ts[^]*context: Edit src\/cart\.ts, add a sum\(\)\./,
+    "the brief as the call wrote it",
+  );
+  assert.ok(
+    asked().every((entry) => !String(entry.state.text).startsWith("Laid out")),
+    "its words are not asked what only its brief can show",
+  );
+  assert.ok(!("stand-in" in read.questions), "what watches a Lead, not a Peer");
   assert.ok(Object.values(book(h)).find((item) => item.kind === "pre-solves")?.told);
+
+  const judged = asked().length;
+  stream.beat("turn_started", "l2");
+  stream.add({ type: "assistant_message", text: "Still src/cart.ts; waiting on it.", messageId: "l-m2" }, "l2");
+  stream.beat("turn_completed", "l2");
+  await looked();
+  assert.equal(asked().length, judged, "a look with no decision in it asks nothing of the decision's patterns");
 
   const before = sensed.asked.length;
   h.machineSettings({ attention: { brain: "off" } });
-  stream.beat("turn_started", "l2");
-  stream.add({ type: "assistant_message", text: "Waiting on the hand-back.", messageId: "l-m2" }, "l2");
-  stream.beat("turn_completed", "l2");
+  stream.beat("turn_started", "l3");
+  stream.add({ type: "assistant_message", text: "Waiting on the hand-back.", messageId: "l-m3" }, "l3");
+  stream.beat("turn_completed", "l3");
   await looked();
   assert.equal(sensed.asked.length, before, "with the brain off, nothing is asked");
 });
 
-test("after a restart the eye reads only what is new: neither a seat's past words nor a brief its Lead wrote before", async (t) => {
+test("a decision about how the system is built is judged at the Lead's report, the report beside the words that led to it", async (t) => {
+  const sensed = brain({ "big-decision": 0.5 }, {}, /array on the order/);
+  const seat = brain({});
+  const { h, lane } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  brains("both");
+  t.mock.method(h.runtime.desk.watcher, "judge", () => seat.judge);
+  const looked = looksOf(h, t);
+  const lead = lane.lead!;
+  const stream = h.timelineOf(lead);
+  const turn = async (id: string, item: Record<string, unknown>) => {
+    stream.beat("turn_started", id);
+    stream.add(item, id);
+    stream.beat("turn_completed", id);
+    await looked();
+  };
+  await turn("l0", { type: "assistant_message", text: "Laid out L1-T1.", messageId: "l-m0" });
+  await turn("l1", { type: "reasoning", text: "Refunds go in an array on the order." });
+  assert.equal(sensed.asked.filter((entry) => "big-decision" in entry.questions).length, 0, "not in a look");
+
+  await h.call(lead, "lead", "report", { summary: "Refunds work.", ready: false });
+  await turn("l2", { type: "assistant_message", text: "Reported.", messageId: "l-m2" });
+  assert.deepEqual(
+    sensed.asked.filter((entry) => "big-decision" in entry.questions).map((entry) => entry.state.text),
+    ["Refunds go in an array on the order.", "Reported."],
+    "the sensor asks each of the words since, never the report",
+  );
+  const judged = seat.asked.find((entry) => "big-decision" in entry.questions)!;
+  assert.equal(judged.state.call, "report");
+  assert.deepEqual(judged.state.items, [
+    "[thought] Refunds go in an array on the order.",
+    "[said] Reported.",
+    "[call] summary: Refunds work.\nready: false",
+  ]);
+});
+
+test("after a restart the eye reads only what is new: neither a seat's past words nor a decision its Lead made before", async (t) => {
   const sensed = brain({});
   const { h, lane, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
   brains("sensor");

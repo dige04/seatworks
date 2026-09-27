@@ -92,6 +92,8 @@ export const AttentionChoice = z.strictObject({
   lookItemChars: z.number().int().min(1).optional(),
   /** How much of the project's concept file, the Human's settled words, a Lead's look is read beside. */
   conceptChars: z.number().int().min(1).optional(),
+  /** How much of a decision's desk call, and of the words that led to it, newest first, the case judging it reads. */
+  decisionChars: z.number().int().min(1).optional(),
   quoteChars: z.number().int().min(1).optional(),
   /** Looks with words and no thinking, never any, after which a seat is recorded as one the watch cannot read thinking of. */
   thoughtlessLooks: z.number().int().min(1).optional(),

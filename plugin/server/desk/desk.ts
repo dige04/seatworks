@@ -55,6 +55,7 @@ import { type Moment, momentCases } from "./review/evidence.ts";
 import { judge } from "./review/asking.ts";
 import { type Look, readLook } from "./watch/brains.ts";
 import { type Noticed, closeIncidentsOf, notice, placeOf, retell } from "./watch/notice.ts";
+import { Decisions } from "./watch/decisions.ts";
 import { Watcher } from "./watch/watcher.ts";
 
 type DeskOptions = {
@@ -108,7 +109,8 @@ export class Desk {
     const agents = new Agents(base, roster, slots, teardowns, options.workspaces);
     this.watcher = new Watcher(base, roster, agents);
     const merges = new MergeQueue(base, (project) => startWaiting(this.services, project, true));
-    this.services = { ...base, roster, slots, ownCopy, teardowns, agents, merges, watcher: this.watcher };
+    const decisions = new Decisions(options.kit);
+    this.services = { ...base, roster, slots, ownCopy, teardowns, agents, merges, watcher: this.watcher, decisions };
     this.calls = new ToolCalls(this.services, options.tools, this.intents);
     this.projects = projects;
     this.human = new Human(this.services);
@@ -148,6 +150,7 @@ export class Desk {
 
   archived(project: Project, seat: string, watched: boolean): void {
     markGone(this.services, project, seat);
+    this.services.decisions.forget(seat);
     if (watched) closeIncidentsOf(this.services, project, seat);
   }
 

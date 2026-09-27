@@ -175,7 +175,7 @@ test("cases at once seat one Watcher, and a case is given up only when nobody ca
   assert.match(String(kept(h.project.state)[0]!.unasked), /no Supervisor is seated/);
 
   h.agents.get(sup)!.archivedAt = null;
-  // The Peer's turn and its Lead's end together: two cases, both for one Watcher.
+  // The Peer's turn and its Lead's end together: three cases, the Lead's look and the brief it laid out, for one Watcher.
   thinks("Half of it is done.");
   thinks("The Peer is halfway there.", h.timelineOf(lane.lead!));
   const cases = () => {
@@ -183,7 +183,7 @@ test("cases at once seat one Watcher, and a case is given up only when nobody ca
     if (!watcher) return 0;
     return [watcher.prompt ?? "", ...h.heard(watcher.id)].join("\n").match(/^CASE /gm)?.length ?? 0;
   };
-  await until(() => cases() === 2, "both cases reach one Watcher");
+  await until(() => cases() === 3, "every case reaches one Watcher");
   assert.equal(watchersOf(h).length, 1);
   const read = await h.call(watchersOf(h)[0]!.id, "watcher", "record", { of: "L1-T1" });
   assert.equal(read.ok, true, read.text);
@@ -194,7 +194,7 @@ test("cases at once seat one Watcher, and a case is given up only when nobody ca
     kept(h.project.state)
       .slice(1)
       .map((line) => line.unasked),
-    ["the Watcher it was sent to is gone", "the Watcher it was sent to is gone"],
+    Array(3).fill("the Watcher it was sent to is gone"),
     "with nobody seated, a case whose Watcher has gone is given up by the next round",
   );
 

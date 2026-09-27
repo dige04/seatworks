@@ -5,14 +5,12 @@ import type { Judge, Question } from "../../core/ports.ts";
 import { clip } from "../../core/text.ts";
 import type { Finding } from "../../domain/incident.ts";
 import type { Lane } from "../../domain/lane.ts";
-import { type Ledger, tasksOf } from "../../domain/ledger.ts";
 import { type Project, conceptFile } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { type Assessments, askKept, holds } from "../store/assessments.ts";
 import { list } from "../letters/envelope.ts";
+import type { Item } from "./decisions.ts";
 import { type Noticed, type Placed, ledgerOf, notice, placeIn } from "./notice.ts";
-
-type Item = { kind: "thought" | "said" | "brief"; text: string };
 
 /** What one look read of a seat, as the brains take it: its words since `since`, the code's facts meanwhile, its instruction. */
 export type Look = {
@@ -26,63 +24,95 @@ const WATCH: Assessments = { log: "assessments", unasked: "watch.unasked" };
 
 type Pattern = [string, PatternSpec];
 
+type Services = Pick<
+  DeskServices,
+  "kit" | "incidents" | "teamFor" | "mail" | "roster" | "sensorFor" | "watcher" | "decisions"
+>;
+
+/** One case for the brains: what it is about, the items it reads, the patterns asked of them, and the fields beside them. */
+type Case = { episode: string; items: Item[]; patterns: Pattern[]; fields: Record<string, unknown> };
+
 /**
- * The brains read what one look saw of a seat against the patterns that watch it. The sensor asks each item its patterns'
- * one-condition questions; the seat judges the whole look. In `both` the seat hears only what the sensor flagged or left
- * unsure, and what only it can judge. What they find goes to the incident book, which tells whoever supervises; every
- * answer is kept for labels.
+ * The brains read a seat's words against the patterns that watch it: the words of each look against the patterns judged
+ * in looks, and each decision it made through the desk, the call with the words that led to it, against the patterns
+ * judged at that call. The sensor asks each item its patterns' one-condition questions; the seat judges the whole case.
+ * In `both` the seat hears only what the sensor flagged or left unsure, and what only it can judge. What they find goes
+ * to the incident book, which tells whoever supervises; every answer is kept for labels.
  */
-export async function readLook(
-  services: Pick<DeskServices, "kit" | "incidents" | "teamFor" | "mail" | "roster" | "sensorFor" | "watcher">,
-  project: Project,
-  seat: Noticed,
-  look: Look,
-): Promise<void> {
+export async function readLook(services: Services, project: Project, seat: Noticed, look: Look): Promise<void> {
   const { kit, teamFor } = services;
   const { brains, attention } = teamFor(project);
-  const cut = { item: attention.lookItemChars, quote: attention.quoteChars };
+  const words = look.items.map((item) => ({ ...item, text: clip(item.text, attention.lookItemChars) }));
+  const decided = services.decisions.take(seat.id, words, attention.decisionChars);
   const role = seatOf(kit, seat.provider)?.role;
-  if (brains.mode === "off" || !role) return;
-  const ledger = ledgerOf(project);
-  const place = placeIn(kit, ledger, seat);
-  const items = [...look.items, ...briefsSince(ledger, seat, place, look.since)].map((item) => ({
-    ...item,
-    text: clip(item.text, cut.item),
-  }));
-  if (items.length === 0) return;
-  const signs = new Set([
+  if (brains.mode === "off" || !role || (words.length === 0 && !decided)) return;
+  const place = placeIn(kit, ledgerOf(project), seat);
+  const signs = [
     ...look.facts,
     ...(place.task?.reworks ? ["reworked"] : []),
     ...(place.task?.handback ? ["handed-back"] : []),
-  ]);
-  const read = new Set(items.map((item) => item.kind));
-  const patterns = Object.entries(kit.patterns).filter(
-    ([, pattern]) =>
-      pattern.watches.some((capability) => can(role, capability)) &&
-      pattern.reads.some((kind) => read.has(kind)) &&
-      (!pattern.gate || pattern.gate.some((sign) => signs.has(sign))),
-  );
-  if (patterns.length === 0) return;
+  ];
+  const watching = (items: Item[], judged: (pattern: PatternSpec) => boolean): Pattern[] => {
+    const read = new Set(items.map((item) => item.kind));
+    const known = new Set(signs);
+    return Object.entries(kit.patterns).filter(
+      ([, pattern]) =>
+        judged(pattern) &&
+        pattern.watches.some((capability) => can(role, capability)) &&
+        pattern.reads.some((kind) => read.has(kind)) &&
+        (!pattern.gate || pattern.gate.some((sign) => known.has(sign))),
+    );
+  };
+  const instruction = look.instruction ? { instruction: clip(look.instruction.text, attention.lookItemChars) } : {};
+  const cases: Case[] = [
+    { episode: "look", items: words, patterns: watching(words, (pattern) => !pattern.tools), fields: instruction },
+    ...(decided?.calls ?? []).map((call) => {
+      const items: Item[] = [...decided!.words, { kind: "call", text: clip(call.text, attention.decisionChars) }];
+      const patterns = watching(items, (pattern) => pattern.tools?.includes(call.tool) === true);
+      return { episode: call.tool, items, patterns, fields: { ...instruction, call: call.tool } };
+    }),
+  ];
   const asked = askedOf(place, conceptOf(project, attention.conceptChars));
   const subject = place.task?.id ?? place.lane?.id ?? seat.id;
-  const findings: Finding[] = [];
+  // Each case on its own, so a decision is not held behind the look before it.
+  const judged = cases
+    .filter((each) => each.patterns.length > 0)
+    .map((one) => judgeCase(services, project, subject, place, { ...one, facts: look.facts }, asked));
+  const findings = (await Promise.all(judged)).flat();
+  if (findings.length > 0) await notice(services, project, seat, findings, place);
+}
+
+async function judgeCase(
+  services: Services,
+  project: Project,
+  subject: string,
+  place: Placed,
+  one: Case & { facts: string[] },
+  asked: Record<string, unknown>,
+): Promise<Finding[]> {
+  const { brains, attention } = services.teamFor(project);
   const sensor = brains.sensor?.key ? services.sensorFor(brains.sensor.sensor, brains.sensor.key) : undefined;
+  const about = { subject, episode: one.episode };
   const sifted =
     sensor && brains.sensor
-      ? await sift(project, subject, brains.sensor, sensor, items, patterns, asked, cut.quote)
+      ? await sift(project, about, brains.sensor, sensor, one.items, one.patterns, asked, attention.quoteChars)
       : undefined;
-  if (sifted && brains.mode === "sensor") findings.push(...sifted.found);
-  if (brains.seat && brains.mode !== "sensor") {
-    const judged =
-      sifted && brains.mode === "both"
-        ? patterns.filter(([id, pattern]) => sifted.flagged.has(id) || !pattern.instructions)
-        : patterns;
-    if (judged.length > 0) {
-      const judge = services.watcher.judge(project, brains.seat, subject);
-      findings.push(...(await weigh(project, subject, brains.seat, judge, place, items, judged, asked, look, cut)));
-    }
-  }
-  if (findings.length > 0) await notice(services, project, seat, findings, place);
+  if (brains.mode === "sensor") return sifted?.found ?? [];
+  if (!brains.seat) return [];
+  const judged =
+    sifted && brains.mode === "both"
+      ? one.patterns.filter(([id, pattern]) => sifted.flagged.has(id) || !pattern.instructions)
+      : one.patterns;
+  if (judged.length === 0) return [];
+  const state = {
+    seat: place.where,
+    ...asked,
+    ...one.fields,
+    items: one.items.map((item) => `[${item.kind}] ${item.text}`),
+    ...(one.facts.length > 0 ? { facts: one.facts } : {}),
+  };
+  const judge = services.watcher.judge(project, brains.seat, subject);
+  return weigh(project, about, brains.seat, judge, state, judged, attention.quoteChars);
 }
 
 /**
@@ -130,23 +160,6 @@ function conceptOf(project: Project, limit: number): string | undefined {
   }
 }
 
-/** The briefs a Lead wrote since its last look: the tasks it laid out, each as its Peer reads what it is asked. */
-function briefsSince(ledger: Ledger | undefined, seat: Noticed, place: Placed, since: number): Item[] {
-  if (!ledger || !place.lane || place.task || place.lane.lead !== seat.id) return [];
-  return tasksOf(ledger, place.lane.id)
-    .filter((task) => task.kind === "code" && task.openedAt >= since)
-    .map((task) => ({
-      kind: "brief" as const,
-      text: [
-        `${task.id}: ${task.goal}`,
-        task.context ?? "",
-        task.hints.length > 0 ? `Hints: ${task.hints.join(", ")}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    }));
-}
-
 const asQuestion = (pattern: PatternSpec, instructions: string): Question => ({
   type: "condition",
   instructions,
@@ -155,7 +168,7 @@ const asQuestion = (pattern: PatternSpec, instructions: string): Question => ({
 
 async function sift(
   project: Project,
-  subject: string,
+  { subject, episode }: { subject: string; episode: string },
   by: { id: string; sensor: { label: string } },
   judge: Judge,
   items: Item[],
@@ -170,7 +183,7 @@ async function sift(
     if (mine.length === 0) continue;
     const questions = Object.fromEntries(mine.map(([id, pattern]) => [id, asQuestion(pattern, pattern.instructions!)]));
     const state = { text: item.text, ...asked };
-    const judged = await askKept(project, WATCH, { subject, episode: "look", by: by.id, state }, judge, questions);
+    const judged = await askKept(project, WATCH, { subject, episode, by: by.id, state }, judge, questions);
     if (!judged) continue;
     for (const [id, pattern] of mine) {
       const answer = judged.answers[id];
@@ -191,32 +204,22 @@ async function sift(
   return { found, flagged };
 }
 
-/** The whole look judged by the seat against `patterns`: a yes is found, in the words its why quotes. */
+/** A case judged whole by the seat against `patterns`: a yes is found, in the words its why quotes. */
 async function weigh(
   project: Project,
-  subject: string,
+  { subject, episode }: { subject: string; episode: string },
   by: string,
   judge: Judge,
-  place: Placed,
-  items: Item[],
+  state: Record<string, unknown>,
   patterns: Pattern[],
-  asked: Record<string, unknown>,
-  look: Look,
-  cut: { item: number; quote: number },
+  quote: number,
 ): Promise<Finding[]> {
-  const state = {
-    seat: place.where,
-    ...asked,
-    ...(look.instruction ? { instruction: clip(look.instruction.text, cut.item) } : {}),
-    items: items.map((item) => `[${item.kind}] ${item.text}`),
-    ...(look.facts.length > 0 ? { facts: look.facts } : {}),
-  };
   const questions = Object.fromEntries(patterns.map(([id, pattern]) => [id, asQuestion(pattern, pattern.seat)]));
-  const judged = await askKept(project, WATCH, { subject, episode: "look", by, state }, judge, questions);
+  const judged = await askKept(project, WATCH, { subject, episode, by, state }, judge, questions);
   if (!judged) return [];
   return patterns.flatMap(([id, pattern]) =>
     holds(pattern, judged.answers[id]) === "yes" && pattern.level !== "note"
-      ? [finding(id, judged.why?.[id] ?? "", cut.quote, "judged by the Watcher seat")]
+      ? [finding(id, judged.why?.[id] ?? "", quote, "judged by the Watcher seat")]
       : [],
   );
 }

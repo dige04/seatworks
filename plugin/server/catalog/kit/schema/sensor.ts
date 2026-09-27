@@ -67,24 +67,30 @@ export const ChecksFile = z.record(
 
 /**
  * What the brains read a seat's own words for: whom it watches, what it reads, the sensor's one-condition question on an
- * item's `text` (none when only the seat can judge) and the seat's on the whole look, the signs a yes needs, and its level.
+ * item's `text` (none when only the seat can judge) and the seat's on the whole case, the signs a yes needs, and its
+ * level. With `tools` it is judged only at those desk calls, on the call and the words that led to it, and never in a
+ * look.
  */
 const Pattern = z
   .strictObject({
     title: text,
     source: text.optional(),
     watches: z.array(text).min(1),
-    reads: z.array(z.enum(["thought", "said", "brief"])).min(1),
+    reads: z.array(z.enum(["thought", "said", "call"])).min(1),
     instructions: text.includes("`text`").optional(),
     seat: text,
     criteria: z.strictObject({ true: text, false: text }),
     gate: z.array(z.enum(["stuck", "reworked", "handed-back", "edit-before-look"])).optional(),
+    tools: z.array(text).min(1).optional(),
     level: z.enum(["attend", "note"]).optional(),
     next: text.optional(),
     yes: unit,
     no: unit,
   })
-  .refine((pattern) => pattern.no < pattern.yes, { error: "has no that is not below yes" });
+  .refine((pattern) => pattern.no < pattern.yes, { error: "has no that is not below yes" })
+  .refine((pattern) => !pattern.reads.includes("call") || pattern.tools, {
+    error: "reads a desk call but names no tool it is judged at",
+  });
 
 /** `catalog/patterns.json`: the patterns the watch's brains read for, each by its id, which is also its signal's. */
 export const PatternsFile = z.record(z.string().regex(/^[a-z][a-z-]*$/), Pattern);
