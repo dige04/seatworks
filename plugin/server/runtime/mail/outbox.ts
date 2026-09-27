@@ -114,6 +114,17 @@ export class Outbox {
     return this.letters().map((letter) => ({ ...letter, until: letter.at + KEEP_MS }));
   }
 
+  /** Takes back a letter its seat has not been sent, as one that says the same newer takes its place: whether it was still held. */
+  withdraw(to: string, key: string): Promise<boolean> {
+    return this.perSeat.run(to, async () => {
+      const letters = this.letters();
+      const kept = letters.filter((letter) => letter.to !== to || letter.key !== key);
+      if (kept.length === letters.length) return false;
+      this.save(kept);
+      return true;
+    });
+  }
+
   pending(agentId: string): Letter[] {
     return this.letters().filter((letter) => letter.to === agentId);
   }

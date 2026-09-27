@@ -186,3 +186,22 @@ test("whoever waits on a letter hears when it reached its seat, not when it was 
   );
   assert.ok(heard[0]!.at >= before, "stamped as it went");
 });
+
+test("a letter still held can be withdrawn, and one already taken cannot", async () => {
+  const agents = { watcher: agent("running") };
+  const outbox = new Outbox(
+    join(tempDir(), "outbox.json"),
+    (_seat, list) => list.map((letter) => letter.text).join("|"),
+    fakeSeats(agents),
+  );
+  await outbox.post({ to: "watcher", key: "case:C1", text: "older look" });
+  await outbox.post({ to: "watcher", key: "case:C2", text: "other subject" });
+  assert.equal(await outbox.withdraw("watcher", "case:C1"), true);
+  assert.equal(await outbox.withdraw("watcher", "case:C1"), false, "once");
+  assert.equal(await outbox.withdraw("someone", "case:C2"), false, "only from the seat it was held for");
+  agents.watcher.status = "idle";
+  outbox.turnEnded("watcher");
+  await outbox.pump("watcher");
+  assert.deepEqual(agents.watcher.sent, ["other subject"]);
+  assert.equal(await outbox.withdraw("watcher", "case:C2"), false, "a letter that went is not called back");
+});
