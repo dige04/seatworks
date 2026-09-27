@@ -56,6 +56,10 @@ const FACTS = {
   secret: { level: "page", title: "Read, printed or wrote a secret" },
   boundary: { level: "page", title: "Sent data out, ran a download, or ran code from outside its copy", theirs: true },
   dependency: { level: "attend", title: "Added a dependency" },
+  guard: {
+    level: "page",
+    title: "Got round a guard: skipped hooks, changed what fences it, or re-ran what was refused",
+  },
   stuck: { level: "attend", title: "Going round in circles" },
   "no-recovery": { level: "attend", title: "Did not recover from a failure" },
   "refusal-loop": { level: "attend", title: "Refused again and again" },

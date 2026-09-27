@@ -32,6 +32,8 @@ export function watchPatterns(kit: Kit, attention: Attention) {
     dependencyInstall: new RegExp(attention.dependencyInstall, "i"),
     dependencyManifest: new RegExp(attention.dependencyManifest),
     dependencyEntry: new RegExp(attention.dependencyEntry),
+    guardPath: new RegExp(attention.guardPath, "i"),
+    guardCommand: new RegExp(attention.guardCommand, "i"),
     testPath: new RegExp(attention.testPath, "i"),
     suppressed: new RegExp(attention.suppressed, "i"),
     checkerPath: new RegExp(attention.checkerPath, "i"),

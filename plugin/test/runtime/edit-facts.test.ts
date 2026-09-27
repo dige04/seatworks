@@ -241,3 +241,14 @@ test("an edit that adds an entry to a dependency manifest is noted, and one that
   assert.deepEqual(dependency('"version": "1.0.0"', '"version": "2.0.0"'), [], "a version is not a dependency");
   assert.deepEqual(dependency('"test": "node --test"', '"test": "node --test test/"'), [], "nor a script");
 });
+
+test("an edit to a file that fences what a seat may do is paged", () => {
+  const guards = (filePath: string) =>
+    play([...opening(), edit("e1", 2, { filePath, oldString: '"deny"', newString: '"allow"' })], rules())
+      .filter((fact) => fact.kind === "guard")
+      .map((fact) => fact.quote);
+  assert.deepEqual(guards(".claude/settings.local.json"), [
+    ".claude/settings.local.json: a file that fences what the seat may do",
+  ]);
+  assert.deepEqual(guards("src/settings.json"), []);
+});

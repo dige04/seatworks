@@ -242,3 +242,18 @@ test("sending data out, running a download or code from outside the copy is page
   for (const command of ["npm install", "npm ci", "pip install -r requirements.txt", "pip install -e ."])
     assert.deepEqual(raised("dependency", command, cwd), [], command);
 });
+
+test("skipping hooks, changing what fences a seat, or pointing git's hooks elsewhere is paged", () => {
+  for (const command of [
+    "git commit --no-verify -m wip",
+    'git commit -nm "wip"',
+    "git push --no-verify origin main",
+    "git config core.hooksPath /dev/null",
+    `echo '{"permissions":{}}' > .claude/settings.json`,
+    "sed -i '' 's/deny/allow/' .codex/config.toml",
+    "rm .git/hooks/pre-commit",
+  ])
+    assert.equal(raised("guard", command).length, 1, command);
+  for (const command of ['git commit -m "fix the -n flag"', "git push -n", "cat .claude/settings.json"])
+    assert.deepEqual(raised("guard", command), [], command);
+});

@@ -110,6 +110,8 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
     if (touchesSecret(words, part, rules)) found.push(fact("secret", quoted));
     if (rules.boundary.test(part) || runsOutside(words, rules, scratch)) found.push(fact("boundary", quoted));
     if (rules.dependencyInstall.test(part)) found.push(fact("dependency", quoted));
+    if (skipsHooks(words) || rules.guardCommand.test(part) || writesGuard(words, rules))
+      found.push(fact("guard", quoted));
     const targets = targetsOf(words);
     // In a copy the desk made for this seat alone, what it removes there is its own; throwing work away with git still pages.
     const removesOwn =
@@ -125,6 +127,24 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
   }
   return found;
 }
+
+/** A commit or push told to skip its hooks: `--no-verify`, or a commit's `-n` in any cluster of short flags. */
+function skipsHooks(words: string[]): boolean {
+  if (words[0] !== "git") return false;
+  const rest = words[1] === "-C" ? words.slice(3) : words.slice(1);
+  const verb = rest[0];
+  if (verb !== "commit" && verb !== "push") return false;
+  return rest.some((word) => word === "--no-verify" || (verb === "commit" && /^-[a-zA-Z]*n[a-zA-Z]*$/.test(word)));
+}
+
+/** A command that writes, moves or removes a file that fences a seat: by a redirect, or as a program that changes files. */
+function writesGuard(words: string[], rules: Rules): boolean {
+  const paths = words.slice(1).map((word) => word.replace(/^>+/, ""));
+  if (!paths.some((path) => rules.guardPath.test(path))) return false;
+  return words.some((word) => word.startsWith(">")) || WRITERS.has(words[0]?.toLowerCase() ?? "");
+}
+
+const WRITERS = new Set(["cp", "mv", "tee", "sed", "rm", "ln", "chmod", "truncate", "remove-item", "set-content"]);
 
 /** A script run by its interpreter from a path outside the seat's copy and outside scratch space. */
 function runsOutside(words: string[], rules: Rules, scratch: (path: string) => boolean): boolean {

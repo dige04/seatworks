@@ -21,6 +21,8 @@ export type Rules = {
   dependencyInstall: RegExp;
   dependencyManifest: RegExp;
   dependencyEntry: RegExp;
+  guardPath: RegExp;
+  guardCommand: RegExp;
   testPath: RegExp;
   suppressed: RegExp;
   checkerPath: RegExp;
@@ -230,6 +232,8 @@ export function onSettle(call: Call, rules: Rules, known?: (path: string) => str
   }
   const checker = writes && !bad ? checkerOf(str(detail.filePath), rules) : undefined;
   if (checker) facts.push(fact("checker-touched", `${oneLine(checker)}: a file the gate or the instructions read`));
+  if (writes && !bad && rules.guardPath.test(str(detail.filePath)))
+    facts.push(fact("guard", `${oneLine(str(detail.filePath))}: a file that fences what the seat may do`));
   if (writes && outside(str(detail.filePath), rules)) {
     facts.push(fact("outside-scope", oneLine(str(detail.filePath))));
   }
@@ -298,5 +302,46 @@ export class Refusals {
 
   reset(): void {
     this.count = 0;
+  }
+}
+
+/** The first two words of a command's first part: what a refusal was of, and what running it again another way repeats. */
+const core = (command: string) =>
+  command
+    .split(/&&|\|\||;|\||\n/)[0]!
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .join(" ");
+
+/** Ways to run a command other than as itself: a shell's or an interpreter's inline code, an eval, an alias. */
+const WRAPPED = /\b(?:(?:ba|z)?sh|python3?|node|perl|ruby)\s+-[a-z]*[ce]\b|\beval\b|\balias\b/;
+
+/** A command refused, then run again another way: through a shell, an eval, an alias or a script the seat wrote meanwhile. */
+export class Evasion {
+  private refused: string | undefined;
+  private readonly scripts = new Map<string, string>();
+
+  step(call: Call, rules: Rules): Fact[] {
+    if (call.detail.type === "write") this.scripts.set(str(call.detail.filePath), str(call.detail.content));
+    if (call.detail.type !== "shell") return [];
+    const command = str(call.detail.command);
+    if (failed(call) && rules.refused.test(JSON.stringify(call.error ?? ""))) {
+      this.refused = core(command);
+      return [];
+    }
+    const was = this.refused;
+    if (!was || command.startsWith(was)) return [];
+    const scripted = [...this.scripts].some(
+      ([path, content]) => path && command.includes(path) && content.includes(was),
+    );
+    if (!scripted && !(WRAPPED.test(command) && command.includes(was))) return [];
+    this.refused = undefined;
+    return [fact("guard", `ran \`${was}\` through \`${oneLine(command, 100)}\` after it was refused`)];
+  }
+
+  reset(): void {
+    this.refused = undefined;
+    this.scripts.clear();
   }
 }

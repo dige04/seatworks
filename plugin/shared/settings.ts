@@ -73,6 +73,9 @@ export const AttentionChoice = z.strictObject({
   dependencyInstall: Pattern.optional(),
   dependencyManifest: Pattern.optional(),
   dependencyEntry: Pattern.optional(),
+  /** The files that fence a seat (its agent's permissions, hooks, sandbox) and a command that moves git's hooks: changing either is paged. */
+  guardPath: Pattern.optional(),
+  guardCommand: Pattern.optional(),
   testPath: Pattern.optional(),
   repeatsAt: z.number().int().min(2).optional(),
   /** Steps after a failed command with neither it nor the gate passing, before the watch calls it no recovery. */
