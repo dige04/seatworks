@@ -44,6 +44,16 @@ export const landLetters = {
     );
   },
 
+  /** An ordered landing that broke when the desk carried it out, rather than landing or being refused. */
+  failed(lane: Lane, error: string): Letter {
+    return mail(
+      "land",
+      [lane.id, "failed", Date.now()],
+      `NOT LANDED ${lane.id} (${lane.title}): the turn in its way ended, but the desk's landing of it failed: ${ended(error)}`,
+      "Read status for where the lane stands, then land_lane it again or drop_lane it.",
+    );
+  },
+
   /** Its Lead went on reviewing a lane it had reported ready: the READY is gone, and comes again with a new report. */
   readyWithdrawn(lane: Lane, review: string): Letter {
     return fyi(

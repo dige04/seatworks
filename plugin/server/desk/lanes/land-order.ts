@@ -18,24 +18,54 @@ export const orderKey = (project: Project) => `${project.slug}:ordered`;
 export function carryOut(desk: DeskServices, project: Project, laneId: string, order: LandOrder): void {
   desk.landings
     .run(orderKey(project), async () => {
-      const ledger = loadLedger(project.state);
-      const lane = ledger.lanes[laneId];
-      if (lane?.status !== "open") return;
-      const changed = await changedSince(project, ledger, lane, order);
-      if (changed) return void (await desk.mail.post(order.by, landLetters.calledOff(lane, changed, true)));
-      const closed = await closeLane(desk, project, order.by, {
-        lane: laneId,
-        land: true,
-        overGate: order.overGate,
-        reason: order.reason,
-      });
-      const now = loadLedger(project.state).lanes[laneId];
-      if (now?.landing) return;
-      await desk.mail.post(order.by, landLetters.carried(lane, now?.status === "closed", closed.text));
+      try {
+        await land(desk, project, laneId, order);
+      } catch (error) {
+        await failed(desk, project, laneId, order, errorText(error));
+      }
     })
     .catch((error: unknown) =>
-      desk.log(project, `the landing of ${laneId} ordered earlier failed: ${errorText(error)}`),
+      desk.log(
+        project,
+        `the landing of ${laneId} ordered earlier failed, and ${order.by} could not be told: ${errorText(error)}`,
+      ),
     );
+}
+
+async function land(desk: DeskServices, project: Project, laneId: string, order: LandOrder): Promise<void> {
+  const ledger = loadLedger(project.state);
+  const lane = ledger.lanes[laneId];
+  if (lane?.status !== "open") return;
+  const changed = await changedSince(project, ledger, lane, order);
+  if (changed) return void (await desk.mail.post(order.by, landLetters.calledOff(lane, changed, true)));
+  const closed = await closeLane(desk, project, order.by, {
+    lane: laneId,
+    land: true,
+    overGate: order.overGate,
+    reason: order.reason,
+  });
+  const now = loadLedger(project.state).lanes[laneId];
+  if (now?.landing) return;
+  await desk.mail.post(order.by, landLetters.carried(lane, now?.status === "closed", closed.text));
+}
+
+/**
+ * A landing that broke rather than answering: whoever ordered it waits on LANDED or NOT LANDED, so it is told, and any
+ * order the attempt left is cleared, as nothing would carry it out or say it had failed.
+ */
+async function failed(
+  desk: DeskServices,
+  project: Project,
+  laneId: string,
+  order: LandOrder,
+  error: string,
+): Promise<void> {
+  desk.log(project, `the landing of ${laneId} ordered earlier failed: ${error}`);
+  const lane = desk.ledgers.setLane(project, laneId, (entry) => {
+    delete entry.landing;
+    return { ...entry };
+  });
+  if (lane) await desk.mail.post(order.by, landLetters.failed(lane, error));
 }
 
 /** What makes the lane other than what whoever ordered its landing judged, if anything does. */

@@ -3,6 +3,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { loadConfig } from "../../server/desk/project/project.ts";
+import type { DeskServices } from "../../server/desk/services.ts";
 import { contracts } from "../../shared/rpc.ts";
 import { harness, ideCalls } from "./harness.ts";
 
@@ -202,6 +203,34 @@ test("a landing ordered while a turn was in the way is not carried out on a lane
   assert.match(
     h.agents.get(sup)!.sent.join("\n"),
     /NOT LANDED L1 \(Numbers\): the turn in its way ended, but its branch moved since your land_lane, so the desk did not land it\.\n\nNext: land_lane it again to land it as it is now, or drop_lane it\./,
+  );
+});
+
+test("an ordered landing that fails when the desk carries it out wakes whoever ordered it with NOT LANDED and the error, and is not ordered again", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  await h.call(sup, "supervisor", "open_lane", { title: "Numbers", outcome: "a.txt gains words", ...scope });
+  const lane = h.ledger().lanes.L1!;
+  h.commit(h.root, "a.txt", "one\ntwo\nthree\nfour\n");
+  h.commitTo("main", "other.txt", "main moved\n");
+  await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  assert.match((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).text, /^Lane L1 lands once /);
+  // The landing itself breaks, as a git that dies mid-merge would: closeLane throws rather than answering.
+  const { landings } = (h.runtime.desk as unknown as { services: DeskServices }).services;
+  const run = landings.run.bind(landings);
+  landings.run = <T>(key: string, work: () => Promise<T>): Promise<T> =>
+    key.endsWith(":land") ? Promise.reject(new Error("git merge died")) : run(key, work);
+  await h.idle(sup);
+  h.agents.get(lane.lead!)!.status = "idle";
+  await h.endTurn(lane.lead!, "reported");
+  await h.runtime.desk.settled(h.project);
+  await h.idle(sup);
+  assert.equal(h.ledger().lanes.L1!.status, "open");
+  assert.equal(h.ledger().lanes.L1!.landing, undefined, "a failed order is not left to be carried out again");
+  assert.match(
+    h.agents.get(sup)!.sent.join("\n"),
+    /NOT LANDED L1 \(Numbers\): the turn in its way ended, but the desk's landing of it failed: git merge died\./,
+    "whoever ordered it waits on LANDED or NOT LANDED, so a failure is told too",
   );
 });
 
