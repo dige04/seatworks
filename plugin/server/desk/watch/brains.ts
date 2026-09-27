@@ -42,8 +42,7 @@ type Case = { episode: string; items: Item[]; patterns: Pattern[]; fields: Recor
  * The brains read a seat's words against the patterns that watch it: the words of each look against the patterns judged
  * in looks, and each decision it made through the desk, the call with the words that led to it, against the patterns
  * judged at that call. The sensor asks each item its patterns' one-condition questions; the seat judges the whole case.
- * In `both` the seat hears only the items the sensor flagged or left unsure; with no sensor, only a look the code raised
- * a fact in. What they find goes
+ * In `both` the seat hears only the items the sensor said yes to; with no sensor, only a look the code raised a fact in. What they find goes
  * to the incident book, which tells whoever supervises; every answer is kept for labels.
  */
 export async function readLook(services: Services, project: Project, seat: Noticed, look: Look): Promise<void> {
@@ -261,8 +260,8 @@ async function sift(
     const against = pattern.missingFrom && mine.find((entry) => entry.item.kind === pattern.missingFrom);
     const words = against ? mine.filter((entry) => entry !== against) : mine;
     if (against?.verdict === "yes") continue;
-    const unsure = words.filter((entry) => entry.verdict !== "no").map((entry) => entry.item);
-    if (unsure.length > 0) flagged.set(id, unsure);
+    const said = words.filter((entry) => entry.verdict === "yes").map((entry) => entry.item);
+    if (said.length > 0) flagged.set(id, said);
     if (pattern.level === "note" || (against && against.verdict !== "no")) continue;
     for (const { item, verdict, likely } of words)
       if (verdict === "yes")

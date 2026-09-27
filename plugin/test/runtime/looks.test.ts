@@ -120,8 +120,8 @@ test("the watch's eye reads a seat's new words at its turn's end and while it ru
   );
 });
 
-test("with both brains the sensor sifts and the Watcher seat judges only what it flagged or left unsure, in the words its why quotes", async (t) => {
-  const sensed = brain({ turning: 0.5, "stand-in": 0.05 });
+test("with both brains the sensor sifts and the Watcher seat judges only what it said yes to, in the words its why quotes", async (t) => {
+  const sensed = brain({ turning: 0.9, struggling: 0.5, "stand-in": 0.05 });
   const seat = brain(
     { turning: 0.9 },
     { turning: 'It writes "scrap the queue and poll instead" with no reason given.' },
@@ -137,7 +137,11 @@ test("with both brains the sensor sifts and the Watcher seat judges only what it
   timeline.beat("turn_completed", "t1");
   await looked();
   assert.equal(seat.asked.length, 1);
-  assert.deepEqual(Object.keys(seat.asked[0]!.questions), ["turning"], "the unsure one, not what the sensor cleared");
+  assert.deepEqual(
+    Object.keys(seat.asked[0]!.questions),
+    ["turning"],
+    "the one it said yes to, not one it was unsure of nor one it cleared",
+  );
   assert.deepEqual(seat.asked[0]!.state.items, ["[thought] Scrap the queue and poll instead."]);
   assert.deepEqual(seat.asked[0]!.state.facts, ["call-failed", "desk-unreached"], "beside what the code saw meanwhile");
   const found = Object.values(book(h)).find((item) => item.kind === "turning")!;
@@ -251,7 +255,7 @@ test("a review briefed to report only certainties is judged at start_review agai
 });
 
 test("a decision about how the system is built is judged at the Lead's report, the report beside the words that led to it", async (t) => {
-  const sensed = brain({ "big-decision": 0.5 }, {}, /array on the order/);
+  const sensed = brain({ "big-decision": 0.9 }, {}, /array on the order/);
   const seat = brain({});
   const { h, lane } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
   brains("both");
