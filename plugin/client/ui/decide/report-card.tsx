@@ -14,6 +14,7 @@ import { useSend } from "./send.ts";
 const PARTS: { key: keyof Omit<ReportView, "window" | "numbers">; title: string }[] = [
   { key: "needs", title: "Needs you" },
   { key: "decided", title: "Decided for you" },
+  { key: "disagreements", title: "Challenged, and the plan kept" },
   { key: "ahead", title: "Went ahead on the recommendation · you can undo" },
   { key: "landed", title: "Landed" },
   { key: "beyond", title: "Couldn't be undone" },

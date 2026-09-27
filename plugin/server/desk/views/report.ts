@@ -10,6 +10,8 @@ import { type Ledger, laneSpent } from "../../domain/ledger.ts";
 import type { Project } from "../project/project.ts";
 import { type DatedEvent, eventsSince } from "./events-since.ts";
 import { decidedFor } from "./report-decided.ts";
+import { challengeWords } from "./report-seats.ts";
+import { keptChallenges } from "../../domain/ask.ts";
 import { recheckNumbers } from "./report-rechecks.ts";
 import { type Seated, needsOf, stops } from "./report-needs.ts";
 
@@ -37,6 +39,12 @@ export function reportView(project: Project, inputs: ReportInputs, now = Date.no
     window: { from, until: now },
     needs: needsOf(kit, project, ledger, seated, human, now),
     decided: decidedFor(kit, ledger, events, now),
+    disagreements: keptChallenges(Object.values(ledger.asks))
+      .filter((ask) => (ask.movedAt ?? ask.openedAt) >= since)
+      .map((ask) => {
+        const [disputed, kept] = challengeWords(kit, ledger, ask);
+        return { title: disputed, detail: kept, minutes: minutesSince(now, ask.movedAt ?? ask.openedAt) };
+      }),
     ahead: open
       .filter((question) => !stops(question))
       .map((question) => ({ ...asked(question), detail: `${question.class} · went ahead on ${question.recommend}` })),

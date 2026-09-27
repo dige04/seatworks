@@ -11,6 +11,8 @@ import { type Ledger, tasksOf } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { type Project, readProjectConfig, serialOnlyOf } from "../project/project.ts";
 import { besideText, openWriters } from "./placement.ts";
+import { keptChallenges } from "../../domain/ask.ts";
+import { challengeWords } from "../views/report-seats.ts";
 
 type LandGate = { set: boolean; ok: boolean };
 
@@ -167,7 +169,12 @@ export async function landFacts(
 ): Promise<string[]> {
   const { root } = project;
   const { from } = change;
-  if (!from) return [`What ${lane.branch} changed could not be read from git.`, ...reviewFacts(ledger, lane)];
+  if (!from)
+    return [
+      `What ${lane.branch} changed could not be read from git.`,
+      ...reviewFacts(ledger, lane),
+      ...challengeFacts(kit, ledger, lane),
+    ];
   const serial = serialOnlyOf(project, kit).map((rule) => globToRegex(rule));
   const oneWriter = (path: string) => serial.some((rule) => rule.test(path));
   const counts = await diffCounts(root, from, lane.branch, fileKinds(kit), oneWriter);
@@ -196,7 +203,16 @@ export async function landFacts(
       ? [`It changed what one writer at a time may write, which open lanes may write too: ${besideText(writers)}.`]
       : []),
     ...recordFacts(project, ledger, lane),
+    ...challengeFacts(kit, ledger, lane),
   ];
+}
+
+/** Each challenge in the lane the plan was kept against, so whoever lands it weighs the disagreement, not a summary of it. */
+function challengeFacts(kit: Kit, ledger: Ledger, lane: Lane): string[] {
+  return keptChallenges(Object.values(ledger.asks).filter((ask) => ask.lane === lane.id)).map((ask) => {
+    const [disputed, kept] = challengeWords(kit, ledger, ask);
+    return `${disputed.charAt(0).toUpperCase()}${disputed.slice(1)}; ${kept}.`;
+  });
 }
 
 /** How far the lane has moved past the commit its latest review of the whole lane read: its verdict is on that commit. */

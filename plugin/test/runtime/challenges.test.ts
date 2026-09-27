@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { laneWithPeer } from "./harness.ts";
+import { laneWith } from "./landable.ts";
 
 test("a challenge to a brief or a directive is answered with why, whether the plan changes or stands", async () => {
   const { h, sup, lane, peer } = await laneWithPeer();
@@ -65,4 +66,43 @@ test("whoever answers a challenge says how it weighs: it changes the plan, it is
   assert.equal(h.ledger().asks[id]!.verdict, "changes");
   await h.idle(peer);
   assert.match(h.agents.get(peer)!.sent.join("\n"), /Weighed: it changes the plan\. Why: it stops in 4 m/);
+});
+
+test("a challenge the plan was kept against reaches the Human's report and the next ready report", async () => {
+  const { h, lane, peer } = await laneWithPeer();
+  await h.call(peer, "peer", "ask", { question: "Rim brakes?", disputes: "a parachute", tried: "14 m, not 5" });
+  const id = Object.values(h.ledger().asks)[0]!.id;
+  await h.call(lane.lead!, "lead", "answer", {
+    ask: id,
+    text: "Keep it.",
+    why: "a rig to test",
+    verdict: "alternative",
+  });
+  assert.deepEqual(
+    (await h.report()).disagreements.map((item) => [item.title, item.detail]),
+    [
+      [
+        'the Peer on L1-T1 disputed "a parachute"',
+        "the Lead of L1 kept the plan as another sound option: a rig to test",
+      ],
+    ],
+  );
+
+  const { h: other, sup: supervisor, lane: laid, work } = await laneWith({ "a.txt": "one\n" });
+  const up = await other.call(laid.lead!, "lead", "ask", {
+    kind: "challenge",
+    text: "A parachute cannot stop it.",
+    default: "brakes",
+  });
+  assert.equal(up.ok, true, up.text);
+  const second = Object.values(other.ledger().asks)[0]!.id;
+  const kept = { ask: second, text: "Keep it.", why: "not worth a new lane now", verdict: "minor" };
+  assert.equal((await other.call(supervisor, "supervisor", "answer", kept)).ok, true);
+  work({ "a.txt": "two\n" });
+  await other.call(laid.lead!, "lead", "report", { summary: "done", ready: true });
+  await other.idle(supervisor);
+  assert.match(
+    other.agents.get(supervisor)!.sent.at(-1)!,
+    /- The Lead of L1 disputed "A parachute cannot stop it\."; the Supervisor kept the plan as not worth stopping for: not worth a new lane now\./,
+  );
 });

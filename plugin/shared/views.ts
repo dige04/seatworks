@@ -181,6 +181,7 @@ export const ReportView = z.object({
   window: z.object({ from: z.number().nullable(), until: z.number() }),
   needs: z.array(ReportItem),
   decided: z.array(ReportItem),
+  disagreements: z.array(ReportItem),
   ahead: z.array(ReportItem),
   landed: z.array(ReportItem),
   beyond: z.array(ReportItem),

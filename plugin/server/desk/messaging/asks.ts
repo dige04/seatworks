@@ -126,6 +126,7 @@ export async function answerAsk(
     ask.answer = text;
     if (why) ask.why = why;
     if (verdict) ask.verdict = verdict;
+    ask.answeredBy = caller.id;
     return { ask: { ...ask }, waitingRole: ledger.agents[ask.to]?.role };
   });
   if (typeof result === "string") return no(result);
