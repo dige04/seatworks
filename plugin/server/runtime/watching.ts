@@ -74,7 +74,9 @@ export class Watching {
       handedBack: (at) => {
         try {
           const handback = taskOfPeer(loadLedger(project.state), seat.id)?.handback;
-          return handback && handback.at >= at && !handback.gate ? handback.outcome : undefined;
+          return handback && handback.at >= at && !handback.gate
+            ? { outcome: handback.outcome, summary: handback.summary }
+            : undefined;
         } catch {
           return undefined;
         }

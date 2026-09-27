@@ -276,3 +276,15 @@ test("a check weakened another way: an expected value changed, a product file to
     "checker-touched: tests/conftest.py: a file the gate or the instructions read",
   ]);
 });
+
+test("a hand-back that names a command as run, when no call since its instruction ran it, is contradicted by the record", () => {
+  const claimed = (summary: string, ...messages: StreamMessage[]) =>
+    play(turn(edit("w", 2, { filePath: "src/a.ts" }), ...messages), rules(), { outcome: "complete", summary })
+      .filter((fact) => fact.kind === "claim-contradicted")
+      .map((fact) => fact.quote);
+  assert.deepEqual(claimed("Totals fixed; `npm run lint` and `npm test` pass."), [
+    "says `npm run lint` ran, and no call since its instruction ran it",
+  ]);
+  assert.deepEqual(claimed("Totals fixed; `npm test` passes.", shell("g", 3, "npm test")), []);
+  assert.deepEqual(claimed("Renamed `totalOf` to `sum`."), [], "a name in backticks that is no command claims no run");
+});

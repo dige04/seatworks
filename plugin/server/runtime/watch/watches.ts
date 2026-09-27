@@ -5,7 +5,7 @@ import { sentBy } from "../../core/sent-by.ts";
 import { onDetail } from "./commands.ts";
 import { type Fact, fact } from "../../domain/incident.ts";
 import { Evasion, Recovery, Refusals, type Rules, onSettle, stuck } from "./facts.ts";
-import { contradicted, editBeforeLook, unverified } from "./turn-facts.ts";
+import { type HandedBack, contradicted, editBeforeLook, unverified } from "./turn-facts.ts";
 import type { Quirks } from "../../catalog/kit/timeline.ts";
 import { type Unit, Window } from "./window.ts";
 import { daemonLog } from "../../core/logger.ts";
@@ -22,12 +22,12 @@ export type SeatLook = {
 };
 
 /**
- * `placed` is false until the ledger has placed the seat, or while it cannot be read; `handedBack` is the outcome of a
- * hand-back since `at` the desk did not gate; `heard` whether the desk has ever had a call from the seat.
+ * `placed` is false until the ledger has placed the seat, or while it cannot be read; `handedBack` is the outcome and
+ * summary of a hand-back since `at` the desk did not gate; `heard` whether the desk has ever had a call from the seat.
  */
 export type SeatContext = {
   rules: Rules;
-  handedBack: (at: number) => string | undefined;
+  handedBack: (at: number) => HandedBack | undefined;
   heard: () => boolean;
   placed: boolean;
 };

@@ -34,18 +34,35 @@ export function unverified(window: Window, rules: Rules, heard: boolean): Fact[]
   ];
 }
 
-/** A hand-back that says the work is complete when the check it ran after its last edit failed: the record, not the claim, is what settles it. */
-export function contradicted(window: Window, rules: Rules, outcome: string | undefined): Fact[] {
-  if (outcome !== "complete") return [];
+export type HandedBack = { outcome: string; summary: string };
+
+/** The commands a text names in backticks: a span whose first word is a runner or starts a gate. */
+function namedRuns(text: string, rules: Rules): string[] {
+  return [...text.matchAll(/`([^`\n]{2,160})`/g)]
+    .map((match) => match[1]!.trim())
+    .filter((span) => rules.runners.has(span.split(/\s+/)[0]!) || rules.gates.some((gate) => gate.startsWith(span)));
+}
+
+/**
+ * A hand-back the record contradicts: said complete when the check it ran after its last edit failed, or naming a command
+ * as run that no call since its instruction ran. The record, not the claim, is what settles it.
+ */
+export function contradicted(window: Window, rules: Rules, handed: HandedBack | undefined): Fact[] {
+  if (!handed) return [];
   const { calls, lastWrite, lastGate } = lastWriteAndGate(window, rules);
   const check = calls[lastGate];
-  if (!check || lastGate < lastWrite || !failed(check)) return [];
-  return [
-    fact(
-      "claim-contradicted",
-      `handed back as complete, but \`${oneLine(str(check.detail.command), 100)}\` failed the last time it ran, after the last edit`,
-    ),
-  ];
+  if (handed.outcome === "complete" && check && lastGate >= lastWrite && failed(check))
+    return [
+      fact(
+        "claim-contradicted",
+        `handed back as complete, but \`${oneLine(str(check.detail.command), 100)}\` failed the last time it ran, after the last edit`,
+      ),
+    ];
+  const ran = calls.filter((call) => call.detail.type === "shell").map((call) => str(call.detail.command));
+  const unrun = namedRuns(handed.summary, rules).find((named) => !ran.some((command) => command.includes(named)));
+  return unrun
+    ? [fact("claim-contradicted", `says \`${oneLine(unrun, 100)}\` ran, and no call since its instruction ran it`)]
+    : [];
 }
 
 /** A turn whose first change came before it read, searched or ran anything since an instruction the window still holds: what it was told, taken on trust. */

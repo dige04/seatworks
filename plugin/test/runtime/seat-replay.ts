@@ -8,6 +8,7 @@ import type { Seen } from "../../server/core/ports.ts";
 import type { StreamMessage } from "../../server/adapters/paseo/stream.ts";
 import type { Fact } from "../../server/domain/incident.ts";
 import type { Rules } from "../../server/runtime/watch/facts.ts";
+import type { HandedBack } from "../../server/runtime/watch/turn-facts.ts";
 import { type SeatContext, SeatWatch } from "../../server/runtime/watch/watches.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -69,12 +70,10 @@ export function watchOver(context: () => SeatContext | undefined, quirks?: Quirk
   };
 }
 
-/** `handed` is the outcome of a hand-back the turn made, if it made one; `quirks` are the harness's way of writing its timeline. */
-export function play(messages: StreamMessage[], given: Rules, handed?: string, quirks?: Quirks) {
-  return watchOver(
-    () => ({ rules: given, handedBack: () => handed, heard: () => true, placed: true }),
-    quirks,
-  )(messages);
+/** `handed` is a hand-back the turn made, if it made one, or only its outcome; `quirks` are the harness's way of writing its timeline. */
+export function play(messages: StreamMessage[], given: Rules, handed?: string | HandedBack, quirks?: Quirks) {
+  const back = typeof handed === "string" ? { outcome: handed, summary: "" } : handed;
+  return watchOver(() => ({ rules: given, handedBack: () => back, heard: () => true, placed: true }), quirks)(messages);
 }
 
 export const kinds = (facts: Fact[]) => facts.map((fact) => fact.kind);
