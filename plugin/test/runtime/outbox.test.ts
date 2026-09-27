@@ -205,3 +205,32 @@ test("a letter still held can be withdrawn, and one already taken cannot", async
   assert.deepEqual(agents.watcher.sent, ["other subject"]);
   assert.equal(await outbox.withdraw("watcher", "case:C2"), false, "a letter that went is not called back");
 });
+
+test("held mail rides the reply to a seat's own call, word that asks nothing included, but never past a hold", async () => {
+  const agents = {
+    sup: agent("running"),
+    asking: agent("running", { pendingPermissions: [{ id: "p1" }] }),
+    held: agent("running"),
+  };
+  const heard: string[] = [];
+  const outbox = new Outbox(
+    join(tempDir(), "outbox.json"),
+    (_seat, list) => list.map((letter) => letter.text).join("|"),
+    fakeSeats(agents),
+    {
+      holding: (seat) => seat.id === "held",
+      delivered: (letters) => heard.push(...letters.map((letter) => letter.key)),
+    },
+  );
+  await outbox.post({ to: "sup", key: "landed:L1", text: "LANDED L1", wakes: false });
+  await outbox.post({ to: "sup", key: "ask:A1", text: "a question" });
+  assert.equal(await outbox.take("sup"), "LANDED L1|a question");
+  assert.deepEqual(outbox.pending("sup"), [], "taken once: its turn ending sends nothing more");
+  assert.deepEqual(heard, ["landed:L1", "ask:A1"]);
+  assert.equal(await outbox.take("sup"), undefined);
+  for (const id of ["asking", "held"]) {
+    await outbox.post({ to: id, key: "x", text: "t" });
+    assert.equal(await outbox.take(id), undefined, `${id}: kept as the outbox keeps it`);
+    assert.equal(outbox.pending(id).length, 1);
+  }
+});

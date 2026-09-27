@@ -129,17 +129,45 @@ export class Outbox {
     return this.letters().filter((letter) => letter.to === agentId);
   }
 
+  /** The seat, when it is there to be sent mail: not gone, and not archived. */
+  private async reachable(to: string): Promise<SeatLook | undefined> {
+    if (this.gone.has(to)) return undefined;
+    // Held, not thrown: mail must not be lost, and one unanswerable address must not stop the round.
+    const seat = await this.seats.look(to).catch(() => undefined);
+    if (!seat?.archivedAt) return seat;
+    this.archived(to);
+    return undefined;
+  }
+
+  /**
+   * Everything held for a seat, as one text for the reply to a call of its own: read inside the turn it makes the call
+   * in, with no send to replace that turn, so word that asks nothing goes too. Held as a pump holds it otherwise.
+   */
+  take(to: string): Promise<string | undefined> {
+    return this.perSeat.run(to, async () => {
+      const mine = this.pending(to);
+      const seat = mine.length > 0 ? await this.reachable(to) : undefined;
+      // As a pump holds it: a permission waiting, or its lane on hold.
+      if (!seat || (seat.pendingPermissions?.length ?? 0) > 0 || this.rules.holding?.(seat)) return undefined;
+      const ids = new Set(mine.map((letter) => letter.id));
+      this.save(this.letters().filter((letter) => !ids.has(letter.id)));
+      this.sent(mine, Date.now());
+      return this.compose(seat, mine);
+    });
+  }
+
+  /** Letters that reached their seat: a second post of one soon after is the same letter, and whoever waits hears. */
+  private sent(letters: Letter[], now: number): void {
+    for (const [key, at] of this.sentKeys) if (now - at >= DUPLICATE_MS) this.sentKeys.delete(key);
+    for (const letter of letters) this.sentKeys.set(Outbox.keyOf(letter), now);
+    this.rules.delivered?.(letters, now);
+  }
+
   pump(to: string): Promise<Set<string>> {
     return this.perSeat.run(to, async () => {
       const mine = this.pending(to);
-      if (mine.length === 0 || this.gone.has(to)) return new Set<string>();
-      // Held, not thrown: mail must not be lost, and one unanswerable address must not stop the round.
-      const seat = await this.seats.look(to).catch(() => undefined);
+      const seat = mine.length > 0 ? await this.reachable(to) : undefined;
       if (!seat) return new Set<string>();
-      if (seat.archivedAt) {
-        this.archived(to);
-        return new Set<string>();
-      }
       if ((seat.pendingPermissions?.length ?? 0) > 0) return new Set<string>();
       if (this.rules.holding?.(seat)) return new Set<string>();
       const since = this.awaiting.get(to);
@@ -167,10 +195,8 @@ export class Outbox {
       const now = Date.now();
       this.awaiting.set(to, now);
       const ids = new Set(mine.map((letter) => letter.id));
-      for (const [key, at] of this.sentKeys) if (now - at >= DUPLICATE_MS) this.sentKeys.delete(key);
-      for (const letter of mine) this.sentKeys.set(Outbox.keyOf(letter), now);
       this.save(this.letters().filter((letter) => !ids.has(letter.id)));
-      this.rules.delivered?.(mine, now);
+      this.sent(mine, now);
       return ids;
     });
   }
