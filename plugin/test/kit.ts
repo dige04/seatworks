@@ -78,7 +78,7 @@ export function makeKit(): Kit {
     login: {
       run: ["auth", "status"],
       field: "loggedIn",
-      help: "Run `claude setup-token` once and put the token as CLAUDE_CODE_OAUTH_TOKEN in the env of Paseo's claude provider.",
+      help: "Log in with claude once, outside any seat; every Claude seat shares that login.",
     },
     models: [
       {
@@ -103,7 +103,12 @@ export function makeKit(): Kit {
       transports: ["stdio", "http"],
     },
     provider: {
-      env: { CLAUDE_CODE_DISABLE_CRON: "1", SEATWORKS_HARNESS: "claude", SEATWORKS_AGENT_BIN: "claude" },
+      env: {
+        CLAUDE_CODE_DISABLE_CRON: "1",
+        CLAUDE_SECURESTORAGE_CONFIG_DIR: "",
+        SEATWORKS_HARNESS: "claude",
+        SEATWORKS_AGENT_BIN: "claude",
+      },
       profileModeId: "bypassPermissions",
       command: ["NODE", "KIT/bin/seat-room.mjs"],
     },

@@ -224,7 +224,7 @@ test("each shipped role writes under the project's state only what its prompt, d
   }
 });
 
-test("a Claude seat reads the project's own CLAUDE.md and takes in its AGENTS.md, though its settings come from its seat alone", () => {
+test("a Claude seat reads the project's own CLAUDE.md and takes in its AGENTS.md, and logs in as the Human, though its settings come from its seat alone", () => {
   const kit = loadKit(PLUGIN);
   const team = resolveTeam(kit);
   const pairs = seatPairs(kit).filter((pair) => pair.harness.id === "claude");
@@ -236,6 +236,11 @@ test("a Claude seat reads the project's own CLAUDE.md and takes in its AGENTS.md
       (provider.env as Record<string, string>).CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD,
       "1",
       `${role.role}: Claude reads CLAUDE.md from an added directory only with this set`,
+    );
+    assert.equal(
+      (provider.env as Record<string, string>).CLAUDE_SECURESTORAGE_CONFIG_DIR,
+      "",
+      `${role.role}: the seat runs on the Human's own Claude login, which Claude otherwise keeps per settings folder`,
     );
     const next = applyRole(kit, team, { provider: id, cwd: "/work/repo" }, () => "PROMPT", "/state/demo");
     assert.deepEqual(

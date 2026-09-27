@@ -39,15 +39,22 @@ test("the doctor over the panel names what this machine lacks for the team, a se
       chmodSync(join(bins, name), 0o755);
     }
   };
-  // Claude as it answers `auth status`: logged in only by a token in its env, and only in a settings folder of its own;
-  // logged out, it still prints its answer but exits 1.
+  // Claude as it answers `auth status`, exiting 1 when logged out: by a token in its env, or by the login the Human made
+  // once outside any seat, which a seat's own settings folder reaches only with its secure storage pointed back home.
   const claudeAuth = () => {
     const script = `#!/bin/sh
-if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && [ -d "$CLAUDE_CONFIG_DIR" ] && [ "$CLAUDE_CONFIG_DIR" != "$HOME/.claude" ]; then echo '{"loggedIn": true}'; else echo '{"loggedIn": false}'; exit 1; fi
+if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || { [ "\${CLAUDE_SECURESTORAGE_CONFIG_DIR+set}" = set ] && [ -z "$CLAUDE_SECURESTORAGE_CONFIG_DIR" ] && [ -f "$HOME/.claude/logged-in" ]; }; then echo '{"loggedIn": true}'; else echo '{"loggedIn": false}'; exit 1; fi
 `;
     writeFileSync(join(bins, "claude"), script);
     chmodSync(join(bins, "claude"), 0o755);
   };
+  const claudeLogin = (yes: boolean) => {
+    const marker = join(home(), ".claude", "logged-in");
+    if (!yes) return rmSync(marker, { force: true });
+    mkdirSync(join(home(), ".claude"), { recursive: true });
+    writeFileSync(marker, "");
+  };
+
   const login = join(home(), ".omp", "agent", "agent.db");
   const loggedIn = (yes: boolean) => {
     if (!yes) return rmSync(login, { force: true });
@@ -71,7 +78,7 @@ if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && [ -d "$CLAUDE_CONFIG_DIR" ] && [ "$CLAUD
 
   install("claude");
   claudeAuth();
-  await config.api.patch({ providers: { claude: { env: { CLAUDE_CODE_OAUTH_TOKEN: "test-token" } } } });
+  claudeLogin(true);
   loggedIn(true);
   await setUp({ mcp: { ide: { settings: { port: partial.port } }, docs: { enabled: true, connect: at(nowhere) } } });
   const short = await checked();
@@ -101,16 +108,22 @@ if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && [ -d "$CLAUDE_CONFIG_DIR" ] && [ "$CLAUD
   await setUp({ mcp: { ide: { settings: { port: nowhere } } } });
   assert.match((await checked())["mcp:ide"]!.detail, /No IDE server answered/);
 
-  await config.api.patch({ providers: { claude: { env: { CLAUDE_CODE_OAUTH_TOKEN: "" } } } });
+  claudeLogin(false);
   const unsigned = (await checked())["harness:claude:login"]!;
-  assert.equal(unsigned.ok, false, "a new seat of an agent that keeps its login per settings folder starts logged out");
-  assert.match(unsigned.detail, /Supervisor, Lead would stop at "Not logged in"\. Run `claude setup-token` once/);
+  assert.equal(unsigned.ok, false, "a seat logs in as the Human, so a Human never logged in leaves every seat out");
+  assert.match(
+    unsigned.detail,
+    /Supervisor, Lead would stop at "Not logged in"\. Log in with claude once, outside any seat/,
+  );
   await config.api.patch({ providers: { claude: { env: { CLAUDE_CODE_OAUTH_TOKEN: "test-token" } } } });
   assert.equal(
     (await checked())["harness:claude:login"]!.ok,
     true,
     "a token on Paseo's own provider reaches every seat",
   );
+  await config.api.patch({ providers: { claude: { env: { CLAUDE_CODE_OAUTH_TOKEN: "" } } } });
+  claudeLogin(true);
+  assert.equal((await checked())["harness:claude:login"]!.ok, true, "the Human's own login reaches a seat's folder");
 
   loggedIn(false);
   const unlogged = (await checked())["harness:omp:HOME/.omp/agent/agent.db"]!;

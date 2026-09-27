@@ -129,7 +129,7 @@ function harnessChecks(kit: Kit, team: Team): Found[] {
 
 /**
  * Whether a new seat starts logged in, for an agent that keeps its login per settings folder (Claude Code on macOS, in
- * the keychain): asked in an empty folder of its own, with the env Paseo's provider gives every seat.
+ * the keychain): asked in an empty folder of its own, with the env a seat gets from Paseo's provider and its own.
  */
 async function loginCheck(harness: HarnessSpec, roles: string[], providerEnv: ProviderEnv): Promise<Found | undefined> {
   const bin = harness.provider.env?.SEATWORKS_AGENT_BIN;
@@ -138,7 +138,8 @@ async function loginCheck(harness: HarnessSpec, roles: string[], providerEnv: Pr
   const id = `harness:${harness.id}:login`;
   const dir = mkdtempSync(join(tmpdir(), "sw2-login-"));
   try {
-    const env = { ...process.env, ...(await providerEnv(harness.baseProvider)), [configDirEnv]: dir };
+    const seat = { ...(await providerEnv(harness.baseProvider)), ...harness.provider.env, [configDirEnv]: dir };
+    const env = { ...process.env, ...seat };
     const answer = JSON.parse(await printed(bin, login.run, env)) as Record<string, unknown>;
     return answer[login.field] === true
       ? { id, ok: true, detail: `A new ${harness.label} seat is logged in, for ${roles.join(", ")}.` }

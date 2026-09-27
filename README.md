@@ -67,7 +67,7 @@ thinking level where the agent offers them.
 
 | Agent | Before its first seat | Sandbox | Mail into a running turn |
 |---|---|---|---|
-| Claude Code | `claude setup-token` once, its token as `CLAUDE_CODE_OAUTH_TOKEN` in the env of Paseo's `claude` provider: a seat runs in a settings folder of its own, which your own sign-in does not reach | yes | yes |
+| Claude Code | `claude` signed in once, outside any seat; every Claude seat shares that login | yes | yes |
 | Codex | `codex login` once; the `codex` CLI must be on the machine that runs the daemon | yes | yes |
 | Pi | `pi` signed in, and `pi install npm:pi-mcp-adapter` once: the adapter is how a Pi seat reaches the desk | no | yes |
 | Oh My Pi | `omp` signed in once, outside any seat (`/login`) | no | no, it waits for the turn to end |
