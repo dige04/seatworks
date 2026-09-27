@@ -75,6 +75,11 @@ export function makeKit(): Kit {
     },
     settings: { file: "settings.json", source: "settings.json", roleSource: "settings/ROLE.settings.json" },
     links: [{ link: "projects", target: "HOME/.claude/projects" }],
+    login: {
+      run: ["auth", "status"],
+      field: "loggedIn",
+      help: "Run `claude setup-token` once and put the token as CLAUDE_CODE_OAUTH_TOKEN in the env of Paseo's claude provider.",
+    },
     models: [
       {
         id: "opus",

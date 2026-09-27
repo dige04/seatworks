@@ -19,7 +19,7 @@ import { type Project, projectOf } from "../../desk/project/project.ts";
 import type { TeamSource } from "../team-source.ts";
 import type { ProjectRegistry } from "../project-registry.ts";
 import { describeCatalog } from "./catalog-view.ts";
-import { doctor } from "./doctor.ts";
+import { type ProviderEnv, doctor } from "./doctor.ts";
 import { foldDraft } from "./draft.ts";
 import { parseMcp } from "./mcp-paste.ts";
 import { unknownProject } from "./projects.ts";
@@ -36,6 +36,7 @@ type SettingsDeps = {
   reconcile: () => Promise<void>;
   models: () => Promise<Record<string, { at: string; error: string | null; models: unknown[] }>>;
   paseoTools: Host["tools"];
+  providerEnv: ProviderEnv;
 };
 
 export class SettingsPanel implements SettingsRpc {
@@ -119,7 +120,7 @@ export class SettingsPanel implements SettingsRpc {
   async doctor(slug?: string): Promise<Check[]> {
     const project = slug ? this.deps.registry.named(slug) : undefined;
     if (slug && !project) return [{ id: "project", group: "machine", ok: false, detail: unknownProject(slug) }];
-    return doctor(this.deps.kit, this.deps.source.teamFor(project), this.deps.paseoTools);
+    return doctor(this.deps.kit, this.deps.source.teamFor(project), this.deps.paseoTools, this.deps.providerEnv);
   }
 
   async refreshModels(): Promise<ModelsRefreshed> {

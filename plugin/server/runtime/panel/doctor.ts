@@ -1,6 +1,9 @@
-import { existsSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { Check } from "../../../shared/views.ts";
-import type { Kit, ProxySpec } from "../../catalog/kit/kit.ts";
+import type { HarnessSpec, Kit, ProxySpec } from "../../catalog/kit/kit.ts";
 import { paseoToolsPolicy } from "../../catalog/kit/harness-files.ts";
 import { connectToServer, hookTools, proxyOf } from "../../catalog/seat/servers.ts";
 import { type McpState, toolsFor } from "../../catalog/team/mcp-states.ts";
@@ -8,11 +11,14 @@ import type { RoleSeat } from "../../catalog/team/role-seats.ts";
 import type { Team } from "../../catalog/team/team.ts";
 import { errorText } from "../../core/errors.ts";
 import { reaches, toolNames } from "../../core/mcp-client.ts";
-import { executableIn, expandHome, pathDirs } from "../../core/paths.ts";
+import { commandIn, executableIn, expandHome, pathDirs } from "../../core/paths.ts";
 
 const onPath = (bin: string): boolean => executableIn(pathDirs(), bin) !== undefined;
 
 type Listed = { names: string[] } | { error: string } | undefined;
+
+/** The env Paseo's own provider of that id gives every seat that extends it. */
+export type ProviderEnv = (provider: string) => Promise<Record<string, string>>;
 
 type Found = Omit<Check, "group">;
 
@@ -21,7 +27,12 @@ const inGroup =
   (check: Found): Check => ({ ...check, group });
 
 /** What the panel's Health section shows: the settings, git, each agent the seats run on, each MCP server in use, and Paseo's own tools. */
-export async function doctor(kit: Kit, team: Team, paseoTools: () => Promise<Listed>): Promise<Check[]> {
+export async function doctor(
+  kit: Kit,
+  team: Team,
+  paseoTools: () => Promise<Listed>,
+  providerEnv: ProviderEnv,
+): Promise<Check[]> {
   const settings = {
     id: "settings",
     ok: team.errors.length === 0,
@@ -31,6 +42,10 @@ export async function doctor(kit: Kit, team: Team, paseoTools: () => Promise<Lis
     ...[settings, gitCheck()].map(inGroup("machine")),
     ...harnessChecks(kit, team).map(inGroup("agent")),
   ];
+  for (const [id, roles] of harnessRoles(team)) {
+    const check = await loginCheck(kit.harnesses[id]!, roles, providerEnv);
+    if (check) checks.push(inGroup("agent")(check));
+  }
   for (const state of Object.values(team.mcp).filter((server) => server.enabled)) {
     const check = await serverCheck(team, state);
     if (check) checks.push(inGroup("server")(check));
@@ -75,12 +90,16 @@ function gitCheck(): Found {
 }
 
 /** Each agent the team's seats run on: its command on PATH, and the files its harness says it needs. */
-function harnessChecks(kit: Kit, team: Team): Found[] {
+function harnessRoles(team: Team): Map<string, string[]> {
   const harnesses = new Map<string, string[]>();
   for (const seat of Object.values(team.roles))
     harnesses.set(seat.harness.id, [...(harnesses.get(seat.harness.id) ?? []), seat.role.label]);
+  return harnesses;
+}
+
+function harnessChecks(kit: Kit, team: Team): Found[] {
   const checks: Found[] = [];
-  for (const [id, roles] of harnesses) {
+  for (const [id, roles] of harnessRoles(team)) {
     const harness = kit.harnesses[id]!;
     const bin = harness.provider.env?.SEATWORKS_AGENT_BIN;
     if (bin) {
@@ -106,6 +125,46 @@ function harnessChecks(kit: Kit, team: Team): Found[] {
     }
   }
   return checks;
+}
+
+/**
+ * Whether a new seat starts logged in, for an agent that keeps its login per settings folder (Claude Code on macOS, in
+ * the keychain): asked in an empty folder of its own, with the env Paseo's provider gives every seat.
+ */
+async function loginCheck(harness: HarnessSpec, roles: string[], providerEnv: ProviderEnv): Promise<Found | undefined> {
+  const bin = harness.provider.env?.SEATWORKS_AGENT_BIN;
+  const { login, configDirEnv } = harness;
+  if (!login || !configDirEnv || !bin || !onPath(bin)) return undefined;
+  const id = `harness:${harness.id}:login`;
+  const dir = mkdtempSync(join(tmpdir(), "sw2-login-"));
+  try {
+    const env = { ...process.env, ...(await providerEnv(harness.baseProvider)), [configDirEnv]: dir };
+    const answer = JSON.parse(await printed(bin, login.run, env)) as Record<string, unknown>;
+    return answer[login.field] === true
+      ? { id, ok: true, detail: `A new ${harness.label} seat is logged in, for ${roles.join(", ")}.` }
+      : {
+          id,
+          ok: false,
+          detail: `A new ${harness.label} seat is not logged in: ${roles.join(", ")} would stop at "Not logged in". ${login.help}`,
+        };
+  } catch (error) {
+    return {
+      id,
+      ok: false,
+      detail: `Whether a new ${harness.label} seat is logged in could not be checked: ${errorText(error)}`,
+    };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function printed(bin: string, args: string[], env: NodeJS.ProcessEnv): Promise<string> {
+  const { file, shell } = commandIn(pathDirs(), bin);
+  return new Promise((resolve, reject) =>
+    execFile(file, args, { env, shell, timeout: 15_000, windowsHide: true }, (error, stdout, stderr) =>
+      error ? reject(new Error((String(stderr) || error.message).trim().slice(0, 300))) : resolve(String(stdout)),
+    ),
+  );
 }
 
 /** An enabled server some seat uses; one that throws is that server's failed check, not the loss of the checks before it. */

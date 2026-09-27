@@ -13,7 +13,8 @@ import { contracts } from "../../shared/rpc.ts";
 import { makeKit } from "../kit.ts";
 import { tempDir } from "../tempdir.ts";
 import { fakeIde } from "./code-fakes.ts";
-import { served, which } from "./served.ts";
+import { fakeConfig } from "./fake-paseo.ts";
+import { daemon, served, which } from "./served.ts";
 
 /** A port nothing listens on: one this machine gave out and took back. */
 async function closedPort(): Promise<number> {
@@ -25,7 +26,8 @@ async function closedPort(): Promise<number> {
 }
 
 test("the doctor over the panel names what this machine lacks for the team, a server at a time", async (t) => {
-  const { call } = served();
+  const config = fakeConfig();
+  const { call } = served(daemon(config));
   const bins = tempDir("sw2-bin-");
   const gitHome = execFileSync("git", ["--exec-path"], { encoding: "utf-8" }).trim();
   const path = process.env.PATH;
@@ -36,6 +38,14 @@ test("the doctor over the panel names what this machine lacks for the team, a se
       writeFileSync(join(bins, name), "#!/bin/sh\nexit 0\n");
       chmodSync(join(bins, name), 0o755);
     }
+  };
+  // Claude as it answers `auth status`: logged in only by a token in its env, and only in a settings folder of its own.
+  const claudeAuth = () => {
+    const script = `#!/bin/sh
+if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && [ -d "$CLAUDE_CONFIG_DIR" ] && [ "$CLAUDE_CONFIG_DIR" != "$HOME/.claude" ]; then echo '{"loggedIn": true}'; else echo '{"loggedIn": false}'; fi
+`;
+    writeFileSync(join(bins, "claude"), script);
+    chmodSync(join(bins, "claude"), 0o755);
   };
   const login = join(home(), ".omp", "agent", "agent.db");
   const loggedIn = (yes: boolean) => {
@@ -59,6 +69,8 @@ test("the doctor over the panel names what this machine lacks for the team, a se
   const at = (port: number) => ({ type: "http" as const, url: `http://127.0.0.1:${port}/mcp` });
 
   install("claude");
+  claudeAuth();
+  await config.api.patch({ providers: { claude: { env: { CLAUDE_CODE_OAUTH_TOKEN: "test-token" } } } });
   loggedIn(true);
   await setUp({ mcp: { ide: { settings: { port: partial.port } }, docs: { enabled: true, connect: at(nowhere) } } });
   const short = await checked();
@@ -87,6 +99,17 @@ test("the doctor over the panel names what this machine lacks for the team, a se
   );
   await setUp({ mcp: { ide: { settings: { port: nowhere } } } });
   assert.match((await checked())["mcp:ide"]!.detail, /No IDE server answered/);
+
+  await config.api.patch({ providers: { claude: { env: { CLAUDE_CODE_OAUTH_TOKEN: "" } } } });
+  const unsigned = (await checked())["harness:claude:login"]!;
+  assert.equal(unsigned.ok, false, "a new seat of an agent that keeps its login per settings folder starts logged out");
+  assert.match(unsigned.detail, /Supervisor, Lead would stop at "Not logged in"\. Run `claude setup-token` once/);
+  await config.api.patch({ providers: { claude: { env: { CLAUDE_CODE_OAUTH_TOKEN: "test-token" } } } });
+  assert.equal(
+    (await checked())["harness:claude:login"]!.ok,
+    true,
+    "a token on Paseo's own provider reaches every seat",
+  );
 
   loggedIn(false);
   const unlogged = (await checked())["harness:omp:HOME/.omp/agent/agent.db"]!;

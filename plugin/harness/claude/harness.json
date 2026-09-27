@@ -44,6 +44,11 @@
     "source": "settings.json",
     "roleSource": "settings/ROLE.settings.json"
   },
+  "login": {
+    "run": ["auth", "status"],
+    "field": "loggedIn",
+    "help": "A Claude seat runs in a settings folder of its own, which your own Claude login does not reach (macOS keeps it per folder, in the keychain). Once: run `claude setup-token`, and put the token it prints as CLAUDE_CODE_OAUTH_TOKEN in the env of Paseo's claude provider; every Claude seat of every project inherits it."
+  },
   "links": [
     {
       "link": "projects",

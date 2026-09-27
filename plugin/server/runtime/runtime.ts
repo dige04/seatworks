@@ -5,6 +5,7 @@ import type { ModelCache } from "../catalog/paseo/models.ts";
 import { type IndexedProxy, choicesFor, indexedProxies } from "../catalog/seat/servers.ts";
 import { placeGuides, sweepSnapshots } from "../catalog/seat/snapshots.ts";
 import { errorText } from "../core/errors.ts";
+import { isRecord } from "../core/json.ts";
 import { daemonLog } from "../core/logger.ts";
 import { deskSocket, home, nodeBin, stateRoot } from "../core/paths.ts";
 import type {
@@ -178,6 +179,15 @@ export class Runtime implements HostHooks {
       reconcile,
       models: () => this.refreshModels(),
       paseoTools: () => this.host.tools(),
+      providerEnv: async (provider) => {
+        const env = (await this.host.config.read()).providers?.[provider]?.env;
+        return isRecord(env)
+          ? (Object.fromEntries(Object.entries(env).filter(([, value]) => typeof value === "string")) as Record<
+              string,
+              string
+            >)
+          : {};
+      },
     });
     const adopt = (project: Project, draft: unknown) => settings.adopt(project, draft);
     return {

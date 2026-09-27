@@ -80,6 +80,8 @@ export const HarnessFile = z
       })
       .optional(),
     checks: z.array(z.strictObject({ path: z.string(), help: z.string() })).optional(),
+    /** An agent that keeps its login per settings folder: how a new seat's folder answers whether it is logged in. */
+    login: z.strictObject({ run: z.array(z.string()).min(1), field: text, help: text }).optional(),
     mcp: z.strictObject({
       file: text,
       delivery: z.enum(["launch", "file"]),
