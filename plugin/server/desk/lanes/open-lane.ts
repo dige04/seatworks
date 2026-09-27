@@ -3,7 +3,7 @@ import { branchExists, currentBranch, uncommittedPaths } from "../../core/git.ts
 import { keptFault } from "../../core/store.ts";
 import { clip, slugify } from "../../core/text.ts";
 import { workKey } from "../claims.ts";
-import { type Caller, type ToolReply, no, ok, str, strs } from "../context.ts";
+import { type Caller, type ToolReply, briefLists, no, ok, str, strs } from "../context.ts";
 import { type Issue, fetchIssue } from "../../core/issues.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, nextLaneId, ownCopyHolder } from "../../domain/ledger.ts";
@@ -32,6 +32,9 @@ type OpenLaneCall = {
   appetite?: string;
   deadline?: string;
   outOfScope?: string[];
+  constraints?: string[];
+  choices?: string[];
+  unknowns?: string[];
   issue?: string;
   isolate?: boolean;
   base?: string;
@@ -252,6 +255,7 @@ function laneOf(
     appetite: str(args.appetite) || undefined,
     deadline: str(args.deadline) || undefined,
     outOfScope: strs(args.outOfScope),
+    ...briefLists(args),
     // Kept as given when it could not be read, so the Lead can still reach it itself.
     issue: issue?.url || str(args.issue) || undefined,
     base: place.base,

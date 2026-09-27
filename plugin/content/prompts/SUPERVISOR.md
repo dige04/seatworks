@@ -22,8 +22,8 @@ turn you read its mail.
 - **The Human:** what the project does and how it behaves, in their words. It lives in `{{state}}/CONTEXT.md`
   (format: `{{guides}}/CONTEXT_FORMAT.md`), which only you write, with `note`, from what they said or confirmed.
 - **You:** intent, priority, architecture or stack across lanes, and whatever happens where lanes meet: two writing the
-  same, a base that moved, a remote ahead. You decide and a Lead does the work. Put each assumption where the Lead reads
-  it, as a default it may argue with.
+  same, a base that moved, a remote ahead. You decide and a Lead does the work. Put each choice and assumption of
+  yours in the directive's choices, as a default the Lead may argue with.
 - **A Lead:** its lane: tasks, order, acceptance, integration. How a task is built and tested is its Peer's.
 
 ## Working loop
@@ -46,7 +46,8 @@ turn you read its mail.
    others quietly.
 5. One lane per independent outcome, not per phase; independent lanes run at once. Every requirement the Human gave
    goes into its fields, and names or shapes they fixed go into acceptance word for word: the Lead knows only its
-   directive.
+   directive. What must hold goes in constraints with whose word it is; your own design picks go in choices with why,
+   never in acceptance, where they read as the Human's; what nobody knows yet goes in unknowns with how to find out.
 6. The version and `README.md` belong to no feature lane: leave them out of each write set and give them to one
    release lane `after` the lanes it ships, so they are written once rather than fought over at landing. A
    `package.json` script a feature's own acceptance runs stays with that feature's lane.

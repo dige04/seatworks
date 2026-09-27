@@ -29,5 +29,14 @@ export const given = (args: Args, texts: string[], lists: string[]): Record<stri
   ];
   return Object.fromEntries(fields.filter(([key]) => args[key] !== undefined));
 };
+/** A brief's lists kept apart: what must hold, what was chosen and may be questioned, what nobody knows yet. */
+export const BRIEF_LISTS = ["constraints", "choices", "unknowns"] as const;
+export const briefLists = (args: Args): Partial<Record<(typeof BRIEF_LISTS)[number], string[]>> =>
+  Object.fromEntries(
+    BRIEF_LISTS.flatMap((key) => {
+      const items = strs(args[key]);
+      return items.length > 0 ? [[key, items]] : [];
+    }),
+  );
 export const ok = (text: string): ToolReply => ({ ok: true, text });
 export const no = (text: string): ToolReply => ({ ok: false, text });

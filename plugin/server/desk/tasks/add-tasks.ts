@@ -3,7 +3,7 @@ import type { Kit, RoleSpec } from "../../catalog/kit/kit.ts";
 import { namedOrNot, roleThatCan } from "../../catalog/kit/roles.ts";
 import { type Team, skillDirsFor } from "../../catalog/team/team.ts";
 import { clip, plural, slugify } from "../../core/text.ts";
-import { type Args, type Caller, type ToolReply, no, ok, str, strs } from "../context.ts";
+import { type Args, type Caller, type ToolReply, briefLists, no, ok, str, strs } from "../context.ts";
 import { holdRefusal } from "../lanes/hold.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, laneOfLead, nextTaskId } from "../../domain/ledger.ts";
@@ -126,6 +126,7 @@ function recordTask(
     hints,
     holds,
     outOfScope: strs(args.outOfScope),
+    ...briefLists(args),
     context: str(args.context) || undefined,
     skills: strs(args.skills),
     // Every task writes on its own branch, one beside others in its own copy too: the lane branch takes only merges.

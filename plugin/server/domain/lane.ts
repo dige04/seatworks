@@ -44,6 +44,10 @@ export type Lane = {
   appetite?: string;
   deadline?: string;
   outOfScope: string[];
+  /** What must hold; the Supervisor's own choices, open to the Lead's question; what nobody knows yet, with how to find out. */
+  constraints?: string[];
+  choices?: string[];
+  unknowns?: string[];
   issue?: string;
   base: string;
   branch: string;

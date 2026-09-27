@@ -83,6 +83,10 @@ export type Task = {
   hints: string[];
   holds: string[];
   outOfScope: string[];
+  /** What must hold whoever builds it; what was chosen and may be questioned; what nobody knows yet, with how to find out. */
+  constraints?: string[];
+  choices?: string[];
+  unknowns?: string[];
   context?: string;
   skills?: string[];
   peer?: string;

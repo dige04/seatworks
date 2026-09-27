@@ -1,6 +1,6 @@
 import { DECIDED } from "../../domain/task.ts";
 import { laneTask } from "../lane-task.ts";
-import { type Args, type Caller, type ToolReply, given, no, ok, str } from "../context.ts";
+import { type Args, BRIEF_LISTS, type Caller, type ToolReply, given, no, ok, str } from "../context.ts";
 import { type Amendment, amend } from "../../domain/amendment.ts";
 import type { Ledger } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
@@ -18,7 +18,7 @@ type Amended = { task: Task; amendment: Amendment; note?: string };
 
 /** Changes what a task asks while its Peer works, keeping what it asked before; the Peer hears at its next turn. */
 export async function amendTask(desk: DeskServices, caller: Caller, args: Args): Promise<ToolReply> {
-  const changes = given(args, ["goal", "context"], ["acceptance", "outOfScope", "hints", "holds"]);
+  const changes = given(args, ["goal", "context"], ["acceptance", "outOfScope", "hints", "holds", ...BRIEF_LISTS]);
   const serial = await checked(desk, caller, args, changes);
   if (typeof serial === "string") return no(serial);
   const done = record(desk, caller, args, changes, serial);

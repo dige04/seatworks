@@ -33,6 +33,16 @@ export function setUpLine(setUp: SetUp | undefined): string {
     : `${ran} and ${setUp.failed}; its log is ${setUp.logFile}, which ends:\n${clip(setUp.tail, 1200)}`;
 }
 
+/** What must hold, what was chosen, and what nobody knows yet, each under its own head so none reads as another. */
+export function briefListLines(entry: Pick<Task, "constraints" | "choices" | "unknowns">, chosen: string): string[] {
+  const parts: [string, string[] | undefined][] = [
+    ["Must hold:", entry.constraints],
+    [chosen, entry.choices],
+    ["Not known yet, and how to find out:", entry.unknowns],
+  ];
+  return parts.flatMap(([head, items]) => (items && items.length > 0 ? ["", head, list(items)] : []));
+}
+
 export function taskBrief(task: Task, lane: Lane, beside: Task[], setUp?: SetUp): string {
   return [
     `TASK ${task.id}: ${task.title}`,
@@ -41,6 +51,7 @@ export function taskBrief(task: Task, lane: Lane, beside: Task[], setUp?: SetUp)
     "",
     "Acceptance:",
     list(task.acceptance),
+    ...briefListLines(task, "Chosen so far, each yours to question with evidence that it does not fit the goal:"),
     "",
     ...whereLines(task, lane),
     "",

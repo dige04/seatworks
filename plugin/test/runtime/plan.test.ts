@@ -252,3 +252,48 @@ test("a call is carried out only for the role that holds its tool, in the shape 
   const unguessed = await h.call(peer, "peer", "ask", { question: "Which one?" });
   assert.equal(unguessed.ok, true, `a best guess is asked for, never required: ${unguessed.text}`);
 });
+
+test("a directive and a brief keep apart what must hold, what was chosen and may be questioned, and what nobody knows yet", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  const three = {
+    constraints: ["the bike stops within 5 m at 20 km/h"],
+    choices: ["a parachute slows it, because it was the first design drawn"],
+    unknowns: ["whether rim brakes fit the frame: read the frame's drawing"],
+  };
+  const opened = await h.call(sup, "supervisor", "open_lane", {
+    title: "Brakes",
+    outcome: "the bike stops",
+    ...scope,
+    ...three,
+  });
+  assert.equal(opened.ok, true, opened.text);
+  const lead = h.ledger().lanes.L1!.lead!;
+  const shows = (text: string, who: string) => {
+    assert.match(text, /Must hold:\n- the bike stops within 5 m at 20 km\/h\n/, `${who}: what must hold, apart`);
+    assert.match(
+      text,
+      /Chosen so far[^\n]*question[^\n]*:\n- a parachute slows it/,
+      `${who}: a choice, open to question`,
+    );
+    assert.match(
+      text,
+      /Not known yet, and how to find out:\n- whether rim brakes fit/,
+      `${who}: what nobody knows yet`,
+    );
+  };
+  shows(h.agents.get(lead)!.prompt ?? "", "the directive");
+  const planned = await h.call(lead, "lead", "add_tasks", { tasks: [task("brake", ["a.txt"], three)] });
+  assert.equal(planned.ok, true, planned.text);
+  shows(briefOf(h, "L1-T1"), "the brief");
+  const moved = await h.call(lead, "lead", "amend_task", {
+    task: "L1-T1",
+    why: "the Peer showed the parachute cannot stop it in 5 m",
+    choices: ["rim brakes, since the frame takes them"],
+  });
+  assert.equal(moved.ok, true, moved.text);
+  assert.deepEqual(h.ledger().tasks["L1-T1"]!.choices, ["rim brakes, since the frame takes them"]);
+  const amended = await h.call(sup, "supervisor", "amend_lane", { lane: "L1", why: "settled", unknowns: [] });
+  assert.equal(amended.ok, true, amended.text);
+  assert.deepEqual(h.ledger().lanes.L1!.unknowns, []);
+});

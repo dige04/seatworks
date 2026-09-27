@@ -5,7 +5,7 @@ import { list } from "./envelope.ts";
 import { type Beside, besideText } from "../lanes/placement.ts";
 import type { ProjectConfig } from "../project/project.ts";
 import type { SetUp } from "../copies/setup.ts";
-import { setUpLine } from "./briefs.ts";
+import { briefListLines, setUpLine } from "./briefs.ts";
 
 const SHOWN_SERIAL = 8;
 
@@ -46,6 +46,10 @@ export function directive(
     "",
     "Acceptance:",
     list(lane.acceptance),
+    ...briefListLines(
+      lane,
+      "Chosen so far, defaults yours to question with evidence that one does not fit the outcome:",
+    ),
     "",
     `Appetite: ${lane.appetite ?? "not given"}`,
     `Deadline: ${lane.deadline ?? "none"}`,

@@ -1,4 +1,4 @@
-import { type Args, type Caller, type ToolReply, given, no, ok, str } from "../context.ts";
+import { type Args, BRIEF_LISTS, type Caller, type ToolReply, given, no, ok, str } from "../context.ts";
 import { repeatsIncident } from "../messaging/repeats.ts";
 import { amend } from "../../domain/amendment.ts";
 import { findLane } from "../../domain/ledger.ts";
@@ -17,7 +17,7 @@ export async function amendLane(
   args: Args,
 ): Promise<ToolReply> {
   const { project } = caller;
-  const changes = given(args, ["outcome"], ["acceptance", "outOfScope", "writeSet", "contracts"]);
+  const changes = given(args, ["outcome"], ["acceptance", "outOfScope", "writeSet", "contracts", ...BRIEF_LISTS]);
   if (changes.outcome === "" || changes.acceptance?.length === 0)
     return no("A lane keeps an outcome and at least one acceptance line; give what it is asked now.");
   const lane = findLane(loadLedger(project.state), str(args.lane));

@@ -59,12 +59,16 @@ Everything else is yours to decide and move on from.
 
 - A Peer starts with nothing but its brief and the code. Give the goal as an outcome, acceptance as behaviors a check
   can show, and limits in out of scope; where and how, inside the paths it holds, are the Peer's.
-- Copy names and shapes the directive fixes word for word: reworded, the Peer treats them as its own choice. Quote the
-  concept file the same way, the lines the task touches, and name no file for them: the Peer's copy has none, so your
-  quote is all it gets.
+- Keep apart what must hold, what was chosen and what nobody knows yet. Constraints are the Human's word, the
+  directive's or a settled contract; choices are what someone picked (you, the Supervisor, an earlier Peer), each with
+  why; unknowns come with how to find out. A choice written as a constraint becomes a requirement nobody asked for, and
+  every task after it builds on it unquestioned.
+- Copy names and shapes the directive fixes word for word into constraints: reworded, the Peer treats them as its own
+  choice. The directive's choices go into choices, still open to question. Quote the concept file the same way, the
+  lines the task touches, and name no file for them: the Peer's copy has none, so your quote is all it gets.
 - Name paths relative to the repository: a Peer works in a copy of its own, where your absolute path is someone else's
   file.
-- Context holds settled facts and approaches ruled out with why: a reason can be argued with,
+- Context holds facts found and approaches ruled out with why: a reason can be argued with,
   a bare ruling only gets obeyed.
 - Leave out the answer you worked out alone: a brief that holds it gets it back unchecked.
   Ask open questions, not "A or B": a Peer offered two picks one and never finds the better third.

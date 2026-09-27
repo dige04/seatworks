@@ -20,11 +20,11 @@
           },
           "outcome": {
             "type": "string",
-            "description": "The observable change and what you assumed, in a few sentences (under 800 characters). Decisions go in acceptance and outOfScope."
+            "description": "The observable change, in a few sentences (under 800 characters). What must hold, your choices and what is unknown have fields of their own."
           },
           "acceptance": {
             "type": "array",
-            "description": "Checks that show the outcome done, including the decisions you made, one per item, like \"a 10% code takes 10% off the total\".",
+            "description": "Checks that show the outcome done, one per item, like \"a 10% code takes 10% off the total\". A design choice goes in choices.",
             "items": {
               "type": "string"
             }
@@ -43,6 +43,27 @@
               "type": "string"
             },
             "description": "Limits the outcome doesn't already hold: what this lane must leave alone, not build, or not decide."
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What must hold whoever builds it, and whose word it is: the Human's, CONTEXT.md, a contract lanes share."
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Your own design choices for the lane, each with why: defaults its Lead may question with evidence, never acceptance lines."
+          },
+          "unknowns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What nobody knows yet, each with how the lane can find out: a read, a run, a spike."
           },
           "issue": {
             "type": "string",
@@ -262,6 +283,27 @@
               "type": "string"
             },
             "description": "Everything out of scope as it stands now."
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What must hold whoever builds it, and whose word it is: the Human's, CONTEXT.md, a contract lanes share."
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Your own design choices for the lane, each with why: defaults its Lead may question with evidence, never acceptance lines."
+          },
+          "unknowns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What nobody knows yet, each with how the lane can find out: a read, a run, a spike."
           },
           "writeSet": {
             "type": "array",
@@ -901,9 +943,30 @@
                   },
                   "description": "What the Peer must leave alone, not do, or not decide."
                 },
+                "constraints": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "What must hold whoever builds it, and whose word it is: the Human's, the directive's, a settled contract."
+                },
+                "choices": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Design choices in use now, yours or an earlier seat's, each with why: the Peer may question each with evidence."
+                },
+                "unknowns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "What nobody knows yet, each with how the Peer can find out: a read, a run, a spike."
+                },
                 "context": {
                   "type": "string",
-                  "description": "Decisions made and why, approaches ruled out and why, facts already found; never the answer you worked out alone."
+                  "description": "Facts already found and approaches ruled out, each with why; never the answer you worked out alone."
                 },
                 "skills": {
                   "type": "array",
@@ -1167,9 +1230,30 @@
             },
             "description": "Everything out of scope as it stands now."
           },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What must hold whoever builds it, and whose word it is: the Human's, the directive's, a settled contract."
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Design choices in use now, yours or an earlier seat's, each with why: the Peer may question each with evidence."
+          },
+          "unknowns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What nobody knows yet, each with how the Peer can find out: a read, a run, a spike."
+          },
           "context": {
             "type": "string",
-            "description": "Its context as it stands now: decisions made, approaches ruled out, facts found since."
+            "description": "Facts already found and approaches ruled out, each with why; never the answer you worked out alone."
           },
           "hints": {
             "type": "array",
