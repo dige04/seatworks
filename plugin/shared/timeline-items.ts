@@ -16,17 +16,17 @@ const HeldLane = FlowLane.pick({ id: true, title: true, base: true, branch: true
 
 export const TIMELINE = {
   question: {
-    kind: "seatworks.question",
+    kind: "question",
     version: 1,
     schema: z.object({ project: z.string(), question: FlowQuestion, settled: Settled, decider: z.string().optional() }),
   },
   landing: {
-    kind: "seatworks.landing",
+    kind: "landing",
     version: 1,
     schema: z.object({ project: z.string(), lane: HeldLane, settled: Settled, decider: z.string().optional() }),
   },
   report: {
-    kind: "seatworks.report",
+    kind: "report",
     version: 1,
     schema: z.object({ project: z.string(), report: ReportView }),
   },

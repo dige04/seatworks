@@ -46,7 +46,7 @@ test("a question for the Human is a card in the Supervisor's chat that settles w
   await h.call(sup, "supervisor", "ask_human", packet({ question: "Keep the old endpoint?" }));
   const questions = async () =>
     (await h.cards())
-      .filter((card) => card.kind === "seatworks.question")
+      .filter((card) => card.kind === "question")
       .map((card) => {
         const { question, settled } = card.data as { question: { id: string }; settled: { text: string } | null };
         return [card.to, question.id, settled?.text ?? "waits"];
@@ -56,7 +56,7 @@ test("a question for the Human is a card in the Supervisor's chat that settles w
     h
       .timelineOf(sup)
       .cards()
-      .filter((card) => card.kind === "seatworks.question")
+      .filter((card) => card.kind === "question")
       .map((card) => card.id),
     [`${h.project.slug}:H1`, `${h.project.slug}:H2`],
     "the round posts them, with no panel open",
@@ -327,7 +327,7 @@ test("the Report tells from the record what needs the Human, widest stop first, 
 
   const until = landed.window.until;
   assert.deepEqual(await landing.rpc(contracts.reportSeen, { project: landing.project.slug, until }), { seen: until });
-  const reports = async () => (await landing.cards()).filter((card) => card.kind === "seatworks.report");
+  const reports = async () => (await landing.cards()).filter((card) => card.kind === "report");
   assert.equal((await reports()).length, 1, "a window read with nothing new in it posts no second card");
   assert.deepEqual(
     await landing.rpc(contracts.reportSeen, { project: landing.project.slug, until: until - 60_000 }),

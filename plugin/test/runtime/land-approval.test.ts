@@ -78,7 +78,7 @@ test("a landing sent back stays open without its READY, and held again is approv
   // The card in the Supervisor's chat: who it is posted to, what it says of the lane, and how it ended.
   const card = async () =>
     (await h.cards())
-      .filter((each) => each.kind === "seatworks.landing")
+      .filter((each) => each.kind === "landing")
       .map((each) => {
         const { lane: held, settled } = each.data as { lane: { id: string }; settled: { text: string } | null };
         return [each.to, each.id, held.id, settled?.text ?? "waits"];

@@ -15,6 +15,7 @@ import {
   withKey,
 } from "../../client/model/layer.ts";
 import type { FlowLane, WatchJudge } from "../../shared/flow-views.ts";
+import { TIMELINE } from "../../shared/timeline-items.ts";
 
 const docs = {
   enabled: true,
@@ -240,4 +241,9 @@ test("a level's seat: a new agent drops the old one's model and thinking, a new 
     "put in whole",
   );
   assert.deepEqual(setLevelSeat(set, "max", "lead", null), { rules: "Keep diffs small." });
+});
+
+test("every row the desk puts in a chat has a kind Paseo's app will draw it by", () => {
+  // The app's addTimelineRenderer refuses any other kind, and one refusal fails the plugin's whole client.
+  for (const row of Object.values(TIMELINE)) assert.match(row.kind, /^[a-z][a-z0-9-]*$/, row.kind);
 });
