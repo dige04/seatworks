@@ -24,7 +24,11 @@ export type Look = {
 
 const WATCH: Assessments = { log: "assessments", unasked: "watch.unasked" };
 
-type Pattern = [string, PatternSpec];
+/** A pattern by the name it is asked under, and for one asked `each` rule, the line it is asked against. */
+type Pattern = [string, PatternSpec, string?];
+
+/** The pattern a question name belongs to: one asked each rule is asked as `id#n`. */
+const kindOf = (name: string) => name.split("#")[0]!;
 
 type Services = Pick<
   DeskServices,
@@ -70,15 +74,22 @@ export async function readLook(services: Services, project: Project, seat: Notic
     );
   };
   const instruction = look.instruction ? { instruction: clip(look.instruction.text, attention.lookItemChars) } : {};
+  const concept = conceptOf(project, attention.conceptChars);
+  const rules = rulesOf(place, concept);
+  // A pattern asked each rule is one question a line, so no answer weighs two conditions.
+  const each = (patterns: Pattern[]): Pattern[] =>
+    patterns.flatMap(([id, pattern]): Pattern[] =>
+      pattern.each ? rules.map((rule, index) => [`${id}#${index + 1}`, pattern, rule]) : [[id, pattern]],
+    );
   const cases: Case[] = [
     { episode: "look", items: words, patterns: watching(words, (pattern) => !pattern.tools), fields: instruction },
     ...(decided?.calls ?? []).map((call) => {
       const items: Item[] = [...decided!.words, { kind: "call", text: clip(call.text, attention.decisionChars) }];
-      const patterns = watching(items, (pattern) => pattern.tools?.includes(call.tool) === true);
+      const patterns = each(watching(items, (pattern) => pattern.tools?.includes(call.tool) === true));
       return { episode: call.tool, items, patterns, fields: { ...instruction, call: call.tool } };
     }),
   ];
-  const asked = askedOf(place, conceptOf(project, attention.conceptChars));
+  const asked = askedOf(place, concept);
   const subject = place.task?.id ?? place.lane?.id ?? seat.id;
   // Each case on its own, so a decision is not held behind the look before it.
   const judged = cases
@@ -166,11 +177,21 @@ function conceptOf(project: Project, limit: number): string | undefined {
   }
 }
 
-const asQuestion = (pattern: PatternSpec, instructions: string): Question => ({
+const asQuestion = ([, pattern, rule]: Pattern, words: string): Question => ({
   type: "condition",
-  instructions,
+  instructions: rule === undefined ? words : { question: words, rule },
   criteria: pattern.criteria,
 });
+
+/** The lines a pattern asked `each` rule is asked against: the concept file's statements, then what the seat's work asks. */
+function rulesOf({ task, lane }: Placed, concept: string | undefined): string[] {
+  const stated = (concept ?? "")
+    .split("\n")
+    .map((line) => line.replace(/^\s*[-*]\s+/, "").trim())
+    .filter((line) => line.split(/\s+/).length >= 3 && !/^(#|\[…)/.test(line));
+  const asks = task ? task.acceptance : lane ? [lane.outcome, ...lane.acceptance] : [];
+  return [...new Set([...stated, ...asks])];
+}
 
 /**
  * Each item asked its patterns' one condition by the sensor; a yes on an item is found in its words. A pattern with
@@ -190,7 +211,7 @@ async function sift(
   for (const item of items) {
     const mine = patterns.filter(([, pattern]) => pattern.instructions && pattern.reads.includes(item.kind));
     if (mine.length === 0) continue;
-    const questions = Object.fromEntries(mine.map(([id, pattern]) => [id, asQuestion(pattern, pattern.instructions!)]));
+    const questions = Object.fromEntries(mine.map((entry) => [entry[0], asQuestion(entry, entry[1].instructions!)]));
     const state = { text: item.text, ...asked };
     const judged = await askKept(project, WATCH, { subject, episode, by: by.id, state }, judge, questions);
     if (!judged) continue;
@@ -201,7 +222,7 @@ async function sift(
   }
   const found: Finding[] = [];
   const flagged = new Set<string>();
-  for (const [id, pattern] of patterns) {
+  for (const [id, pattern, rule] of patterns) {
     const mine = read.filter((entry) => entry.id === id);
     const against = pattern.missingFrom && mine.find((entry) => entry.item.kind === pattern.missingFrom);
     const words = against ? mine.filter((entry) => entry !== against) : mine;
@@ -216,6 +237,7 @@ async function sift(
             item.text,
             quote,
             `seen by ${by.sensor.label}, ${likely.toFixed(2)} sure, in its ${item.kind}`,
+            rule,
           ),
           theirs: true,
           ...(pattern.joins ? { joins: pattern.joins } : {}),
@@ -234,17 +256,17 @@ async function weigh(
   patterns: Pattern[],
   quote: number,
 ): Promise<Finding[]> {
-  const questions = Object.fromEntries(patterns.map(([id, pattern]) => [id, asQuestion(pattern, pattern.seat)]));
+  const questions = Object.fromEntries(patterns.map((entry) => [entry[0], asQuestion(entry, entry[1].seat)]));
   const judged = await askKept(project, WATCH, { subject, episode, by, state }, judge, questions);
   return judged ? seatFindings(patterns, judged, quote) : [];
 }
 
 function seatFindings(patterns: Pattern[], judged: Judgement, quote: number): Finding[] {
-  return patterns.flatMap(([id, pattern]) =>
+  return patterns.flatMap(([id, pattern, rule]) =>
     holds(pattern, judged.answers[id]) === "yes" && pattern.level !== "note"
       ? [
           {
-            ...finding(id, judged.why?.[id] ?? "", quote, "judged by the Watcher seat"),
+            ...finding(id, judged.why?.[id] ?? "", quote, "judged by the Watcher seat", rule),
             ...(pattern.joins ? { joins: pattern.joins } : {}),
           },
         ]
@@ -269,15 +291,20 @@ export async function lateCase(
   const about = { subject, episode, by: kept.role, state: kept.state };
   const judged = await askKept(project, WATCH, about, judge, kept.questions);
   if (!judged) return;
-  const patterns = Object.entries(services.kit.patterns).filter(([id]) => Object.hasOwn(kept.questions, id));
+  const patterns = Object.entries(kept.questions).flatMap(([name, question]): Pattern[] => {
+    const pattern = services.kit.patterns[kindOf(name)];
+    const rule = typeof question.instructions === "string" ? undefined : question.instructions.rule;
+    return pattern ? [[name, pattern, rule]] : [];
+  });
   const findings = seatFindings(patterns, judged, services.teamFor(project).attention.quoteChars);
   if (findings.length > 0) await notice(services, project, seat, findings);
 }
 
-const finding = (kind: string, quote: string, limit: number, seen: string): Finding => ({
-  kind,
+/** What a brain found under the name it asked, as the pattern it belongs to, with the rule it went against if any. */
+const finding = (name: string, quote: string, limit: number, seen: string, rule?: string): Finding => ({
+  kind: kindOf(name),
   level: "attend",
   quote: clip(quote.replace(/\s+/g, " ").trim(), limit),
-  facts: [kind, seen],
+  facts: [kindOf(name), seen, ...(rule === undefined ? [] : [`against: ${rule}`])],
   brain: true,
 });

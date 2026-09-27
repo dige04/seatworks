@@ -416,3 +416,55 @@ test("a Lead's look is read beside its lane's directive whole and the Human's se
   assert.equal(read.state.directive, "Outcome: a.txt changes\nAcceptance:\n- a", "its lane's outcome and acceptance");
   assert.match(String(read.state.context), /every amount is whole cents/, "and the concept file");
 });
+
+test("a decision is asked against each line of the concept and its directive, one line to a question", async (t) => {
+  const asked: Asked[] = [];
+  const judge: Judge = {
+    async ask(state, questions) {
+      asked.push({ state, questions });
+      const against = (question: Question) => JSON.stringify(question.instructions);
+      const answers = Object.fromEntries(
+        Object.entries(questions).map(([id, question]) => [
+          id,
+          { likely: /whole cents/.test(against(question)) && /dollars/.test(String(state.text)) ? 0.9 : 0.05 },
+        ]),
+      );
+      return { answers, model: "vendor/model-1", why: {} };
+    },
+  };
+  const { h, lane } = await laneWithPeer(undefined, { sensor: () => judge });
+  brains("sensor");
+  writeFileSync(
+    join(h.project.state, "CONTEXT.md"),
+    "# Shop\n\n## Behavior\n\n- Every amount is whole cents.\n- A refund never exceeds its order's total.\n",
+  );
+  const looked = looksOf(h, t);
+  const stream = h.timelineOf(lane.lead!);
+  await h.call(lane.lead!, "lead", "add_tasks", {
+    tasks: [
+      {
+        key: "p",
+        title: "Prices",
+        goal: "Store prices as dollars with two decimals",
+        acceptance: ["a"],
+        outOfScope: ["b"],
+      },
+    ],
+  });
+  stream.beat("turn_started", "l1");
+  stream.add({ type: "assistant_message", text: "Laid out prices.", messageId: "l-m1" }, "l1");
+  stream.beat("turn_completed", "l1");
+  await looked();
+  const read = asked.find((entry) => /dollars/.test(String(entry.state.text)))!;
+  const rules = Object.entries(read.questions)
+    .filter(([id]) => id.startsWith("contradicts#"))
+    .map(([, question]) => (question.instructions as Record<string, string>).rule);
+  assert.deepEqual(
+    rules,
+    ["Every amount is whole cents.", "A refund never exceeds its order's total.", "a.txt changes", "a"],
+    "each line of the concept, then the lane's outcome and acceptance",
+  );
+  const found = Object.values(book(h)).filter((item) => item.kind === "contradicts");
+  assert.equal(found.length, 1);
+  assert.match(found[0]!.facts.join(), /against: Every amount is whole cents\./);
+});
