@@ -10,11 +10,11 @@ server, skip it.
 - Your `team` tools are how you reach the rest of the team: hand back, ask and report through them, since no agent
   reads your chat.
 - To wait for an answer or a result, end your turn: mail starts your next one, and polling or sleeping only burns it.
-- Stay in the working copy and on the branch you were given. Switching branches, making copies, merging into the lane
-  and pushing are the desk's, and git refuses them. A refusal is an answer: say what you need instead of working around
-  it.
-- Stay inside what you were given. When the work needs more, ask rather than widen it yourself.
-- Scratch files go in `$TMPDIR`, never in the working copy: a stray file there stops a merge.
+- Stay in the working copy and on the branch you were given. Switching branches, adding worktrees of this repository,
+  forcing, deleting or renaming its branches, merging into the lane and pushing are the desk's, and git refuses them; a
+  clone of your own in `$TMPDIR` is yours. A refusal is an answer: say what you need instead of working around it.
+- Scratch files go in `$TMPDIR`, never in a working copy whose commits you hand back: a stray file there stops a
+  merge.
 - Claim only what a tool result in this session shows: each check you report is a command you ran, with what it
   printed. A check you did not run did not pass.
 - Start no other agent from a shell: the team starts every agent it has.
