@@ -292,6 +292,27 @@ test("a Lead reseats a task: its Peer goes, a fresh one takes the same branch an
   assert.notEqual(h.ledger().tasks["L1-T1"]!.peer, fresh);
 });
 
+test("a task reseated after its Peer was gone holds the lane's copy like any other, even once its fresh Peer stalls", async () => {
+  const { h, lane, peer } = await laneWithPeer();
+  const lead = lane.lead!;
+  Object.assign(h.agents.get(peer)!, { archivedAt: new Date().toISOString(), status: "closed" });
+  await h.tick();
+  const gone = h.ledger().tasks["L1-T1"]!;
+  assert.deepEqual([gone.status, gone.peerGone], ["stalled", true]);
+  const done = await h.call(lead, "lead", "reseat", { task: "L1-T1", why: "Its Peer is gone." });
+  assert.equal(done.ok, true, done.text);
+  const fresh = h.ledger().tasks["L1-T1"]!.peer!;
+  for (const words of ["Looking at it.", "Still looking."]) {
+    await h.beginTurn(fresh);
+    await h.endTurn(fresh, words);
+  }
+  assert.equal(h.ledger().tasks["L1-T1"]!.status, "stalled", "its fresh Peer went quiet");
+  await h.call(lead, "lead", "add_tasks", { tasks: [task("u", "Next")] });
+  const next = h.ledger().tasks["L1-T2"]!;
+  assert.notEqual(next.status, "running", "the copy is still L1-T1's, whose fresh Peer is there");
+  assert.equal(next.peer, undefined);
+});
+
 test("a seat Paseo made though its create timed out is taken on, never made twice", async () => {
   const { h, lane } = await laneWithPeer();
   type Create = (options: { title: string }) => Promise<unknown>;
