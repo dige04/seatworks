@@ -47,7 +47,7 @@ export const messageLetters = {
       "<human>",
       outside("human", text, 1500),
       "</human>",
-      ...(task ? ["", "Its Lead was not told."] : []),
+      ...(task ? ["", "Its Lead was told too."] : []),
     ];
     const next = closed
       ? `Lane ${lane.id} is closed: if it asks for more work, open a lane for it; if it settles the concept, write it into CONTEXT.md.`
@@ -55,5 +55,21 @@ export const messageLetters = {
         ? "If it changes what the task or the lane is asked, carry it in: tell the Lead, amend_lane, or settle it with the Human."
         : "If it changes what the lane is asked, carry it in with amend_lane; if it settles the concept, write it into CONTEXT.md.";
     return mail("humanwrote", [seat, hash(text)], lines.join("\n"), next);
+  },
+
+  /** The Lead of a Peer the Human wrote to past it: what turns the work comes back to whoever keeps the lane's plan. */
+  humanWroteToPeer(task: Task, seat: string, text: string): Letter {
+    const lines = [
+      `HUMAN WROTE to your Peer on ${task.id} (${task.title}) directly:`,
+      "<human>",
+      outside("human", text, 1500),
+      "</human>",
+    ];
+    return mail(
+      "humanwrote",
+      [seat, "lead", hash(text)],
+      lines.join("\n"),
+      "If it changes what the task asks, carry it in with amend_task, so the brief says what the Peer now works to; if it changes the lane, tell the Supervisor.",
+    );
   },
 };

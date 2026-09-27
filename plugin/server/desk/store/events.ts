@@ -55,6 +55,7 @@ export type DeskEvent =
   | { kind: "merge.merged" | "merge.conflict" | "merge.red" | "merge.failed"; task: string }
   | { kind: "review.started"; task: string; of: string | null; reviewer: string }
   | { kind: "ask.opened"; ask: string; from: string; to: string }
+  | { kind: "human.wrote"; seat: string; lane: string; task: string | null; text: string }
   | { kind: "ask.answered"; ask: string; by: string; told: string | null }
   | { kind: "ask.lapsed"; ask: string; from: string; minutes: number; text: string }
   | { kind: "slot.taken"; slot: string; branch: string; lane?: string; task?: string }

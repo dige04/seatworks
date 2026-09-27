@@ -64,6 +64,10 @@ export class TurnRules {
     if (!lane) return;
     const to = await this.deps.desk.supervisorFor(project, lane.opener);
     await this.deps.desk.post(to, messageLetters.humanWrote(lane, task, seat.id, text));
+    this.deps.desk.event(project, { kind: "human.wrote", seat: seat.id, lane: lane.id, task: task?.id ?? null, text });
+    const reader = task ? await this.deps.desk.readerOf(project, lane) : undefined;
+    if (task && reader?.as === "lead")
+      await this.deps.desk.post(reader.to, messageLetters.humanWroteToPeer(task, seat.id, text));
   }
 
   async ended(event: TurnEnded): Promise<void> {

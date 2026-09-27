@@ -52,3 +52,32 @@ export function decidedFor(kit: Kit, ledger: Ledger, events: DatedEvent[], now: 
     }
   });
 }
+
+/**
+ * What the Human wrote straight into a Lead's or Peer's chat, and whether it reached the plan the lane keeps: an
+ * amendment of that task or lane, or a rework of the task, after it. Their own words, which the report may show.
+ */
+export function yoursFor(kit: Kit, ledger: Ledger, events: DatedEvent[], now: number): ReportItem[] {
+  return events.flatMap((event): ReportItem[] => {
+    if (event.kind !== "human.wrote") return [];
+    const at = Date.parse(event.at);
+    const task = event.task ? ledger.tasks[event.task] : undefined;
+    const lane = ledger.lanes[event.lane];
+    const after = (entries: { at: number }[] | undefined) => (entries ?? []).some((entry) => entry.at >= at);
+    const carried = after(task?.amended)
+      ? "carried in: its brief was amended after it"
+      : after(task?.sentBack)
+        ? "carried in: the task was sent back with a rework after it"
+        : after(lane?.amended)
+          ? "carried in: the lane's directive was amended after it"
+          : "not carried into its brief or directive yet";
+    const words = event.text.replace(/\s+/g, " ").trim();
+    return [
+      {
+        title: `To ${seatPhrase(kit, ledger, event.seat)}: "${words.length > 120 ? `${words.slice(0, 117)}...` : words}"`,
+        detail: carried,
+        minutes: minutesSince(now, event.at),
+      },
+    ];
+  });
+}
