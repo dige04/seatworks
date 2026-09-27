@@ -1,7 +1,6 @@
 {
   "big-decision": {
     "title": "A decision about how the system is built, left out of the Lead's report",
-    "source": "p.9, trigger 1; M@5887",
     "watches": [
       "lead"
     ],
@@ -24,7 +23,6 @@
   },
   "struggling": {
     "title": "Not knowing what something means",
-    "source": "p.9, trigger 2; ANTIPATTERNS, Architecture Fog",
     "watches": [
       "lead",
       "write"
@@ -45,7 +43,6 @@
   },
   "turning": {
     "title": "Dropping one approach for another",
-    "source": "p.9, trigger 3",
     "watches": [
       "lead",
       "write"
@@ -66,7 +63,6 @@
   },
   "admits-wrong": {
     "title": "Saying earlier work or a claim was wrong",
-    "source": "M@9707",
     "watches": [
       "lead",
       "write"
@@ -91,7 +87,6 @@
   },
   "stand-in": {
     "title": "Building a stand-in for something missing",
-    "source": "ANTIPATTERNS, Architecture Fog",
     "watches": [
       "write"
     ],
@@ -110,7 +105,6 @@
   },
   "wrapper": {
     "title": "Adding a wrapper to make half-done work fit",
-    "source": "ANTIPATTERNS, Balloon Pattern",
     "watches": [
       "write"
     ],
@@ -129,7 +123,6 @@
   },
   "obeys-against-judgement": {
     "title": "Doing what it thinks is wrong because it was told",
-    "source": "ANTIPATTERNS, Authority gradient; p.8",
     "watches": [
       "write"
     ],
@@ -148,7 +141,6 @@
   },
   "defers": {
     "title": "Agreeing its work was wrong before looking",
-    "source": "ANTIPATTERNS, Sycophancy",
     "watches": [
       "lead",
       "write"
@@ -170,7 +162,6 @@
   },
   "proof-bends-product": {
     "title": "Bending product code so a check can pass",
-    "source": "ANTIPATTERNS, Proof distorts product",
     "watches": [
       "write"
     ],
@@ -189,7 +180,6 @@
   },
   "pre-solves": {
     "title": "A brief that tells the Peer how",
-    "source": "ANTIPATTERNS, Pre-solve delegation; keep-01b",
     "watches": [
       "lead"
     ],
@@ -211,7 +201,6 @@
   },
   "closed-choice": {
     "title": "Offering the Peer a fixed set of options",
-    "source": "p.8; keep-01c",
     "watches": [
       "lead"
     ],
@@ -233,7 +222,6 @@
   },
   "patch-not-handoff": {
     "title": "A Lead filling a gap outside its lane",
-    "source": "p.6; M@23618",
     "watches": [
       "lead"
     ],
@@ -251,7 +239,6 @@
   },
   "withholds-gap": {
     "title": "A gap the words name, left out of the hand-back or report",
-    "source": "MAST, information withholding",
     "watches": [
       "write",
       "lead"
@@ -277,7 +264,6 @@
   },
   "steered-review": {
     "title": "A review briefed narrower than its Lead's own doubt",
-    "source": "p.4, p.5; E2E 2026-09-27 p-off L7-R2",
     "watches": [
       "lead"
     ],
@@ -305,7 +291,6 @@
   },
   "gaming": {
     "title": "Making a check pass without making the behaviour work",
-    "source": "ANTIPATTERNS, Proof distorts product; Antigravity Auditor; ImpossibleBench",
     "watches": [
       "write"
     ],
