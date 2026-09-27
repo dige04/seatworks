@@ -234,7 +234,6 @@ test("a Claude seat's file tools are kept off what the desk owns and what sets u
       [
         "intents.json",
         "kit.json",
-        "content.json",
         "models.json",
         "bin/git",
         "keys.json",

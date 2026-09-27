@@ -107,6 +107,23 @@ export class FakeTimeline implements TimelineHandle {
     };
   }
 
+  /** Paseo keeps a plugin's row where it first stood: posted again under its id, it is replaced there. */
+  async append(item: { type: "plugin"; id: string; kind: string; version: number; data: unknown }): Promise<unknown> {
+    const at = this.rows.findIndex((row) => row.item.type === "plugin" && row.item.id === item.id);
+    if (at < 0) return { seq: this.add(item, null) };
+    this.rows[at] = { ...this.rows[at]!, item };
+    this.send({ event: { type: "timeline", item, turnId: null }, seq: this.rows[at].seq, epoch: this.epoch });
+    return { seq: this.rows[at].seq };
+  }
+
+  /** The plugin's own rows as they stand now, in the order they first appeared. */
+  cards(): { id: string; kind: string; data: unknown }[] {
+    return this.rows
+      .map((row) => row.item)
+      .filter((item) => item.type === "plugin")
+      .map((item) => ({ id: String(item.id), kind: String(item.kind), data: item.data }));
+  }
+
   add(item: Record<string, unknown>, turnId: string | null = "turn-1", quiet = false): number {
     const seq = (this.rows.at(-1)?.seq ?? 0) + 1;
     this.rows.push({ item, seq, turnId });

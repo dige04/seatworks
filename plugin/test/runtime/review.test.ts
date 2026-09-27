@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { contracts } from "../../shared/rpc.ts";
 import { harness } from "./harness.ts";
 import { heldGit } from "./lane-gates.ts";
 
@@ -422,7 +421,7 @@ test("a review of work an earlier review sent back marks each earlier finding, a
     h.heard(lead).join("\n"),
     /Earlier findings, of L1-R1:\n1\. P1 a\.txt:1: rounds half down: resolved\n2\. P2 totals in cents are assumed: wrong\n/,
   );
-  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  const report = await h.report();
   assert.ok("numbers" in report);
   assert.deepEqual(
     report.numbers.find((row) => row.title === "Findings re-checked"),

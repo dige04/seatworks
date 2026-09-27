@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { contracts } from "../../shared/rpc.ts";
 import { harness, laneWithPeer, repo } from "./harness.ts";
 
 const packet = (extra: Record<string, unknown> = {}) => ({
@@ -117,7 +116,7 @@ test("the Human's daily allowance of questions counts every project, on the Repo
   const theirs = h.add("sw2-supervisor-claude/claude-opus-5", elsewhere, "sup-b");
   assert.match((await h.call(theirs, "supervisor", "ask_human", packet(), elsewhere)).text, /^Asked the Human as H1;/);
   assert.match((await h.call(sup, "supervisor", "ask_human", packet())).text, /^Asked the Human as H1;/);
-  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  const report = await h.report();
   assert.ok("numbers" in report);
   assert.deepEqual(report.numbers[0], { title: "Questions today", value: "2 of 3", detail: "across every project" });
   const lone = (await h.call(sup, "supervisor", "ask_human", packet())).text;
@@ -137,7 +136,7 @@ test("the Human's daily allowance of questions counts every project, on the Repo
     "what cannot be undone is never refused for the limit, though it counts",
   );
   assert.doesNotMatch(irreversible, /Lead|lane/, "and with no lane named, no Lead is told to keep off it");
-  const counted = await h.rpc(contracts.report, { project: h.project.slug });
+  const counted = await h.report();
   assert.ok("numbers" in counted);
   assert.equal(counted.numbers[0]!.value, "4 of 3");
 });

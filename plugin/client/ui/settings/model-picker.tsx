@@ -3,7 +3,7 @@ import { FlatList, Icon, TextInput } from "@getpaseo/plugin/client/react-native"
 import { SettingsRow } from "@getpaseo/plugin/client/ui";
 import { useMemo, useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { CONTROL } from "./bits.tsx";
+import { CONTROL, FONT, RADIUS, SPACE } from "../kit/theme.ts";
 
 type Option = { label: string; value: string };
 
@@ -43,16 +43,16 @@ export function ModelPicker({ label, hint, value, options, theme, disabled, onVa
       trigger: {
         flexDirection: "row" as const,
         alignItems: "center" as const,
-        gap: CONTROL.gap,
+        gap: SPACE.sm,
         minHeight: CONTROL.height,
         width: 220,
-        paddingHorizontal: CONTROL.padding,
-        borderRadius: CONTROL.radius,
+        paddingHorizontal: SPACE.md,
+        borderRadius: RADIUS.control,
         borderWidth: 1,
         borderColor: open ? theme.colors.accent : theme.colors.border,
         backgroundColor: theme.colors.surface1,
       },
-      chosen: { flex: 1, color: theme.colors.foreground, fontSize: CONTROL.font },
+      chosen: { flex: 1, color: theme.colors.foreground, fontSize: FONT.base },
       box: {
         position: "absolute" as const,
         width: BOX.width,
@@ -80,7 +80,7 @@ export function ModelPicker({ label, hint, value, options, theme, disabled, onVa
         flex: 1,
         paddingVertical: 11,
         color: theme.colors.foreground,
-        fontSize: CONTROL.font,
+        fontSize: FONT.base,
         outlineStyle: "none" as never,
       },
       row: {
@@ -91,7 +91,7 @@ export function ModelPicker({ label, hint, value, options, theme, disabled, onVa
         paddingVertical: 8,
       },
       picked: { backgroundColor: theme.colors.surface2 },
-      name: { flexShrink: 0, maxWidth: "70%" as const, color: theme.colors.foreground, fontSize: CONTROL.font },
+      name: { flexShrink: 0, maxWidth: "70%" as const, color: theme.colors.foreground, fontSize: FONT.base },
       id: { flexShrink: 1, color: theme.colors.foregroundMuted, fontSize: 12 },
       none: { padding: 12, color: theme.colors.foregroundMuted, fontSize: 13 },
     }),

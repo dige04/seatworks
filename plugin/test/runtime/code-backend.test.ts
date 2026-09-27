@@ -7,13 +7,13 @@ import { codeIndex } from "../../server/runtime/seat/code-index.ts";
 import { tempDir } from "../tempdir.ts";
 import { entry, fakeIde, fakeSemble, gone, ideConfig, proxy, repo, searchConfig, within } from "./code-fakes.ts";
 
-/** The desk's own client of the shipped IntelliJ entry, reaching `url`. */
-const deskIndex = (url: string) =>
+/** The desk's own client of the shipped IntelliJ entry, reaching `url`, each in turn when there are several. */
+const deskIndex = (url: string | string[]) =>
   codeIndex({
     ...(entry("intellij-index").proxy as unknown as IndexedProxy),
     id: "intellij-index",
     label: "IntelliJ",
-    backend: { type: "http", url },
+    backend: { type: "http", urls: [url].flat() },
   });
 
 test("a call or a proxy its harness stops stops what it started", async (t) => {
@@ -143,4 +143,9 @@ test("the desk's own calls to the IDE open a copy through an open project, close
   const cwd = repo();
   kept.open.add(cwd);
   assert.equal((await deskIndex(kept.url).sync(cwd)).ok, true, "a backend that keeps a session is spoken to within it");
+  assert.equal(
+    (await deskIndex(["http://127.0.0.1:9/mcp", kept.url]).sync(cwd)).ok,
+    true,
+    "of several ports, a dead one is passed over for the next that answers",
+  );
 });

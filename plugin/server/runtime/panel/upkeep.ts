@@ -1,14 +1,12 @@
 import { join } from "node:path";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { seatOf } from "../../catalog/kit/roles.ts";
-import { errorText } from "../../core/errors.ts";
-import { home, paseoHome, stateRoot } from "../../core/paths.ts";
+import { home, paseoHome } from "../../core/paths.ts";
 import { plural } from "../../core/text.ts";
 import type { Seats } from "../../core/ports.ts";
 import { type Project, projectOf } from "../../desk/project/project.ts";
-import type { CleanView, ContentView, OlderSeatsView, UpdateView } from "../../../shared/upkeep-views.ts";
+import type { CleanView, OlderSeatsView, UpdateView } from "../../../shared/upkeep-views.ts";
 import { removeGarbage, scanGarbage } from "../../upkeep/clean.ts";
-import { contentChanges, takeIn } from "../../upkeep/content.ts";
 import { type LiveSeat, olderSeats } from "../../upkeep/older-seats.ts";
 import { applyUpdate, checkUpdate, npmInstall, reloadSoon } from "../../upkeep/update.ts";
 import type { TeamSource } from "../team-source.ts";
@@ -55,16 +53,6 @@ export class UpkeepPanel implements UpkeepRpc {
 
   async olderSeats(): Promise<OlderSeatsView> {
     return olderSeats({ kit: this.deps.kit, home: home(), live: await this.live(), now: Date.now() });
-  }
-
-  /** What the kit ships differently from what the owner took in, after taking in `seen`; a record that cannot be read is said, not the view failing. */
-  content(seen?: string[]): ContentView {
-    try {
-      if (seen) takeIn(this.deps.kit, stateRoot(), seen);
-      return { changes: contentChanges(this.deps.kit, stateRoot()), fault: null };
-    } catch (error) {
-      return { changes: [], fault: errorText(error) };
-    }
   }
 
   private async live(): Promise<LiveSeat[]> {

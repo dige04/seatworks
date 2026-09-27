@@ -68,20 +68,34 @@ class Backend {
     return this.#connecting;
   }
 
+  /** Over stdio its one command; over HTTP each address in order, the first that takes the handshake kept. */
   async #open() {
     const [command, ...args] = backend.command ?? [];
     if (backend.type === "stdio" && !command) throw new Error("no command is set");
     // Kept quiet: a harness may not read a server's stderr, and a full pipe can stall the backend.
-    const transport = backend.type === "stdio" ? new StdioClientTransport({ command, args, cwd: root, stderr: "ignore" }) : new StreamableHTTPClientTransport(new URL(backend.url));
-    const client = new Client({ name: "seatworks-code", version });
-    client.onclose = () => {
-      if (this.#client === client) this.#client = undefined;
-    };
-    this.#latest = client;
-    await client.connect(transport, { timeout: CALL_MS });
-    this.#client = client;
-    this.connected(client);
-    return client;
+    const transports =
+      backend.type === "stdio"
+        ? [() => new StdioClientTransport({ command, args, cwd: root, stderr: "ignore" })]
+        : (backend.urls ?? []).map((url) => () => new StreamableHTTPClientTransport(new URL(url)));
+    if (transports.length === 0) throw new Error("no address is set");
+    let failed;
+    for (const transport of transports) {
+      const client = new Client({ name: "seatworks-code", version });
+      client.onclose = () => {
+        if (this.#client === client) this.#client = undefined;
+      };
+      this.#latest = client;
+      try {
+        await client.connect(transport(), { timeout: CALL_MS });
+      } catch (error) {
+        failed = error;
+        continue;
+      }
+      this.#client = client;
+      this.connected(client);
+      return client;
+    }
+    throw failed;
   }
 
   /** Bounded as a whole: starting the backend is the slow part, and a harness gave up before "not reachable" was said. */

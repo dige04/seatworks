@@ -208,7 +208,7 @@ export async function withdrawQuestion(
   const lane = withdrawn.parked && withdrawn.lane ? loadLedger(caller.project.state).lanes[withdrawn.lane] : undefined;
   const held = lane?.onHold ? ` Lane ${lane.id} is still on hold for it: resume_lane it when it may go on.` : "";
   const told = await tellKeptOff(desk, caller.project, withdrawn);
-  return ok(`${id} is off the Human's queue; they read why on the Report.${held}${told}`);
+  return ok(`${id} is off the Human's queue; they read why on its card in your chat.${held}${told}`);
 }
 
 export async function recordHumanAnswer(

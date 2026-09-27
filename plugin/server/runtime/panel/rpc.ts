@@ -29,14 +29,12 @@ export interface UpkeepRpc {
   clean(remove?: string[]): Out<typeof contracts.clean>;
   update(apply: boolean, fetch?: boolean): Out<typeof contracts.update>;
   olderSeats(): Out<typeof contracts.olderSeats>;
-  content(seen?: string[]): Out<typeof contracts.content>;
 }
 
 export interface HumanRpc {
   decideLand(project: string, lane: string, approve: boolean, note: string): Out<typeof contracts.landDecide>;
   answer(project: string, question: string, choice: string, note: string): Out<typeof contracts.questionAnswer>;
   orders(project: string): Out<typeof contracts.orders>;
-  report(project: string): Out<typeof contracts.report>;
   reportSeen(project: string, until: number): Out<typeof contracts.reportSeen>;
 }
 
@@ -72,10 +70,8 @@ export function registerRpc(handle: Serve, panel: Panel): void {
   handle(contracts.clean, (input) => upkeep.clean(input.remove));
   handle(contracts.update, (input) => upkeep.update(input.apply, input.fetch));
   handle(contracts.olderSeats, () => upkeep.olderSeats());
-  handle(contracts.content, (input) => upkeep.content(input.seen));
   handle(contracts.landDecide, (input) => human.decideLand(input.project, input.lane, input.approve, input.note));
   handle(contracts.questionAnswer, (input) => human.answer(input.project, input.question, input.choice, input.note));
   handle(contracts.orders, (input) => human.orders(input.project));
-  handle(contracts.report, (input) => human.report(input.project));
   handle(contracts.reportSeen, (input) => human.reportSeen(input.project, input.until));
 }

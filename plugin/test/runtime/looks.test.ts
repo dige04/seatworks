@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { type TestContext, test } from "node:test";
 import { stateRoot } from "../../server/core/paths.ts";
 import type { Judge, Question } from "../../server/core/ports.ts";
-import { contracts } from "../../shared/rpc.ts";
 import { settle } from "./fake-timeline.ts";
 import { type harness, laneWithPeer } from "./harness.ts";
 import { book } from "./noticed.ts";
@@ -276,7 +275,4 @@ test("a seat whose looks carry words but never thinking is recorded once, so wha
     [3],
     "three looks with words and no thinking, told once",
   );
-  const flow = await h.rpc(contracts.flow, { project: h.project.slug });
-  assert.ok("watch" in flow);
-  assert.match(flow.watch.trouble.map((entry) => entry.detail).join("\n"), /no thinking/);
 });

@@ -28,9 +28,9 @@ the evidence between them, and brings you in for what only you can decide.
    has one. The Supervisor lands the lane: the plugin merges in your base if it moved, runs the gate
    on the result, and lands the lane on your local base branch. A lane that touches a path you asked
    to see first waits for your approval.
-4. **You come back to a report.** The panel's **Report** tab tells you, from the record and since you
-   last marked it read: what needs you, what was decided for you, what went ahead on a recommendation,
-   what landed. Pushing and releasing are yours while you are
+4. **You come back to a report.** A card in the Supervisor's chat tells you, from the record and since
+   you last marked it read: what needs you, what was decided for you, what went ahead on a
+   recommendation, what landed. Pushing and releasing are yours while you are
    in the loop, and the Supervisor's while you are not, which the plugin runs for it and never forces;
    every seat's own `git` refuses to push.
 
@@ -39,23 +39,23 @@ the evidence between them, and brings you in for what only you can decide.
 The plugin runs the team and keeps its record. Whether the work is right is always a seat's call, or
 yours.
 
-| It does | It enforces | It never does |
-|---|---|---|
-| Starts one agent per seat, set up for its role | Tasks running side by side in a lane may not hold the same paths | Judge the work |
-| Keeps a shared record of lanes, tasks, questions and incidents | One writer per working copy | Tell a seat what the watch concluded about it |
-| Carries mail between seats, each letter ending with what it asks of its reader, and holds it until its reader can take it, for up to 7 days | A red gate stops a task merging into its lane, unless its Lead accepts it over the gate with a reason, and a lane landing, unless the Supervisor lands it over the gate with a reason | Write your project's concept for you |
-| Keeps a durable record outside your repo | A landing that touches a path you asked to see first waits for you | Write your project's files, but for the Seatworks block in its `AGENTS.md` |
-| Watches Leads and Peers and tells the Supervisor what it sees | Each role's permissions, where its agent allows it, and git commands only the desk runs | Push or release unless told to |
+| It does                                                                                                                                     | It enforces                                                                                                                                                                           | It never does                                                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Starts one agent per seat, set up for its role                                                                                              | Tasks running side by side in a lane may not hold the same paths                                                                                                                      | Judge the work                                                             |
+| Keeps a shared record of lanes, tasks, questions and incidents                                                                              | One writer per working copy                                                                                                                                                           | Tell a seat what the watch concluded about it                              |
+| Carries mail between seats, each letter ending with what it asks of its reader, and holds it until its reader can take it, for up to 7 days | A red gate stops a task merging into its lane, unless its Lead accepts it over the gate with a reason, and a lane landing, unless the Supervisor lands it over the gate with a reason | Write your project's concept for you                                       |
+| Keeps a durable record outside your repo                                                                                                    | A landing that touches a path you asked to see first waits for you                                                                                                                    | Write your project's files, but for the Seatworks block in its `AGENTS.md` |
+| Watches Leads and Peers and tells the Supervisor what it sees                                                                               | Each role's permissions, where its agent allows it, and git commands only the desk runs                                                                                               | Push or release unless told to                                             |
 
 ## The team
 
-| Role | Owns | Starts and ends | Default agent |
-|---|---|---|---|
-| Supervisor | Your intent, across lanes: opens, lands and drops them, answers Leads, and is the only seat that asks you anything | You start it | Claude Code · `claude-opus-5` · high |
-| Lead | One lane: its tasks, their order, and what is accepted | Started with its lane; stays after the lane closes until the Supervisor releases it | Claude Code · `claude-opus-5` · medium |
-| Peer | One task, and the engineering judgement inside it | Started with its task; stays after the task is accepted until its Lead releases it or the lane closes, and never takes another | Claude Code · `claude-opus-5` · medium |
-| Reviewer | A review of one change, in a copy of its own at the commit it reads | Started with its review; ends when its Lead cuts the review or the lane closes | Claude Code · `claude-opus-5` · medium |
-| Watcher | The watch's questions, one case at a time, when you choose a seat to answer them | Started when a case first needs it; let go once no lane is open | The Peer's, until you set its own |
+| Role       | Owns                                                                                                               | Starts and ends                                                                                                                | Default agent                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| Supervisor | Your intent, across lanes: opens, lands and drops them, answers Leads, and is the only seat that asks you anything | You start it                                                                                                                   | Claude Code · `claude-opus-5` · high   |
+| Lead       | One lane: its tasks, their order, and what is accepted                                                             | Started with its lane; stays after the lane closes until the Supervisor releases it                                            | Claude Code · `claude-opus-5` · medium |
+| Peer       | One task, and the engineering judgement inside it                                                                  | Started with its task; stays after the task is accepted until its Lead releases it or the lane closes, and never takes another | Claude Code · `claude-opus-5` · medium |
+| Reviewer   | A review of one change, in a copy of its own at the commit it reads                                                | Started with its review; ends when its Lead cuts the review or the lane closes                                                 | Claude Code · `claude-opus-5` · medium |
+| Watcher    | The watch's questions, one case at a time, when you choose a seat to answer them                                   | Started when a case first needs it; let go once no lane is open                                                                | The Peer's, until you set its own      |
 
 Roles are data in `plugin/roles.json`, not code, and each has the tool set it names in
 `plugin/mcp/tools.json`.
@@ -65,13 +65,13 @@ Roles are data in `plugin/roles.json`, not code, and each has the tool set it na
 Any role can sit on any of these five agents. You pick one per role in the panel, with its model and
 thinking level where the agent offers them.
 
-| Agent | Before its first seat | Sandbox | Mail into a running turn |
-|---|---|---|---|
-| Claude Code | `claude` signed in once, outside any seat; every Claude seat shares that login | yes | yes |
-| Codex | `codex login` once; the `codex` CLI must be on the machine that runs the daemon | yes | yes |
-| Pi | `pi` signed in, and `pi install npm:pi-mcp-adapter` once: the adapter is how a Pi seat reaches the desk | no | yes |
-| Oh My Pi | `omp` signed in once, outside any seat (`/login`) | no | no, it waits for the turn to end |
-| OpenCode | `opencode auth login` once, outside any seat | no | yes |
+| Agent       | Before its first seat                                                                                   | Sandbox | Mail into a running turn         |
+| ----------- | ------------------------------------------------------------------------------------------------------- | ------- | -------------------------------- |
+| Claude Code | `claude` signed in once, outside any seat; every Claude seat shares that login                          | yes     | yes                              |
+| Codex       | `codex login` once; the `codex` CLI must be on the machine that runs the daemon                         | yes     | yes                              |
+| Pi          | `pi` signed in, and `pi install npm:pi-mcp-adapter` once: the adapter is how a Pi seat reaches the desk | no      | yes                              |
+| Oh My Pi    | `omp` signed in once, outside any seat (`/login`)                                                       | no      | no, it waits for the turn to end |
+| OpenCode    | `opencode auth login` once, outside any seat                                                            | no      | yes                              |
 
 Every seat reads your project's own instructions: Claude Code reads `CLAUDE.md`, or `AGENTS.md` when
 the project has no `CLAUDE.md`, and the others read `AGENTS.md`. Every seat's `PATH` refuses the
@@ -108,17 +108,11 @@ paseo plugin install "$PWD"
 
 Paseo remembers where the clone is. If you move it, install it again.
 
-**Keeping it current.** The **Plugin** tab shows the version that runs and, once checked, the one on
-the clone's branch. **Update** only moves forward, runs `npm install` when the packages changed, and
-reloads the plugin. It is offered only once no seat is left in any project, idle ones included,
-because every project moves to the new version at once. Below the version is one row for each thing
-that needs you:
-
-- A **prompt** or **skill** that changed, came or went, to read in git and mark seen. Where you keep
-  your own copy of it under `~/.local/share/seatworks-v3/own/`, yours stays the one in use, and you
-  are still told when the original changes.
-- Changed **guides** and **records**, named together.
-- Seats started before this version, in each project.
+**Keeping it current.** The **Plugin** page, under Seatworks in Paseo's sidebar, shows the version that
+runs and, once checked, the one on the clone's branch. **Update** only moves forward, runs
+`npm install` when the packages changed, and reloads the plugin. It is offered only once no seat is
+left in any project, idle ones included, because every project moves to the new version at once.
+Seats started before this version are named, in each project.
 
 **Clean up** lists seat folders, working copies and copies nothing uses any more, and removes only
 what you pick.
@@ -126,7 +120,9 @@ what you pick.
 ## First run
 
 1. In Paseo, open **Seatworks** in the sidebar.
-2. **Add project**, pick the repository, choose an agent for each role, and attach. Attaching puts a
+2. **Add project**, pick the repository, choose an agent for each role, or start from a level, and
+   attach. The levels, Cheap, Balanced and Max, are yours to set under **This machine › Defaults**:
+   each gives some roles an agent and model, and a project copies the one you pick. Attaching puts a
    Seatworks block, between `<!-- seatworks:begin … -->` and `<!-- seatworks:end -->`, at the end of
    the project's `AGENTS.md`, and every seat also gets it through its agent's own instructions. Commit
    it: the Supervisor is told whenever attaching changes it, and a lane in your checkout does not
@@ -150,25 +146,29 @@ everything it keeps lives under `~/.local/share/seatworks-v3/`.
 
 ## When the team needs you
 
-A project's panel has seven tabs: **Team** (an agent per role, and the watch), **Flow**, **Report**,
-**Orders**, **MCP** (optional servers per role), **Health**, and **Plugin**, which keeps the plugin
-current. Three of them are where you meet the work:
+Seatworks plugs into Paseo's own places rather than a screen of its own:
 
-- **Flow**, with **Follow the team live** on, starts with what waits for you. Each question shows
-  its choices, the Supervisor's recommendation and what goes ahead while you are silent: a question
-  that can be undone goes on with the recommendation at once, a costly one until its lane reports
-  ready, and one that cannot be undone holds its lane now. Answer with a choice or decline it, with
-  a note if you like. A landing held for you shows the desk's evidence; approve it and it lands,
-  send it back and your note goes to the Lead. Below that are the lanes and tasks, live.
-- **Report** is read from the record and written by no agent, from where you last marked it read:
-  what needs you, first what stops the Supervisor or a lane, with how long each has waited; what was
-  decided for you (pushes and tags, merges and landings over a red gate with their reasons,
-  permissions given or refused, asks a Lead settled when nobody answered); what went ahead on a
-  recommendation, what landed, what could not be undone, how often your answers took the
-  recommendation and how fast, and how many of a review's findings the next review of the same work
-  found resolved, by the role that made them, and what each lane spent, as its agents report it.
-- **Orders** shows what you settled, read only: the paths you see first, the risk rules, where lanes
-  work, and `CONTEXT.md`. You change them by telling the Supervisor.
+- **The Supervisor's chat** is where you meet the work. A question for you is a card drawn like
+  Paseo's own question: its choices, the Supervisor's recommendation first, and what goes ahead while
+  you are silent. A question that can be undone goes on with the recommendation at once, a costly one
+  until its lane reports ready, and one that cannot be undone holds its lane now. Choose, decline or
+  withdraw it, with a note if you like. A landing held for you is a card with the desk's evidence
+  first; approve it and it lands, send it back and your note goes to the Lead. A card turns into one
+  line where it stands once it is settled. The report card is read from the record and written by no
+  agent, from where you last marked it read: what needs you, what was decided for you (pushes and
+  tags, merges and landings over a red gate with their reasons, permissions given or refused, asks a
+  Lead settled when nobody answered), what went ahead on a recommendation, what landed, what could
+  not be undone, how often your answers took the recommendation and how fast, how many of a review's
+  findings the next review found resolved, and what each lane spent, as its agents report it.
+- **A pill above every seat's chat** counts what waits for you in its project, and opens the same
+  cards, so you can answer from whichever chat is open.
+- **The Team tab**, beside Files and Changes, is the team at a glance: a line a lane, with what it is
+  doing or who it waits on, opened to its seats; a seat opens its chat.
+- **The Seatworks page** in Paseo's sidebar is for setup only: your projects, **Add project**, and for
+  each project **Team** (an agent per role, the watch, and whether you are in the loop), **Rules**
+  (the paths you see first, the risk rules, where lanes work, and `CONTEXT.md`, read only: you change
+  them by telling the Supervisor), **MCP** (optional servers, the roles that get each, and their
+  settings) and **Health**, which checks itself.
 
 You can also answer a question in the Supervisor's chat, and it records your answer in your own words.
 You may type into any seat's chat: what you write to a Lead or a Peer is passed on to the Supervisor.
@@ -218,10 +218,10 @@ agents, with real permissions, and they cost money.
 
 ## Docs
 
-| Read | When you want |
-|---|---|
+| Read                                    | When you want                                                         |
+| --------------------------------------- | --------------------------------------------------------------------- |
 | [ANTIPATTERNS.md](docs/ANTIPATTERNS.md) | How a team of agents goes wrong, and which of those the watch can see |
-| [AGENTS.md](AGENTS.md) | The rules this code follows, before you change it |
+| [AGENTS.md](AGENTS.md)                  | The rules this code follows, before you change it                     |
 
 ## License
 

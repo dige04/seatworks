@@ -9,7 +9,6 @@ const MACHINE_OWNED = [
   "intents.json",
   "keys.json",
   "kit.json",
-  "content.json",
   "models.json",
   "bin",
   "content",

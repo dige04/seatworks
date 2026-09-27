@@ -9,13 +9,12 @@ import { laneOfLead, taskOfPeer } from "../domain/ledger.ts";
 import { loadLedger } from "../desk/store/ledger.ts";
 import { type Project, gateCommands, projectOf, readProjectConfig } from "../desk/project/project.ts";
 import type { TeamSource } from "./team-source.ts";
-import type { Troubles } from "./troubles.ts";
 import type { Fact } from "../domain/incident.ts";
 import { callsTo } from "./watch/facts.ts";
 import type { SeatContext, SeatLook, SeatWatch, WatchedSeat, Watches } from "./watch/watches.ts";
 import { daemonLog } from "../core/logger.ts";
 
-type WatchingDeps = { kit: Kit; source: TeamSource; desk: Desk; watches: () => Watches; troubles: Troubles };
+type WatchingDeps = { kit: Kit; source: TeamSource; desk: Desk; watches: () => Watches };
 
 /** Between the watch and the desk: what the watch reads of a seat, and what it noticed. */
 export class Watching {
@@ -85,7 +84,7 @@ export class Watching {
       .catch((error) => daemonLog.error("what the watch noticed could not be recorded:", error));
   }
 
-  /** A seat whose agent shows the watch no thinking: what reads thinking is blind to it, which the Human can only see here. */
+  /** A seat whose agent shows the watch no thinking: what reads thinking is blind to it, recorded for whoever reads the log. */
   private blind(project: Project, watch: SeatWatch, look: SeatLook): void {
     const { seat } = watch;
     this.deps.desk.event(project, {
@@ -94,11 +93,6 @@ export class Watching {
       provider: seat.provider,
       looks: look.thoughtless,
     });
-    this.deps.troubles.add(
-      project,
-      "watch.thoughtless",
-      `${look.thoughtless} looks at ${seat.title ?? seat.id} held its words and no thinking: what the watch reads in thinking is blind to it until its agent shows its thinking`,
-    );
   }
 
   /** A look's new words go to the brains: the seat's own only, its thinking and what it said, never a tool's output. */

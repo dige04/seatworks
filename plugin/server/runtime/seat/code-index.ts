@@ -25,7 +25,7 @@ function routeOf(text: string, route: Route | undefined): string | undefined {
 }
 
 export function codeIndex(proxy: IndexedProxy): CodeIndex {
-  const { url } = proxy.backend;
+  const { urls } = proxy.backend;
   const pinned = (path: string, args: Record<string, unknown> = {}) =>
     proxy.pin ? { ...args, [proxy.pin]: path } : args;
   return {
@@ -36,15 +36,15 @@ export function codeIndex(proxy: IndexedProxy): CodeIndex {
       if (!hook) return { ok: true, text: "nothing to open" };
       const args = withRoot(hook.args ?? pinned(path), path) as Record<string, unknown>;
       const timeoutMs = (hook.timeoutSeconds ?? 330) * 1000;
-      const first = await callTool(url, hook.tool, args, timeoutMs);
+      const first = await callTool(urls, hook.tool, args, timeoutMs);
       const route = routeOf(first.text, hook.route);
-      return route ? callTool(url, hook.tool, pinned(route, args), timeoutMs) : first;
+      return route ? callTool(urls, hook.tool, pinned(route, args), timeoutMs) : first;
     },
     close(path) {
       const hook = proxy.close;
       if (!hook) return Promise.resolve({ ok: true, text: "nothing to close" });
       return callTool(
-        url,
+        urls,
         hook.tool,
         withRoot(hook.args ?? pinned(path), path) as Record<string, unknown>,
         (hook.timeoutSeconds ?? 60) * 1000,
@@ -52,7 +52,7 @@ export function codeIndex(proxy: IndexedProxy): CodeIndex {
     },
     sync: (path) =>
       proxy.sync
-        ? callTool(url, proxy.sync.tool, pinned(path), 60_000)
+        ? callTool(urls, proxy.sync.tool, pinned(path), 60_000)
         : Promise.resolve({ ok: true, text: "nothing to sync" }),
   };
 }

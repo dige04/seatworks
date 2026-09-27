@@ -1,7 +1,7 @@
 import { isAbsolute } from "node:path";
 import { z } from "zod";
 import { Json, text, texts } from "./fields.ts";
-import { Pattern } from "../../../../shared/settings.ts";
+import { Pattern, SettingValue } from "../../../../shared/settings.ts";
 
 export const McpTransport = z.enum(["stdio", "http", "sse"]);
 
@@ -39,11 +39,17 @@ const Proxy = z.strictObject({
   timeoutSeconds: z.number().positive().optional(),
 });
 
-const McpSetting = z.strictObject({
-  type: z.enum(["number", "string", "boolean"]),
-  label: text,
-  default: z.union([z.string(), z.number(), z.boolean()]).optional(),
-});
+/** A list holds numbers or strings, as `of` says, tried in its order: several ports of an IDE, the first that answers. */
+const McpSetting = z
+  .strictObject({
+    type: z.enum(["number", "string", "boolean", "list"]),
+    of: z.enum(["number", "string"]).optional(),
+    label: text,
+    default: SettingValue.optional(),
+  })
+  .refine((spec) => (spec.type === "list") === (spec.of !== undefined), {
+    error: "names what it holds with `of` exactly when it is a list",
+  });
 
 /** `catalog/mcp/<id>/mcp.json`: a server every seat of its roles may be given, or a proxy the desk runs in front of one. */
 export const McpFile = z

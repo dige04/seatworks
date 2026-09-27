@@ -50,7 +50,7 @@ test("the settings store saves only over what it read, and never over a file it 
   writeFileSync(file, JSON.stringify(onDisk));
   const unknown = readLayer(file);
   assert.equal(unknown.status, "invalid", "a key a newer plugin or a hand edit added makes the whole file unreadable");
-  const refused = writeLayer(file, unknown.revision, { flow: { live: false } }, ok);
+  const refused = writeLayer(file, unknown.revision, { hitl: { on: true } }, ok);
   assert.match(
     refused.status === "invalid" ? refused.error : "",
     /could not be read/,
@@ -65,7 +65,7 @@ test("the settings store saves only over what it read, and never over a file it 
     /is not JSON/,
     "a trailing comma is not a project with no settings yet",
   );
-  assert.equal(writeLayer(file, broken.revision, { flow: { live: false } }, ok).status, "invalid");
+  assert.equal(writeLayer(file, broken.revision, { hitl: { on: true } }, ok).status, "invalid");
   assert.match(
     readFileSync(file, "utf-8"),
     /keep me/,

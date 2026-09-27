@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { KEPT, type Layer } from "../../shared/settings.ts";
-import { countsInstead, leadState, seatText } from "../../client/format/flow.ts";
+import { laneLine, seatLine } from "../../client/format/flow.ts";
 import { incidentLines, judgeWords } from "../../client/format/watch.ts";
 import {
   dropMcp,
   keptRoles,
   modelRow,
   setLanguage,
+  nextSeat,
+  setLevelSeat,
   setReviewSensor,
   setRole,
   withKey,
@@ -125,58 +127,50 @@ test("the model row shows what is in force even when this agent does not list it
   assert.equal(modelRow("", opus).stray, false, "nothing chosen is not a stray choice");
 });
 
-test("a collapsed lane gives up its counts for a Lead that is waiting or gone", () => {
-  const lane = (lead: { status: string; waiting: string[] } | null, open = false) => ({ taskCount: 3, open, lead });
-  assert.equal(countsInstead(lane({ status: "running", waiting: [] })), true, "the ordinary case is the counts");
-  assert.equal(
-    countsInstead(lane({ status: "idle", waiting: [] }, true)),
-    false,
-    "an opened lane shows its Lead and its tasks",
+const asking = { id: "a1", label: "Peer", status: "running", minutes: 2, waiting: ["Write outside the working copy"] };
+const cart: FlowLane = {
+  id: "L1",
+  title: "Cart",
+  status: "open",
+  branch: "lane/l1-cart",
+  copy: "S0",
+  lead: { ...asking, label: "Lead", waiting: [] },
+  kept: [],
+  tasks: [],
+  taskCount: 3,
+  running: 1,
+  open: false,
+};
+const inLoop = { human: true, supervisor: "the Chief" };
+const outOfLoop = { human: false, supervisor: "the Chief" };
+
+test("a lane's line never hides a Lead that waits or has gone behind its counts", () => {
+  assert.equal(laneLine(cart, false, inLoop).text, "1 running", "the ordinary case is the count");
+  assert.deepEqual(
+    laneLine({ ...cart, lead: asking }, false, inLoop),
+    { tone: "you", text: "waits on you" },
+    "lanes start closed, so the lane's line is the only place a Lead waiting on the owner shows",
   );
-  assert.equal(countsInstead({ taskCount: 0, open: false, lead: { status: "idle", waiting: [] } }), false);
   assert.equal(
-    countsInstead(lane({ status: "running", waiting: ["Write outside the working copy"] })),
-    false,
-    "lanes start collapsed, so the Lead's line is the only place a seat waiting on the owner shows",
+    laneLine({ ...cart, lead: { ...asking, waiting: [], status: "gone" } }, false, inLoop).text,
+    "Lead gone",
+    "and a Lead that has gone is never news a count may hide",
   );
-  assert.equal(
-    countsInstead(lane({ status: "gone", waiting: [] })),
-    false,
-    "and a Lead that has gone is never news the counts may hide",
-  );
-  assert.equal(countsInstead(lane(null)), false);
 });
 
 test("a seat waiting on a permission names who answers it, and a landing held before the Human stepped out says so", () => {
-  const asking = {
-    id: "a1",
-    label: "Peer",
-    status: "running",
-    minutes: 2,
-    waiting: ["Write outside the working copy"],
-  };
-  assert.equal(seatText(asking, "you"), "waiting on you · Write outside the working copy");
-  assert.equal(
-    seatText(asking, "the Chief"),
-    "waiting on the Chief · Write outside the working copy",
+  assert.deepEqual(seatLine(asking, inLoop), { tone: "you", text: "waits on you" });
+  assert.deepEqual(
+    seatLine(asking, outOfLoop),
+    { tone: "wait", text: "waits on the Chief" },
     "out of the loop, whoever supervises answers it, not the Human",
   );
   const held: FlowLane = {
-    id: "L1",
-    title: "Cart",
-    status: "open",
-    branch: "lane/l1-cart",
-    copy: "S0",
-    lead: asking,
-    kept: [],
-    tasks: [],
-    taskCount: 1,
-    running: 1,
-    open: false,
+    ...cart,
     landApproval: { minutes: 3, approved: false, signals: ["It touches src/auth."], evidence: [] },
   };
-  assert.equal(leadState(held, "you", true), "landing waits for your approval");
-  assert.equal(leadState(held, "the Chief", false), "landing held from while you were in the loop");
+  assert.deepEqual(laneLine(held, false, inLoop), { tone: "you", text: "waits on you" });
+  assert.deepEqual(laneLine(held, false, outOfLoop), { tone: "wait", text: "held from while you were in" });
 });
 
 const judge = { label: "Jev", minutes: null, detail: null };
@@ -222,4 +216,22 @@ test("the watch card says in words where an incident has got to and who answers 
     "1 held · nobody is seated to tell",
   ]);
   for (const [state, words] of JUDGES) assert.deepEqual(judgeWords(state, "Judge"), words, state.state);
+});
+
+test("a level's seat: a new agent drops the old one's model and thinking, a new model its thinking, and an emptied level leaves no trace", () => {
+  const opus = { harness: "claude", model: "opus", thinking: "high" };
+  assert.deepEqual(nextSeat(opus, { thinking: "medium" }), { ...opus, thinking: "medium" });
+  assert.deepEqual(nextSeat(opus, { model: "sonnet" }), { harness: "claude", model: "sonnet" });
+  assert.deepEqual(nextSeat(opus, { harness: "omp" }), { harness: "omp" });
+  assert.deepEqual(nextSeat(opus, { harness: "claude", model: "opus" }), opus, "the same pick again changes nothing");
+  const set = setLevelSeat({ rules: "Keep diffs small." }, "max", "lead", opus);
+  assert.deepEqual(set.levels, { max: { lead: opus } });
+  const both = setLevelSeat(set, "cheap", "peer", { harness: "omp" });
+  assert.deepEqual(Object.keys(both.levels ?? {}), ["max", "cheap"], "one level set leaves the others alone");
+  assert.deepEqual(
+    setLevelSeat(set, "max", "lead", { harness: "omp" }).levels?.max?.lead,
+    { harness: "omp" },
+    "put in whole",
+  );
+  assert.deepEqual(setLevelSeat(set, "max", "lead", null), { rules: "Keep diffs small." });
 });

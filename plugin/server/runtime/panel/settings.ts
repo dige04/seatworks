@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { type Layer, LayerSchema } from "../../../shared/settings.ts";
+import { LEVELS, type Layer, LayerSchema } from "../../../shared/settings.ts";
 import type {
   CatalogView,
   Check,
@@ -27,6 +27,18 @@ import type { SettingsRpc } from "./rpc.ts";
 import { describeTeam } from "./team-view.ts";
 
 type Target = { file: string; project?: Project };
+
+/** What each level would break of the team it is picked over, named by its level; a project's layer holds none. */
+function levelProblems(layer: Layer, resolve: (layer: Layer) => Team, project?: Project): string[] {
+  if (project) return layer.levels ? ["Levels are this machine's: set them in Defaults, not in one project"] : [];
+  const team = resolve(layer);
+  return LEVELS.flatMap(({ id, label }) => {
+    const roles = layer.levels?.[id];
+    if (!roles) return [];
+    const picked = resolve(foldDraft(layer, { roles }, (role) => team.roles[role]?.harness.id));
+    return picked.errors.filter((error) => !team.errors.includes(error)).map((error) => `${label}: ${error}`);
+  });
+}
 
 type SettingsDeps = {
   kit: Kit;
@@ -68,10 +80,14 @@ export class SettingsPanel implements SettingsRpc {
     // Only what this save introduces is refused: a bad rule refuses a seat's whole build, long after the save, and an
     // error the settings already had, such as a role the kit no longer has, would refuse every save, the fix included.
     const check = (layer: Layer) => {
-      const before = resolve(layerValues(target.file));
+      const held = layerValues(target.file);
+      const before = resolve(held);
       const fresh = (problems: string[], had: string[]) => problems.filter((problem) => !had.includes(problem));
       const team = resolve(layer);
-      const errors = fresh(team.errors, before.errors);
+      const errors = fresh(
+        [...team.errors, ...levelProblems(layer, resolve, target.project)],
+        [...before.errors, ...levelProblems(held, resolve, target.project)],
+      );
       return errors.length > 0 ? errors : fresh(unbuildable(team), unbuildable(before));
     };
     const result = writeLayer(target.file, revision, withKeys(values, layerValues(target.file)), check);

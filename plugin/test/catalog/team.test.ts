@@ -11,7 +11,7 @@ import { tempDir } from "../tempdir.ts";
 
 const kit = makeKit();
 const context = { node: "/bin/node", socket: "/desk.sock" };
-type Proxied = { backend: { url: string }; open: { args: { path: string } }; tools: string[]; instructions: string };
+type Proxied = { backend: { urls: string[] }; open: { args: { path: string } }; tools: string[]; instructions: string };
 type Served = Record<string, { args?: string[]; url?: string; type?: string } | undefined>;
 const served = (team: ReturnType<typeof resolveTeam>, role: string) => serversFor(kit, team, role, context) as Served;
 const proxied = (servers: Served, id: string) => JSON.parse(servers[id]?.args?.[1] ?? "{}") as Proxied;
@@ -123,7 +123,7 @@ const ERRORS: [typeof kit, Layer, Layer, RegExp[]][] = [
     [
       /^The machine settings name an unknown role scout$/,
       /^The MCP server nope has nothing to connect to/,
-      /^IDE setting port must be a number$/,
+      /^IDE setting port must be a list of numbers$/,
       /^IDE has no setting named host$/,
       /^IDE can't be given to the scribe role/,
       /^Oh My Pi has no supervisor settings/,
@@ -211,7 +211,7 @@ test("each seat is told and given what its servers, its role and the Human say, 
   );
 
   const machine: Layer = {
-    mcp: { docs: { enabled: true }, ide: { settings: { port: 1234 }, roles: ["lead", "peer"] } },
+    mcp: { docs: { enabled: true }, ide: { settings: { port: [1234, 1235] }, roles: ["lead", "peer"] } },
     rules: "Keep diffs small.",
     attention: { longTurnMinutes: 45, lookMinutes: 8 },
   };
@@ -241,9 +241,14 @@ test("each seat is told and given what its servers, its role and the Human say, 
   );
   const ide = proxied(served(team, "peer"), "ide");
   assert.deepEqual(
-    [ide.backend.url, ide.open.args.path, ide.tools, ide.instructions],
-    ["http://127.0.0.1:1234/mcp", "{root}", ["ide_find_references", "ide_refactor_rename"], "Prefer the IDE tools."],
-    "a proxy is configured from its settings, with the tools its catalog gives the role",
+    [ide.backend.urls, ide.open.args.path, ide.tools, ide.instructions],
+    [
+      ["http://127.0.0.1:1234/mcp", "http://127.0.0.1:1235/mcp"],
+      "{root}",
+      ["ide_find_references", "ide_refactor_rename"],
+      "Prefer the IDE tools.",
+    ],
+    "a proxy is configured from its settings, an address for each port in order, with the tools its catalog gives the role",
   );
   assert.equal(
     rulesFor(team, "peer"),

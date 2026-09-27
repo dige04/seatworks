@@ -199,8 +199,8 @@ createInterface({ input: process.stdin }).on("line", (line) => {
   return file;
 }
 
-/** The shipped IntelliJ entry as the desk hands it to a seat's proxy, reaching `url` and waiting briefly on its index. */
-export function ideConfig(url: string, tools: string[]) {
+/** The shipped IntelliJ entry as the desk hands it to a seat's proxy, reaching `url` (each in turn) and waiting briefly on its index. */
+export function ideConfig(url: string | string[], tools: string[]) {
   const { label, instructions, proxy } = entry("intellij-index");
   return {
     name: "intellij-index",
@@ -208,7 +208,7 @@ export function ideConfig(url: string, tools: string[]) {
     instructions,
     tools,
     ...proxy,
-    backend: { type: "http", url },
+    backend: { type: "http", urls: [url].flat() },
     wait: { ...proxy.wait, seconds: 2, pollSeconds: 0.01 },
   };
 }

@@ -26,7 +26,7 @@ test("a lane touching a path the Human asked to be asked about first waits for t
   const held = await land();
   assert.match(
     held.text,
-    /Lane L1 was not landed: it waits for the Human's approval, on the Flow tab of the panel\. It changes src\/auth\/login\.ts, under src\/auth[^]*1 commit; 1 file[^]*You cannot approve it/,
+    /Lane L1 was not landed: it waits for the Human's approval, on a card in your chat\. It changes src\/auth\/login\.ts, under src\/auth[^]*1 commit; 1 file[^]*You cannot approve it/,
   );
   assert.equal(onMain("src/auth/login.ts"), false);
   assert.equal(h.ledger().lanes.L1!.status, "open");
@@ -76,8 +76,26 @@ test("a lane touching a path the Human asked to be asked about first waits for t
 
 test("a landing sent back stays open without its READY, and held again is approved as the card showed it: before a READY, over a red gate", async () => {
   const { h, sup, lane, land, onMain } = await laneWith(risky, ["src/auth"]);
+  // The card in the Supervisor's chat: who it is posted to, what it says of the lane, and how it ended.
+  const card = async () =>
+    (await h.cards())
+      .filter((each) => each.kind === "seatworks.landing")
+      .map((each) => {
+        const { lane: held, settled } = each.data as { lane: { id: string }; settled: { text: string } | null };
+        return [each.to, each.id, held.id, settled?.text ?? "waits"];
+      });
   await land();
+  assert.deepEqual(
+    await card(),
+    [[sup, `${h.project.slug}:L1`, "L1", "waits"]],
+    "the held landing is a card in the chat",
+  );
   assert.match(await decide(h, false, "put the login change behind a flag."), /Lane L1 is sent back to its Lead/);
+  assert.deepEqual(
+    await card(),
+    [[sup, `${h.project.slug}:L1`, "L1", "Sent back to its Lead"]],
+    "and the same card, where it stood, says how it ended",
+  );
   const back = h.ledger().lanes.L1!;
   assert.deepEqual([back.status, back.landApproval, back.ready], ["open", undefined, undefined]);
   await h.idle(lane.lead!);
@@ -93,7 +111,9 @@ test("a landing sent back stays open without its READY, and held again is approv
   const held = await h.call(sup, "supervisor", "land_lane", { lane: "L1", overGate: true, reason });
   assert.match(held.text, /waits for the Human's approval[^]*Gate: failed on the lane\./);
   assert.match(held.text, /Its Lead has not reported it ready as it now stands/);
+  assert.deepEqual(await card(), [[sup, `${h.project.slug}:L1`, "L1", "waits"]], "held again, the card asks again");
   assert.match(await decide(h, true, ""), /^Approved: Lane L1 closed[^]*over a red gate/);
+  assert.deepEqual(await card(), [[sup, `${h.project.slug}:L1`, "L1", "Landed"]]);
   assert.ok(onMain("src/auth/login.ts"));
   assert.equal(h.events("lane.closed").find((event) => event.lane === "L1")?.reason, reason);
 });
@@ -231,7 +251,11 @@ test("a landing the Human approves twice at once lands once, and the second appr
 
 test("with the Human out of the loop nothing waits for them: a lane touching what they once asked to be asked about lands", async () => {
   const { h, sup, land, onMain } = await laneWith(risky, ["src/auth"], { hitl: false });
-  assert.doesNotMatch(h.heard(sup).join("\n"), /Flow tab/, "the READY it sent asks nobody to wait for the Human");
+  assert.doesNotMatch(
+    h.heard(sup).join("\n"),
+    /a card in your chat/,
+    "the READY it sent asks nobody to wait for the Human",
+  );
   const landed = await land();
   assert.equal(landed.ok, true, landed.text);
   assert.doesNotMatch(landed.text, /waits for the Human/);

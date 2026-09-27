@@ -1,38 +1,23 @@
-import { join } from "node:path";
 import type { Kit } from "../../catalog/kit/kit.ts";
-import { errorText } from "../../core/errors.ts";
-import type { Seats } from "../../core/ports.ts";
-import { readJson, writeJson } from "../../core/store.ts";
+import { daemonLog } from "../../core/logger.ts";
 import type { Human } from "../../desk/human/human.ts";
 import type { Project } from "../../desk/project/project.ts";
 import { ordersView } from "../../desk/views/orders.ts";
-import { reportView } from "../../desk/views/report.ts";
-import type { LandDecided, OrdersRead, QuestionAnswered, ReportRead, ReportSeen } from "../../../shared/views.ts";
+import type { LandDecided, OrdersRead, QuestionAnswered, ReportSeen } from "../../../shared/views.ts";
 import { unknownProject } from "./projects.ts";
 import type { HumanRpc } from "./rpc.ts";
-import type { TeamSource } from "../team-source.ts";
 import type { ProjectRegistry } from "../project-registry.ts";
-import type { PermissionWaits } from "../permission-waits.ts";
-import type { Seated } from "../../desk/views/report-needs.ts";
+import type { ChatCards } from "./chat-cards.ts";
+import { markSeen } from "./report-seen.ts";
 
 type Refused = { error: string };
 
 type HumanDeps = {
   kit: Kit;
-  source: TeamSource;
   registry: Pick<ProjectRegistry, "named">;
-  seats: Pick<Seats, "open">;
   human: Human;
-  waits: Pick<PermissionWaits, "heardAt">;
+  cards: Pick<ChatCards, "sync">;
 };
-
-/** Where the Human last marked the Report read; lost, the next Report only runs over more of the record. */
-const seenFile = (project: Project) => join(project.state, "report.json");
-
-function seenAt(project: Project): number | null {
-  const seen = readJson<{ seen?: unknown }>(seenFile(project), {}).seen;
-  return typeof seen === "number" ? seen : null;
-}
 
 /** The Human's side of the panel for one project: what only they may decide, and what they read of it. */
 export class HumanPanel implements HumanRpc {
@@ -51,6 +36,7 @@ export class HumanPanel implements HumanRpc {
     const project = this.project(slug);
     if ("error" in project) return project;
     const decided = await this.deps.human.decideLand(project, lane, approve, note.trim());
+    if (decided.ok) await this.settleCards(project);
     return decided.ok ? { decided: decided.text } : { error: decided.text };
   }
 
@@ -58,7 +44,15 @@ export class HumanPanel implements HumanRpc {
     const project = this.project(slug);
     if ("error" in project) return project;
     const said = await this.deps.human.answer(project, question.trim().toUpperCase(), choice.trim(), note.trim());
+    if (said.ok) await this.settleCards(project);
     return said.ok ? { answered: said.text } : { error: said.text };
+  }
+
+  /** The card they acted on settles at once rather than at the next round; a failure leaves it to that round. */
+  private async settleCards(project: Project): Promise<void> {
+    await this.deps.cards
+      .sync(project)
+      .catch((error) => daemonLog.error("the cards in the Supervisor's chat could not be posted:", error));
   }
 
   orders(slug: string): OrdersRead {
@@ -66,30 +60,12 @@ export class HumanPanel implements HumanRpc {
     return "error" in project ? project : ordersView(this.deps.kit, project);
   }
 
-  async report(slug: string): Promise<ReportRead> {
-    const project = this.project(slug);
-    if ("error" in project) return project;
-    const { kit, source, seats, waits } = this.deps;
-    const seated: Seated = await seats.open().then(
-      (open) => ({ seats: open, heardAt: (seat: string, request: string) => waits.heardAt(seat, request) }),
-      (error: unknown) => ({ error: errorText(error) }),
-    );
-    const { hitl } = source.teamFor(project);
-    return reportView(project, {
-      kit,
-      questionsPerDay: hitl.questionsPerDay,
-      human: hitl.on,
-      from: seenAt(project),
-      seated,
-    });
-  }
-
   /** `until` is the end of the page they read, so what came after it stays for the next; a page older than the mark moves nothing. */
-  reportSeen(slug: string, until: number): ReportSeen {
+  async reportSeen(slug: string, until: number): Promise<ReportSeen> {
     const project = this.project(slug);
     if ("error" in project) return project;
-    const seen = Math.max(seenAt(project) ?? 0, Math.min(until, Date.now()));
-    writeJson(seenFile(project), { seen });
+    const seen = markSeen(project, until);
+    await this.settleCards(project);
     return { seen };
   }
 }

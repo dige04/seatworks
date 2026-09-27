@@ -457,7 +457,7 @@
     {
       "name": "withdraw_question",
       "title": "Withdraw a question",
-      "description": "Take one of your questions off the Human's queue when it no longer needs them: they read why on the Report. A lane held for it stays held until you resume it.",
+      "description": "Take one of your questions off the Human's queue when it no longer needs them: they read why on its card in your chat. A lane held for it stays held until you resume it.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,

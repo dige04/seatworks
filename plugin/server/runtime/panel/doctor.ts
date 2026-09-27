@@ -3,9 +3,9 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Check } from "../../../shared/views.ts";
-import type { HarnessSpec, Kit, ProxySpec } from "../../catalog/kit/kit.ts";
+import type { HarnessSpec, Kit } from "../../catalog/kit/kit.ts";
 import { paseoToolsPolicy } from "../../catalog/kit/harness-files.ts";
-import { connectToServer, hookTools, proxyOf } from "../../catalog/seat/servers.ts";
+import { type FilledProxy, connectToServer, hookTools, proxyOf } from "../../catalog/seat/servers.ts";
 import { type McpState, toolsFor } from "../../catalog/team/mcp-states.ts";
 import type { RoleSeat } from "../../catalog/team/role-seats.ts";
 import type { Team } from "../../catalog/team/team.ts";
@@ -186,7 +186,7 @@ async function serverCheck(team: Team, state: McpState): Promise<Found | undefin
 }
 
 /** A proxy's backend: its command on PATH, or a server at its address exposing every tool the team uses of it. */
-async function proxyCheck(state: McpState, proxy: ProxySpec, users: RoleSeat[], help: string): Promise<Found> {
+async function proxyCheck(state: McpState, proxy: FilledProxy, users: RoleSeat[], help: string): Promise<Found> {
   const id = `mcp:${state.id}`;
   if (proxy.backend.type === "stdio") {
     const bin = proxy.backend.command[0] ?? "";
@@ -197,20 +197,29 @@ async function proxyCheck(state: McpState, proxy: ProxySpec, users: RoleSeat[], 
       detail: ok ? `${state.label} starts through ${bin}.` : `${state.label} needs \`${bin}\` on PATH.${help}`,
     };
   }
-  const { url } = proxy.backend;
-  const listed = await toolNames(url, 3000);
-  if (!listed.names) return { id, ok: false, detail: `No ${state.label} server answered at ${url}.${help}` };
-  const exposed = new Set(listed.names);
+  const { urls } = proxy.backend;
   const needed = new Set<string>([...hookTools(proxy), ...users.flatMap((seat) => toolsFor(state, seat.role))]);
-  const missing = [...needed].filter((tool) => !exposed.has(tool)).sort();
-  return {
-    id,
-    ok: missing.length === 0,
-    detail:
-      missing.length === 0
-        ? `${state.label} at ${url} exposes every tool the team uses.`
-        : `${state.label} at ${url} doesn't expose ${missing.join(", ")}.${help}`,
-  };
+  // Every address at once: the seats take the first that answers, so the check passes when one serves all they use.
+  const read = await Promise.all(
+    urls.map(async (url) => {
+      const listed = await toolNames(url, 3000);
+      const exposed = new Set(listed.names ?? []);
+      return { url, answered: Boolean(listed.names), missing: [...needed].filter((tool) => !exposed.has(tool)).sort() };
+    }),
+  );
+  const answered = read.filter((entry) => entry.answered);
+  if (answered.length === 0)
+    return { id, ok: false, detail: `No ${state.label} server answered at ${urls.join(", ")}.${help}` };
+  const serving = answered.find((entry) => entry.missing.length === 0);
+  const silent = read.filter((entry) => !entry.answered).map((entry) => entry.url);
+  const also = silent.length > 0 ? ` Nothing answered at ${silent.join(", ")}.` : "";
+  return serving
+    ? { id, ok: true, detail: `${state.label} at ${serving.url} exposes every tool the team uses.${also}` }
+    : {
+        id,
+        ok: false,
+        detail: `${state.label} at ${answered[0]!.url} doesn't expose ${answered[0]!.missing.join(", ")}.${also}${help}`,
+      };
 }
 
 /** A server the seats reach themselves: its command on PATH, or an address that answers; an SSE server is not probed. */

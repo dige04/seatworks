@@ -395,7 +395,7 @@ test("with the Human out of the loop, a Lead's ask nobody answers in time goes b
   );
   assert.match(heard(h, sup), new RegExp(`LAPSED ${id} from the Lead of L1: unanswered for 21 minutes`));
   assert.match((await h.call(sup, "supervisor", "answer", { ask: id, text: "keep it" })).text, /already answered/);
-  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  const report = await h.report();
   assert.ok("decided" in report);
   assert.deepEqual(
     report.decided.map((item) => [item.title, item.detail]),

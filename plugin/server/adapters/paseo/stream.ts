@@ -21,6 +21,7 @@ export type Page = {
 };
 
 export type TimelineHandle = {
+  append(item: { type: "plugin"; id: string; kind: string; version: number; data: unknown }): Promise<unknown>;
   subscribe(handler: (message: StreamMessage) => void): (() => void) & { readonly ready: Promise<void> };
   refetch(options: { direction: "tail" | "after"; cursor?: Cursor; limit?: number }): Promise<Page>;
 };

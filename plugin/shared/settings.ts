@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-export const Scalar = z.union([z.string(), z.number(), z.boolean()]);
+const Scalar = z.union([z.string(), z.number(), z.boolean()]);
+
+/** A server setting's value: one, or an ordered list where its spec says so, the first tried first. */
+export const SettingValue = z.union([Scalar, z.array(z.union([z.string(), z.number()])).min(1)]);
 
 export const RoleChoice = z.strictObject({
   harness: z.string().min(1).optional(),
@@ -25,10 +28,10 @@ export const McpChoice = z.strictObject({
   roles: z.array(z.string()).optional(),
   tools: z.record(z.string(), z.array(z.string())).optional(),
   rule: z.string().optional(),
-  settings: z.record(z.string(), Scalar).optional(),
+  settings: z.record(z.string(), SettingValue).optional(),
 });
 
-export type Scalar = z.infer<typeof Scalar>;
+export type SettingValue = z.infer<typeof SettingValue>;
 export type RoleChoice = z.infer<typeof RoleChoice>;
 export type Connect = z.infer<typeof Connect>;
 export type McpChoice = z.infer<typeof McpChoice>;
@@ -110,9 +113,21 @@ const SensorChoice = z.strictObject({ key: z.string().min(1).optional() });
 
 export const KEPT = "kept, not shown";
 
-const FlowChoice = z.strictObject({
-  live: z.boolean().optional(),
-  everySeconds: z.number().int().min(2).max(120).optional(),
+/** Levels the Human sets up on this machine, each some seats' agent, model and thinking, to pick one from when adding a project. */
+export const LEVELS = [
+  { id: "cheap", label: "Cheap" },
+  { id: "balanced", label: "Balanced" },
+  { id: "max", label: "Max" },
+] as const;
+
+export type LevelId = (typeof LEVELS)[number]["id"];
+
+const LevelSeats = z.record(z.string(), RoleChoice.pick({ harness: true, model: true, thinking: true }));
+
+const LevelsChoice = z.strictObject({
+  cheap: LevelSeats.optional(),
+  balanced: LevelSeats.optional(),
+  max: LevelSeats.optional(),
 });
 
 /** One shape for both layers: the machine's, and a project's over it. */
@@ -120,7 +135,6 @@ export const LayerSchema = z.strictObject({
   roles: z.record(z.string(), RoleChoice).optional(),
   mcp: z.record(z.string(), McpChoice).optional(),
   rules: z.string().optional(),
-  flow: FlowChoice.optional(),
   attention: AttentionChoice.optional(),
   review: ReviewChoice.optional(),
   hitl: HitlChoice.optional(),
@@ -129,6 +143,8 @@ export const LayerSchema = z.strictObject({
   language: z.string().min(1).optional(),
   /** How many gates, rehearsals and setups run at once across this machine's projects: they share its processors. */
   gatesAtOnce: z.number().int().min(1).optional(),
+  /** The machine's only: a project is set up from a level, and keeps what it copied. */
+  levels: LevelsChoice.optional(),
 });
 
 export type Layer = z.infer<typeof LayerSchema>;

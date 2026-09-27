@@ -191,7 +191,10 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     report(true, { gate: { ok: false, text: "failed" } }),
     /^Landing over a red gate is your call: land_lane with overGate/,
   );
-  assert.match(report(true, { asks: ["It changes src/auth/a.ts."] }), /then waits for the Human on the Flow tab/);
+  assert.match(
+    report(true, { asks: ["It changes src/auth/a.ts."] }),
+    /then waits for the Human on a card in your chat/,
+  );
   assert.match(
     report(true, { asks: ["It changes src/auth/a.ts."], changes: true }),
     /^Its reviews asked for changes that nothing on record answers: ask the Lead/,

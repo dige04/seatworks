@@ -275,6 +275,7 @@ export function useSeatworks(project?: string) {
     [data, save],
   );
 
+  const readServer = useCallback((text: string) => latest.current.parseMcp({ text }), []);
   const listFolders = useCallback((path?: string) => latest.current.paths(path ? { path } : {}), []);
   const runDoctor = useCallback(() => latest.current.doctor({ project }), [project]);
   const readStatus = useCallback((slug: string) => latest.current.status({ project: slug }), []);
@@ -288,6 +289,7 @@ export function useSeatworks(project?: string) {
     saved,
     saveError,
     addServer,
+    readServer,
     attach,
     detach,
     listFolders,

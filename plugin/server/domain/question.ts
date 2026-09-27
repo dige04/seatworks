@@ -7,7 +7,7 @@ export type QuestionClass = "reversible" | "costly" | "irreversible";
 
 /**
  * A decision only the Human can make, as the Supervisor put it: a no and a not now are kept apart from an answer, and
- * one the Supervisor withdrew keeps why in its answer's `text`, which the Human reads on the Report.
+ * one the Supervisor withdrew keeps why in its answer's `text`, which the Human reads on its card in the Supervisor's chat.
  */
 export type Question = {
   id: string;

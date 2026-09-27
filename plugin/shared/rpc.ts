@@ -12,14 +12,13 @@ import {
   ProjectRow,
   QuestionAnswered,
   Removed,
-  ReportRead,
   ReportSeen,
   SettingsRead,
   StatusView,
   TeamRead,
   WriteResult,
 } from "./views.ts";
-import { CleanView, ContentView, OlderSeatsView, UpdateView } from "./upkeep-views.ts";
+import { CleanView, OlderSeatsView, UpdateView } from "./upkeep-views.ts";
 import { FlowRead } from "./flow-views.ts";
 
 const project = z.string().min(1).optional();
@@ -101,22 +100,12 @@ export const ordersRpc = defineRpc({
   input: z.object({ project: z.string().min(1) }),
   output: OrdersRead,
 });
-export const reportRpc = defineRpc({
-  name: "seatworks.report.read",
-  input: z.object({ project: z.string().min(1) }),
-  output: ReportRead,
-});
 export const reportSeenRpc = defineRpc({
   name: "seatworks.report.seen",
   input: z.object({ project: z.string().min(1), until: z.number() }),
   output: ReportSeen,
 });
 export const modelsRpc = defineRpc({ name: "seatworks.models.refresh", input: z.object({}), output: ModelsRefreshed });
-export const contentRpc = defineRpc({
-  name: "seatworks.upkeep.content",
-  input: z.object({ seen: z.array(z.string()).optional() }),
-  output: ContentView,
-});
 export const cleanRpc = defineRpc({
   name: "seatworks.upkeep.clean",
   input: z.object({ remove: z.array(z.string()).optional() }),
@@ -155,11 +144,9 @@ export const contracts = {
   landDecide: landDecideRpc,
   questionAnswer: questionAnswerRpc,
   orders: ordersRpc,
-  report: reportRpc,
   reportSeen: reportSeenRpc,
   paths: pathsRpc,
   models: modelsRpc,
-  content: contentRpc,
   clean: cleanRpc,
   update: updateRpc,
   olderSeats: olderSeatsRpc,

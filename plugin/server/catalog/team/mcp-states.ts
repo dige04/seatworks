@@ -1,4 +1,4 @@
-import type { Connect, Layer, McpChoice, Scalar } from "../../../shared/settings.ts";
+import type { Connect, Layer, McpChoice, SettingValue } from "../../../shared/settings.ts";
 import type { Kit, McpEntry, McpTransport, RoleSpec } from "../kit/kit.ts";
 import { PASEO_SERVER, TEAM_SERVER } from "../kit/kit.ts";
 import { can, seatedAs } from "../kit/roles.ts";
@@ -13,7 +13,7 @@ export type McpState = {
   tools?: Record<string, string[]>;
   enabled: boolean;
   roles: string[];
-  settings: Record<string, Scalar>;
+  settings: Record<string, SettingValue>;
 };
 
 /** The tools a seat of `role` is given on the server `state`: a role `like` another takes that role's. */
@@ -79,12 +79,22 @@ function resolveServer(kit: Kit, id: string, layers: Layer[], errors: string[]):
   return state;
 }
 
-function defaultSettings(entry: McpEntry | undefined): Record<string, Scalar> {
-  const settings: Record<string, Scalar> = {};
+function defaultSettings(entry: McpEntry | undefined): Record<string, SettingValue> {
+  const settings: Record<string, SettingValue> = {};
   for (const [key, spec] of Object.entries(entry?.settings ?? {}))
     if (spec.default !== undefined) settings[key] = spec.default;
   return settings;
 }
+
+type SettingSpec = NonNullable<McpEntry["settings"]>[string];
+
+/** Whether `value` is what `spec` declares: a list of what it holds, or one value of its type. */
+function fits(spec: SettingSpec, value: SettingValue): boolean {
+  if (spec.type !== "list") return typeof value === spec.type;
+  return Array.isArray(value) && value.every((item) => typeof item === spec.of);
+}
+
+const kindOf = (spec: SettingSpec) => (spec.type === "list" ? `list of ${spec.of}s` : spec.type);
 
 /** One layer's choice over what the layers before it left; a setting the server lacks or of the wrong type is reported. */
 function applyChoice(state: McpState, choice: McpChoice, errors: string[]): void {
@@ -96,7 +106,7 @@ function applyChoice(state: McpState, choice: McpChoice, errors: string[]): void
   for (const [key, value] of Object.entries(choice.settings ?? {})) {
     const spec = state.entry?.settings[key];
     if (!spec) errors.push(`${state.label} has no setting named ${key}`);
-    else if (typeof value !== spec.type) errors.push(`${state.label} setting ${key} must be a ${spec.type}`);
+    else if (!fits(spec, value)) errors.push(`${state.label} setting ${key} must be a ${kindOf(spec)}`);
     else state.settings[key] = value;
   }
 }

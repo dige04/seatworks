@@ -80,7 +80,7 @@ if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || { [ "\${CLAUDE_SECURESTORAGE_CONFIG_DIR+
   claudeAuth();
   claudeLogin(true);
   loggedIn(true);
-  await setUp({ mcp: { ide: { settings: { port: partial.port } }, docs: { enabled: true, connect: at(nowhere) } } });
+  await setUp({ mcp: { ide: { settings: { port: [partial.port] } }, docs: { enabled: true, connect: at(nowhere) } } });
   const short = await checked();
   assert.equal(short.settings!.ok, true);
   assert.deepEqual(
@@ -94,18 +94,25 @@ if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || { [ "\${CLAUDE_SECURESTORAGE_CONFIG_DIR+
   assert.equal(short["mcp:docs"]!.ok, false, "a server that does not answer");
 
   install("omp");
-  await setUp({ mcp: { ide: { settings: { port: full.port } } } });
+  await setUp({ mcp: { ide: { settings: { port: [nowhere, full.port] } } } });
   const whole = await call(contracts.doctor, {});
   assert.ok(
     whole.every((check) => check.ok),
     JSON.stringify(whole),
+  );
+  assert.match(
+    whole.find((check) => check.id === "mcp:ide")!.detail,
+    new RegExp(
+      `at http://127\\.0\\.0\\.1:${full.port}/mcp exposes every tool[^]*Nothing answered at http://127\\.0\\.0\\.1:${nowhere}/mcp`,
+    ),
+    "of several ports, the one serving every tool passes it, and the silent one is named",
   );
   assert.equal(
     whole.some((check) => check.id === "mcp:docs"),
     false,
     "a server nobody uses is skipped",
   );
-  await setUp({ mcp: { ide: { settings: { port: nowhere } } } });
+  await setUp({ mcp: { ide: { settings: { port: [nowhere] } } } });
   assert.match((await checked())["mcp:ide"]!.detail, /No IDE server answered/);
 
   claudeLogin(false);
@@ -143,7 +150,9 @@ if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || { [ "\${CLAUDE_SECURESTORAGE_CONFIG_DIR+
 
   // A null in an outside server's tools list once threw out of the report, taking every check with it.
   const hostile = await fakeIde(t, { malformed: true });
-  await setUp({ mcp: { ide: { settings: { port: hostile.port } }, docs: { enabled: true, connect: at(full.port) } } });
+  await setUp({
+    mcp: { ide: { settings: { port: [hostile.port] } }, docs: { enabled: true, connect: at(full.port) } },
+  });
   const survived = await checked();
   assert.equal(survived["mcp:ide"]!.ok, false, "a server whose list cannot be read costs its own check");
   assert.deepEqual([survived.settings!.ok, survived["mcp:docs"]!.ok], [true, true], "and not the rest of the report");

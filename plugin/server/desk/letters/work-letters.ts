@@ -72,7 +72,7 @@ export const workLetters = {
           : found.changes
             ? "Its reviews asked for changes that nothing on record answers: ask the Lead whether they were met before you land_lane it."
             : found.asks.length > 0
-              ? "land_lane it if acceptance is met: it then waits for the Human on the Flow tab, so tell them it waits, and why."
+              ? "land_lane it if acceptance is met: it then waits for the Human on a card in your chat, so tell them it waits, and why."
               : "land_lane it if acceptance is met and nothing carried loses or corrupts data; then tell the Human in two lines.";
     const text = lines.join("\n");
     return mail("report", [lane.id, hash(`${text}\n${next}`)], text, next);

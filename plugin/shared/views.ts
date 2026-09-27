@@ -1,6 +1,6 @@
 /** What the panel reads over RPC, one schema per answer: the client checks every answer against it, and both sides take their types from it. */
 import { z } from "zod";
-import { AttentionChoice, Connect, LayerSchema, Scalar } from "./settings.ts";
+import { AttentionChoice, Connect, LayerSchema, SettingValue } from "./settings.ts";
 
 /** A call the panel made that the plugin refused, and why. */
 export const Refused = z.object({ error: z.string() });
@@ -22,10 +22,12 @@ const ModelView = z.object({
     .array(z.object({ id: z.string(), label: z.string(), isDefault: z.boolean().optional() }))
     .optional(),
 });
+/** `of` is what a list holds, for a setting of type list. */
 const SettingSpec = z.object({
-  type: z.enum(["number", "string", "boolean"]),
+  type: z.enum(["number", "string", "boolean", "list"]),
+  of: z.enum(["number", "string"]).optional(),
   label: z.string(),
-  default: Scalar.optional(),
+  default: SettingValue.optional(),
 });
 export type SettingSpec = z.infer<typeof SettingSpec>;
 
@@ -81,7 +83,7 @@ export const TeamView = z.object({
       label: z.string(),
       enabled: z.boolean(),
       roles: z.array(z.string()),
-      settings: z.record(z.string(), Scalar),
+      settings: z.record(z.string(), SettingValue),
       template: z.boolean(),
       connect: Connect.nullable(),
     }),
@@ -175,7 +177,7 @@ export type ReportItem = z.infer<typeof ReportItem>;
  * What happened in a project since the Human last marked it read (`from`, none before they ever have) up to `until`,
  * built from its record with no agent's words in it; what waits on them now is there whenever it started.
  */
-const ReportView = z.object({
+export const ReportView = z.object({
   window: z.object({ from: z.number().nullable(), until: z.number() }),
   needs: z.array(ReportItem),
   decided: z.array(ReportItem),
@@ -187,8 +189,6 @@ const ReportView = z.object({
   numbers: z.array(z.object({ title: z.string(), value: z.string(), detail: z.string() })),
 });
 export type ReportView = z.infer<typeof ReportView>;
-export const ReportRead = z.union([ReportView, Refused]);
-export type ReportRead = z.infer<typeof ReportRead>;
 export const ReportSeen = z.union([z.object({ seen: z.number() }), Refused]);
 export type ReportSeen = z.infer<typeof ReportSeen>;
 export const ModelsRefreshed = z.record(

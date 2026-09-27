@@ -13,21 +13,34 @@ async function withServer<T>(url: string, timeoutMs: number, use: (client: Clien
   }
 }
 
+/** One call at the first of `urls` that takes the handshake, in their order; one that answers and fails is that call's failure. */
 export async function callTool(
-  url: string,
+  urls: string[],
   name: string,
   args: Record<string, unknown>,
   timeoutMs: number,
 ): Promise<{ ok: boolean; text: string }> {
-  try {
-    return await withServer(url, timeoutMs, async (client) => {
+  let unreached = "no address is set";
+  for (const url of urls) {
+    const client = new Client({ name: PLUGIN_ID, version: "3" });
+    try {
+      await client.connect(new StreamableHTTPClientTransport(new URL(url)), { timeout: timeoutMs });
+    } catch (error) {
+      unreached = errorText(error);
+      await client.close().catch(() => {});
+      continue;
+    }
+    try {
       const result = await client.callTool({ name, arguments: args }, { timeout: timeoutMs });
       const text = (result.content as { text?: string }[] | undefined)?.map((part) => part.text ?? "").join("\n") ?? "";
       return { ok: !result.isError, text };
-    });
-  } catch (error) {
-    return { ok: false, text: errorText(error) };
+    } catch (error) {
+      return { ok: false, text: errorText(error) };
+    } finally {
+      await client.close().catch(() => {});
+    }
   }
+  return { ok: false, text: unreached };
 }
 
 export async function toolNames(url: string, timeoutMs: number): Promise<{ names?: string[]; error?: string }> {

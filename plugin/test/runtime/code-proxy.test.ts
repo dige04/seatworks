@@ -139,6 +139,10 @@ test("an IDE that is indexing, cannot open the copy, has other projects open, is
   );
   assert.equal(opens[1]!.args.path, cwd);
 
+  const second = await proxy(t, dumb, ideConfig(["http://127.0.0.1:9/mcp", indexing.url], ["ide_find_references"]));
+  const passed = await second.call("ide_find_references");
+  assert.equal(passed.isError, false, "of several ports, the proxy keeps the first that answers");
+
   const away = await proxy(t, repo(), ideConfig("http://127.0.0.1:9/mcp", ["ide_find_references"]));
   assert.equal((await away.tools()).length, 1, "an unreachable IDE still lists the role's tools");
   assert.match((await away.call("ide_find_references")).content[0]!.text, /not reachable/, "and a call says so");

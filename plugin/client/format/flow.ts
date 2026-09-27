@@ -1,49 +1,47 @@
 import type { FlowLane, FlowSeat, FlowTask } from "../../shared/flow-views.ts";
-import { ago, lasting } from "./time.ts";
-
-/** Lanes start collapsed and the Lead's line is the only place a seat waiting on a permission shows, so counts must not hide it. */
-export function countsInstead(lane: {
-  taskCount: number;
-  open: boolean;
-  lead: { status: string; waiting: string[] } | null;
-}): boolean {
-  if (lane.taskCount === 0 || lane.open) return false;
-  return Boolean(lane.lead) && lane.lead!.status !== "gone" && lane.lead!.waiting.length === 0;
-}
+import type { Tone } from "./tone.ts";
 
 /** A seat by its role's label, as the kit names it; the desk may not know yet which role a seat has. */
 export const seatName = (seat: FlowSeat | null): string => seat?.label ?? "Seat";
 
-/** `answers` is who answers a seat's permission prompt: the Human, or while they are out of the loop whoever supervises. */
-export const seatText = (seat: FlowSeat | null, answers = "you"): string => {
-  if (!seat) return "no seat";
-  if (seat.waiting.length > 0) return `waiting on ${answers} · ${seat.waiting[0]}`;
-  if (seat.status === "gone") return seat.minutes > 0 ? `gone · last heard ${seat.minutes} min ago` : "gone";
-  return `${seat.status} · ${lasting(seat.minutes)}`;
-};
-/** Where a lane works: the Human's own checkout, or a copy of its own. */
-export const where = (lane: FlowLane): string => (lane.copy ? `copy ${lane.copy}` : "your checkout");
+/** Who answers a seat's permission prompt: the Human while they are in the loop, else whoever supervises. */
+export type Answers = { human: boolean; supervisor: string };
 
-/** What a lane's seats spent, as their agents report it, where any does. */
-export const spentText = (lane: FlowLane): string =>
-  lane.spent === undefined ? "" : ` · $${lane.spent.toFixed(2)} spent`;
+const answerer = ({ human, supervisor }: Answers) => (human ? "you" : supervisor);
 
-/** What a task's card says of it: why it cannot start or merge yet, what a waiting one waits for, since when a handed-back one waits, else what its seat is doing. */
-export const taskState = (task: FlowTask, answers: string): string => {
-  if (task.held) return `${task.status}: ${task.held}`;
-  if (task.status === "waiting") return task.after.length > 0 ? `waiting on ${task.after.join(", ")}` : "waiting";
-  if (task.handback !== null) return `${task.status} · handed back ${ago(task.handback)}`;
-  return `${task.status} · ${seatText(task.peer, answers)}`;
-};
+/**
+ * A lane in one short phrase and a tone, what its line in the Team list says: the Human's part first, and a Lead that
+ * waits or has gone before any count, since a lane's line is the only place that shows until it is opened.
+ */
+export function laneLine(lane: FlowLane, asked: boolean, answers: Answers): { tone: Tone; text: string } {
+  if (lane.landed) return { tone: "done", text: "landed" };
+  if (lane.landApproval && !lane.landApproval.approved)
+    return answers.human
+      ? { tone: "you", text: "waits on you" }
+      : { tone: "wait", text: "held from while you were in" };
+  if (asked) return { tone: "you", text: "waits on your answer" };
+  if (lane.landApproval) return { tone: "work", text: "landing" };
+  if (lane.onHold) return { tone: "wait", text: "on hold" };
+  if (lane.lead && lane.lead.waiting.length > 0) return seatLine(lane.lead, answers);
+  if (lane.lead?.status === "gone") return { tone: "wait", text: "Lead gone" };
+  if (lane.ready !== undefined) return { tone: "work", text: "reported ready" };
+  if (lane.running > 0) return { tone: "work", text: `${lane.running} running` };
+  return { tone: lane.lead ? "work" : "wait", text: lane.lead ? lane.lead.status : "no Lead yet" };
+}
 
-/** What a lane's Lead card says of it: the Human's part first, then a hold, a READY, and what is running. */
-export const leadState = (lane: FlowLane, answers: string, human: boolean): string => {
-  if (lane.landApproval && lane.landApproval.approved) return "landing approved, not landed yet";
-  if (lane.landApproval)
-    return human ? "landing waits for your approval" : "landing held from while you were in the loop";
-  if (lane.onHold) return `on hold ${lasting(lane.onHold.minutes)}: ${lane.onHold.reason}`;
-  if (lane.ready !== undefined) return `reported ready ${ago(lane.ready)}`;
-  return countsInstead(lane)
-    ? `${lane.taskCount} task${lane.taskCount === 1 ? "" : "s"}, ${lane.running} running`
-    : seatText(lane.lead, answers);
-};
+/** A seat in one short phrase and a tone, for the line under its lane. */
+export function seatLine(seat: FlowSeat | null, answers: Answers): { tone: Tone; text: string } {
+  if (!seat) return { tone: "wait", text: "no seat yet" };
+  if (seat.waiting.length > 0) return { tone: answers.human ? "you" : "wait", text: `waits on ${answerer(answers)}` };
+  if (seat.status === "gone") return { tone: "wait", text: "gone" };
+  return { tone: "work", text: seat.status };
+}
+
+/** A task in one short phrase and a tone: held, waiting, handed back, else what its seat does. */
+export function taskLine(task: FlowTask, answers: Answers): { tone: Tone; text: string } {
+  if (task.held) return { tone: "wait", text: "held" };
+  if (task.status === "waiting")
+    return { tone: "wait", text: task.after.length ? `waits on ${task.after[0]}` : "waiting" };
+  if (task.handback !== null) return { tone: "done", text: "handed back" };
+  return seatLine(task.peer, answers);
+}

@@ -4,13 +4,16 @@ import type { SeatView } from "../../core/ports.ts";
 import { AT_WORK, SETTLED } from "../../domain/task.ts";
 import { keptCopy, keptPeers } from "../seats/kept.ts";
 import type { Lane } from "../../domain/lane.ts";
+import type { Question } from "../../domain/question.ts";
 import { type Ledger, laneSpent } from "../../domain/ledger.ts";
 import type { FlowAsk, FlowLane, FlowQuestion, FlowSeat, FlowTask, FlowView } from "../../../shared/flow-views.ts";
+
+type FlowLandApproval = NonNullable<FlowLane["landApproval"]>;
 import type { Project } from "../project/project.ts";
 
 const LANE_CAP = 50;
 
-/** The kit's roles as the Flow tab names seats: each role's label, and whether it supervises. */
+/** The kit's roles as the Team tab names seats: each role's label, and whether it supervises. */
 type FlowRoles = ReadonlyMap<string, { label: string; supervises: boolean }>;
 
 /** Each seat's role, as Paseo has it for a seat seated now and as the ledger recorded it for one gone. */
@@ -105,16 +108,7 @@ function laneOf(
     running: count.running,
     open,
     ...(lane.status === "waiting" ? { after: lane.after ?? [], ...(lane.held ? { held: lane.held.why } : {}) } : {}),
-    ...(land
-      ? {
-          landApproval: {
-            minutes: minutes(now, land.since),
-            approved: Boolean(land.approved),
-            signals: land.signals,
-            evidence: land.evidence,
-          },
-        }
-      : {}),
+    ...(land ? { landApproval: landApprovalView(land, now) } : {}),
     ...(lane.workspaceId ? { workspaceId: lane.workspaceId } : {}),
     ...(lane.onHold ? { onHold: { minutes: minutes(now, lane.onHold.at), reason: lane.onHold.reason } } : {}),
     ...(lane.ready ? { ready: minutes(now, lane.ready.at) } : {}),
@@ -134,21 +128,39 @@ function asksOf(ledger: Ledger, now: number, roles: FlowRoles, labelOf: (id: str
     }));
 }
 
+/** A held landing as the Human reads it, on the Team tab and on its card in the Supervisor's chat. */
+export function landApprovalView(land: NonNullable<Lane["landApproval"]>, now: number): FlowLandApproval {
+  return {
+    minutes: minutes(now, land.since),
+    approved: Boolean(land.approved),
+    signals: land.signals,
+    evidence: land.evidence,
+  };
+}
+
+/** A question as the Human reads it, on the waiting pill and on its card in the Supervisor's chat. */
+export function questionView(
+  { id, question, why, lane, class: kind, options, recommend, reason, ifSilent, openedAt }: Question,
+  now: number,
+): FlowQuestion {
+  return {
+    id,
+    question,
+    why,
+    lane: lane ?? null,
+    class: kind,
+    options,
+    recommend,
+    reason,
+    ifSilent,
+    minutes: minutes(now, openedAt),
+  };
+}
+
 function questionsOf(ledger: Ledger, now: number): FlowQuestion[] {
   return Object.values(ledger.questions)
     .filter((question) => question.status === "open")
-    .map(({ id, question, why, lane, class: kind, options, recommend, reason, ifSilent, openedAt }) => ({
-      id,
-      question,
-      why,
-      lane: lane ?? null,
-      class: kind,
-      options,
-      recommend,
-      reason,
-      ifSilent,
-      minutes: minutes(now, openedAt),
-    }));
+    .map((question) => questionView(question, now));
 }
 
 /** Every supervising seat, one per concern; a concern with nobody seated shows its last seat as gone. */

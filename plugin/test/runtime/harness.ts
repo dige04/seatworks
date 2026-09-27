@@ -19,6 +19,8 @@ import type { z } from "zod";
 import { tempDir } from "../tempdir.ts";
 import { type Pending, fakePaseo } from "./fake-paseo.ts";
 import { writeProjectBlock } from "../../server/catalog/seat/project-block.ts";
+import { TIMELINE } from "../../shared/timeline-items.ts";
+import type { ReportView } from "../../shared/views.ts";
 
 const made: Runtime[] = [];
 
@@ -151,6 +153,21 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
   const heard = (id: string) => [...agents.get(id)!.sent, ...runtime.outbox.pending(id).map((letter) => letter.text)];
   const tick = (now?: number) =>
     (runtime as unknown as { patrol: { tick(now?: number): Promise<void> } }).patrol.tick(now);
+  // The cards in every chat as they stand now, after the desk has posted what changed.
+  const cards = async () => {
+    await (runtime as unknown as { cards: { sync(project: Project): Promise<void> } }).cards.sync(project);
+    return [...agents.keys()].flatMap((id) =>
+      timelineOf(id)
+        .cards()
+        .map((card) => ({ ...card, to: id })),
+    );
+  };
+  // The report the Human reads now: the last one posted in the Supervisor's chat.
+  const report = async (): Promise<ReportView> => {
+    const posted = (await cards()).filter((card) => card.kind === TIMELINE.report.kind).at(-1);
+    assert.ok(posted, "a report card was posted in the Supervisor's chat");
+    return (posted.data as { report: ReportView }).report;
+  };
   const agentOf = (id: string): HookAgent => ({
     id,
     provider: agents.get(id)!.provider,
@@ -218,6 +235,8 @@ export function harness(options: { sensor?: (spec: SensorSpec, key: string) => J
     heard,
     endTurn,
     tick,
+    cards,
+    report,
     beginTurn,
     permission,
     rpc,

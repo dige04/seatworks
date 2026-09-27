@@ -1,5 +1,6 @@
 import type { PluginHookContext } from "@getpaseo/plugin/server";
 import type {
+  ChatCard,
   PermissionResponse,
   SeatLook,
   Seats,
@@ -93,6 +94,9 @@ export function seatsOn(bound: Bound): Seats {
     },
     async archive(id: string): Promise<void> {
       await ref(id).archive();
+    },
+    async post(id: string, card: ChatCard): Promise<void> {
+      await timelineOf(ref(id)).append({ type: "plugin", ...card });
     },
     watch(id, see) {
       const handle = ref(id);

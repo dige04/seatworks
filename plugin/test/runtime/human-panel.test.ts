@@ -39,6 +39,54 @@ async function drawn(h: Harness, open: string[] = []) {
   return read;
 }
 
+test("a question for the Human is a card in the Supervisor's chat that settles where it stands, and a restart posts again only what still waits", async () => {
+  const { h, sup } = await laneWithPeer({ hitl: { on: true } });
+  h.machineSettings({ hitl: { questionsPerDay: 10 } });
+  await h.call(sup, "supervisor", "ask_human", packet({ lane: "L1" }));
+  await h.call(sup, "supervisor", "ask_human", packet({ question: "Keep the old endpoint?" }));
+  const questions = async () =>
+    (await h.cards())
+      .filter((card) => card.kind === "seatworks.question")
+      .map((card) => {
+        const { question, settled } = card.data as { question: { id: string }; settled: { text: string } | null };
+        return [card.to, question.id, settled?.text ?? "waits"];
+      });
+  await h.tick();
+  assert.deepEqual(
+    h
+      .timelineOf(sup)
+      .cards()
+      .filter((card) => card.kind === "seatworks.question")
+      .map((card) => card.id),
+    [`${h.project.slug}:H1`, `${h.project.slug}:H2`],
+    "the round posts them, with no panel open",
+  );
+  assert.deepEqual(await questions(), [
+    [sup, "H1", "waits"],
+    [sup, "H2", "waits"],
+  ]);
+  await h.rpc(contracts.questionAnswer, { project: h.project.slug, question: "H1", choice: "Archive", note: "" });
+  assert.deepEqual(
+    await questions(),
+    [
+      [sup, "H1", "You chose Archive"],
+      [sup, "H2", "waits"],
+    ],
+    "answered, its card turns into one line in place, with the other card after it as before",
+  );
+  await h.call(sup, "supervisor", "withdraw_question", { question: "H2", why: "the lane no longer touches it" });
+  await h.tick();
+  assert.deepEqual((await questions())[1], [sup, "H2", "Withdrawn: the lane no longer touches it"]);
+
+  await h.call(sup, "supervisor", "ask_human", packet({ question: "Rename it?" }));
+  await questions();
+  // Paseo forgets a plugin's rows when its daemon restarts, and the plugin starts again with it.
+  const chat = h.timelineOf(sup);
+  chat.rows = chat.rows.filter((row) => row.item.type !== "plugin");
+  h.restart();
+  assert.deepEqual(await questions(), [[sup, "H3", "waits"]], "only what still waits comes back, and nothing settled");
+});
+
 test("a question waits in the Human's queue, and their answer, on the panel or in the Supervisor's chat, goes on record and to whoever asked", async () => {
   const { h, sup, lane } = await laneWithPeer({ hitl: { on: true } });
   h.machineSettings({ hitl: { questionsPerDay: 10 } });
@@ -150,11 +198,11 @@ test("a question waits in the Human's queue, and their answer, on the panel or i
     h.call(sup, "supervisor", "withdraw_question", { question, why: "the lane no longer touches it" });
   assert.equal(
     (await withdraw("H5")).text,
-    "H5 is off the Human's queue; they read why on the Report. The Lead of L1 hears only that it is settled: tell it how the lane goes on.",
+    "H5 is off the Human's queue; they read why on its card in your chat. The Lead of L1 hears only that it is settled: tell it how the lane goes on.",
   );
   assert.match(h.heard(lane.lead!).join("\n"), settled("H5", "it was withdrawn"));
   assert.match((await withdraw("H5")).text, /^H5 is already canceled\./);
-  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  const report = await h.report();
   assert.ok("withdrawn" in report);
   assert.deepEqual(
     report.withdrawn.map((item) => [item.title, item.detail]),
@@ -223,7 +271,7 @@ test("the Report tells from the record what needs the Human, widest stop first, 
   timeline.add({ type: "tool_call", callId: "c1", name: "Bash", status: "running", detail: push }, "t1");
   await settle();
   await new Promise((resolve) => setTimeout(resolve, 20));
-  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  const report = await h.report();
   assert.ok("needs" in report);
   assert.deepEqual(
     report.needs.map((item) => [item.title, item.detail]),
@@ -266,7 +314,7 @@ test("the Report tells from the record what needs the Human, widest stop first, 
   });
   landing.commit(landing.ledger().lanes.L1!.worktree!, "a.txt", "cart\n");
   assert.equal((await landing.call(boss, "supervisor", "land_lane", { lane: "L1" })).ok, true);
-  const landed = await landing.rpc(contracts.report, { project: landing.project.slug });
+  const landed = await landing.report();
   assert.ok("landed" in landed);
   assert.deepEqual(
     landed.landed.map((item) => [item.title, item.detail]),
@@ -276,13 +324,13 @@ test("the Report tells from the record what needs the Human, widest stop first, 
 
   const until = landed.window.until;
   assert.deepEqual(await landing.rpc(contracts.reportSeen, { project: landing.project.slug, until }), { seen: until });
-  const next = await landing.rpc(contracts.report, { project: landing.project.slug });
-  assert.ok("landed" in next);
-  assert.deepEqual([next.window.from, next.landed], [until, []], "it starts where the Human last read it");
-  await landing.rpc(contracts.reportSeen, { project: landing.project.slug, until: until - 60_000 });
-  const kept = await landing.rpc(contracts.report, { project: landing.project.slug });
-  assert.ok("window" in kept);
-  assert.equal(kept.window.from, until, "an older page marked read later never takes the window back");
+  const reports = async () => (await landing.cards()).filter((card) => card.kind === "seatworks.report");
+  assert.equal((await reports()).length, 1, "a window read with nothing new in it posts no second card");
+  assert.deepEqual(
+    await landing.rpc(contracts.reportSeen, { project: landing.project.slug, until: until - 60_000 }),
+    { seen: until },
+    "an older page marked read later never takes the window back",
+  );
 });
 
 test("with the Human out of the loop, the Report lists what was decided for them, and only the Supervisor's own wait needs them", async () => {
@@ -306,7 +354,7 @@ test("with the Human out of the loop, the Report lists what was decided for them
   h.agents.get(sup)!.pending.push(grilling);
   await h.permission(sup, grilling);
 
-  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  const report = await h.report();
   assert.ok("decided" in report);
   assert.deepEqual(
     report.decided.map((item) => [item.title, item.detail]),
@@ -451,7 +499,7 @@ test("what a lane's seats spent, as their agents report it, is kept across an ag
     "1.25 before its agent started again, 0.25 since",
   );
   assert.equal((await drawn(h)).lanes.find((entry) => entry.id === lane.id)!.spent, 2);
-  const report = await h.rpc(contracts.report, { project: h.project.slug });
+  const report = await h.report();
   assert.ok("numbers" in report);
   assert.deepEqual(
     report.numbers.find((row) => row.title === "Spend"),

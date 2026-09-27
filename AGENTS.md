@@ -27,14 +27,14 @@ The plugin **serves** SLP so it works better with Paseo. It must **never constra
 
 ## SLP, R and W
 
-| Who | Owns | Speaks to |
-|---|---|---|
-| Human | Intent, priorities, external commitments; the concept; push and release while in the loop | the Supervisor |
-| Supervisor | Intent interpretation, cross-boundary observation and intervention; landing lanes | the Human, the Leads; a Peer only with its Lead told first |
-| Lead | One lane: topology, sequencing, ownership, integration and **acceptance** | the Supervisor, its Peers and Reviewers |
-| Peer | One task, and the engineering judgment inside it; may refuse the Lead's framing | its Lead |
-| R: Reviewer | Nothing: its verdict is evidence the Lead weighs | its Lead |
-| W: Watcher | Nothing: it tells the Supervisor *when* to look | the Supervisor only |
+| Who         | Owns                                                                                      | Speaks to                                                  |
+| ----------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Human       | Intent, priorities, external commitments; the concept; push and release while in the loop | the Supervisor                                             |
+| Supervisor  | Intent interpretation, cross-boundary observation and intervention; landing lanes         | the Human, the Leads; a Peer only with its Lead told first |
+| Lead        | One lane: topology, sequencing, ownership, integration and **acceptance**                 | the Supervisor, its Peers and Reviewers                    |
+| Peer        | One task, and the engineering judgment inside it; may refuse the Lead's framing           | its Lead                                                   |
+| R: Reviewer | Nothing: its verdict is evidence the Lead weighs                                          | its Lead                                                   |
+| W: Watcher  | Nothing: it tells the Supervisor _when_ to look                                           | the Supervisor only                                        |
 
 - **The Supervisor directs attention; it does not scan.** W tells it when a Lead or a Peer needs
   attention. The Supervisor decides whether and how to step in: one open question, a council, a
@@ -144,6 +144,7 @@ What a Java codebase does with packages, interfaces and injected dependencies, t
 below. `test/architecture.test.ts`, `tsc`, ESLint and Prettier hold most of it.
 
 **Layers and folders.** The architecture test holds each folder to what `MAY_IMPORT` lets it import.
+
 - `server/core/`: helpers that know nothing of Seatworks (git, files, JSON, time, the logger,
   `KeyedQueue`), and `ports.ts`, the interfaces to Paseo and the judge.
 - `server/domain/`: the model. Each entity's type sits beside its lifecycle table (`lane.ts`,
@@ -166,6 +167,7 @@ below. `test/architecture.test.ts`, `tsc`, ESLint and Prettier hold most of it.
   feature, not the tool.
 
 **Types and abstractions.**
+
 - Data is a `type`. A contract a class implements (`Host`, `HostHooks`, the panel's `SettingsRpc`)
   names only what its callers use. No enums, parameter properties or namespaces
   (`erasableSyntaxOnly`): a union of literals, an `as const` table, fields assigned in the
@@ -180,6 +182,7 @@ below. `test/architecture.test.ts`, `tsc`, ESLint and Prettier hold most of it.
   table, a letter in its themed object, a step in the patrol's table, a finder in the lane facts.
 
 **Dependencies.**
+
 - Only `Runtime` and `Desk` build the object graph; everything else is handed what it needs.
 - A desk function takes `Pick<DeskServices, ...>` of the services it uses, and a class keeps one
   such `desk` field. Services below `services.ts` take `Pick<DeskBase, ...>`, so nothing imports back
@@ -188,6 +191,7 @@ below. `test/architecture.test.ts`, `tsc`, ESLint and Prettier hold most of it.
   there are few of, such as one entry per project.
 
 **Errors and logging.**
+
 - Throw an `Error` that says what failed, with `{ cause }` when rethrowing; a rejection carries an
   `Error` (`asError`). A refusal a seat reads is a return value (`no(...)`), never a throw.
 - A `catch` that does nothing says why in one `//` line, and guards only best-effort cleanup or a
@@ -197,6 +201,7 @@ below. `test/architecture.test.ts`, `tsc`, ESLint and Prettier hold most of it.
 - A kept file that cannot be read fails closed: nothing is written over it.
 
 **Performance and memory.**
+
 - A kept file is read once per operation: the ledger and the incident book through their stores, one
   read per transaction; a read-only view may use the stat-cached `readLedger`. Nothing a decision
   rests on is held across an `await`.
@@ -213,6 +218,7 @@ line count: a module holds one concept and a function does one job, and a second
 its own, however short.
 
 **Tests.**
+
 - Before writing a test, answer what contract it protects, what regression turns it red, why the
   existing tests miss it, and whether it needs an export only tests use. No answer, no test; extend
   the workflow's test or table first.
@@ -231,7 +237,7 @@ its own, however short.
   legacy parser, read-time upgrade or fallback. Fail closed. Change every producer and consumer
   together, and audit the tests rather than syncing them.
 - **Kept files have no format number before 3.0.0.** Until then a file the plugin keeps and cannot
-  rebuild (ledger, incidents, project, meta, settings, outbox, intents, keys, `content.json`) changes
+  rebuild (ledger, incidents, project, meta, settings, outbox, intents, keys) changes
   shape with no upgrade step, since nothing has shipped. 3.0.0 locks the format as state 1 and brings
   back the upgrade steps, their fixtures and a shape test. Logs are only appended to, never migrated.
 - **What a seat reads or is held to raises the version.** A change to `content/`, `harness/`, `mcp/`,

@@ -1,4 +1,4 @@
-import type { AttentionChoice, HitlChoice, Layer, McpChoice, RoleChoice } from "../../shared/settings.ts";
+import type { AttentionChoice, HitlChoice, Layer, LevelId, McpChoice, RoleChoice } from "../../shared/settings.ts";
 
 export type Source = "here" | "machine" | "default";
 
@@ -35,6 +35,25 @@ export function keptRoles(narrowed: string[] | undefined, reachable: string[]): 
   return narrowed ? narrowed.filter((role) => reachable.includes(role)) : reachable;
 }
 
+type LevelSeat = Pick<RoleChoice, "harness" | "model" | "thinking">;
+
+/** A seat after one pick: a new agent drops the old one's model and thinking, a new model its thinking. */
+export function nextSeat(seat: LevelSeat, change: LevelSeat): LevelSeat {
+  if (change.harness !== undefined && change.harness !== seat.harness) return { harness: change.harness };
+  if (change.model !== undefined && change.model !== seat.model) return { harness: seat.harness, model: change.model };
+  return { ...seat, ...change };
+}
+
+/** A level's seat put in whole, or with `null` left to Defaults; a level left with no seat goes with it. */
+export function setLevelSeat(values: Layer, level: LevelId, role: string, seat: LevelSeat | null): Layer {
+  const { [role]: _was, ...others } = values.levels?.[level] ?? {};
+  const seats = seat ? { ...others, [role]: seat } : others;
+  const { [level]: _level, ...kept } = values.levels ?? {};
+  const levels = Object.keys(seats).length > 0 ? { ...kept, [level]: seats } : kept;
+  const { levels: _old, ...rest } = values;
+  return Object.keys(levels).length > 0 ? { ...rest, levels } : rest;
+}
+
 /** The resolver does not fence models against the catalogue, so show the one in force and flag it when the agent does not list it. */
 export function modelRow(
   model: string,
@@ -51,10 +70,6 @@ export function setAttention(values: Layer, choice: AttentionChoice): Layer {
 
 export function setHitl(values: Layer, choice: HitlChoice): Layer {
   return { ...values, hitl: { ...values.hitl, ...choice } };
-}
-
-export function setFlow(values: Layer, choice: { live?: boolean; everySeconds?: number }): Layer {
-  return { ...values, flow: { ...values.flow, ...choice } };
 }
 
 /** A pasted server has no kit template to re-enable it, so it is dropped, url and token with it, not marked removed. */

@@ -11,16 +11,18 @@ import {
   SettingsSwitch,
 } from "@getpaseo/plugin/client/ui";
 import { type ReactElement, useRef, useState } from "react";
-import { modelsRpc } from "../../shared/rpc.ts";
 import { Text } from "react-native";
-import { sourceLabel } from "./bits.tsx";
-import type { Layer, RoleChoice } from "../../shared/settings.ts";
-import type { CatalogView, ModelsRefreshed, TeamView } from "../../shared/views.ts";
-import { message } from "../format/error.ts";
-import { modelRow, setHitl, setLanguage, setReviewSensor, setRole, sourceOf } from "../model/layer.ts";
-import { JudgeCard, keyRows } from "./judge.tsx";
+import { modelsRpc } from "../../../shared/rpc.ts";
+import type { Layer, RoleChoice } from "../../../shared/settings.ts";
+import type { CatalogView, ModelsRefreshed, TeamView } from "../../../shared/views.ts";
+import { message } from "../../format/error.ts";
+import { modelRow, setHitl, setLanguage, setReviewSensor, setRole, sourceOf } from "../../model/layer.ts";
+import { Rows } from "../kit/card.tsx";
+import { DisclosureList } from "../kit/disclosure.tsx";
+import { JudgeRows, keyRows } from "./judge.tsx";
+import { LevelsSection } from "./levels.tsx";
 import { ModelPicker } from "./model-picker.tsx";
-import { TabBar } from "./tabs.tsx";
+import { sourceLabel } from "./source.ts";
 
 type Props = {
   catalog: CatalogView;
@@ -30,8 +32,6 @@ type Props = {
   layer: "machine" | "project";
   theme: PluginTheme;
   disabled: boolean;
-  active: string | null;
-  onActive: (role: string) => void;
   save: (change: (values: Layer) => Layer) => Promise<boolean>;
   reload: () => void;
 };
@@ -86,7 +86,7 @@ function roleRows({
   disabled,
   save,
   role,
-}: Omit<Props, "active" | "onActive" | "reload"> & { role: Role }): ReactElement[] {
+}: Omit<Props, "reload"> & { role: Role }): ReactElement[] {
   const seat = team.roles[role.id];
   const follows = role.follows ? catalog.roles.find((entry) => entry.id === role.follows)?.label : undefined;
   const harness = catalog.harnesses.find((entry) => entry.id === seat?.harness);
@@ -185,7 +185,7 @@ function languageRows(
   ];
 }
 
-/** On the Supervisor's chip, since it is who decides for the Human when they are out of the loop; the daily limit is the machine's. */
+/** First on Team, since it says whether anything reaches the Human at all; the daily limit and language are the machine's. */
 function HitlCard(props: Props) {
   const { team, values, machine, layer, disabled, save } = props;
   const [language, setLanguageTyped] = useState<string | null>(null);
@@ -235,8 +235,8 @@ function HitlCard(props: Props) {
   );
 }
 
-/** On the chip of a role that reviews: which sensor asks review's one-condition checks, its own setting apart from the watch's brains. */
-function ReviewCard(props: Props & { role: Role }) {
+/** Inside a reviewing role's line: which sensor asks review's one-condition checks, apart from the watch's brains. */
+function ReviewRows(props: Props & { role: Role }) {
   const { catalog, team, values, machine, layer, disabled, save } = props;
   const [draft, setDraft] = useState("");
   const field = useRef<SettingsInputHandle>(null);
@@ -244,7 +244,7 @@ function ReviewCard(props: Props & { role: Role }) {
   // The kit's sensor asks when none is chosen, and its key is the one that counts then.
   const sensor = catalog.sensors.find((entry) => entry.id === (chosen ?? team.review.sensor));
   return (
-    <SettingsCard>
+    <Rows theme={props.theme}>
       <SettingsSelect
         label="Review's checks"
         hint={`The sensor that asks the one-condition checks a Lead reads as evidence at a hand-back and a review; with no key they are recorded as not asked. ${sourceLabel(
@@ -262,31 +262,63 @@ function ReviewCard(props: Props & { role: Role }) {
       {sensor
         ? keyRows({ ...props, sensor }, { typed: draft.trim(), setDraft, field }, "one for each check review asks")
         : null}
-    </SettingsCard>
+    </Rows>
   );
 }
 
+/** A seat's line says what it runs on and where that comes from, so most lines never need opening. */
+function seatSummary({ catalog, team, values, machine, layer }: Props, role: Role): string {
+  const seat = team.roles[role.id];
+  const harness = catalog.harnesses.find((entry) => entry.id === seat?.harness);
+  const model = harness?.models.find((entry) => entry.id === seat?.model);
+  const thinking = model?.thinkingOptions?.find((entry) => entry.id === seat?.thinking);
+  const follows = role.follows ? catalog.roles.find((entry) => entry.id === role.follows)?.label : undefined;
+  const from = sourceLabel(
+    sourceOf(values, machine, (entry) => entry.roles?.[role.id], layer),
+    layer,
+    follows,
+  );
+  return [harness?.label ?? seat?.harness, model?.label ?? seat?.model, thinking?.label, from]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** Whether the Human is in the loop, then one line a seat that opens to its agent, model and what only that role has. */
 export function TeamSection(props: Props) {
-  const { catalog, theme, disabled, active, onActive } = props;
-  const role = catalog.roles.find((entry) => entry.id === active) ?? catalog.roles[0];
-  if (!role) return null;
+  const { catalog, theme } = props;
+  const [open, setOpen] = useState<string | null>(null);
   return (
-    <SettingsSection title="Team" info={role.description}>
-      <TabBar
-        theme={theme}
-        active={role.id}
-        disabled={disabled}
-        onPick={onActive}
-        tabs={catalog.roles.map((entry) => ({ id: entry.id, label: entry.label }))}
-      />
-      {role.can.includes("judge") ? (
-        <JudgeCard {...props} role={role} rows={roleRows({ ...props, role })} />
-      ) : (
-        <SettingsCard>{roleRows({ ...props, role })}</SettingsCard>
-      )}
-      {role.can.includes("supervise") ? <HitlCard {...props} /> : null}
-      {role.can.includes("review") ? <ReviewCard {...props} role={role} /> : null}
-      <ModelsCard catalog={props.catalog} disabled={props.disabled} reload={props.reload} />
-    </SettingsSection>
+    <>
+      <SettingsSection title="Human in the loop">
+        <HitlCard {...props} />
+      </SettingsSection>
+      <SettingsSection title="Seats" info="Each role's agent, model and thinking; a role's own settings open with it.">
+        <DisclosureList
+          theme={theme}
+          open={open}
+          onOpen={setOpen}
+          items={catalog.roles.map((role) => ({
+            id: role.id,
+            title: role.label,
+            hint: seatSummary(props, role),
+            flush: true,
+            body: (
+              <Rows theme={theme}>
+                {role.can.includes("judge") ? (
+                  <JudgeRows {...props} role={role} rows={roleRows({ ...props, role })} />
+                ) : (
+                  roleRows({ ...props, role })
+                )}
+                {role.can.includes("review") ? <ReviewRows {...props} role={role} /> : null}
+              </Rows>
+            ),
+          }))}
+        />
+      </SettingsSection>
+      {props.layer === "machine" ? <LevelsSection {...props} /> : null}
+      <SettingsSection title="Models">
+        <ModelsCard catalog={catalog} disabled={props.disabled} reload={props.reload} />
+      </SettingsSection>
+    </>
   );
 }

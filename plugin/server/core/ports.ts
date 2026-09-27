@@ -76,6 +76,9 @@ export type Seen =
 
 export type Stream = { readonly ready: Promise<void>; stop(): void };
 
+/** A row of the plugin's own in a seat's chat: posting one again under the same id replaces it where it stands. */
+export type ChatCard = { id: string; kind: string; version: number; data: unknown };
+
 export type Seats = {
   open(): Promise<SeatView[]>;
   look(id: string): Promise<SeatLook>;
@@ -86,6 +89,7 @@ export type Seats = {
   respond(id: string, requestId: string, response: PermissionResponse): Promise<void>;
   archive(id: string): Promise<void>;
   watch(id: string, see: (seen: Seen) => void): Stream;
+  post(id: string, card: ChatCard): Promise<void>;
 };
 
 export type Workspace = { id: string; project: string };

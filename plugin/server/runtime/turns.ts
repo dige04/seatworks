@@ -10,7 +10,6 @@ import { seatLetters } from "../desk/letters/seat-letters.ts";
 import { messageLetters } from "../desk/letters/message-letters.ts";
 import { type Project, projectOf } from "../desk/project/project.ts";
 import { deniedCall, lastToolCall, malformed, outputText } from "./timeline.ts";
-import type { Troubles } from "./troubles.ts";
 import { ownerOf } from "./owner-of.ts";
 
 type TurnDeps = {
@@ -18,7 +17,6 @@ type TurnDeps = {
   desk: Desk;
   attention: (project: Project) => Pick<Attention, "quietChars">;
   remember: (project: Project) => void;
-  troubles: Troubles;
 };
 
 export class TurnRules {
@@ -34,7 +32,7 @@ export class TurnRules {
     this.startedAt.set(agentId, Date.now());
   }
 
-  /** A call the harness refused because its input was not JSON; it never reaches the desk, so only this reports it. */
+  /** A call the harness refused because its input was not JSON; it never reaches the desk, so only this records it. */
   malformedCalls(event: TurnEnded): void {
     const seat = seatOf(this.deps.kit, event.agent.provider);
     if (!seat?.role.tools) return;
@@ -47,11 +45,6 @@ export class TurnRules {
         tool: call.tool,
         error: call.quote,
       });
-      this.deps.troubles.add(
-        project,
-        "call.malformed",
-        `the ${seat.role.label}'s ${call.tool} was written with an input that is not JSON, and never reached the desk`,
-      );
     }
   }
 

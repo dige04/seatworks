@@ -1,4 +1,4 @@
-/** The Flow tab over RPC: lanes, tasks, asks and questions as the desk has them, and what the watch has noticed. */
+/** The team as the desk has it, over RPC: lanes, tasks, asks, questions and what the watch noticed, for the Team tab and the waiting pill. */
 import { z } from "zod";
 import { Refused } from "./views.ts";
 
@@ -28,7 +28,7 @@ export type FlowTask = z.infer<typeof FlowTask>;
 /** A Peer kept idle after its task was accepted, until its Lead releases it. */
 const FlowKept = FlowSeat.extend({ task: z.string() });
 /** `copy` is the lane's own working copy, none for the Human's checkout; `kept` its Peers idle after their tasks; `landed` how a lane whose Lead is kept closed. */
-const FlowLane = z.object({
+export const FlowLane = z.object({
   id: z.string(),
   title: z.string(),
   status: z.string(),
@@ -62,7 +62,7 @@ const FlowAsk = z.object({
   minutes: z.number(),
 });
 export type FlowAsk = z.infer<typeof FlowAsk>;
-const FlowQuestion = z.object({
+export const FlowQuestion = z.object({
   id: z.string(),
   question: z.string(),
   why: z.string(),
@@ -86,12 +86,8 @@ const WatchJudge = z.object({
   detail: z.string().nullable(),
 });
 export type WatchJudge = z.infer<typeof WatchJudge>;
-/** What the code noticed about the seats and nobody has marked yet, the trouble nobody is mailed about, and who answers the watch's questions. */
-const WatchView = z.object({
-  incidents: WatchCounts,
-  trouble: z.array(z.object({ kind: z.string(), minutes: z.number(), detail: z.string() })),
-  judge: WatchJudge,
-});
+/** What the code noticed about the seats and nobody has marked yet, and who answers the watch's questions. */
+const WatchView = z.object({ incidents: WatchCounts, judge: WatchJudge });
 export type WatchView = z.infer<typeof WatchView>;
 const FlowView = z.object({
   project: z.string(),

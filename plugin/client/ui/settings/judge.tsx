@@ -1,18 +1,14 @@
 import type { PluginTheme } from "@getpaseo/plugin";
-import {
-  SettingsAction,
-  SettingsCard,
-  SettingsInput,
-  type SettingsInputHandle,
-  SettingsRow,
-} from "@getpaseo/plugin/client/ui";
+import { SettingsAction, SettingsInput, type SettingsInputHandle, SettingsRow } from "@getpaseo/plugin/client/ui";
 import { type ReactElement, type RefObject, useRef, useState } from "react";
 import { Text } from "react-native";
-import { KEPT, type Layer } from "../../shared/settings.ts";
-import type { CatalogView, TeamView } from "../../shared/views.ts";
-import { sourceLabel } from "./bits.tsx";
-import { setAttention, sourceOf, withKey } from "../model/layer.ts";
-import { TabBar } from "./tabs.tsx";
+import { KEPT, type Layer } from "../../../shared/settings.ts";
+import type { CatalogView, TeamView } from "../../../shared/views.ts";
+import { sourceLabel } from "./source.ts";
+import { setAttention, sourceOf, withKey } from "../../model/layer.ts";
+import { Rows } from "../kit/card.tsx";
+import { TabBar } from "../kit/tab-bar.tsx";
+import { FONT, SPACE } from "../kit/theme.ts";
 
 type Props = {
   catalog: CatalogView;
@@ -112,8 +108,8 @@ export function keyRows(
   ];
 }
 
-/** On the chip of a role that can judge: which brains read what the watch sees, then the sensor's key and this seat's agent. */
-export function JudgeCard(props: Props) {
+/** Inside a judging role's line: which brains read what the watch sees, then the sensor's key and this seat's agent. */
+export function JudgeRows(props: Props) {
   const { catalog, team, values, machine, layer, theme, disabled, role, rows, save } = props;
   const [draft, setDraft] = useState("");
   const field = useRef<SettingsInputHandle>(null);
@@ -132,33 +128,31 @@ export function JudgeCard(props: Props) {
     ? `One ${role.label} per project, seated under the Supervisor when it first has something to judge, and let go once no lane is open.${brain === "both" ? ` It judges only what ${named} flags or leaves unsure.` : ""}`
     : `No ${role.label} is seated. What is set for the ${role.label} seat is kept for when it judges again.`;
   return (
-    <>
-      <SettingsCard>
-        <SettingsRow
-          label="Brains"
-          hint={`Which brains read what the watch's eye sees. Both: ${named} sifts, the ${role.label} judges. ${sourceLabel(
-            sourceOf(values, machine, (entry) => entry.attention?.brain, layer),
-            layer,
-          )}.`}
-        >
-          <TabBar
-            theme={theme}
-            active={brain}
-            disabled={disabled}
-            onPick={(next) => void save((current) => setAttention(current, { brain: next as typeof brain }))}
-            tabs={options}
-          />
-        </SettingsRow>
-        {reads && sensor
-          ? keyRows(
-              { ...props, sensor },
-              { typed: draft.trim(), setDraft, field },
-              "one at each moment the watch asks about",
-            )
-          : null}
-        {judges ? rows : null}
-      </SettingsCard>
-      <Text style={{ color: theme.colors.foregroundMuted, fontSize: 12 }}>{note}</Text>
-    </>
+    <Rows theme={theme}>
+      <SettingsRow
+        label="Brains"
+        hint={`Which brains read what the watch's eye sees. Both: ${named} sifts, the ${role.label} judges. ${sourceLabel(
+          sourceOf(values, machine, (entry) => entry.attention?.brain, layer),
+          layer,
+        )}.`}
+      >
+        <TabBar
+          theme={theme}
+          active={brain}
+          disabled={disabled}
+          onPick={(next) => void save((current) => setAttention(current, { brain: next as typeof brain }))}
+          tabs={options}
+        />
+      </SettingsRow>
+      {reads && sensor
+        ? keyRows(
+            { ...props, sensor },
+            { typed: draft.trim(), setDraft, field },
+            "one at each moment the watch asks about",
+          )
+        : null}
+      {judges ? rows : null}
+      <Text style={{ color: theme.colors.foregroundMuted, fontSize: FONT.small, padding: SPACE.lg }}>{note}</Text>
+    </Rows>
   );
 }

@@ -273,3 +273,52 @@ test("while Paseo cannot say which seats are live, a provider the team no longer
     "the Lead's new agent is set up, and its old one stays until Paseo can say nobody runs on it",
   );
 });
+
+test("a level is the machine's: one that breaks a seat is refused by name, a project is set up from a copy of it, and a project's layer holds none", async () => {
+  const { call } = served();
+  const machine = async () => which(await call(contracts.settingsRead, {}), "values");
+  const broken = await call(contracts.settingsWrite, {
+    revision: (await machine()).revision,
+    values: { levels: { max: { supervisor: { harness: "omp" } } } },
+  });
+  assert.match(which(broken, "error").error, /^Max: Oh My Pi has no supervisor settings/m, "named by its level");
+  const vague = await call(contracts.settingsWrite, {
+    revision: (await machine()).revision,
+    values: { levels: { balanced: { supervisor: { model: "opus", thinking: "galaxy" } } } },
+  });
+  assert.match(
+    which(vague, "error").error,
+    /^Balanced: .*no thinking option galaxy/m,
+    "and so is a thinking its model lacks",
+  );
+  const cheap = { lead: { harness: "omp" }, supervisor: { model: "opus", thinking: "medium" } };
+  const saved = await call(contracts.settingsWrite, {
+    revision: (await machine()).revision,
+    values: { levels: { cheap } },
+  });
+  assert.equal(saved.status, "saved", JSON.stringify(saved));
+  assert.equal(
+    which(await call(contracts.team, {}), "roles").roles.lead!.harness,
+    "claude",
+    "a level moves no seat until a project is set up from it",
+  );
+
+  const root = realpathSync(tempDir("sw2-rpc-level-"));
+  git(root, "init", "-q");
+  const added = which(await call(contracts.projectsAdd, { root, values: { roles: cheap } }), "slug");
+  assert.equal(added.refused, undefined);
+  const team = async () => which(await call(contracts.team, { project: added.slug }), "roles").roles;
+  const set = await team();
+  assert.deepEqual([set.lead!.harness, set.supervisor!.model, set.supervisor!.thinking], ["omp", "opus", "medium"]);
+  const later = { lead: { harness: "claude" } };
+  await call(contracts.settingsWrite, { revision: (await machine()).revision, values: { levels: { cheap: later } } });
+  assert.equal((await team()).lead!.harness, "omp", "changing a level later moves no project set up from it");
+
+  const own = which(await call(contracts.settingsRead, { project: added.slug }), "values");
+  const inProject = await call(contracts.settingsWrite, {
+    project: added.slug,
+    revision: own.revision,
+    values: { ...own.values, levels: { cheap } },
+  });
+  assert.match(which(inProject, "error").error, /Levels are this machine's/);
+});

@@ -1,4 +1,4 @@
-/** The Upkeep section over RPC: what the plugin left behind, its updates, and what its content changed. */
+/** The Plugin page over RPC: what the plugin left behind, its updates, and seats still on an older version. */
 import { z } from "zod";
 
 /** `shown` is `path` as the owner reads it, from `~` under their home folder. */
@@ -42,13 +42,3 @@ const OlderSeats = z.object({ where: z.string(), what: z.string(), detail: z.arr
 export type OlderSeats = z.infer<typeof OlderSeats>;
 export const OlderSeatsView = z.object({ version: z.string(), since: z.string(), projects: z.array(OlderSeats) });
 export type OlderSeatsView = z.infer<typeof OlderSeatsView>;
-
-const ContentChange = z.object({
-  unit: z.string(),
-  kind: z.enum(["guide", "record", "prompt", "skill"]),
-  change: z.enum(["added", "changed", "removed"]),
-  kept: z.boolean(),
-});
-export type ContentChange = z.infer<typeof ContentChange>;
-export const ContentView = z.object({ changes: z.array(ContentChange), fault: z.string().nullable() });
-export type ContentView = z.infer<typeof ContentView>;

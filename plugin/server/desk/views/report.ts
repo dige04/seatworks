@@ -13,7 +13,7 @@ import { decidedFor } from "./report-decided.ts";
 import { recheckNumbers } from "./report-rechecks.ts";
 import { type Seated, needsOf, stops } from "./report-needs.ts";
 
-/** `from` is when the Human last marked the Report read, none before they ever have; `human` whether they are in the loop. */
+/** `from` is when the Human last marked the report read, none before they ever have; `human` whether they are in the loop. */
 type ReportInputs = { kit: Kit; questionsPerDay: number; human: boolean; from: number | null; seated: Seated };
 
 /** What happened in a project since the Human last marked it read, built from its record by the desk, not written by an agent. */

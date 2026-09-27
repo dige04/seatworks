@@ -26,6 +26,7 @@ import { appendRecord } from "../desk/store/records.ts";
 import { TOOLS } from "../desk/tools/registry.ts";
 import { stampKit } from "../upkeep/older-seats.ts";
 import { codeIndex } from "./seat/code-index.ts";
+import { ChatCards } from "./panel/chat-cards.ts";
 import { HumanPanel } from "./panel/human.ts";
 import { ProjectsPanel } from "./panel/projects.ts";
 import type { Panel } from "./panel/rpc.ts";
@@ -48,7 +49,6 @@ import { PermissionWaits } from "./permission-waits.ts";
 import { Watches } from "./watch/watches.ts";
 import { watchView } from "./panel/watch-view.ts";
 import { Watching } from "./watching.ts";
-import { Troubles } from "./troubles.ts";
 import { ProjectRegistry } from "./project-registry.ts";
 
 type RuntimeOptions = {
@@ -64,7 +64,6 @@ export class Runtime implements HostHooks {
   readonly panel: Panel;
   private readonly keys = new SeatKeys();
   private readonly waits = new PermissionWaits();
-  private readonly troubles = new Troubles();
   private readonly registry = new ProjectRegistry();
   private readonly socket: TeamSocket;
   private readonly source: TeamSource;
@@ -72,6 +71,7 @@ export class Runtime implements HostHooks {
   private readonly turns: TurnRules;
   private readonly permissions: PermissionRules;
   private readonly patrol: Patrol;
+  private readonly cards: ChatCards;
   private readonly watches: Watches;
   private readonly watching: Watching;
   private readonly sync: ProviderSync;
@@ -107,7 +107,6 @@ export class Runtime implements HostHooks {
       desk: this.desk,
       attention: (project) => this.source.teamFor(project).attention,
       remember,
-      troubles: this.troubles,
     });
     this.permissions = new PermissionRules({
       kit,
@@ -121,9 +120,15 @@ export class Runtime implements HostHooks {
       source: this.source,
       desk: this.desk,
       watches: () => this.watches,
-      troubles: this.troubles,
     });
     this.watches = this.watchesOf(kit);
+    this.cards = new ChatCards({
+      kit,
+      source: this.source,
+      seats: host.seats,
+      waits: this.waits,
+      supervisorFor: (project) => this.desk.supervisorFor(project),
+    });
     this.patrol = new Patrol({
       kit,
       source: this.source,
@@ -134,6 +139,7 @@ export class Runtime implements HostHooks {
       turns: this.turns,
       watches: this.watches,
       remember,
+      cards: this.cards,
     });
     this.clock = new PatrolClock({ host, patrol: this.patrol, source: this.source, desk: this.desk });
     this.sync = new ProviderSync({
@@ -170,7 +176,7 @@ export class Runtime implements HostHooks {
     const changed = () => this.teamChanged();
     const reconcile = () => this.sync.reconcile();
     const seats = this.host.seats;
-    const watch = (project: Project) => watchView(project, this.troubles.of(project), source.teamFor(project), kit);
+    const watch = (project: Project) => watchView(project, source.teamFor(project), kit);
     const settings = new SettingsPanel({
       kit,
       source,
@@ -206,7 +212,7 @@ export class Runtime implements HostHooks {
         desk: this.desk,
       }),
       upkeep: new UpkeepPanel({ kit, source, registry, seats }),
-      human: new HumanPanel({ kit, source, registry, seats, human: this.desk.human, waits: this.waits }),
+      human: new HumanPanel({ kit, registry, human: this.desk.human, cards: this.cards }),
     };
   }
 

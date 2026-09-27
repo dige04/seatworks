@@ -21,6 +21,7 @@ import type { ProjectRegistry } from "../project-registry.ts";
 import type { TurnRules } from "../turns.ts";
 import { deskFacts } from "../watch/history.ts";
 import type { Watches } from "../watch/watches.ts";
+import type { ChatCards } from "../panel/chat-cards.ts";
 
 type SeatMap = Map<string, SeatView>;
 
@@ -34,6 +35,7 @@ type PatrolDeps = {
   turns: TurnRules;
   watches: Watches;
   remember: (project: Project) => void;
+  cards: Pick<ChatCards, "sync">;
 };
 
 /** The patrol round: what no event reports, found by looking — idle Leads, gone seats, due asks, the record's own facts. */
@@ -107,6 +109,10 @@ export class Patrol {
       ["a copy waiting on a seat could not be put away", () => desk.reapSlots(project, new Set(seats.keys()))],
       ["the Watcher's cases could not be tended", () => desk.watcher.tend(project, seats, now)],
       ["the status page could not be written", async () => this.writeStatus(project, seats, now)],
+      [
+        "the cards in the Supervisor's chat could not be posted",
+        () => this.deps.cards.sync(project, [...seats.values()], now),
+      ],
     ];
   }
 

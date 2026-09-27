@@ -1,15 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { test } from "node:test";
 import { notice } from "./noticed.ts";
-import { stateRoot } from "../../server/core/paths.ts";
 import { contracts } from "../../shared/rpc.ts";
 import type { Layer } from "../../shared/settings.ts";
 import { settle } from "./fake-timeline.ts";
 import { harness, laneWithPeer } from "./harness.ts";
 
-test("what the watch sees reaches whoever supervises, the Flow tab shows what waits for somebody to be seated, and a call its harness refused is recorded though it never reached the desk", async (t) => {
+test("what the watch sees reaches whoever supervises, the Team tab shows what waits for somebody to be seated, and a call its harness refused is recorded though it never reached the desk", async (t) => {
   const { h, sup, timeline } = await laneWithPeer();
   const working = h.runtime.kit.roles.find((role) => role.role === "peer")!;
   const label = working.label;
@@ -76,25 +73,6 @@ test("what the watch sees reaches whoever supervises, the Flow tab shows what wa
     detail: {},
   });
   assert.equal(h.events("call.malformed").length, 1);
-  const view = await h.rpc(contracts.flow, { project: h.project.slug });
-  assert.ok("watch" in view);
-  assert.deepEqual(
-    view.watch.trouble.map((entry) => entry.kind),
-    ["call.malformed"],
-    "no letter carries it, so the panel is where it is seen",
-  );
-});
-
-test("the content view says when what you took in of the kit cannot be read, and writes nothing over it", async () => {
-  const h = harness();
-  const taken = join(stateRoot(), "content.json");
-  mkdirSync(stateRoot(), { recursive: true });
-  writeFileSync(taken, "{not json");
-  const read = await h.rpc(contracts.content, {});
-  assert.deepEqual(read.changes, []);
-  assert.match(read.fault ?? "", /content\.json is there but could not be read/);
-  assert.equal((await h.rpc(contracts.content, { seen: ["guides/PLANS.md"] })).changes.length, 0);
-  assert.equal(readFileSync(taken, "utf-8"), "{not json");
 });
 
 test("a save is refused only for what it adds", async () => {

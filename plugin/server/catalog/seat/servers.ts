@@ -32,16 +32,39 @@ export function connectToServer(connect: Connect): Record<string, unknown> | und
   return { type: connect.type, url: connect.url, ...(connect.headers ? { headers: connect.headers } : {}) };
 }
 
-function fill(template: string, settings: McpState["settings"]): string {
-  return template.replace(/\{(\w+)\}/g, (whole, key: string) => (key in settings ? String(settings[key]) : whole));
+type Settings = McpState["settings"];
+
+/** A list setting's items one by one, else its one value: a template is filled once per item, in the list's order. */
+const itemsOf = (value: Settings[string]) => (Array.isArray(value) ? value : [value]);
+
+/** `template` with each `{key}` a setting names filled in, once for every item of each list it names. */
+function fillEach(template: string, settings: Settings): string[] {
+  const listed = [...template.matchAll(/\{(\w+)\}/g)]
+    .map((match) => match[1]!)
+    .find((key) => Array.isArray(settings[key]));
+  if (listed === undefined)
+    return [template.replace(/\{(\w+)\}/g, (whole, key: string) => (key in settings ? String(settings[key]) : whole))];
+  return itemsOf(settings[listed]!).flatMap((item) => fillEach(template, { ...settings, [listed]: item }));
 }
 
-export type IndexedProxy = ProxySpec & { id: string; label: string; backend: { type: "http"; url: string } };
+/** A template that is one value wherever it is used: a list setting fills it with the list's first item. */
+const fill = (template: string, settings: Settings): string => fillEach(template, settings)[0]!;
 
-export function proxyOf(state: McpState): ProxySpec | undefined {
-  return state.entry?.proxy
-    ? (JSON.parse(fill(JSON.stringify(state.entry.proxy), state.settings)) as ProxySpec)
-    : undefined;
+/** A proxy with its settings filled in: an HTTP backend a list setting names is tried at each of its addresses in order. */
+export type FilledProxy = Omit<ProxySpec, "backend"> & {
+  backend: { type: "http"; urls: string[] } | Extract<ProxySpec["backend"], { type: "stdio" }>;
+};
+
+export type IndexedProxy = FilledProxy & { id: string; label: string; backend: { type: "http"; urls: string[] } };
+
+export function proxyOf(state: McpState): FilledProxy | undefined {
+  const proxy = state.entry?.proxy;
+  if (!proxy) return undefined;
+  const { backend, ...rest } = proxy;
+  const filled = JSON.parse(fill(JSON.stringify(rest), state.settings)) as Omit<ProxySpec, "backend">;
+  return backend.type === "http"
+    ? { ...filled, backend: { type: "http", urls: fillEach(backend.url, state.settings) } }
+    : { ...filled, backend: JSON.parse(fill(JSON.stringify(backend), state.settings)) as typeof backend };
 }
 
 export function indexedProxies(team: Team): IndexedProxy[] {
@@ -152,7 +175,7 @@ function teamServer(kit: Kit, role: RoleSpec, socket: string, node: string, key?
   };
 }
 
-export function hookTools(proxy: ProxySpec | undefined): string[] {
+export function hookTools(proxy: FilledProxy | undefined): string[] {
   return [proxy?.open?.tool, proxy?.close?.tool, proxy?.wait?.tool, proxy?.sync?.tool].filter((name): name is string =>
     Boolean(name),
   );

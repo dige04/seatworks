@@ -6,7 +6,6 @@ import type { Team } from "../../catalog/team/team.ts";
 import { lastBytes } from "../../core/gate.ts";
 import { loadIncidents } from "../../desk/store/incidents.ts";
 import type { Project } from "../../desk/project/project.ts";
-import type { Trouble } from "../troubles.ts";
 
 /** Which brains read for the project and how that stands, as the last answer the watch kept says; a line by another is not theirs. */
 function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJudge {
@@ -36,9 +35,8 @@ function judgeLine(project: Project, team: Team, kit: Kit, now: number): WatchJu
     : { label, state: "answering", minutes, detail: null };
 }
 
-/** What the panel shows of a project's watch: how many incidents stand where, and trouble nobody is mailed about. */
-export function watchView(project: Project, troubles: Trouble[], team: Team, kit: Kit, now = Date.now()): WatchView {
-  const ago = (at: number) => Math.max(0, Math.round((now - at) / 60_000));
+/** What the panel shows of a project's watch: how many incidents stand where, and who answers its questions. */
+export function watchView(project: Project, team: Team, kit: Kit, now = Date.now()): WatchView {
   const incidents = { told: 0, held: 0, recorded: 0 };
   for (const item of Object.values(loadIncidents(project.state).items)) {
     if (!item.open) continue;
@@ -46,7 +44,6 @@ export function watchView(project: Project, troubles: Trouble[], team: Team, kit
   }
   return {
     incidents,
-    trouble: troubles.map((entry) => ({ kind: entry.kind, minutes: ago(entry.at), detail: entry.detail })).reverse(),
     judge: judgeLine(project, team, kit, now),
   };
 }

@@ -152,7 +152,7 @@ export function makeKit(): Kit {
     },
     instructions: "Prefer the IDE tools.",
     requires: [".idea"],
-    settings: { port: { type: "number", label: "Port", default: 29170 } },
+    settings: { port: { type: "list", of: "number", label: "Ports", default: [29170] } },
     defaults: { enabled: true },
     tools: { lead: ["ide_find_references"], peer: ["ide_find_references", "ide_refactor_rename"] },
     rule: "rule.md",
