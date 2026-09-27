@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { StreamMessage } from "../../server/adapters/paseo/stream.ts";
+import type { Rules } from "../../server/runtime/watch/facts.ts";
 import { again, editCall, fixture, kinds, opening, piRow, play, rules, watchOver } from "./seat-replay.ts";
 
 /** An edit of `filePath` at `seq`, its detail set as each row needs. */
@@ -287,4 +288,16 @@ test("a hand-back that names a command as run, when no call since its instructio
   ]);
   assert.deepEqual(claimed("Totals fixed; `npm test` passes.", shell("g", 3, "npm test")), []);
   assert.deepEqual(claimed("Renamed `totalOf` to `sum`."), [], "a name in backticks that is no command claims no run");
+});
+
+test("a write outside what a seat holds asks for attention, and so does any product file a Lead writes", () => {
+  const outside = (filePath: string, given: Rules) =>
+    play([...opening(), edit("e", 2, { filePath })], given)
+      .filter((fact) => fact.kind === "outside-scope")
+      .map((fact) => [fact.level, fact.quote]);
+  assert.deepEqual(outside("/elsewhere/x.ts", rules({ cwd: "/work" })), [["attend", "/elsewhere/x.ts"]]);
+  const lead = rules({ cwd: "/work", lead: true, temp: "/var/folders/xy/T" });
+  assert.deepEqual(outside("/work/src/cart.ts", lead), [["attend", "/work/src/cart.ts"]]);
+  assert.deepEqual(outside("/work/docs/plan.md", lead), [], "its notes and plans are prose");
+  assert.deepEqual(outside("/var/folders/xy/T/probe.mjs", lead), [], "and its scratch is its own");
 });

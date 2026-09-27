@@ -33,12 +33,14 @@ export class Watching {
     let scope: string[] | undefined;
     let placed = false;
     let ownCopy = false;
+    let lead = false;
     try {
       const ledger = loadLedger(project.state);
       const task = taskOfPeer(ledger, seat.id);
       const lane = task ? ledger.lanes[task.lane] : laneOfLead(ledger, seat.id);
       scope = task?.kind !== "code" ? undefined : task.mode === "parallel" ? task.holds : lane?.writeSet;
       placed = Boolean(task ?? lane);
+      lead = !task && lane !== undefined;
       // A slot is a copy the desk made; a lane without one works in the Human's own checkout.
       const copy = task?.slot ? task.worktree : lane?.slot && task?.mode !== "parallel" ? lane.worktree : undefined;
       ownCopy = copy !== undefined && resolve(copy) === resolve(seat.cwd);
@@ -58,6 +60,7 @@ export class Watching {
         temp: tmpdir(),
         scope,
         ownCopy,
+        lead,
         repeatsAt: attention.repeatsAt,
         recoverWithin: attention.recoverWithin,
         refusalsAt: attention.refusalsAt,

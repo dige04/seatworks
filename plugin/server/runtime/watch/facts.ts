@@ -8,7 +8,7 @@ import type { Call, Unit } from "./window.ts";
 /**
  * `skipped` and `assertion` are global, since they are counted; `runners` are the commands whose first word says little;
  * `scope` is a parallel task's holds or its lane's write set, and empty or none is anywhere in its copy; `ownCopy` when the
- * seat works in a copy the desk made for its task or lane alone, never the Human's checkout.
+ * seat works in a copy the desk made for its task or lane alone, never the Human's checkout; `lead` when it leads a lane.
  */
 export type Rules = {
   destructive: RegExp;
@@ -37,6 +37,7 @@ export type Rules = {
   temp?: string;
   scope?: string[];
   ownCopy?: boolean;
+  lead?: boolean;
   repeatsAt: number;
   recoverWithin: number;
   refusalsAt: number;
@@ -140,6 +141,8 @@ function outside(path: string, rules: Rules): boolean {
   const rel = isAbsolute(path) ? relative(rules.cwd, path) : normalize(path);
   // The temp directory is scratch only outside the copy: a copy that lies in it is still read by its scope.
   if (rel.startsWith("..")) return !(rules.temp && isAbsolute(path) && !relative(rules.temp, path).startsWith(".."));
+  // A Lead holds no product file: the lane's code is its Peers' to write.
+  if (rules.lead && !PROSE.test(path)) return true;
   return rules.scope !== undefined && rules.scope.length > 0 && !covers(rules.scope, rel);
 }
 

@@ -109,7 +109,7 @@ const FACTS = {
   },
   "call-failed": { level: "note" },
   "gate-failed": { level: "note" },
-  "outside-scope": { level: "note" },
+  "outside-scope": { level: "attend", title: "Wrote outside what it holds" },
   "edit-before-look": { level: "note" },
 } as const satisfies Record<
   string,
