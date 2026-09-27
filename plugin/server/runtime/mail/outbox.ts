@@ -11,10 +11,11 @@ const isLetter = (value: unknown): value is Letter =>
 type Compose = (seat: SeatLook, letters: Letter[]) => string;
 /**
  * `steers`: the seat's harness takes a text into a running turn instead of replacing it; `calling`: the seat waits on a desk
- * call, where a text steered in reads as the call cut short.
+ * call, where a text steered in reads as the call cut short; `delivered`: letters reached their seat, at `at`.
  */
 export type Rules = {
   dropped?: (letter: Letter, now: number) => void;
+  delivered?: (letters: Letter[], at: number) => void;
   steers?: (seat: SeatLook) => boolean;
   calling?: (agentId: string) => boolean;
   holding?: (seat: SeatLook) => boolean;
@@ -158,6 +159,7 @@ export class Outbox {
       for (const [key, at] of this.sentKeys) if (now - at >= DUPLICATE_MS) this.sentKeys.delete(key);
       for (const letter of mine) this.sentKeys.set(Outbox.keyOf(letter), now);
       this.save(this.letters().filter((letter) => !ids.has(letter.id)));
+      this.rules.delivered?.(mine, now);
       return ids;
     });
   }

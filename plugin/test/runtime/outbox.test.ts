@@ -163,3 +163,26 @@ test("a letter Paseo will not take is kept for the next try, and the post that w
   assert.deepEqual(agents.lead.sent, ["merged"]);
   assert.deepEqual(outbox.pending("lead"), []);
 });
+
+test("whoever waits on a letter hears when it reached its seat, not when it was posted", async () => {
+  const agents = { watcher: agent("running") };
+  const heard: { keys: string[]; at: number }[] = [];
+  const outbox = new Outbox(
+    join(tempDir(), "outbox.json"),
+    (_seat, list) => list.map((letter) => letter.text).join("|"),
+    fakeSeats(agents),
+    { delivered: (letters, at) => heard.push({ keys: letters.map((letter) => letter.key), at }) },
+  );
+  assert.equal(await outbox.post({ to: "watcher", key: "case:C1", text: "one" }), "held");
+  assert.equal(await outbox.post({ to: "watcher", key: "case:C2", text: "two" }), "held");
+  assert.equal(heard.length, 0, "held is not delivered");
+  agents.watcher.status = "idle";
+  outbox.turnEnded("watcher");
+  const before = Date.now();
+  await outbox.pump("watcher");
+  assert.deepEqual(
+    heard.map((one) => one.keys),
+    [["case:C1", "case:C2"]],
+  );
+  assert.ok(heard[0]!.at >= before, "stamped as it went");
+});
