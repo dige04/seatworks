@@ -91,7 +91,10 @@ export class Desk {
       projects,
       ledgers: new LedgerStore(touched),
       incidents: new IncidentStore(touched),
-      mail: { post: async (to, letter) => (to ? options.outbox.post({ to, ...letter }) : "nobody") },
+      mail: {
+        post: async (to, letter) => (to ? options.outbox.post({ to, ...letter }) : "nobody"),
+        withdraw: (to, key) => options.outbox.withdraw(to, key),
+      },
       log: options.log,
       teamFor: options.teamFor,
       indexesFor: options.indexesFor ?? (() => []),

@@ -69,6 +69,7 @@ export type DeskEvent =
   | { kind: "watch.unbriefed"; agent: string; error: string }
   | { kind: "watch.thoughtless"; agent: string; provider: string; looks: number }
   | { kind: "watch.unasked"; subject: string; by: string; error: string }
+  | { kind: "watch.superseded"; agent: string; subject: string; case: string; into: string }
   | { kind: "review.unasked"; subject: string; by: string; error: string }
   | { kind: "watcher.seated"; agent: string; parent: string }
   | { kind: "watch.offline"; error: string }

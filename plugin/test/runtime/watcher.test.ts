@@ -276,3 +276,48 @@ test("a case's time runs from when its Watcher got it, and one it never got is g
   await at(61);
   assert.equal(kept(h.project.state).at(-1)!.unasked, "never reached the Watcher", "past it, it is given up");
 });
+
+test("a newer look at the same seat and subject folds into its case still queued, which is taken back unasked", async () => {
+  const { h, peer, thinks, judge } = await watched();
+  thinks("The parser is missing, so I'll build a stub for it.");
+  await until(() => watchersOf(h).length === 1, "a Watcher is seated for the case");
+  const [watcher] = watchersOf(h);
+  assert.equal((await judge(watcher!.id, watcher!.prompt!, "no")).ok, true);
+  const held = () => h.runtime.outbox.pending(watcher!.id);
+
+  watcher!.status = "running";
+  thinks("A placeholder will do for the refund path.");
+  await until(() => held().length === 1, "the case waits in the outbox");
+  const first = caseIn(held()[0]!.text);
+  thinks("And a stub for the tax table.");
+  await until(() => held().length === 1 && caseIn(held()[0]!.text) !== first, "the newer case takes its place");
+  const folded = held()[0]!.text;
+  assert.match(
+    folded,
+    /- \[thought\] A placeholder will do for the refund path\.\n- \[thought\] And a stub for the tax table\./,
+  );
+  assert.deepEqual(
+    h.events("watch.superseded").map((event) => [event.agent, event.subject, event.case, event.into]),
+    [[peer, "L1-T1", first, caseIn(folded)]],
+  );
+  await h.idle(watcher!.id);
+  assert.match(
+    (await judge(watcher!.id, folded.replace(caseIn(folded), first), "no")).text,
+    new RegExp(`${first} is not waiting`),
+    "the one taken back takes no answer",
+  );
+  assert.equal((await judge(watcher!.id, folded, "no")).ok, true, "the folded case is answered");
+  await settle();
+  assert.equal(
+    kept(h.project.state).filter((line) => line.unasked !== undefined).length,
+    0,
+    "the one taken back is no case left unasked",
+  );
+
+  thinks("One more stub, for shipping.");
+  await until(() => /for shipping/.test(h.heard(watcher!.id).join("\n")), "a case after it is sent");
+  await h.idle(watcher!.id);
+  thinks("And the last, for returns.");
+  await until(() => /for returns/.test(h.heard(watcher!.id).join("\n")), "and one after that");
+  assert.equal(h.events("watch.superseded").length, 1, "a case its Watcher already has is not folded into");
+});

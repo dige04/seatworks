@@ -5,16 +5,25 @@ import { type Answer, type Judge, type Judgement, type Question, type SeatView, 
 import type { Agents } from "../seats/agents.ts";
 import { caseLetters } from "../letters/case-letters.ts";
 import type { DeskBase } from "../base.ts";
+import { Folded } from "../store/assessments.ts";
 import { loadLedger } from "../store/ledger.ts";
 import type { Letter } from "../letters/envelope.ts";
 import { type Project, projectOf } from "../project/project.ts";
 import type { Roster } from "../seats/roster.ts";
 
-/** A case asked and not yet answered: `sent` once posted to a Watcher, `delivered` once that Watcher was given it. */
+/** What a case is about: the seat watched, the task or lane its work is on, and whether a look or which decision. */
+export type About = { seat: string; subject: string; episode: string };
+
+/**
+ * A case asked and not yet answered, under `key`, its seat, subject and episode: `sent` once posted to a Watcher,
+ * `delivered` once that Watcher was given it.
+ */
 type Waiting = {
   project: string;
+  key: string;
   within: number;
   provider: string;
+  state: Record<string, unknown>;
   questions: Record<string, Question>;
   sent?: { seat: string; at: number };
   delivered?: number;
@@ -56,24 +65,30 @@ export class Watcher {
     this.agents = agents;
   }
 
-  judge(project: Project, role: string, subject: string): Judge {
-    return { ask: (state, questions) => this.ask(project, role, subject, state, questions) };
+  judge(project: Project, role: string, about: About): Judge {
+    return { ask: (state, questions) => this.ask(project, role, about, state, questions) };
   }
 
+  /** One case waits per seat, subject and episode: a newer one takes in what the one still queued would have asked. */
   private async ask(
     project: Project,
     role: string,
-    subject: string,
-    state: Record<string, unknown>,
-    questions: Record<string, Question>,
+    about: About,
+    asked: Record<string, unknown>,
+    newer: Record<string, Question>,
   ): Promise<Judgement> {
     const id = `C${this.stamp}${++this.count}`;
+    const key = `${about.seat}:${about.subject}:${about.episode}`;
+    const older = await this.fold(project, key, about, id);
+    const state = older ? merged(older.state, asked) : asked;
+    const questions = older ? { ...older.questions, ...newer } : newer;
     const within = this.desk.teamFor(project).attention.watcherAnswerMinutes;
     const answer = new Promise<Judgement>((answered, failed) =>
-      this.waiting.set(id, { project: project.slug, within, provider: role, questions, answered, failed }),
+      this.waiting.set(id, { project: project.slug, key, within, provider: role, state, questions, answered, failed }),
     );
     try {
-      const { seat, started } = await this.deliver(project, role, caseLetters.case(id, subject, state, questions));
+      const letter = caseLetters.case(id, about.subject, state, questions);
+      const { seat, started } = await this.deliver(project, role, letter);
       const provider = (await this.roster.look(seat)).provider;
       const entry = this.waiting.get(id);
       const at = Date.now();
@@ -85,6 +100,21 @@ export class Watcher {
       throw error;
     }
     return answer;
+  }
+
+  /** The case still queued under `key`, taken back from its Watcher's mail and ended as folded into `into`; none once its Watcher has it. */
+  private async fold(project: Project, key: string, about: About, into: string): Promise<Waiting | undefined> {
+    const found = [...this.waiting].find(
+      ([, entry]) => entry.project === project.slug && entry.key === key && entry.sent && entry.delivered === undefined,
+    );
+    if (!found) return undefined;
+    const [id, entry] = found;
+    if (!(await this.desk.mail.withdraw(entry.sent!.seat, `case:${id}`)) || this.waiting.get(id) !== entry)
+      return undefined;
+    this.waiting.delete(id);
+    recordEvent(project, { kind: "watch.superseded", agent: about.seat, subject: about.subject, case: id, into });
+    entry.failed(new Folded(`folded into ${into}`));
+    return entry;
   }
 
   /** Cases whose letters reached their Watcher at `at`, which may be while they are still being posted: from then on they have the time they are given. */
@@ -186,4 +216,15 @@ export class Watcher {
         await this.roster.archive(seat.id);
     }
   }
+}
+
+/** A newer case's fields over an older's, lists joined, so nothing the older would have read is lost. */
+function merged(older: Record<string, unknown>, newer: Record<string, unknown>): Record<string, unknown> {
+  const both = { ...older, ...newer };
+  for (const [field, value] of Object.entries(newer)) {
+    const was: unknown = older[field];
+    if (Array.isArray(was) && Array.isArray(value))
+      both[field] = [...new Set<unknown>((was as unknown[]).concat(value as unknown[]))];
+  }
+  return both;
 }

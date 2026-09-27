@@ -10,6 +10,9 @@ export type Assessments = { log: "assessments" | "reviews"; unasked: "watch.unas
 /** What an answer is kept beside: about whom and which of theirs, by which judge, and what it read. */
 type About = { subject: string; episode: string; by: string; state: Record<string, unknown> } & Record<string, unknown>;
 
+/** A question folded into a newer case that asks it again: the newer keeps the answer, so this one keeps nothing. */
+export class Folded extends Error {}
+
 /** Whether a condition holds: at or above `yes` it does, at or below `no` it does not, and between is unclear. */
 export function holds(spec: { yes: number; no: number }, answer: Answer | undefined): "yes" | "no" | "unclear" {
   const yes = answer && "likely" in answer ? answer.likely : undefined;
@@ -45,7 +48,7 @@ export async function askKept(
     );
     return judged;
   } catch (error) {
-    keepUnasked(project, where, { ...about, questions }, errorText(error));
+    if (!(error instanceof Folded)) keepUnasked(project, where, { ...about, questions }, errorText(error));
     return undefined;
   }
 }

@@ -9,8 +9,11 @@ import type { Project } from "./project/project.ts";
 import type { IncidentStore } from "./store/incident-store.ts";
 import type { LedgerStore } from "./store/ledger-store.ts";
 
-/** How the desk mails a seat; "nobody" when there is nobody to read it. */
-type Mail = { post(to: string | undefined, letter: Letter): Promise<Posted | "nobody"> };
+/** How the desk mails a seat, "nobody" when there is nobody to read it, and takes back a letter it has not been given. */
+type Mail = {
+  post(to: string | undefined, letter: Letter): Promise<Posted | "nobody">;
+  withdraw(to: string, key: string): Promise<boolean>;
+};
 
 export type DeskBase = {
   kit: Kit;

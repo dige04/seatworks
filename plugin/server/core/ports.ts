@@ -235,4 +235,8 @@ export type CodeIndex = {
 /** "duplicate": dropped as a repeat of a letter already sent. */
 export type Posted = "sent" | "held" | "duplicate";
 
-export type Mailer = { post(letter: { to: string; key: string; text: string; wakes?: false }): Promise<Posted> };
+/** `withdraw` takes back a letter still held for `to`: whether it was. */
+export type Mailer = {
+  post(letter: { to: string; key: string; text: string; wakes?: false }): Promise<Posted>;
+  withdraw(to: string, key: string): Promise<boolean>;
+};

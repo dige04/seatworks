@@ -12,6 +12,7 @@ import { type Assessments, askKept, holds } from "../store/assessments.ts";
 import { list } from "../letters/envelope.ts";
 import type { Item } from "./decisions.ts";
 import { type Noticed, type Placed, ledgerOf, notice, placeIn } from "./notice.ts";
+import type { About } from "./watcher.ts";
 
 /** What one look read of a seat, as the brains take it: its words since `since`, the code's facts meanwhile, its instruction. */
 export type Look = {
@@ -82,7 +83,9 @@ export async function readLook(services: Services, project: Project, seat: Notic
   // Each case on its own, so a decision is not held behind the look before it.
   const judged = cases
     .filter((each) => each.patterns.length > 0)
-    .map((one) => judgeCase(services, project, subject, place, { ...one, facts: look.facts }, asked));
+    .map((one) =>
+      judgeCase(services, project, { seat: seat.id, subject }, place, { ...one, facts: look.facts }, asked),
+    );
   const findings = (await Promise.all(judged)).flat();
   if (findings.length > 0) await notice(services, project, seat, findings, place);
 }
@@ -90,7 +93,7 @@ export async function readLook(services: Services, project: Project, seat: Notic
 async function judgeCase(
   services: Services,
   project: Project,
-  subject: string,
+  { seat, subject }: Omit<About, "episode">,
   place: Placed,
   one: Case & { facts: string[] },
   asked: Record<string, unknown>,
@@ -116,7 +119,7 @@ async function judgeCase(
     items: one.items.map((item) => `[${item.kind}] ${item.text}`),
     ...(one.facts.length > 0 ? { facts: one.facts } : {}),
   };
-  const judge = services.watcher.judge(project, brains.seat, subject);
+  const judge = services.watcher.judge(project, brains.seat, { seat, ...about });
   return weigh(project, about, brains.seat, judge, state, judged, attention.quoteChars);
 }
 
