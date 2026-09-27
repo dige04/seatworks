@@ -332,5 +332,62 @@
     "next": "A decision against the Human's settled words or the lane's directive ships a deviation nobody chose. Nothing, if the line was changed since; else ask the seat's Lead, or the Lead itself, which of the two holds. Then mark_incident it.",
     "yes": 0.8,
     "no": 0.2
+  },
+  "vague-goal": {
+    "title": "A goal that names nothing anyone could observe",
+    "watches": [
+      "lead"
+    ],
+    "reads": [
+      "call"
+    ],
+    "instructions": "Does `text` set a goal that names no outcome a test or a person could observe?",
+    "seat": "Does the brief the Lead wrote in its call set a goal that names no outcome a test or a person could observe, such as \"improve\", \"clean up\" or \"handle edge cases\"?",
+    "criteria": {
+      "true": "Its goal names no observable outcome: it asks to improve, clean up, make better or handle edge cases with nothing a test could check.",
+      "false": "Its goal names something a test or a person could observe."
+    },
+    "tools": [
+      "add_tasks",
+      "amend_task"
+    ],
+    "yes": 0.8,
+    "no": 0.2
+  },
+  "builds-for-maybe": {
+    "title": "Building for a case nobody asked for",
+    "watches": [
+      "write"
+    ],
+    "reads": [
+      "thought",
+      "said"
+    ],
+    "instructions": "Does `text` say the agent builds something for a case nobody asked for, \"to be safe\", \"in case\" or \"future-proof\"?",
+    "seat": "Does the Peer say it builds something for a case nobody asked for, \"to be safe\", \"in case\" or \"future-proof\", such as an option, an interface with one implementation or a guard for an input that cannot come?",
+    "criteria": {
+      "true": "It says it adds an option, an abstraction, an interface or a guard for a case it names as possible rather than asked for.",
+      "false": "It says nothing of building for a case nobody asked for."
+    },
+    "yes": 0.8,
+    "no": 0.2
+  },
+  "legacy-test": {
+    "title": "A test that proves an old behaviour is gone",
+    "watches": [
+      "write"
+    ],
+    "reads": [
+      "thought",
+      "said"
+    ],
+    "instructions": "Does `text` say a test checks that an old behaviour no longer happens?",
+    "seat": "Does the Peer say it writes or keeps a test that checks an old behaviour no longer happens, as in \"should no longer\", \"must not still\" or a test named after a bug?",
+    "criteria": {
+      "true": "It says a test checks that something removed or old no longer happens.",
+      "false": "It says nothing of a test for an old behaviour being gone."
+    },
+    "yes": 0.8,
+    "no": 0.2
   }
 }
