@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { skillSources } from "../../server/catalog/kit/content.ts";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { hiddenWordsIn } from "../../server/catalog/kit/hidden-words.ts";
+import { RECORDS } from "../../server/core/paths.ts";
 
 const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const kit = loadKit(PLUGIN);
@@ -187,5 +188,21 @@ test("seat text names only what that seat can reach and what exists: its own too
           `${role.role}'s prompt names ${heading}, a word in capitals that is no acronym, file or variable, so a letter the desk does not send`,
         );
     }
+  }
+});
+
+test("seat text names only logs the desk keeps, and every notebook section it sends a line to is in the page the desk seeds", () => {
+  const texts = files(join(PLUGIN, "content"), ".md").map((file) => [file, readFileSync(file, "utf-8")] as const);
+  const kept = new Set(RECORDS.map((name) => `${name}.log`));
+  const seeded = readFileSync(join(PLUGIN, "content", "records", "notebook.md"), "utf-8");
+  for (const [file, text] of texts) {
+    for (const [, log] of text.matchAll(/(?:\$SEATWORKS_STATE|\{\{state\}\})\/([\w-]+\.log)\b/g))
+      assert.ok(kept.has(log!), `${file} sends a seat to ${log}, which the desk never writes`);
+    for (const [, section] of text.matchAll(/\bunder\s+([A-Z][a-z]+)\s+in\s+the\s+notebook\b/g))
+      assert.match(
+        seeded,
+        new RegExp(`^## ${section}$`, "m"),
+        `${file} keeps lines under ${section} in the notebook, which the seeded page has no section for`,
+      );
   }
 });

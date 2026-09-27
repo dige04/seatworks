@@ -12,6 +12,7 @@ lives. Read it at the start of a session and match what you see against it befor
 | A rule for code in this repository | a `message` asking the Lead to put it in `AGENTS.md` through a task |
 | What the project does or how it behaves, as the Human settled it | `CONTEXT.md` beside this file |
 | A pattern, new or seen again | a row below |
+| The Human correcting what you told them | a dated line under Corrections |
 | A change to a prompt, skill, role setting or profile | a diff for the Human |
 
 ## Working method
@@ -27,6 +28,11 @@ lives. Read it at the start of a session and match what you see against it befor
 - When it gets long, the answer is to fold rows into the pattern they are all instances of, not to
   drop the oldest to stay under a number. A `verified` row whose fix has held for weeks has done its
   work and can go.
+
+## Corrections
+
+One dated line each time the Human corrects what you told them: what you said, what they corrected. The chat is not in
+the desk's logs, so this is the only record a retrospective can count.
 
 ## Patterns
 
