@@ -12,11 +12,26 @@ export function testMarkers(kit: Kit): TestMarkers {
   };
 }
 
+/** A line with its literals blanked: two assertions of one shape check the same thing against different values. */
+const shapeOf = (line: string) => line.replace(/(["'`])(?:\\.|(?!\1).)*\1|\b\d+(?:\.\d+)?\b/g, "_");
+
 export function weakened(before: string, after: string, markers: TestMarkers): string | undefined {
   const count = (text: string, pattern: RegExp): number => (text.match(pattern) ?? []).length;
   if (count(after, markers.skipped) > count(before, markers.skipped)) return "adds a skip marker";
   const [was, now] = [count(before, markers.assertion), count(after, markers.assertion)];
-  return now < was ? `${was} assertions become ${now}` : undefined;
+  if (now < was) return `${was} assertions become ${now}`;
+  // From the assertion on: a test's own title may change, what it expects may not quietly.
+  const asserted = (text: string) =>
+    text.split("\n").flatMap((line) => {
+      const at = line.search(new RegExp(markers.assertion.source, "i"));
+      return at < 0 ? [] : [{ line: line.trim(), checks: line.slice(at).trim() }];
+    });
+  const old = asserted(before);
+  const moved = asserted(after).find(
+    ({ checks }) =>
+      !old.some((kept) => kept.checks === checks) && old.some((kept) => shapeOf(kept.checks) === shapeOf(checks)),
+  );
+  return moved ? `an expected value changed in \`${moved.line.slice(0, 100)}\`` : undefined;
 }
 
 /** The patterns the watch reads calls with: the ecosystem's, and attention's where a settings layer set its own. */
@@ -36,6 +51,7 @@ export function watchPatterns(kit: Kit, attention: Attention) {
     guardCommand: new RegExp(attention.guardCommand, "i"),
     testPath: new RegExp(attention.testPath, "i"),
     suppressed: new RegExp(attention.suppressed, "i"),
+    productBail: new RegExp(attention.productBail),
     checkerPath: new RegExp(attention.checkerPath, "i"),
     refused: new RegExp(kit.ecosystem.watch.refused, "i"),
     ...testMarkers(kit),

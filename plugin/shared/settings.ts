@@ -85,6 +85,8 @@ export const AttentionChoice = z.strictObject({
   reworksAt: z.number().int().min(2).optional(),
   reviewsAt: z.number().int().min(2).optional(),
   suppressed: Pattern.optional(),
+  /** What a product file gains to stop or skip instead of doing the work: an exit that says success, a test skipped from inside. */
+  productBail: Pattern.optional(),
   /** Files the gate or the agents' instructions read: test runner and CI config, the project's instruction files. */
   checkerPath: Pattern.optional(),
   longTurnMinutes: z.number().int().min(1).optional(),

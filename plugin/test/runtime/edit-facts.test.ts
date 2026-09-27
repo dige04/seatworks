@@ -252,3 +252,27 @@ test("an edit to a file that fences what a seat may do is paged", () => {
   ]);
   assert.deepEqual(guards("src/settings.json"), []);
 });
+
+test("a check weakened another way: an expected value changed, a product file told to exit or skip, a runner's own set-up changed", () => {
+  const weakened = (filePath: string, oldString: string, newString: string) =>
+    play([...opening(), edit("e1", 2, { filePath, oldString, newString })], rules())
+      .filter((fact) => fact.kind === "test-weakened" || fact.kind === "checker-touched")
+      .map((fact) => `${fact.kind}: ${fact.quote}`);
+  assert.deepEqual(weakened("test/cart.test.ts", "assert.equal(total, 2900);", "assert.equal(total, 2899);"), [
+    "test-weakened: test/cart.test.ts: an expected value changed in `assert.equal(total, 2899);`",
+  ]);
+  assert.deepEqual(
+    weakened("test/cart.test.ts", "assert.equal(total, 2900);", "assert.equal(cart.total(), 2900);"),
+    [],
+    "what is checked may change; what it must be is the tell",
+  );
+  assert.deepEqual(weakened("src/main.py", "run()", "raise SkipTest('later')\nrun()"), [
+    "test-weakened: src/main.py: a product file gains `raise SkipTest('later')`",
+  ]);
+  assert.deepEqual(weakened("src/cli.js", "main();", "process.exit(0);\nmain();"), [
+    "test-weakened: src/cli.js: a product file gains `process.exit(0);`",
+  ]);
+  assert.deepEqual(weakened("tests/conftest.py", "a = 1", "a = 2"), [
+    "checker-touched: tests/conftest.py: a file the gate or the instructions read",
+  ]);
+});

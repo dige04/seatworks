@@ -25,6 +25,7 @@ export type Rules = {
   guardCommand: RegExp;
   testPath: RegExp;
   suppressed: RegExp;
+  productBail: RegExp;
   checkerPath: RegExp;
   refused: RegExp;
   skipped: RegExp;
@@ -221,6 +222,9 @@ export function onSettle(call: Call, rules: Rules, known?: (path: string) => str
     // Only where the secret went is quoted, never the secret.
     if (hits(after, rules.secretString).length > hits(before, rules.secretString).length)
       facts.push(fact("secret", `${oneLine(path)}: adds a string shaped like a secret`));
+    const bail = !rules.testPath.test(path) && added(before, after).find((line) => rules.productBail.test(line));
+    if (bail)
+      facts.push(fact("test-weakened", `${oneLine(path)}: a product file gains \`${oneLine(bail.trim(), 100)}\``));
     if (!PROSE.test(path)) {
       const was = hits(before, rules.suppressed);
       const now = hits(after, rules.suppressed);

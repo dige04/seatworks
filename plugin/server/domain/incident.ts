@@ -63,7 +63,7 @@ const FACTS = {
   stuck: { level: "attend", title: "Going round in circles" },
   "no-recovery": { level: "attend", title: "Did not recover from a failure" },
   "refusal-loop": { level: "attend", title: "Refused again and again" },
-  "test-weakened": { level: "attend", title: "A test lost its assertions" },
+  "test-weakened": { level: "attend", title: "A test or check weakened" },
   suppressed: { level: "attend", title: "Silenced a check instead of fixing it" },
   "checker-touched": { level: "attend", title: "Changed what checks the work or instructs the agents" },
   unverified: { level: "attend", title: "Handed back without running the gate" },
