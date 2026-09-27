@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { recordEvent } from "../store/event-log.ts";
 import { can, roleNamed, seatOf } from "../../catalog/kit/roles.ts";
 import { KeyedQueue } from "../../core/keyed-queue.ts";
@@ -7,29 +8,38 @@ import { caseLetters } from "../letters/case-letters.ts";
 import type { DeskBase } from "../base.ts";
 import { Folded } from "../store/assessments.ts";
 import { loadLedger } from "../store/ledger.ts";
+import { readJson, writeJson } from "../../core/store.ts";
 import type { Letter } from "../letters/envelope.ts";
 import { type Project, projectOf } from "../project/project.ts";
 import type { Roster } from "../seats/roster.ts";
 
 /** What a case is about: the seat watched, the task or lane its work is on, and whether a look or which decision. */
-export type About = { seat: string; subject: string; episode: string };
+export type About = { seat: { id: string; provider: string; title?: string | null }; subject: string; episode: string };
 
 /**
- * A case asked and not yet answered, under `key`, its seat, subject and episode: `sent` once posted to a Watcher,
+ * A case asked and not yet answered, as the project keeps it so an answer after a restart still counts: `role` is the
+ * Watcher's, `provider` the seat's that takes it; `key` its seat, subject and episode; `sent` once posted to a Watcher,
  * `delivered` once that Watcher was given it.
  */
-type Waiting = {
-  project: string;
+export type Kept = {
+  id: string;
   key: string;
+  about: About;
+  role: string;
   within: number;
   provider: string;
   state: Record<string, unknown>;
   questions: Record<string, Question>;
   sent?: { seat: string; at: number };
   delivered?: number;
-  answered(judged: Judgement): void;
-  failed(error: Error): void;
 };
+
+type Waiting = Kept & { project: Project; answered: (judged: Judgement) => void; failed: (error: Error) => void };
+
+/** What becomes of a case the plugin took up again after a restart, once answered or given up. */
+type Late = (project: Project, kept: Kept, outcome: Judgement | Error) => void;
+
+const casesFile = (project: Project) => join(project.state, "watch-cases.json");
 
 type Said = { question: string; says: string; why: string };
 
@@ -56,6 +66,8 @@ export class Watcher {
   private readonly agents: Agents;
   private readonly waiting = new Map<string, Waiting>();
   private readonly lines = new KeyedQueue();
+  private readonly resumed = new Set<string>();
+  private late: Late = () => {};
   private readonly stamp = Date.now().toString(36).slice(-4);
   private count = 0;
 
@@ -63,6 +75,11 @@ export class Watcher {
     this.desk = desk;
     this.roster = roster;
     this.agents = agents;
+  }
+
+  /** What becomes of a case taken up again after a restart: the look that asked it is gone. */
+  settleLate(late: Late): void {
+    this.late = late;
   }
 
   judge(project: Project, role: string, about: About): Judge {
@@ -77,15 +94,18 @@ export class Watcher {
     asked: Record<string, unknown>,
     newer: Record<string, Question>,
   ): Promise<Judgement> {
+    this.resume(project);
     const id = `C${this.stamp}${++this.count}`;
-    const key = `${about.seat}:${about.subject}:${about.episode}`;
+    const key = `${about.seat.id}:${about.subject}:${about.episode}`;
     const older = await this.fold(project, key, about, id);
     const state = older ? merged(older.state, asked) : asked;
     const questions = older ? { ...older.questions, ...newer } : newer;
     const within = this.desk.teamFor(project).attention.watcherAnswerMinutes;
+    const kept: Kept = { id, key, about, role, within, provider: role, state, questions };
     const answer = new Promise<Judgement>((answered, failed) =>
-      this.waiting.set(id, { project: project.slug, key, within, provider: role, state, questions, answered, failed }),
+      this.waiting.set(id, { ...kept, project, answered, failed }),
     );
+    this.keep(project);
     try {
       const letter = caseLetters.case(id, about.subject, state, questions);
       const { seat, started } = await this.deliver(project, role, letter);
@@ -95,8 +115,10 @@ export class Watcher {
       // A Watcher seated for a case is given it as its prompt.
       if (entry)
         Object.assign(entry, { provider: provider ?? role, sent: { seat, at }, ...(started && { delivered: at }) });
+      this.keep(project);
     } catch (error) {
       this.waiting.delete(id);
+      this.keep(project);
       throw error;
     }
     return answer;
@@ -105,14 +127,16 @@ export class Watcher {
   /** The case still queued under `key`, taken back from its Watcher's mail and ended as folded into `into`; none once its Watcher has it. */
   private async fold(project: Project, key: string, about: About, into: string): Promise<Waiting | undefined> {
     const found = [...this.waiting].find(
-      ([, entry]) => entry.project === project.slug && entry.key === key && entry.sent && entry.delivered === undefined,
+      ([, entry]) =>
+        entry.project.slug === project.slug && entry.key === key && entry.sent && entry.delivered === undefined,
     );
     if (!found) return undefined;
     const [id, entry] = found;
     if (!(await this.desk.mail.withdraw(entry.sent!.seat, `case:${id}`)) || this.waiting.get(id) !== entry)
       return undefined;
     this.waiting.delete(id);
-    recordEvent(project, { kind: "watch.superseded", agent: about.seat, subject: about.subject, case: id, into });
+    this.keep(project);
+    recordEvent(project, { kind: "watch.superseded", agent: about.seat.id, subject: about.subject, case: id, into });
     entry.failed(new Folded(`folded into ${into}`));
     return entry;
   }
@@ -121,7 +145,9 @@ export class Watcher {
   delivered(letters: { key: string }[], at: number): void {
     for (const letter of letters) {
       const entry = this.waiting.get(letter.key.replace(/^case:/, ""));
-      if (entry) entry.delivered ??= at;
+      if (!entry || entry.delivered !== undefined) continue;
+      entry.delivered = at;
+      this.keep(entry.project);
     }
   }
 
@@ -154,8 +180,30 @@ export class Watcher {
     return seat;
   }
 
+  /** The project's cases still waiting, as it keeps them. */
+  private keep(project: Project): void {
+    const mine = [...this.waiting.values()].filter((entry) => entry.project.slug === project.slug);
+    writeJson(
+      casesFile(project),
+      mine.map(({ project: _project, answered: _answered, failed: _failed, ...kept }) => kept),
+    );
+  }
+
+  /** Takes up, once, the cases a project kept waiting when the plugin stopped; an unreadable file resumes none. */
+  private resume(project: Project): void {
+    if (this.resumed.has(project.slug)) return;
+    this.resumed.add(project.slug);
+    const kept = readJson<unknown>(casesFile(project), []);
+    for (const one of Array.isArray(kept) ? (kept as Kept[]) : []) {
+      if (typeof one?.id !== "string" || this.waiting.has(one.id)) continue;
+      const settle = (outcome: Judgement | Error) => this.late(project, one, outcome);
+      this.waiting.set(one.id, { ...one, project, answered: settle, failed: settle });
+    }
+  }
+
   /** Why an answer is not taken, if it is not: every question once, by name, in words its question takes, with a why. */
-  answer(caller: string, id: string, said: Said[]): string | undefined {
+  answer(project: Project, caller: string, id: string, said: Said[]): string | undefined {
+    this.resume(project);
     const entry = this.waiting.get(id);
     if (!entry)
       return `${id} is not waiting for an answer: it was answered, it waited past the time it had, or the desk started again since it was sent.`;
@@ -181,6 +229,7 @@ export class Watcher {
     ];
     if (problems.length > 0) return `Nothing was recorded: ${[...new Set(problems)].join("; ")}.`;
     this.waiting.delete(id);
+    this.keep(entry.project);
     entry.answered({
       answers: Object.fromEntries(words.map((one) => [one.question, answerOf(asked(one.question)!, one.says)])),
       model: entry.provider,
@@ -194,13 +243,15 @@ export class Watcher {
    * Watcher got it, or when it never got it in twice that time; a Watcher no case can come to is let go.
    */
   async tend(project: Project, open: Map<string, SeatView>, now: number): Promise<void> {
+    this.resume(project);
     for (const [id, entry] of this.waiting) {
-      if (entry.project !== project.slug || !entry.sent) continue;
+      if (entry.project.slug !== project.slug || !entry.sent) continue;
       // Only a listing read after the case was sent can say its Watcher is gone.
       const gone = entry.sent.at < now && !open.has(entry.sent.seat);
       const minutes = (now - (entry.delivered ?? entry.sent.at)) / 60_000;
       if (!gone && minutes < entry.within * (entry.delivered === undefined ? 2 : 1)) continue;
       this.waiting.delete(id);
+      this.keep(project);
       const why = gone
         ? "the Watcher it was sent to is gone"
         : entry.delivered === undefined

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import type { PatternSpec } from "../../catalog/kit/kit.ts";
 import { recordPatterns } from "../../catalog/kit/ecosystem-patterns.ts";
 import { can, seatOf } from "../../catalog/kit/roles.ts";
-import type { Judge, Question } from "../../core/ports.ts";
+import type { Judge, Judgement, Question } from "../../core/ports.ts";
 import { clip } from "../../core/text.ts";
 import type { Finding } from "../../domain/incident.ts";
 import type { Lane } from "../../domain/lane.ts";
@@ -12,7 +12,7 @@ import { type Assessments, askKept, holds } from "../store/assessments.ts";
 import { list } from "../letters/envelope.ts";
 import type { Item } from "./decisions.ts";
 import { type Noticed, type Placed, ledgerOf, notice, placeIn } from "./notice.ts";
-import type { About } from "./watcher.ts";
+import type { About, Kept } from "./watcher.ts";
 
 /** What one look read of a seat, as the brains take it: its words since `since`, the code's facts meanwhile, its instruction. */
 export type Look = {
@@ -83,9 +83,7 @@ export async function readLook(services: Services, project: Project, seat: Notic
   // Each case on its own, so a decision is not held behind the look before it.
   const judged = cases
     .filter((each) => each.patterns.length > 0)
-    .map((one) =>
-      judgeCase(services, project, { seat: seat.id, subject }, place, { ...one, facts: look.facts }, asked),
-    );
+    .map((one) => judgeCase(services, project, { seat, subject }, place, { ...one, facts: look.facts }, asked));
   const findings = (await Promise.all(judged)).flat();
   if (findings.length > 0) await notice(services, project, seat, findings, place);
 }
@@ -225,7 +223,10 @@ async function weigh(
 ): Promise<Finding[]> {
   const questions = Object.fromEntries(patterns.map(([id, pattern]) => [id, asQuestion(pattern, pattern.seat)]));
   const judged = await askKept(project, WATCH, { subject, episode, by, state }, judge, questions);
-  if (!judged) return [];
+  return judged ? seatFindings(patterns, judged, quote) : [];
+}
+
+function seatFindings(patterns: Pattern[], judged: Judgement, quote: number): Finding[] {
   return patterns.flatMap(([id, pattern]) =>
     holds(pattern, judged.answers[id]) === "yes" && pattern.level !== "note"
       ? [
@@ -236,6 +237,28 @@ async function weigh(
         ]
       : [],
   );
+}
+
+/**
+ * A case the Watcher answered, or that was given up, after a restart lost the look that asked it: kept, and booked, as
+ * that look would have.
+ */
+export async function lateCase(
+  services: Services,
+  project: Project,
+  kept: Kept,
+  outcome: Judgement | Error,
+): Promise<void> {
+  const { subject, episode, seat } = kept.about;
+  const judge: Judge = {
+    ask: () => (outcome instanceof Error ? Promise.reject(outcome) : Promise.resolve(outcome)),
+  };
+  const about = { subject, episode, by: kept.role, state: kept.state };
+  const judged = await askKept(project, WATCH, about, judge, kept.questions);
+  if (!judged) return;
+  const patterns = Object.entries(services.kit.patterns).filter(([id]) => Object.hasOwn(kept.questions, id));
+  const findings = seatFindings(patterns, judged, services.teamFor(project).attention.quoteChars);
+  if (findings.length > 0) await notice(services, project, seat, findings);
 }
 
 const finding = (kind: string, quote: string, limit: number, seen: string): Finding => ({

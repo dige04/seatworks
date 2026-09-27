@@ -9,7 +9,7 @@ export const judgeCase = defineTool({
   input: z.strictObject({ case: z.string(), answers: z.array(Said) }),
   async handle({ watcher }, caller, args) {
     const id = args.case.trim();
-    const refused = watcher.answer(caller.id, id, args.answers);
+    const refused = watcher.answer(caller.project, caller.id, id, args.answers);
     return refused ? no(refused) : ok(`${id} is answered. End your turn unless another case waits for you.`);
   },
 });

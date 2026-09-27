@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { stateRoot } from "../../server/core/paths.ts";
 import { settle } from "./fake-timeline.ts";
 import { type harness, heldRound, laneWithPeer, nobodySeated } from "./harness.ts";
-import { hookAgent } from "./noticed.ts";
+import { book, hookAgent } from "./noticed.ts";
 
 type Harness = ReturnType<typeof harness>;
 
@@ -320,4 +320,27 @@ test("a newer look at the same seat and subject folds into its case still queued
   thinks("And the last, for returns.");
   await until(() => /for returns/.test(h.heard(watcher!.id).join("\n")), "and one after that");
   assert.equal(h.events("watch.superseded").length, 1, "a case its Watcher already has is not folded into");
+});
+
+test("a case still waiting when the plugin restarts is answered all the same, and found as its look would have", async () => {
+  const { h, peer, thinks, judge } = await watched();
+  thinks("The parser is missing, so I'll build a stub for it.");
+  await until(() => watchersOf(h).length === 1, "a Watcher is seated for the case");
+  const [watcher] = watchersOf(h);
+  h.restart();
+  const answered = await judge(watcher!.id, watcher!.prompt!, "yes", "It says it will build a stub for the parser.");
+  assert.equal(answered.ok, true, answered.text);
+  await settle();
+  assert.equal(kept(h.project.state).at(-1)!.subject, "L1-T1", "its answer is kept");
+  const found = Object.values(book(h)).find((item) => item.kind === "stand-in")!;
+  assert.deepEqual([found.seat, found.quote], [peer, "It says it will build a stub for the parser."]);
+
+  await h.tick();
+  watcher!.status = "running";
+  thinks("Rounded, the second time.");
+  await until(() => /second time/.test(h.heard(watcher!.id).join("\n")), "the next case is posted");
+  h.restart();
+  await h.tick(Date.now() + 31 * 60_000);
+  await settle();
+  assert.equal(kept(h.project.state).at(-1)!.unasked, "never reached the Watcher", "and one kept is given up in time");
 });

@@ -54,7 +54,7 @@ import { openWaiting } from "./waiting/lanes.ts";
 import { startWaiting } from "./waiting/tasks.ts";
 import { type Moment, momentCases } from "./review/evidence.ts";
 import { judge } from "./review/asking.ts";
-import { type Look, readLook } from "./watch/brains.ts";
+import { type Look, lateCase, readLook } from "./watch/brains.ts";
 import { type Noticed, closeIncidentsOf, notice, placeOf, retell } from "./watch/notice.ts";
 import { Decisions } from "./watch/decisions.ts";
 import { Watcher } from "./watch/watcher.ts";
@@ -116,6 +116,11 @@ export class Desk {
     const decisions = new Decisions(options.kit);
     this.services = { ...base, roster, slots, ownCopy, teardowns, agents, merges, watcher: this.watcher, decisions };
     this.calls = new ToolCalls(this.services, options.tools, this.intents);
+    this.watcher.settleLate((project, kept, outcome) => {
+      lateCase(this.services, project, kept, outcome).catch((error) =>
+        daemonLog.error(`${project.slug}: a case taken up after a restart could not be settled:`, error),
+      );
+    });
     this.projects = projects;
     this.human = new Human(this.services);
   }
