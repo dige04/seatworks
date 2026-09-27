@@ -493,3 +493,28 @@ test("a letter names who sent it by the work it holds, not by its agent's id", a
   assert.match(h.heard(lane.lead!).join("\n"), /HANDBACK L1-T1 \(Clean build\) from the Peer on L1-T1\n/);
   assert.doesNotMatch(h.heard(lane.lead!).join("\n"), new RegExp(`from ${peer}`));
 });
+
+test("a queue reaches its seat as one message that lists its letters first and numbers each, so none reads as part of another", async () => {
+  const { h, lane, peer } = await laneWithPeer();
+  const lead = lane.lead!;
+  await h.call(lead, "lead", "add_tasks", {
+    tasks: [{ key: "b", title: "Receipt", goal: "g", acceptance: ["b"], holds: ["b.txt"], parallel: true }],
+  });
+  const other = h.ledger().tasks["L1-T2"]!.peer!;
+  await h.idle(lead);
+  h.agents.get(lead)!.status = "running";
+  h.commit(lane.worktree!, "a.txt", "A\n");
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "a" });
+  await h.call(other, "peer", "ask", {
+    question: "Cents or units?",
+    disputes: "units",
+    tried: "the ledger keeps cents",
+  });
+  await h.idle(lead);
+  const batch = h.agents.get(lead)!.sent.at(-1)!;
+  assert.match(
+    batch,
+    /^2 messages: 1 HANDBACK L1-T1 \(Clean build\) from the Peer on L1-T1 · 2 CHALLENGE A1 from the Peer on L1-T2 \(Receipt\)\n\n--- 1 of 2 ---\n\nHANDBACK L1-T1 [^]*\n\n--- 2 of 2 ---\n\nCHALLENGE A1 /,
+  );
+  assert.match(batch, /\n\n---\n\nOpen asks waiting on you:\n- A1 \(challenge\)/, "the asks still open, after them");
+});

@@ -81,10 +81,20 @@ export const mail = (kind: Kind, ids: (string | number)[], text: string, next: s
 
 export const fyi = (letter: Letter): Letter => ({ ...letter, wakes: false });
 
+/**
+ * What a seat is sent at once. Several letters come under an index of their heads, each numbered, so a reader takes in
+ * the whole queue before any one of it and never reads one letter as part of the next.
+ */
 export function mailbox(items: string[], open: Ask[]): string {
-  const head = items.length === 1 ? "" : `${items.length} messages\n\n`;
-  const body = items.join("\n\n---\n\n");
-  if (open.length === 0) return `${head}${body}`;
+  const count = items.length;
+  const index = items.map((item, at) => `${at + 1} ${clip(firstLine(item), 100)}`).join(" · ");
+  const body =
+    count === 1
+      ? items[0]!
+      : [`${count} messages: ${index}`, ...items.map((item, at) => `--- ${at + 1} of ${count} ---\n\n${item}`)].join(
+          "\n\n",
+        );
+  if (open.length === 0) return body;
   const asks = open.map((ask) => `- ${ask.id} (${ask.kind}): ${clip(firstLine(ask.text), 160)}`).join("\n");
-  return `${head}${body}\n\n---\n\nOpen asks waiting on you:\n${asks}`;
+  return `${body}\n\n---\n\nOpen asks waiting on you:\n${asks}`;
 }

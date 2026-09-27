@@ -184,7 +184,7 @@ test("the merge queue hands a conflict to its Peer, merges nothing as nothing, w
     h
       .heard(lead)
       .join("\n")
-      .match(/MERGE WAITS L1-T4/g)?.length;
+      .match(/^MERGE WAITS L1-T4/gm)?.length;
   assert.match(
     h.heard(lead).join("\n"),
     /MERGE WAITS L1-T4 \(Side\): the lane's working copy has uncommitted changes \(M a\.txt\)\. It merges by itself once that clears, tried again as each turn ends\.\n\nNext: Have what is left there committed or cleared, or cut the task to withdraw it\./,

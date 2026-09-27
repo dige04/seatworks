@@ -24,7 +24,7 @@ test("a lane that spends past what it was worth sends whoever supervises to the 
   const heard = h.heard(sup).join("\n");
   assert.match(heard, /PAST ITS APPETITE L1 \(Brakes\): its seats spent \$3\.50 of the \$3\.00 it was worth\./);
   assert.match(heard, /Next: What it costs is the Human's to agree, in the loop or out of it/);
-  assert.equal(heard.match(/PAST ITS APPETITE/g)!.length, 1, "told once, not on every round");
+  assert.equal(heard.match(/^PAST ITS APPETITE/gm)!.length, 1, "told once, not on every round");
 
   const out = await h.call(sup, "supervisor", "ask_human", {
     question: "Spend $5 more on the brakes?",

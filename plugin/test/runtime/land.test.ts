@@ -334,7 +334,8 @@ test("what the record holds of a lane goes to whoever lands it, and never to the
     .heard(sup)
     .filter((text) => text.includes("REPORT L1"))
     .at(-1)!;
-  const report = composed.slice(composed.indexOf("REPORT L1"));
+  // Its heading at a line's start: the queue's index names it too.
+  const report = composed.slice(composed.search(/^REPORT L1/m));
   assert.match(
     report,
     /REPORT L1 \(Build\): ready to land[^]*- Incident I\d+ on this lane is still open: claim-contradicted\./,

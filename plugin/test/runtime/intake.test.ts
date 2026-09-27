@@ -252,7 +252,7 @@ test("tasks that wait are recorded, amended, held while the lane's copy is taken
   await h.tick(Date.now());
   await h.idle(lead);
   const mail = h.agents.get(lead)!.sent.join("\n---\n");
-  assert.equal(mail.match(/WAITING L1-T5/g)?.length, 1, mail);
+  assert.equal(mail.match(/^WAITING L1-T5/gm)?.length, 1, mail);
   assert.match(
     (await add("g", "Again", { hints: ["d.txt"], after: ["L1-T4"] })).text,
     /L1-T4 was cut[^]*Take it out of after/,
