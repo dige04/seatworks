@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { ArgSchema } from "../../catalog/kit/kit.ts";
 import { schemaOf, seatOf } from "../../catalog/kit/roles.ts";
 import { errorText } from "../../core/errors.ts";
+import { KeyedQueue } from "../../core/keyed-queue.ts";
 import { sortKeys } from "../../core/json.ts";
 import { clip } from "../../core/text.ts";
 import { argsProblems, shapeOf, withoutNulls } from "./args.ts";
@@ -9,7 +10,7 @@ import { type Args, type Caller, type ToolReply, type ToolRequest, no } from "..
 import { inTime } from "./in-time.ts";
 import { decisionFacts } from "../watch/decision-facts.ts";
 import { callLetters } from "../letters/call-letters.ts";
-import { projectOf } from "../project/project.ts";
+import { type Project, projectOf } from "../project/project.ts";
 import type { DeskServices, ToolDef } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 import type { Intents } from "../store/intents.ts";
@@ -22,6 +23,9 @@ export class ToolCalls {
   private readonly desk: DeskServices;
   private readonly tools: ToolDef[];
   private readonly intents: Intents;
+  /** What the record shows at each decision, being read: one key per call, so none waits on another. */
+  private readonly deciding = new KeyedQueue();
+  private decided = 0;
 
   constructor(desk: DeskServices, tools: ToolDef[], intents: Intents) {
     this.desk = desk;
@@ -58,6 +62,11 @@ export class ToolCalls {
     return inTime(request, reply, { started, within, again: false, cancelled }, kept);
   }
 
+  /** Once what the record shows at every decision made so far in the project has been read and noticed. */
+  settled(project: Project): Promise<unknown> {
+    return this.deciding.idle(`${project.slug}\n`);
+  }
+
   /** A reply that went out but never reached its seat, whose call was stopped or whose line dropped: mailed instead. */
   mailLost(request: ToolRequest, reply: ToolReply): Promise<unknown> {
     const call = { agent: request.agent, tool: request.tool, started: request.at };
@@ -82,10 +91,12 @@ export class ToolCalls {
       // A decision made through the desk is judged at the seat's next look, on what the call itself says; what the
       // record shows of it, now.
       this.desk.decisions.took(caller.id, request.tool, request.args ?? {});
-      decisionFacts(this.desk, caller, request.tool, request.args ?? {}).catch((error) =>
-        this.desk.log(
-          caller.project,
-          `what the record shows at ${request.tool} could not be read: ${errorText(error)}`,
+      void this.deciding.run(`${caller.project.slug}\n${++this.decided}`, () =>
+        decisionFacts(this.desk, caller, request.tool, request.args ?? {}).catch((error) =>
+          this.desk.log(
+            caller.project,
+            `what the record shows at ${request.tool} could not be read: ${errorText(error)}`,
+          ),
         ),
       );
     }

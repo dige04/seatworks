@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { recordEvent } from "../../server/desk/store/event-log.ts";
-import { settle } from "./fake-timeline.ts";
 import { laneWithPeer } from "./harness.ts";
 import { book } from "./noticed.ts";
 
@@ -20,8 +19,7 @@ test("an accept with nothing read or run since the hand-back, and one far heavie
   stream.add({ type: "user_message", text: "HANDBACK L1-T1 (Clean build) from agent\n\nOutcome: complete" }, "l1");
   const accepted = await h.call(lead, "lead", "accept", { task: "L1-T1" });
   assert.equal(accepted.ok, true, accepted.text);
-  await settle();
-  await new Promise((resolve) => setTimeout(resolve, 30));
+  await h.runtime.desk.settled(h.project);
   assert.deepEqual(opened(h), [
     ["accepted-unread", "L1-T1 was accepted with nothing read, searched or run since its last hand-back or review"],
     ["overbuilt", "L1-T1 changes 2 test lines against 0 source lines"],
@@ -38,8 +36,7 @@ test("an accept after reading the change, or with no hand-back letter in the rec
   const diff = { type: "shell", command: "git diff main" };
   stream.add({ type: "tool_call", callId: "d", name: "Bash", status: "completed", detail: diff }, "l1");
   await h.call(lead, "lead", "accept", { task: "L1-T1" });
-  await settle();
-  await new Promise((resolve) => setTimeout(resolve, 30));
+  await h.runtime.desk.settled(h.project);
   assert.deepEqual(opened(h), []);
 
   // No hand-back letter in the Lead's record: nothing to count from, so nothing is read into it.
@@ -48,8 +45,7 @@ test("an accept after reading the change, or with no hand-back letter in the rec
   await other.h.call(other.peer, "peer", "done", { outcome: "complete", summary: "done" });
   const accepted = await other.h.call(other.lane.lead!, "lead", "accept", { task: "L1-T1" });
   assert.equal(accepted.ok, true, accepted.text);
-  await settle();
-  await new Promise((resolve) => setTimeout(resolve, 30));
+  await other.h.runtime.desk.settled(other.h.project);
   assert.deepEqual(opened(other.h), []);
 });
 
@@ -68,8 +64,7 @@ test("a sending-back on a review that ran nothing, and a review's accept with no
   const ran = { type: "shell", command: "node --test" };
   h.timelineOf(second).add({ type: "tool_call", callId: "r", name: "Bash", status: "completed", detail: ran }, "r1");
   await h.call(second, "reviewer", "done", { verdict: "accept", answer: "Right.", ran: ["node --test"] });
-  await settle();
-  await new Promise((resolve) => setTimeout(resolve, 30));
+  await h.runtime.desk.settled(h.project);
   assert.deepEqual(opened(h), [
     ["rework-unrun", "L1-T1 was sent back on L1-R1, a review that ran nothing"],
     ["review-unchecked", "L1-R2 accepted with 1 changed file unread: a.txt"],
@@ -97,8 +92,7 @@ test("a long lane reported ready with nobody asking anything, over a gate growin
     recordEvent(h.project, { kind: "gate.passed", lane: "L2", seconds, command: "npm test" });
   const reported = await h.call(lead, "lead", "report", { summary: "done", ready: true });
   assert.equal(reported.ok, true, reported.text);
-  await settle();
-  await new Promise((resolve) => setTimeout(resolve, 30));
+  await h.runtime.desk.settled(h.project);
   assert.deepEqual(opened(h), [
     ["brief-pasted", "e's context runs 5000 characters"],
     ["no-pushback", "L2 reported ready after 4 tasks with no ask from any of its seats"],

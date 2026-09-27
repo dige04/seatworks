@@ -125,8 +125,9 @@ export class Desk {
     this.human = new Human(this.services);
   }
 
-  /** Once the merges and ordered landings under way for the project have run. */
+  /** Once the merges and ordered landings under way for the project have run, and its decisions' records been read. */
   async settled(project: Project): Promise<void> {
+    await this.calls.settled(project);
     await this.services.merges.settled(project);
     await this.services.landings.idle(orderKey(project));
   }
