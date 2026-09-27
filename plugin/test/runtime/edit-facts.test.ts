@@ -219,6 +219,12 @@ test("an edit that adds a string shaped like a secret, or a read of a secret fil
       }),
       file("Read", 3, { type: "read", filePath: "/work/.env", content: "KEY=1" }),
       edit("e2", 4, { filePath: "src/other.ts", oldString: "a", newString: "b" }),
+      // One already there is not added by an edit beside it.
+      edit("e3", 5, {
+        filePath: "src/kept.ts",
+        oldString: `const key = "${key}";`,
+        newString: `export const key = "${key}";`,
+      }),
     ],
     rules(),
   ).filter((fact) => fact.kind === "secret");
