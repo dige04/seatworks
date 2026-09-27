@@ -14,6 +14,7 @@ export type Rules = {
   destructive: RegExp;
   scratch: RegExp;
   secretPath: RegExp;
+  secretExample: RegExp;
   secretCommand: RegExp;
   secretString: RegExp;
   boundary: RegExp;
@@ -45,6 +46,10 @@ export type Rules = {
   monologueAt: number;
   compactionsAt: number;
 };
+
+/** A path that holds a secret and is not an example of one. */
+export const secretFile = (path: string, rules: Rules) =>
+  rules.secretPath.test(path) && !rules.secretExample.test(path);
 
 export const str = (value: unknown): string => (typeof value === "string" ? value : "");
 
@@ -218,7 +223,7 @@ export function onSettle(call: Call, rules: Rules, known?: (path: string) => str
   if (bad && !rules.desk?.(call))
     facts.push(fact(isGate(call, rules.gates) ? "gate-failed" : "call-failed", oneLine(describe(call))));
   const writes = detail.type === "edit" || detail.type === "write";
-  if (detail.type === "read" && !bad && rules.secretPath.test(str(detail.filePath)))
+  if (detail.type === "read" && !bad && secretFile(str(detail.filePath), rules))
     facts.push(fact("secret", `read ${oneLine(str(detail.filePath))}`));
   const both = writes && !bad ? sides(detail, known) : undefined;
   if (both) {

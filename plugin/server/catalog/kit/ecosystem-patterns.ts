@@ -40,6 +40,7 @@ export function watchPatterns(kit: Kit, attention: Attention) {
     destructive: new RegExp(attention.destructive, "i"),
     scratch: new RegExp(attention.scratch),
     secretPath: new RegExp(attention.secretPath, "i"),
+    secretExample: new RegExp(attention.secretExample, "i"),
     secretCommand: new RegExp(attention.secretCommand, "i"),
     secretString: new RegExp(attention.secretString),
     boundary: new RegExp(attention.boundary, "i"),

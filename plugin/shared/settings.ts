@@ -64,6 +64,8 @@ export const AttentionChoice = z.strictObject({
   scratch: Pattern.optional(),
   /** A path that holds a secret, a command that reads or dumps secrets, and a string shaped like one: reading, printing or writing one is paged. */
   secretPath: Pattern.optional(),
+  /** What an example of a secret file is named like: no secret, whatever path it lies on. */
+  secretExample: Pattern.optional(),
   secretCommand: Pattern.optional(),
   secretString: Pattern.optional(),
   /** Sending data out or running a download (`boundary`), and the programs that run a script (`interpreter`), paged on one outside the copy. */

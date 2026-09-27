@@ -1,7 +1,7 @@
 import { isAbsolute, relative } from "node:path";
 import { oneLine, within } from "../../core/text.ts";
 import { type Fact, fact } from "../../domain/incident.ts";
-import { type Rules, str } from "./facts.ts";
+import { type Rules, secretFile, str } from "./facts.ts";
 import type { Call } from "./window.ts";
 
 const MKTEMP = /\b([A-Za-z_]\w*)=["']?(?:\$\(\s*mktemp\b[^)]*\)|`\s*mktemp\b[^`]*`)/g;
@@ -161,7 +161,7 @@ function touchesSecret(words: string[], part: string, rules: Rules): boolean {
   if (command === "rm" || command === "remove-item") return false;
   // What cp and mv write to is not read.
   const read = command === "cp" || command === "mv" ? words.slice(1, -1) : words.slice(1);
-  return rules.secretCommand.test(part.trim()) || read.some((word) => rules.secretPath.test(word));
+  return rules.secretCommand.test(part.trim()) || read.some((word) => secretFile(word, rules));
 }
 
 /** Cuts around the match, not from the front: what makes a long command irreversible is often at its end. */

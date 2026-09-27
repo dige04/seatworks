@@ -257,3 +257,16 @@ test("skipping hooks, changing what fences a seat, or pointing git's hooks elsew
   for (const command of ['git commit -m "fix the -n flag"', "git push -n", "cat .claude/settings.json"])
     assert.deepEqual(raised("guard", command), [], command);
 });
+
+test("an example of a secret file is no secret: the catalog names what an example file looks like", () => {
+  for (const command of [
+    "cat .env.example",
+    "cat .env.sample",
+    "cat .env.template",
+    "cat config/credentials.example",
+    "cp config/credentials.sample config/credentials.json",
+    "cat keys/id_rsa.example",
+  ])
+    assert.deepEqual(raised("secret", command), [], command);
+  assert.equal(raised("secret", "cat config/credentials.json").length, 1);
+});
