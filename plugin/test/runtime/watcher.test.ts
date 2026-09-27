@@ -357,6 +357,30 @@ test("a newer look folds into the case still queued even while its Watcher reads
   assert.notEqual(folded, reading);
 });
 
+test("a case folded into a newer one keeps what only it asked", async () => {
+  const { h, thinks, judge } = await watched();
+  thinks("The parser is missing, so I'll build a stub for it.");
+  await until(() => watchersOf(h).length === 1, "a Watcher is seated for the case");
+  const [watcher] = watchersOf(h);
+  assert.equal((await judge(watcher!.id, watcher!.prompt!, "no")).ok, true);
+  const held = () => h.runtime.outbox.pending(watcher!.id);
+
+  // Thinking on and on with no call is going round in circles, which is asked whether the seat admits it was wrong.
+  watcher!.status = "running";
+  const more = Array.from({ length: 9 }, (_, n) => ({
+    type: n % 2 === 0 ? "assistant_message" : "reasoning",
+    text: `Still weighing the refund path, take ${n}.`,
+  }));
+  thinks("A placeholder will do for the refund path.", undefined, ...more);
+  await until(() => held().length === 1, "the case waits in the outbox");
+  const older = held()[0]!.text;
+  assert.ok(questionsIn(older).includes("admits-wrong"));
+  thinks("And a stub for the tax table.");
+  await until(() => h.events("watch.superseded").length === 1, "the newer folds it in");
+  const folded = held()[0]!.text;
+  assert.deepEqual(questionsIn(folded).toSorted(), questionsIn(older).toSorted(), "nothing the older asked is lost");
+});
+
 test("a case still waiting when the plugin restarts is answered all the same, and found as its look would have", async () => {
   const { h, peer, thinks, judge } = await watched();
   thinks("The parser is missing, so I'll build a stub for it.");
