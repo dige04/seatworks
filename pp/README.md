@@ -27,22 +27,38 @@ security add-generic-password -U -s "Seatworks Claude Code token" -a "$USER" -w 
 | Lead | Claude Code · Opus 5.5 · medium | owns a lane, judges hand-backs |
 | Peer | Claude Code · Opus 5.5 · medium | most tasks |
 | Deep Peer | Claude Code · Opus 5.5 · high | cross-cutting, terminal-heavy or risky work |
-| Reviewer | Codex · GPT-6 Sol · high | lane 1 of the semantic pair, routine reviews |
-| Second Reviewer | Claude Code · Opus 5.5 · xhigh | lane 2 of the semantic pair |
-| Coverage Reviewer | Codex · GPT-6 Luna · max | lane 3: OCR delegation, every reviewable file accounted for |
+| Reviewer | Codex · GPT-6 Sol · high | default reviewer, when a review can change a decision |
+| Second Reviewer | Claude Code · Opus 5.5 · xhigh | second lens for a hard decision or a risky landing |
+| Coverage Reviewer | Codex · GPT-6 Luna · max | optional: OCR delegation, every reviewable file accounted for |
 | Watcher / Pager | Codex Luna · Claude Haiku 4.5 | watch cases, phone pages |
 
 Jev (TypeSafe `jev-1.13.0`, asked directly at `api.typesafe.ai`) answers the watch's questions, in shadow.
 
 ## Rules (`pp/settings.json`)
 
-- **Lead** picks `peer` or `peer-deep` per task. One review for routine work; a material question (contract, money,
-  concurrency, security, a large lane) gets three lanes at once, none seeded with another's findings. The Lead settles
-  findings as one judgment: only blocking ones (behavior, acceptance, security, data, a contract) are reworked, once, for
-  their shared cause; the rest go in its report. It checks a rework itself, reviews again only for a changed contract or
-  risky area, and stops at two review rounds. Reviewers mark each finding blocking or not.
-- **Supervisor** never lands a lane whose review is running, and lands over a red gate only for tests another lane or a
-  known failure owns, naming them.
+The rules follow Demon's [SLP article](https://vhlam.com/article/agent-orchestration-multi-agent-slp) (27/09/2026)
+point by point. The article gives principles, not prompts, so each one became a rule for the seat that owns it.
+
+| Article | Rule |
+|---|---|
+| A role is responsibility and authority, not a personality | Team rule; the upstream prompts already describe roles this way |
+| Limiting who edits is not limiting who questions; one owner per scope until handoff | Team rule: read anything, raise it through the Lead, never overwrite another owner |
+| Pre-solve: main fixes the hypothesis, the criteria and the answer format | Lead briefs in four parts: goal, required constraints with who set each, the design in use (open to question), unknowns and how to check them. Discovery gets no hypothesis or verdict format |
+| The parachute: an earlier choice becomes a later constraint | Team rule: a choice an earlier task made is not a requirement; Supervisor watches for a choice hardening into a constraint nobody set |
+| Strong models build workarounds around a wrong premise | Team and Peer rules: stop, `ask` with evidence, never add a layer to keep a premise shown wrong |
+| The right to object, not a duty to | Team rule: object when evidence forces it and it would change a decision; agreement is a real answer |
+| Lead does not defend the plan; keeping it needs a reason too | Lead sorts a challenge into: changes the decision, merely also reasonable, not worth the interruption. A redesign is questioned too |
+| Evidence on the state that will be accepted; comparable measurements | Team rule, and the Lead closes the loop only on new evidence from the accepted code |
+| The Human keeps control: which brief, whose constraint, open disagreements | Supervisor reports them; a redirect reaches the Lead's shared state and is confirmed from `status` |
+| A Peer is whatever the Lead needs: implementer, architect, auditor, reviewer | Lead rule. No review lane is mandatory: a review only where its answer could change a decision |
+| Better-SLP: judge by outcomes, drop what does not earn its cost | Supervisor rule for retrospectives: name mechanisms that rarely changed a result and propose dropping them, never add challenge because activity rose |
+| Not for small changes or feel work (UI/UX, game feel) | Supervisor says so instead of opening a lane |
+
+Kept from before: `peer` or `peer-deep` per task, findings settled as one judgment, one rework per shared cause, at
+most two review rounds, and no landing while a review is out.
+
+Not done: the article's Supervisor sees across projects (who holds the machine for a benchmark). Seatworks v3 has one
+Supervisor per project.
 
 ## What this fork changes in code
 
