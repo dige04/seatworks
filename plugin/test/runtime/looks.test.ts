@@ -277,75 +277,18 @@ test("a seat whose looks carry words but never thinking is recorded once, so wha
   );
 });
 
-test("a pattern a sign excepts is not asked: a Peer conceding a fault in the round that answers its rework", async (t) => {
+test("a Lead's look is read beside its lane's directive whole and the Human's settled words", async (t) => {
   const sensed = brain({});
-  const { h, lane, peer, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
-  brains("sensor");
-  const looked = looksOf(h, t);
-  const turn = async (id: string, thought: string, handBack?: boolean) => {
-    timeline.beat("turn_started", id);
-    timeline.add({ type: "user_message", text: "Go on.", clientMessageId: `sw2-message-${id}` }, id);
-    timeline.add({ type: "reasoning", text: thought }, id);
-    if (handBack) await h.call(peer, "peer", "done", { outcome: "complete", summary: "Totals fixed." });
-    timeline.beat("turn_completed", id);
-    await looked();
-  };
-  const asked = () =>
-    sensed.asked.filter((entry) => "admits-wrong" in entry.questions).map((entry) => entry.state.text);
-  await turn("t1", "My earlier total was wrong: it skipped refunds.", true);
-  assert.deepEqual(asked(), ["My earlier total was wrong: it skipped refunds."], "handed back, it is asked");
-  await h.call(lane.lead!, "lead", "rework", { task: "L1-T1", text: "Refunds are still counted twice." });
-  await turn("t2", "The rework is right: my refund sum was wrong.");
-  await turn("t3", "Fixed the double count my last hand-back had.", true);
-  assert.equal(asked().length, 1, "while sent back, and in the look that reads its hand-back of that round, it is not");
-});
-
-test("a pattern with an excuse opens only when its question holds and its excuse does not, for the sensor and the seat alike", async (t) => {
-  const says: Record<string, number> = { "pre-solves": 0.9, "pre-solves-excused": 0.9 };
-  const sensed = brain(says, {}, /Totals/);
-  const { h, sup, lane } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  const { h, lane } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
   brains("sensor");
   writeFileSync(join(h.project.state, "CONTEXT.md"), "# Shop\n\n**Cents**: every amount is whole cents.\n");
   const looked = looksOf(h, t);
-  const lead = lane.lead!;
-  const stream = h.timelineOf(lead);
-  const brief = async (key: string, id: string) => {
-    await h.call(lead, "lead", "add_tasks", {
-      tasks: [{ key, title: key, goal: "Totals add up", acceptance: ["a"], outOfScope: ["the rest"] }],
-    });
-    stream.beat("turn_started", id);
-    stream.add({ type: "assistant_message", text: `Laid out ${key}.`, messageId: id }, id);
-    stream.beat("turn_completed", id);
-    await looked();
-  };
-  await brief("b1", "l1");
-  const read = sensed.asked.find((entry) => "pre-solves-excused" in entry.questions)!;
-  assert.match(read.questions["pre-solves-excused"]!.instructions as string, /`directive`/);
-  assert.match(String(read.state.directive), /a\.txt changes[^]*- a/, "its lane's outcome and acceptance");
-  assert.match(String(read.state.context), /every amount is whole cents/, "and the Human's settled words");
-  assert.equal(Object.values(book(h)).filter((item) => item.kind === "pre-solves").length, 0, "excused, nothing opens");
-  says["pre-solves-excused"] = 0.05;
-  await brief("b2", "l2");
-  const opened = Object.values(book(h)).filter((item) => item.kind === "pre-solves");
-  assert.equal(opened.length, 1, "not excused, it opens");
-  await h.call(sup, "supervisor", "mark_incident", { id: opened[0]!.id, verdict: "useful" });
-
-  const seated = { "pre-solves": 0.9, "pre-solves-excused": 0.9 };
-  const seat = brain(seated, { "pre-solves": "It names reduce()." });
-  t.mock.method(h.runtime.desk.watcher, "judge", () => seat.judge);
-  brains("both");
-  Object.assign(says, { "pre-solves": 0.5, "pre-solves-excused": 0.5 });
-  const open = () => Object.values(book(h)).filter((item) => item.kind === "pre-solves" && item.open).length;
-  await brief("b3", "l3");
-  assert.deepEqual(
-    Object.keys(seat.asked[0]!.questions).filter((name) => name.startsWith("pre-solves")),
-    ["pre-solves", "pre-solves-excused"],
-    "the unsure pair, beside what only the seat judges",
-  );
-  assert.match(seat.asked[0]!.questions["pre-solves-excused"]!.instructions as string, /`directive`/);
-  assert.ok(seat.asked[0]!.state.directive, "the seat reads the directive too");
-  assert.equal(open(), 0, "the seat excusing it opens nothing");
-  seated["pre-solves-excused"] = 0.05;
-  await brief("b4", "l4");
-  assert.equal(open(), 1, "nor excusing it, it opens");
+  const stream = h.timelineOf(lane.lead!);
+  stream.beat("turn_started", "l1");
+  stream.add({ type: "assistant_message", text: "Totals stay in cents.", messageId: "l-m1" }, "l1");
+  stream.beat("turn_completed", "l1");
+  await looked();
+  const read = sensed.asked.find((entry) => entry.state.text === "Totals stay in cents.")!;
+  assert.equal(read.state.directive, "Outcome: a.txt changes\nAcceptance:\n- a", "its lane's outcome and acceptance");
+  assert.match(String(read.state.context), /every amount is whole cents/, "and the concept file");
 });
