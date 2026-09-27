@@ -71,7 +71,6 @@
   },
   "autoCompactWindow": 558000,
   "precomputeCompactionEnabled": true,
-  "showThinkingSummaries": true,
   "skipDangerousModePermissionPrompt": true,
   "disableWorkflows": true,
   "env": {

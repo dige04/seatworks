@@ -117,9 +117,9 @@ test("every role builds on every agent the kit ships, each in that agent's own t
         `${where}: the Human's language is their machine's setting, which the desk tells whoever supervises on every agent`,
       );
       assert.equal(
-        at(settings, "showThinkingSummaries"),
-        true,
-        `${where}: the watch reads a seat's thinking, which Claude redacts to a stub unless the settings ask for it`,
+        harness.provider.forceFlags?.["--thinking-display"],
+        "summarized",
+        `${where}: the watch reads a seat's thinking, which Claude run headless empties unless its launch asks for a summary; its settings' showThinkingSummaries counts only in an interactive session`,
       );
       const deny = list(at(settings, "permissions.deny"));
       for (const command of refusedGit)
