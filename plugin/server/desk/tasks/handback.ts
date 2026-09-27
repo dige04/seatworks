@@ -13,6 +13,7 @@ import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, taskOfPeer } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
+import { seatPhrase } from "../views/report-seats.ts";
 import { workLetters } from "../letters/work-letters.ts";
 import { list } from "../letters/envelope.ts";
 import { type Project, gitTimeout, serialIn } from "../project/project.ts";
@@ -260,7 +261,8 @@ async function tell(
   const heading =
     task.kind === "review" ? { ...task, title: task.of ? `review of ${task.of}` : `review: ${task.title}` } : task;
   const reader = await roster.readerOf(caller.project, lane);
-  await mail.post(reader.to, workLetters.handback(heading, handed.file, handed.body, caller.id, reader.as));
+  const from = seatPhrase(kit, loadLedger(caller.project.state), caller.id);
+  await mail.post(reader.to, workLetters.handback(heading, handed.file, handed.body, from, reader.as));
   const kind = task.kind === "review" ? "review.done" : "task.done";
   recordEvent(caller.project, { kind, task: task.id, outcome: handed.outcome, commit: handed.commit });
   const judged = handbackCase(kit, caller.project, task, handed);

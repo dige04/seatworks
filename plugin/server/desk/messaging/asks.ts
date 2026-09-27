@@ -9,6 +9,7 @@ import { loadLedger } from "../store/ledger.ts";
 import { conceptFile } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
+import { seatPhrase } from "../views/report-seats.ts";
 
 type Asking = Pick<Ask, "from" | "fromRole" | "to" | "lane" | "task" | "kind" | "disputes" | "text" | "default">;
 
@@ -131,14 +132,15 @@ export async function answerAsk(
   });
   if (typeof result === "string") return no(result);
   const { ask } = result;
+  const asker = (entry: Ask) => seatPhrase(kit, loadLedger(caller.project.state), entry.from);
   const waiting = ask.to === caller.id ? undefined : ask.to;
   const waitingRole = roleNamed(kit, result.waitingRole ?? "");
   if (waiting) {
     const by = can(waitingRole, "supervise") ? `${caller.role.label} ${caller.id}` : "the Supervisor";
-    await mail.post(waiting, askLetters.answeredFor(ask, by, can(waitingRole, "lead")));
+    await mail.post(waiting, askLetters.answeredFor(ask, asker(ask), by, can(waitingRole, "lead")));
   }
   const lead = await leadPassed(roster, caller, ask, waiting);
-  if (lead) await mail.post(lead, askLetters.answeredFor(ask, "the Supervisor", true, false));
+  if (lead) await mail.post(lead, askLetters.answeredFor(ask, asker(ask), "the Supervisor", true, false));
   const posted = await mail.post(ask.from, askLetters.answered(ask));
   recordEvent(caller.project, { kind: "ask.answered", ask: ask.id, by: caller.id, told: waiting ?? lead ?? null });
   const has = posted === "sent" ? "has it" : "reads it as soon as it can take it";

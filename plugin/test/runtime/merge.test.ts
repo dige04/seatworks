@@ -47,7 +47,7 @@ test("a task beside others hands back what its lane would become: the lane broug
   h.commit(side!.worktree!, "c.txt", "prices\n");
   assert.equal((await h.call(side!.peer!, "peer", "done", { outcome: "complete", summary: "c" })).ok, true);
   const handback = heard(h, lead).split("HANDBACK L1-T2")[1] ?? "";
-  assert.match(heard(h, lead), new RegExp(`HANDBACK L1-T2 \\(Side\\) from ${side!.peer}`), "the agent its Lead reads");
+  assert.match(heard(h, lead), /HANDBACK L1-T2 \(Side\) from the Peer on L1-T2\n/, "who its Lead reads, by its work");
   assert.match(handback, new RegExp(`\\nBrought up to date with ${lane.branch} at [0-9a-f]{7}\\.\\n`));
   assert.match(handback, /\nChanged: c\.txt\n/, "only what the task changed, not what came in with the lane");
   assert.match(

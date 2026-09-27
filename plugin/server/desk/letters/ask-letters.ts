@@ -93,10 +93,10 @@ export const askLetters = {
    * The seat an ask was put to, told what its asker was told and by whom: the Supervisor may answer a Lead's ask, never out
    * of its sight. `waited` false: a Peer's ask put to the Supervisor while its lane had no Lead, told to its Lead now.
    */
-  answeredFor(ask: Ask, by: string, leads = true, waited = true): Letter {
+  answeredFor(ask: Ask, from: string, by: string, leads = true, waited = true): Letter {
     const put = waited ? "which was waiting on you" : "put to the Supervisor while your lane had no Lead";
     const text = [
-      `ANSWERED FOR YOU: ${ask.id} (${ask.kind}) from ${ask.from}, ${put}, was answered by ${by}.`,
+      `ANSWERED FOR YOU: ${ask.id} (${ask.kind}) from ${from}, ${put}, was answered by ${by}.`,
       "",
       "The question:",
       ask.text,

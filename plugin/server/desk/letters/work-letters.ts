@@ -12,8 +12,8 @@ const waited = (head: "WAITING" | "STARTED" | "OPENED", entry: Lane | Task, what
 };
 
 export const workLetters = {
-  /** `reader` is the Lead, or whoever supervises once the Lead is no longer seated. */
-  handback(task: Task, file: string, body: string, peer: string, reader: "lead" | "supervisor"): Letter {
+  /** `from` names the seat by the work it holds; `reader` is the Lead, or whoever supervises once the Lead is gone. */
+  handback(task: Task, file: string, body: string, from: string, reader: "lead" | "supervisor"): Letter {
     const next =
       reader === "supervisor"
         ? leadGone("this hand-back included; drop_lane only if the lane is no longer wanted")
@@ -23,7 +23,7 @@ export const workLetters = {
     return mail(
       "done",
       [task.id, hash(body)],
-      [`HANDBACK ${task.id} (${task.title}) from ${peer}`, "", clip(body, 2500), "", `Full hand-back: ${file}`].join(
+      [`HANDBACK ${task.id} (${task.title}) from ${from}`, "", clip(body, 2500), "", `Full hand-back: ${file}`].join(
         "\n",
       ),
       next,

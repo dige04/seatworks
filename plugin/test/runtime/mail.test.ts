@@ -484,3 +484,12 @@ test("a Lead in a running turn is never cut into: its Peers' hand-backs wait in 
   await h.idle(lead);
   assert.match(seat.sent.at(-1)!, /^2 messages[^]*HANDBACK L1-T1 [^]*HANDBACK L1-T2 /, "both, in one message");
 });
+
+test("a letter names who sent it by the work it holds, not by its agent's id", async () => {
+  const { h, lane, peer } = await laneWithPeer();
+  h.commit(lane.worktree!, "a.txt", "A\n");
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "a" });
+  await h.idle(lane.lead!);
+  assert.match(h.heard(lane.lead!).join("\n"), /HANDBACK L1-T1 \(Clean build\) from the Peer on L1-T1\n/);
+  assert.doesNotMatch(h.heard(lane.lead!).join("\n"), new RegExp(`from ${peer}`));
+});

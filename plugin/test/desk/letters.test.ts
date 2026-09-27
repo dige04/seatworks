@@ -157,7 +157,7 @@ test("every letter a Peer, a reviewer or a Lead can be sent hides the words hidd
     messageLetters.reconciled(lane, task, "agent-9", "stop using the old client", sending),
     messageLetters.message("the Supervisor", "hi", sending, "lead"),
     askLetters.answered({ ...ask, fromRole: "lead" }),
-    askLetters.answeredFor(ask, "the Supervisor"),
+    askLetters.answeredFor(ask, "the Lead of L1", "the Supervisor"),
     askLetters.askTo({ ...ask, status: "open" }, "the Peer on L1-T1", "lead"),
     landLetters.landHeld(lane, "It changes src/auth.", "abc"),
     landLetters.landSentBack(lane, "put it behind a flag", "abc"),
