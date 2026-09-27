@@ -226,7 +226,7 @@ function loadRoles(given: ListedRole[], harnesses: Record<string, HarnessSpec>):
   return roles as RoleSpec[];
 }
 
-/** A role like another: that role in all but its name, words and defaults. */
+/** A role like another: that role in all but its name, words, defaults and, when it gives one, its prompt. */
 function likeRole(role: Extract<ListedRole, { like: string }>, listed: ListedRole[]): RoleFile & { like: string } {
   const liked = listed.find((other) => other.role === role.like);
   if (!liked || liked === role || "like" in liked)

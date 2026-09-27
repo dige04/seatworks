@@ -285,7 +285,7 @@ test("a pasted server that names no roles is given to every role that works with
       .sort();
   const team = resolveTeam(kit, { mcp: { pasted } });
   assert.deepEqual(team.errors, []);
-  assert.deepEqual(given(team), ["lead", "peer", "reviewer", "second-reviewer", "supervisor"]);
+  assert.deepEqual(given(team), ["architect", "auditor", "lead", "peer", "reviewer", "second-reviewer", "supervisor"]);
   assert.deepEqual(given(resolveTeam(kit, { mcp: { pasted: { ...pasted, roles: ["watcher"] } } })), ["watcher"]);
 });
 
@@ -296,7 +296,7 @@ test("the desk names each seat's fixed choices from the kit: who writes and with
   const skills = readdirSync(join(PLUGIN, "content", "skills", "peer")).sort();
   assert.deepEqual(choices("lead"), {
     add_tasks: { role: ["peer"], skills },
-    start_review: { role: ["reviewer", "second-reviewer"] },
+    start_review: { role: ["reviewer", "second-reviewer", "architect", "auditor"] },
     note: { kind: ["plans", "council", "ultra-review", "repo-refresh"] },
   });
   assert.deepEqual(choices("supervisor"), {
@@ -321,6 +321,22 @@ test("a second reviewer seats as the Reviewer on the same agent, with another mo
     shown.reviewer!.tools,
     "the panel shows the code tools it is given",
   );
+});
+
+test("an Architect and an Auditor read as a Reviewer does, on its agent, each with a prompt of its own for its question", () => {
+  const kit = loadKit(PLUGIN);
+  const team = resolveTeam(kit);
+  const reviewer = team.roles.reviewer!;
+  for (const [name, prompt] of [
+    ["architect", "prompts/ARCHITECT.md"],
+    ["auditor", "prompts/AUDITOR.md"],
+  ] as const) {
+    const seat = team.roles[name]!;
+    assert.deepEqual(
+      [seat.role.prompt, seat.role.tools, seat.role.can, seat.harness.id],
+      [prompt, reviewer.role.tools, reviewer.role.can, reviewer.harness.id],
+    );
+  }
 });
 
 test("the Lead, who accepts a task on reading its code, is given every code tool a Reviewer of that task is", () => {

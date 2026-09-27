@@ -26,12 +26,16 @@ const Role = z.strictObject({
     .optional(),
 });
 
-/** A role that is another in all but its name and what it runs on: a second lens on another model, with no files of its own. */
+/**
+ * A role that is another in all but its name, what it runs on and, where it asks another question, its prompt: a second
+ * lens on another model, or a reading Peer for another kind of question, with no harness files of its own.
+ */
 const LikeRole = z.strictObject({
   role: text,
   label: text,
   description: z.string().optional(),
   like: text,
+  prompt: text.optional(),
   defaults: z.strictObject({ harness: text, model: text.optional(), thinking: text.optional() }),
 });
 

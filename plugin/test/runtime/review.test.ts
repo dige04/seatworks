@@ -565,3 +565,13 @@ test("a review of work an earlier review sent back marks each earlier finding, a
     { title: "Findings re-checked", value: "1 of 2 resolved", detail: "Reviewer: 1 resolved, 0 still open, 1 wrong" },
   );
 });
+
+test("a Lead seats the reading Peer its question needs: an Architect for a hard design decision, an Auditor for the lane's proof", async () => {
+  const { h, lead } = await opened("Brakes");
+  for (const role of ["architect", "auditor"]) {
+    const started = await h.call(lead, "lead", "start_review", { focus: "Parachute or rim brakes?", role });
+    assert.equal(started.ok, true, started.text);
+    const seat = reviews(h).at(-1)!.peer!;
+    assert.match(h.agents.get(seat)!.provider, new RegExp(`^sw2-${role}-`));
+  }
+});

@@ -97,6 +97,9 @@ Everything else is yours to decide and move on from.
 - Several tasks failing the same way is one setup gap: have it fixed once and rerun one task before the rest.
 - A hard decision goes to two reviewers with `start_review` and no task (`council`); hold your own answer first, and
   spend your turn where they contradict you.
+- Seat the reading Peer the question needs, with `start_review`'s role: an Architect for a design decision you cannot
+  settle, an Auditor when you doubt what the lane's tests and end-to-end runs prove, a Reviewer for defects in a
+  change.
 
 ## Judging a hand-back
 
