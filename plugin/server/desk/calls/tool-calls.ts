@@ -7,6 +7,7 @@ import { clip } from "../../core/text.ts";
 import { argsProblems, shapeOf, withoutNulls } from "./args.ts";
 import { type Args, type Caller, type ToolReply, type ToolRequest, no } from "../context.ts";
 import { inTime } from "./in-time.ts";
+import { decisionFacts } from "../watch/decision-facts.ts";
 import { callLetters } from "../letters/call-letters.ts";
 import { projectOf } from "../project/project.ts";
 import type { DeskServices, ToolDef } from "../services.ts";
@@ -78,8 +79,15 @@ export class ToolCalls {
     });
     if (reply.ok) {
       this.heardFrom(caller, speaks);
-      // A decision made through the desk is judged at the seat's next look, on what the call itself says.
+      // A decision made through the desk is judged at the seat's next look, on what the call itself says; what the
+      // record shows of it, now.
       this.desk.decisions.took(caller.id, request.tool, request.args ?? {});
+      decisionFacts(this.desk, caller, request.tool, request.args ?? {}).catch((error) =>
+        this.desk.log(
+          caller.project,
+          `what the record shows at ${request.tool} could not be read: ${errorText(error)}`,
+        ),
+      );
     }
     return reply;
   }

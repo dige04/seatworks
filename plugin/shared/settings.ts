@@ -84,6 +84,14 @@ export const AttentionChoice = z.strictObject({
   refusalsAt: z.number().int().min(2).optional(),
   reworksAt: z.number().int().min(2).optional(),
   reviewsAt: z.number().int().min(2).optional(),
+  /** Test lines to each source line at which an accepted task is overbuilt, as are tests with no source at all. */
+  testToSourceAt: z.number().min(1).optional(),
+  /** Tasks in a lane reported ready with no ask from any of its seats at which nobody pushed back. */
+  quietLaneTasks: z.number().int().min(2).optional(),
+  /** How much slower a lane's gate grows over its last three runs, each slower than the one before, before it is told. */
+  gateSlowerTimes: z.number().min(1).optional(),
+  /** How long a brief's context runs before it reads as a pasted history rather than a brief. */
+  briefContextChars: z.number().int().min(1).optional(),
   suppressed: Pattern.optional(),
   /** What a product file gains to stop or skip instead of doing the work: an exit that says success, a test skipped from inside. */
   productBail: Pattern.optional(),

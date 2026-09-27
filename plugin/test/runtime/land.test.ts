@@ -320,17 +320,21 @@ test("what the record holds of a lane goes to whoever lands it, and never to the
     h.events("incident.open").map((event) => [event.id, event.finding]),
     [
       ["I1", "claim-contradicted"],
-      ["I2", "destructive"],
+      ["I2", "review-unchecked"],
+      ["I3", "destructive"],
     ],
+    "the review accepted with no command run, as its own calls show",
   );
 
   const reported = await h.call(lead, "lead", "report", { summary: "done", ready: true });
   assert.doesNotMatch(reported.text, /Incident|claim-contradicted/);
   await h.idle(sup);
-  const report = h
+  // Mail held for a busy seat goes as one text: the report is read from its own heading on.
+  const composed = h
     .heard(sup)
     .filter((text) => text.includes("REPORT L1"))
     .at(-1)!;
+  const report = composed.slice(composed.indexOf("REPORT L1"));
   assert.match(
     report,
     /REPORT L1 \(Build\): ready to land[^]*- Incident I\d+ on this lane is still open: claim-contradicted\./,

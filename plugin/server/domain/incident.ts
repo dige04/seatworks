@@ -79,6 +79,13 @@ const FACTS = {
   "accepted-unfinished": { level: "attend", title: "Work taken in unfinished" },
   "reviews-unconverged": { level: "attend", title: "Reviews piling up with nothing accepted" },
   "certainty-only": { level: "attend", title: "A review told to report only certainties" },
+  "accepted-unread": { level: "attend", title: "Accepted with nothing read or run since the hand-back" },
+  overbuilt: { level: "attend", title: "Far more test than source, or no source at all" },
+  "rework-unrun": { level: "attend", title: "Sent back on a review that ran nothing" },
+  "no-pushback": { level: "attend", title: "A long lane with no push-back from any seat" },
+  "gate-slowing": { level: "attend", title: "A gate growing slower run after run" },
+  "brief-pasted": { level: "attend", title: "A brief carrying a pasted history" },
+  "review-unchecked": { level: "attend", title: "A review accepted with nothing run, or changed files unread" },
   "brief-prewritten": { level: "attend", title: "A brief that writes the answer out" },
   stalled: {
     level: "attend",
