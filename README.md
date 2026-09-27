@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg" />
+    <img alt="Seatworks" src="docs/images/logo-light.svg" width="440" />
+  </picture>
+</p>
+
 # Seatworks
 
 A [Paseo](https://paseo.sh) plugin that runs a team of coding agents on your project the **SLP** way.
