@@ -3,7 +3,7 @@ import { ASK } from "../../domain/ask.ts";
 import { askLetters } from "../letters/ask-letters.ts";
 import { type Caller, type ToolReply, no, ok } from "../context.ts";
 import { repeatsIncident } from "./repeats.ts";
-import type { Ask } from "../../domain/ask.ts";
+import type { Ask, Verdict } from "../../domain/ask.ts";
 import { type Ledger, laneOfLead, nextAskId, taskOfPeer } from "../../domain/ledger.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { conceptFile } from "../project/project.ts";
@@ -98,10 +98,10 @@ export async function askUp(
 export async function answerAsk(
   { kit, ledgers, mail, roster }: Pick<DeskServices, "kit" | "ledgers" | "mail" | "roster">,
   caller: Caller,
-  answered: { ask: string; text: string; why?: string },
+  answered: { ask: string; text: string; why?: string; verdict?: Verdict },
 ): Promise<ToolReply> {
   const id = answered.ask.toUpperCase();
-  const { text, why } = answered;
+  const { text, why, verdict } = answered;
   // Only whoever supervises reads incidents, so only its answer could carry one to a seat it is about: the asker, the
   // seat it was put to, and the Lead of a Peer answered past it each read the answer.
   if (can(caller.role, "supervise")) {
@@ -120,11 +120,12 @@ export async function answerAsk(
     if (!ask) return `There is no ask ${id}.`;
     if (!ASK.may(ask.status, "answer")) return `Ask ${id} is already answered.`;
     if (ask.to !== caller.id && !can(caller.role, "supervise")) return `Ask ${id} was not addressed to you.`;
-    if (ask.kind === "challenge" && !why)
-      return `${id} is a challenge: answer it with why. Changing the plan needs its basis, and keeping it needs a reason the asker can argue with.`;
+    if (ask.kind === "challenge" && (!why || !verdict))
+      return `${id} is a challenge: answer it with why and a verdict (changes, alternative or minor). Changing the plan needs its basis, and keeping it needs a reason the asker can argue with.`;
     ASK.move(ask, "answer");
     ask.answer = text;
     if (why) ask.why = why;
+    if (verdict) ask.verdict = verdict;
     return { ask: { ...ask }, waitingRole: ledger.agents[ask.to]?.role };
   });
   if (typeof result === "string") return no(result);

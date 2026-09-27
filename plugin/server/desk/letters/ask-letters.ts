@@ -4,6 +4,15 @@ import type { Lane } from "../../domain/lane.ts";
 import { type Letter, firstLine, fyi, mail } from "./envelope.ts";
 import { SAY_IN_REPORT } from "./next.ts";
 
+const WEIGHED = {
+  changes: "it changes the plan",
+  alternative: "another sound option; the plan stands",
+  minor: "not worth stopping the work for; the plan stands",
+};
+/** How an answer weighed a challenge and why, in one line; nothing for an ask that was no challenge. */
+const weighed = (ask: Ask): string[] =>
+  ask.why ? [`${ask.verdict ? `Weighed: ${WEIGHED[ask.verdict]}. ` : ""}Why: ${ask.why}`] : [];
+
 const theirDefault = (ask: Ask): string[] => (ask.default ? ["", `Their default: ${ask.default}`] : []);
 
 /** Whoever supervises and an ask: a Peer's reaches it only when its Lead is gone, and a question may be the Human's. */
@@ -43,7 +52,7 @@ export const askLetters = {
     const read = concept ? `${concept}, the brief and the code` : "the brief and the code";
     const challenge = ask.kind === "challenge";
     const next = challenge
-      ? `Weigh the evidence and answer ${ask.id} with why: changing the plan needs its basis, and keeping it needs a reason the asker can argue with.`
+      ? `Weigh the evidence and answer ${ask.id} with why and a verdict: changes, alternative (another sound option the plan need not take) or minor (not worth stopping for). Changing the plan needs its basis; keeping it needs a reason the asker can argue with.`
       : reader === "lead"
         ? `Answer ${ask.id} from ${read}; if only the Supervisor can, ask up and tell the Peer to wait.`
         : askNext(ask);
@@ -75,7 +84,7 @@ export const askLetters = {
     return mail(
       "answer",
       [ask.id],
-      [`ANSWER to your ask ${ask.id}`, "", ask.answer ?? "", ...(ask.why ? ["", `Why: ${ask.why}`] : [])].join("\n"),
+      [`ANSWER to your ask ${ask.id}`, "", ask.answer ?? "", ...(ask.why ? ["", ...weighed(ask)] : [])].join("\n"),
       "Go on with your work from it.",
     );
   },
@@ -94,7 +103,7 @@ export const askLetters = {
       "",
       "The answer it was given:",
       ask.answer ?? "",
-      ...(ask.why ? [`Why: ${ask.why}`] : []),
+      ...weighed(ask),
       "",
       // Only an ask with a task has a Peer to speak of, and acceptance is only a Lead's to judge.
       ask.task && leads
