@@ -181,6 +181,27 @@ test("a merge while another task of the lane is still open asks nothing of the L
   assert.doesNotMatch(merged.text, /Every task of the lane is settled/);
 });
 
+test("the lane's last task merging where its base now conflicts asks the Lead to take the base in before the whole-lane review", async () => {
+  const { h, lane, lead } = await opened("Rounding");
+  await h.call(lead, "lead", "add_tasks", {
+    tasks: [{ key: "t", title: "Round", goal: "g", ...scope, hints: ["a.txt"] }],
+  });
+  h.commit(lane.worktree!, "a.txt", "rounded on the lane\n");
+  h.commitTo("main", "a.txt", "rounded on main\n");
+  const peer = h.ledger().tasks["L1-T1"]!.peer!;
+  await h.call(peer, "peer", "done", { outcome: "complete", summary: "rounded" });
+  await h.idle(peer);
+  h.agents.get(lead)!.status = "running";
+  assert.equal((await h.call(lead, "lead", "accept", { task: "L1-T1" })).ok, true);
+  await h.runtime.desk.settled(h.project);
+  const merged = h.runtime.outbox.pending(lead).find((letter) => letter.text.startsWith("MERGED L1-T1"));
+  assert.ok(merged);
+  assert.match(
+    merged.text,
+    /Every task of the lane is settled\.\nmain conflicts with it in a\.txt, so it does not land as it is: [^]*\n\nNext: Have a task take main in first; then start the whole-lane review/,
+  );
+});
+
 test("the review of the whole lane is marked so, and reads the lane's change from its base against the lane's acceptance", async () => {
   const { h, lane, lead } = await opened("Rounding");
   h.commit(lane.worktree!, "round.js", "export const round = Math.round;\n");
