@@ -187,7 +187,7 @@ test("a lane reported ready carries what its reviews leave standing, and each fa
   assert.equal((await h.call(lead, "lead", "accept", { task: "L1-T1" })).ok, true);
   assert.match(
     await ready("first"),
-    /No review of the whole lane is on record\. The lane's latest review, L1-R1, ended in changes; L1-T1 was accepted after it, with no review since\. L1-T1 was accepted over L1-R1, a review of it that ended in changes\./,
+    /^What the record has of the lane's reviews went with it: No review of the whole lane is on record\. The lane's latest review, L1-R1, ended in changes; L1-T1 was accepted after it, with no review since\. L1-T1 was accepted over L1-R1, a review of it that ended in changes\./,
   );
   assert.match(
     h.heard(sup).join("\n"),
@@ -201,6 +201,10 @@ test("a lane reported ready carries what its reviews leave standing, and each fa
 
   // Latest by when it came back, not by when it was asked for.
   const [asked, second] = [await start(), await start()];
+  assert.match(
+    await ready("while they read"),
+    /^What the record has of the lane's reviews went with it: L1-R2 and L1-R3 are still reading: their verdicts come to you after this report\./,
+  );
   await handBack(second, "accept");
   await handBack(asked, "changes");
   const again = await ready("second");
@@ -216,7 +220,7 @@ test("a lane reported ready carries what its reviews leave standing, and each fa
   assert.doesNotMatch(third, /latest review/);
   assert.match(
     third,
-    /It also carries what the record has of the lane's reviews: L1-T1 was accepted over L1-R1, a review of it that ended in changes\. Stay quiet/,
+    /^What the record has of the lane's reviews went with it: L1-T1 was accepted over L1-R1, a review of it that ended in changes\. Reported to agent-1\. Stay quiet/,
     "the Lead's own acceptance stands on the record, for whoever lands it to weigh",
   );
   assert.match(told(), /^land_lane it if acceptance is met/, "a review of the whole lane accepted it since");
