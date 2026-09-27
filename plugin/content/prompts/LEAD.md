@@ -121,6 +121,8 @@ Everything else is yours to decide and move on from.
   improvements to it: asked for improvements, a reviewer finds some every round. Leave what it may report open: told to
   report only certain bugs or only some files, it drops the very finding you feared. A council lens is the exception
   and gets no view of yours (`council`).
+- A result that is a measurement proves something only against a run under the same conditions and workload: weigh a
+  number that comes without its conditions, or beside another task's build on the same machine, as a claim.
 - Before you lean on a clean verdict, check what it read and ran against the change. A finding nothing was run to
   confirm is a question for the Peer, not a rework order: a reviewer that ran nothing can be as wrong as the code.
 - Settle a review that ends in changes before ready: `rework`, or show in the report why it is wrong. Send back only

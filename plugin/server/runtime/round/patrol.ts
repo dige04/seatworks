@@ -71,6 +71,7 @@ export class Patrol {
     this.deps.watches.round(now, (watch) => source.teamFor(projectOf(watch.seat.cwd)).attention);
     for (const seat of seats.values())
       if (seatOf(kit, seat.provider)?.role.tools) this.deps.remember(projectOf(seat.cwd));
+    desk.machineTick(now);
     for (const project of desk.projects.values()) {
       // Written to, a project removed while the plugin runs would come back as a state directory of its own.
       if (!registry.onRecord(project)) {

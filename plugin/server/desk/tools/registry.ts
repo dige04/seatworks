@@ -30,6 +30,7 @@ import { reseat } from "./reseat.ts";
 import { setProject } from "./set-project.ts";
 import { startReview } from "./start-review.ts";
 import { status } from "./status.ts";
+import { machine } from "./machine.ts";
 import { withdrawQuestion } from "./withdraw-question.ts";
 
 export const TOOLS: ToolDef[] = [
@@ -64,6 +65,7 @@ export const TOOLS: ToolDef[] = [
   message,
   answer,
   status,
+  machine,
   incidents,
   markIncident,
   record,

@@ -20,4 +20,17 @@ export class Limiter {
       else this.running--;
     }
   }
+
+  /** How many run now, and how many wait for a slot. */
+  counts(): { running: number; waiting: number } {
+    return { running: this.running, waiting: this.waiting.length };
+  }
+
+  /** Starts what waits, up to the limit, once the limit rose while nothing ended to hand its slot on. */
+  admit(): void {
+    while (this.waiting.length > 0 && this.running < this.limit()) {
+      this.running++;
+      this.waiting.shift()!();
+    }
+  }
 }

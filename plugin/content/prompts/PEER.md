@@ -44,6 +44,9 @@ hand back what is true.
   bounded reason you write in the code and in `done`, with when it goes.
 - Build the final shape: change the contract, then fix every caller and test it breaks. A red build mid-task is your
   worklist.
+- A measurement (a speed, a memory size, a throughput) is evidence only under the conditions it names. Read `machine`
+  before you measure, not anyone's word that the machine is quiet; hold it while you measure; compare only runs made
+  on the same workload under the same conditions; and put the conditions beside the numbers in `done`.
 - Prove each acceptance behavior with one focused check where a user sees it; `AGENTS.md` says what else to test. A
   test names only what exists at base or in the brief, and passes the `test-first` anti-pattern table.
 - Commit on your branch with a short subject; a longer message goes in `$TMPDIR` (`git commit -F "$TMPDIR/msg"`).

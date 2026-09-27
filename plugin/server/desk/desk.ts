@@ -2,6 +2,7 @@ import type { Kit, SensorSpec } from "../catalog/kit/kit.ts";
 import type { Team } from "../catalog/team/team.ts";
 import { KeyedQueue } from "../core/keyed-queue.ts";
 import { recordSpend, tellPastAppetite } from "./seats/spend.ts";
+import { MachineHold } from "./machine/hold.ts";
 import { dueAsks } from "./messaging/due-asks.ts";
 import { type WorkerTurn, workerEnded } from "./tasks/silence.ts";
 import { Limiter } from "../core/limiter.ts";
@@ -86,6 +87,8 @@ export class Desk {
     const touched = (project: Project) => {
       projects.set(project.slug, project);
     };
+    // A measurement holds the machine: meanwhile no gate or setup starts on any of its projects.
+    const machine = new MachineHold();
     const base: DeskBase = {
       kit: options.kit,
       projects,
@@ -102,7 +105,8 @@ export class Desk {
       seating: new Claims(),
       closing: new Claims(),
       landings: new KeyedQueue(),
-      gates: new Limiter(() => options.teamFor().gatesAtOnce),
+      gates: new Limiter(() => (machine.held() ? 0 : options.teamFor().gatesAtOnce)),
+      machine,
       stopping: this.stop.signal,
     };
     this.intents = new Intents(join(stateRoot(), "intents.json"));
@@ -236,6 +240,11 @@ export class Desk {
 
   recordSpend(project: Project, seats: Iterable<SeatView>): void {
     recordSpend(this.services, project, seats);
+  }
+
+  /** A hold on the machine past its time is let go, and what waited on it starts. */
+  machineTick(now = Date.now()): void {
+    if (this.services.machine.expire(now)) this.services.gates.admit();
   }
 
   pastAppetite(project: Project): Promise<void> {

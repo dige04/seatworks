@@ -4,6 +4,7 @@ import type { KeyedQueue } from "../core/keyed-queue.ts";
 import type { Limiter } from "../core/limiter.ts";
 import type { CodeIndex, Judge, Posted } from "../core/ports.ts";
 import type { Claims } from "./claims.ts";
+import type { MachineHold } from "./machine/hold.ts";
 import type { Letter } from "./letters/envelope.ts";
 import type { Project } from "./project/project.ts";
 import type { IncidentStore } from "./store/incident-store.ts";
@@ -29,5 +30,6 @@ export type DeskBase = {
   closing: Claims;
   landings: KeyedQueue;
   gates: Limiter;
+  machine: MachineHold;
   stopping: AbortSignal;
 };

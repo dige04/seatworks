@@ -1516,6 +1516,30 @@
           "text"
         ]
       }
+    },
+    {
+      "name": "machine",
+      "title": "Read or hold the machine",
+      "description": "What this machine is doing now, read from the machine: processors, load, free memory, the desk's gates and setups, agents mid-turn in each project, and who holds it for measuring. With hold, take it for a measurement, up to 30 minutes: no gate or setup starts meanwhile. hold 0 lets it go.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "hold": {
+            "type": "number",
+            "description": "Minutes to hold the machine for a measurement, up to 30; 0 lets your hold go. Left out, only read it."
+          },
+          "why": {
+            "type": "string",
+            "description": "What you measure, which whoever asks meanwhile is shown."
+          }
+        }
+      }
     }
   ],
   "peer": [
@@ -1597,6 +1621,30 @@
         "required": [
           "question"
         ]
+      }
+    },
+    {
+      "name": "machine",
+      "title": "Read or hold the machine",
+      "description": "What this machine is doing now, read from the machine: processors, load, free memory, the desk's gates and setups, agents mid-turn in each project, and who holds it for measuring. With hold, take it for a measurement, up to 30 minutes: no gate or setup starts meanwhile. hold 0 lets it go.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "hold": {
+            "type": "number",
+            "description": "Minutes to hold the machine for a measurement, up to 30; 0 lets your hold go. Left out, only read it."
+          },
+          "why": {
+            "type": "string",
+            "description": "What you measure, which whoever asks meanwhile is shown."
+          }
+        }
       }
     }
   ],
