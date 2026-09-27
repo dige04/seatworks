@@ -1,12 +1,15 @@
+import { readFileSync } from "node:fs";
 import type { PatternSpec } from "../../catalog/kit/kit.ts";
 import { can, seatOf } from "../../catalog/kit/roles.ts";
-import type { Judge, Question } from "../../core/ports.ts";
+import type { Judge, Judgement, Question } from "../../core/ports.ts";
 import { clip } from "../../core/text.ts";
 import type { Finding } from "../../domain/incident.ts";
+import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, tasksOf } from "../../domain/ledger.ts";
-import type { Project } from "../project/project.ts";
+import { type Project, conceptFile } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { type Assessments, askKept, holds } from "../store/assessments.ts";
+import { list } from "../letters/envelope.ts";
 import { type Noticed, type Placed, ledgerOf, notice, placeIn } from "./notice.ts";
 
 type Item = { kind: "thought" | "said" | "brief"; text: string };
@@ -57,7 +60,7 @@ export async function readLook(
       !pattern.except?.some((sign) => signs.has(sign)),
   );
   if (patterns.length === 0) return;
-  const asked = askedOf(place);
+  const asked = askedOf(place, conceptOf(project, attention.conceptChars));
   const subject = place.task?.id ?? place.lane?.id ?? seat.id;
   const findings: Finding[] = [];
   const sensor = brains.sensor?.key ? services.sensorFor(brains.sensor.sensor, brains.sensor.key) : undefined;
@@ -93,8 +96,11 @@ function signsOf(look: Look, { task }: Placed): Set<string> {
   ]);
 }
 
-/** What the seat's work asks of it, which a judgement that leaves it out gets wrong, and what it last handed back. */
-function askedOf(place: Placed): Record<string, unknown> {
+/**
+ * What the seat's work asks of it, which a judgement that leaves it out gets wrong, and what it last handed back. A Lead
+ * also has its lane's directive whole, and the Human's settled words, which is what a pattern's excuse is read against.
+ */
+function askedOf(place: Placed, concept: string | undefined): Record<string, unknown> {
   const { task, lane } = place;
   if (task)
     return {
@@ -103,8 +109,36 @@ function askedOf(place: Placed): Record<string, unknown> {
       out_of_scope: task.outOfScope,
       ...(task.handback ? { handback: task.handback.summary } : {}),
     };
-  if (lane) return { goal: lane.outcome, acceptance: lane.acceptance, out_of_scope: lane.outOfScope };
+  if (lane)
+    return {
+      goal: lane.outcome,
+      acceptance: lane.acceptance,
+      out_of_scope: lane.outOfScope,
+      directive: directiveOf(lane),
+      ...(concept ? { context: concept } : {}),
+    };
   return {};
+}
+
+function directiveOf(lane: Lane): string {
+  return [
+    `Outcome: ${lane.outcome}`,
+    ...(lane.humanSaid ? [`The Human's own words it comes from: "${lane.humanSaid}"`] : []),
+    "Acceptance:",
+    list(lane.acceptance),
+    ...(lane.writeSet.length > 0 ? [`Writes: ${lane.writeSet.join(", ")}`] : []),
+    ...(lane.contracts.length > 0 ? [`Depends on: ${lane.contracts.join(", ")}`] : []),
+  ].join("\n");
+}
+
+/** The project's concept file cut to `limit`, or none when there is none or it cannot be read. */
+function conceptOf(project: Project, limit: number): string | undefined {
+  const file = conceptFile(project.state);
+  try {
+    return file ? clip(readFileSync(file, "utf-8").trim(), limit) || undefined : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The briefs a Lead wrote since its last look: the tasks it laid out, each as its Peer reads what it is asked. */
@@ -124,11 +158,48 @@ function briefsSince(ledger: Ledger | undefined, seat: Noticed, place: Placed, s
     }));
 }
 
-const asQuestion = (pattern: PatternSpec, instructions: string): Question => ({
+const asQuestion = (spec: { criteria: PatternSpec["criteria"] }, instructions: string): Question => ({
   type: "condition",
   instructions,
-  criteria: pattern.criteria,
+  criteria: spec.criteria,
 });
+
+/** The name a pattern's excuse is asked under, beside the pattern's own question. */
+const excuseOf = (id: string) => `${id}-excused`;
+
+type Words = (spec: { instructions?: string; seat: string }) => string | undefined;
+
+/**
+ * Each pattern's question in `words`, the sensor's or the seat's, and its excuse where every field the excuse names is in
+ * `state`: an excuse about a field the case lacks cannot excuse anything.
+ */
+function questionsOf(patterns: Pattern[], words: Words, state: Record<string, unknown>): Record<string, Question> {
+  const has = (question: string) =>
+    [...question.matchAll(/`(\w+)`/g)].every(([, field]) => field === "text" || Object.hasOwn(state, field!));
+  return Object.fromEntries(
+    patterns.flatMap(([id, pattern]) => {
+      const own = words(pattern);
+      if (!own) return [];
+      const asked: [string, Question][] = [[id, asQuestion(pattern, own)]];
+      const excuse = pattern.excusedIf && words(pattern.excusedIf);
+      if (excuse && has(excuse)) asked.push([excuseOf(id), asQuestion(pattern.excusedIf!, excuse)]);
+      return asked;
+    }),
+  );
+}
+
+/** A pattern holds when its question does and its excuse, if it was asked, does not: one condition each, the code combines. */
+function verdictOf(
+  [id, pattern]: Pattern,
+  questions: Record<string, Question>,
+  answers: Judgement["answers"],
+): "yes" | "no" | "unclear" {
+  const own = holds(pattern, answers[id]);
+  if (!Object.hasOwn(questions, excuseOf(id))) return own;
+  const excused = holds(pattern, answers[excuseOf(id)]);
+  if (own === "no" || excused === "yes") return "no";
+  return own === "yes" && excused === "no" ? "yes" : "unclear";
+}
 
 async function sift(
   project: Project,
@@ -145,13 +216,13 @@ async function sift(
   for (const item of items) {
     const mine = patterns.filter(([, pattern]) => pattern.instructions && pattern.reads.includes(item.kind));
     if (mine.length === 0) continue;
-    const questions = Object.fromEntries(mine.map(([id, pattern]) => [id, asQuestion(pattern, pattern.instructions!)]));
     const state = { text: item.text, ...asked };
+    const questions = questionsOf(mine, (spec) => spec.instructions, state);
     const judged = await askKept(project, WATCH, { subject, episode: "look", by: by.id, state }, judge, questions);
     if (!judged) continue;
-    for (const [id, pattern] of mine) {
-      const answer = judged.answers[id];
-      const verdict = holds(pattern, answer);
+    for (const entry of mine) {
+      const [id, pattern] = entry;
+      const verdict = verdictOf(entry, questions, judged.answers);
       if (verdict !== "no") flagged.add(id);
       if (verdict === "yes" && pattern.level !== "note")
         found.push({
@@ -159,7 +230,7 @@ async function sift(
             id,
             item.text,
             quote,
-            `seen by ${by.sensor.label}, ${(answer as { likely: number }).likely.toFixed(2)} sure, in its ${item.kind}`,
+            `seen by ${by.sensor.label}, ${(judged.answers[id] as { likely: number }).likely.toFixed(2)} sure, in its ${item.kind}`,
           ),
           theirs: true,
         });
@@ -188,14 +259,15 @@ async function weigh(
     items: items.map((item) => `[${item.kind}] ${item.text}`),
     ...(look.facts.length > 0 ? { facts: look.facts } : {}),
   };
-  const questions = Object.fromEntries(patterns.map(([id, pattern]) => [id, asQuestion(pattern, pattern.seat)]));
+  const questions = questionsOf(patterns, (spec) => spec.seat, state);
   const judged = await askKept(project, WATCH, { subject, episode: "look", by, state }, judge, questions);
   if (!judged) return [];
-  return patterns.flatMap(([id, pattern]) =>
-    holds(pattern, judged.answers[id]) === "yes" && pattern.level !== "note"
+  return patterns.flatMap((entry) => {
+    const [id, pattern] = entry;
+    return verdictOf(entry, questions, judged.answers) === "yes" && pattern.level !== "note"
       ? [finding(id, judged.why?.[id] ?? "", cut.quote, "judged by the Watcher seat")]
-      : [],
-  );
+      : [];
+  });
 }
 
 const finding = (kind: string, quote: string, limit: number, seen: string): Finding => ({

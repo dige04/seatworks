@@ -15,6 +15,14 @@
       "true": "It settles a structure, a boundary, a data shape or a technology that other work will build on.",
       "false": "It plans steps, reports progress, decides something local to one change, restates what its directive, an answer it was sent or the Human's settled word already fixes, or states the decision in a report or ask that goes up."
     },
+    "excusedIf": {
+      "instructions": "Does `directive` already settle what `text` decides?",
+      "seat": "Does `directive` already settle the decision about how the system is built that the Lead takes in `items`?",
+      "criteria": {
+        "true": "`directive` states that structure, boundary, data shape or technology, or asks for it.",
+        "false": "The decision settles more than `directive` states."
+      }
+    },
     "next": "A Lead settling how the system is built is a decision its lane owns. Nothing, if the directive or CONTEXT.md settles it; else ask the Lead one open question about what it weighed. Then mark_incident it.",
     "yes": 0.8,
     "no": 0.2
@@ -202,6 +210,14 @@
       "true": "It names the functions to write, the algorithm or the structure of the change.",
       "false": "It gives the outcome, acceptance and limits, including the paths the task holds, the write set and names or shapes its directive fixes, and leaves how to the worker."
     },
+    "excusedIf": {
+      "instructions": "Does `directive` already settle what `text` decides?",
+      "seat": "Does `directive` already fix the functions, algorithm or structure that the Lead's brief in `items` gives its Peer?",
+      "criteria": {
+        "true": "`directive` names those functions, that algorithm or that structure.",
+        "false": "The brief fixes more of how to build the change than `directive` does."
+      }
+    },
     "yes": 0.8,
     "no": 0.2
   },
@@ -220,6 +236,14 @@
     "criteria": {
       "true": "It asks the worker to choose among options it lists.",
       "false": "It asks an open question, or gives no options, or the options are copied from its directive, which left that choice open."
+    },
+    "excusedIf": {
+      "instructions": "Does `directive` already settle what `text` decides?",
+      "seat": "Does `directive` already list the options the Lead offers its Peer in `items`?",
+      "criteria": {
+        "true": "`directive` lists the same options and leaves the choice among them open.",
+        "false": "The options are the Lead's own, not listed in `directive`."
+      }
     },
     "yes": 0.8,
     "no": 0.2

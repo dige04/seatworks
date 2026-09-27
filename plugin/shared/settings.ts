@@ -90,6 +90,8 @@ export const AttentionChoice = z.strictObject({
   lookMinutes: z.number().int().min(1).optional(),
   /** How much of each word, thought or brief the brains read, and of what a brain found an incident quotes. */
   lookItemChars: z.number().int().min(1).optional(),
+  /** How much of the project's concept file, the Human's settled words, a Lead's look is read beside. */
+  conceptChars: z.number().int().min(1).optional(),
   quoteChars: z.number().int().min(1).optional(),
   /** Looks with words and no thinking, never any, after which a seat is recorded as one the watch cannot read thinking of. */
   thoughtlessLooks: z.number().int().min(1).optional(),

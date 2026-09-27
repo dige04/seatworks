@@ -4,6 +4,7 @@
   "tickSeconds": 30,
   "lookMinutes": 5,
   "lookItemChars": 1500,
+  "conceptChars": 4000,
   "quoteChars": 400,
   "thoughtlessLooks": 3,
   "watcherAnswerMinutes": 15,
