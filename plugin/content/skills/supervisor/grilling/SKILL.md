@@ -35,14 +35,15 @@ question of its own, with a scenario at its edge:
 - the code for each kind of error;
 - how long a repeated request is recognized as the same one;
 - what a repeat with the same key and a different body gets;
-- whether the user can end a session, and when it ends by itself;
-- how long data is kept, and what happens to it after;
+- whether the user can end a session;
+- when a session ends by itself;
+- how long data is kept;
+- what happens to data once that time is up;
 - the name of each field a caller sends or reads, one name for one thing across the whole interface.
 
 One condition per question: a question with two gets one answer, and the other rides on it unasked. Settled, these go
-into CONTEXT.md, and where several lanes will meet on them, a small contract lane makes them run before those lanes
-open, so they build against code rather than paper: a test written against a contract nobody settled invents one,
-and a contract nobody ran is found wrong only once every lane has built on it.
+into CONTEXT.md before any lane builds on them, since a test written against a contract nobody settled invents one;
+what several lanes meet on then runs first in a contract lane, as your working loop says.
 
 ## Rounds
 
@@ -89,9 +90,10 @@ this work reaches among access (auth, login, session, passwords, secrets, creden
 they keep or drop each, and nothing waits for them unless they keep one. Name the risk rules this work
 reaches (the kit's put a question to every review of migrations, schemas and SQL; `set_project`
 `riskRules` replaces them), and ask for a command that rehearses one, such as a migration run twice on a
-copy, where they have one. A correction is a settled answer like any other; what they want to be woken
-for, in their words, goes in `$SEATWORKS_STATE/notebook.md`, kept with `note` as well: read the page first and keep
-its rows, since `note` replaces the whole page.
+copy, where they have one. A correction is a settled answer like any other. In their words, what they want to be
+woken for goes under When to wake the Human in the notebook, `$SEATWORKS_STATE/notebook.md`, and each default they
+confirmed under Confirmed defaults in the notebook, kept with `note` as well: read the page first and keep its rows,
+since `note` replaces the whole page.
 
 ## Ends in
 

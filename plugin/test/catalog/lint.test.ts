@@ -198,7 +198,7 @@ test("seat text names only logs the desk keeps, and every notebook section it se
   for (const [file, text] of texts) {
     for (const [, log] of text.matchAll(/(?:\$SEATWORKS_STATE|\{\{state\}\})\/([\w-]+\.log)\b/g))
       assert.ok(kept.has(log!), `${file} sends a seat to ${log}, which the desk never writes`);
-    for (const [, section] of text.matchAll(/\bunder\s+([A-Z][a-z]+)\s+in\s+the\s+notebook\b/g))
+    for (const [, section] of text.matchAll(/\bunder\s+([A-Z][a-z]+(?:\s+[A-Za-z]+)*?)\s+in\s+the\s+notebook\b/g))
       assert.match(
         seeded,
         new RegExp(`^## ${section}$`, "m"),
