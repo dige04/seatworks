@@ -5,11 +5,12 @@ import { headSha } from "../../core/git.ts";
 import { changedFiles } from "../../core/git-diff.ts";
 import { clip } from "../../core/text.ts";
 import { reviewBrief } from "../letters/briefs.ts";
+import { landLetters } from "../letters/land-letters.ts";
 import { workKey } from "../claims.ts";
 import { type Caller, type ToolReply, no, ok, str } from "../context.ts";
 import { holdRefusal } from "../lanes/hold.ts";
 import { changeOf } from "../lanes/land-facts.ts";
-import type { Lane } from "../../domain/lane.ts";
+import type { LandOrder, Lane } from "../../domain/lane.ts";
 import { type Ledger, findTask, laneOfLead, nextTaskId } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
@@ -36,9 +37,22 @@ export async function startReview(desk: DeskServices, caller: Caller, args: Revi
   const planned = await plan(desk, caller, args);
   if (typeof planned === "string") return no(planned);
   const focus = str(args.focus);
-  const review = record(desk, caller.project, planned, str(args.title), focus);
-  if (typeof review === "string") return no(review);
-  return seat(desk, caller, planned, review, focus);
+  const recorded = record(desk, caller.project, planned, str(args.title), focus);
+  if (typeof recorded === "string") return no(recorded);
+  await withdrawn(desk, caller.project, planned.lane, recorded);
+  return seat(desk, caller, planned, recorded.review, focus);
+}
+
+/** A lane its Lead reviews again is not what it reported ready: whoever supervises hears so, and an ordered landing ends. */
+async function withdrawn(
+  { mail, roster }: Pick<DeskServices, "mail" | "roster">,
+  project: Project,
+  lane: Lane,
+  { review, ready, order }: Recorded,
+): Promise<void> {
+  if (ready)
+    await mail.post(await roster.supervisorFor(project, lane.opener), landLetters.readyWithdrawn(lane, review.id));
+  if (order) await mail.post(order.by, landLetters.calledOff(lane, `${review.id} started reading it`, false));
 }
 
 async function plan(desk: DeskServices, caller: Caller, args: ReviewCall): Promise<Planned | string> {
@@ -62,6 +76,9 @@ async function plan(desk: DeskServices, caller: Caller, args: ReviewCall): Promi
   return { lane, target, role, asked, reading };
 }
 
+/** A review as recorded, with whether the lane had a READY it took back and the landing ordered on it that it called off. */
+type Recorded = { review: Task; ready: boolean; order?: LandOrder };
+
 /**
  * A review is a task of the lane that holds nothing, recorded running and claimed for seating like any other. The lane
  * is read again here, where it is written: it may have closed or been put on hold while the review was planned.
@@ -72,9 +89,9 @@ function record(
   planned: Planned,
   title: string,
   focus: string,
-): Task | string {
+): Recorded | string {
   const { lane, target, asked, reading } = planned;
-  return ledgers.transact(project, (current): Task | string => {
+  return ledgers.transact(project, (current): Recorded | string => {
     const now = current.lanes[lane.id];
     if (now?.status !== "open") return `Lane ${lane.id} closed while its review was being set up.`;
     const held = holdRefusal(now);
@@ -105,7 +122,10 @@ function record(
     };
     current.tasks[id] = created;
     seating.take(workKey(project, id));
-    return { ...created };
+    const { ready, landing } = now;
+    delete now.ready;
+    delete now.landing;
+    return { review: { ...created }, ready: ready !== undefined, ...(landing ? { order: landing } : {}) };
   });
 }
 

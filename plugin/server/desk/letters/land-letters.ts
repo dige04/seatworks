@@ -28,13 +28,31 @@ export const landLetters = {
     );
   },
 
-  /** An ordered landing called off: the lane is no longer what whoever asked for it judged. */
-  calledOff(lane: Lane, changed: string): Letter {
+  /**
+   * An ordered landing called off, as the lane is no longer what whoever asked for it judged: found when the turn in its
+   * way `ended`, or at once by what changed it.
+   */
+  calledOff(lane: Lane, changed: string, ended: boolean): Letter {
+    const said = ended
+      ? `the turn in its way ended, but ${changed} since your land_lane, so the desk did not land it`
+      : `${changed} since your land_lane, so the desk will not land it`;
     return mail(
       "land",
       [lane.id, "calledoff", Date.now()],
-      `NOT LANDED ${lane.id} (${lane.title}): the turn in its way ended, but ${changed} since your land_lane, so the desk did not land it.`,
+      `NOT LANDED ${lane.id} (${lane.title}): ${said}.`,
       "land_lane it again to land it as it is now, or drop_lane it.",
+    );
+  },
+
+  /** Its Lead went on reviewing a lane it had reported ready: the READY is gone, and comes again with a new report. */
+  readyWithdrawn(lane: Lane, review: string): Letter {
+    return fyi(
+      mail(
+        "withdrawn",
+        [lane.id, review],
+        `READY WITHDRAWN ${lane.id} (${lane.title}): its Lead started ${review} after reporting it ready, so its READY no longer stands.`,
+        "Nothing now: a new ready report comes as mail.",
+      ),
     );
   },
 

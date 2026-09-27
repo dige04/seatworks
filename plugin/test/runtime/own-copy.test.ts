@@ -205,6 +205,32 @@ test("a landing ordered while a turn was in the way is not carried out on a lane
   );
 });
 
+test("a review already reading when a landing was ordered is new evidence once it comes back, so the landing waits for the Supervisor's word again", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  await h.call(sup, "supervisor", "open_lane", { title: "Numbers", outcome: "a.txt gains words", ...scope });
+  const lane = h.ledger().lanes.L1!;
+  h.commit(h.root, "a.txt", "one\ntwo\nthree\nfour\n");
+  await h.call(lane.lead!, "lead", "start_review", { focus: "Does the whole lane hold?" });
+  const reviewer = h.ledger().tasks["L1-R1"]!.peer!;
+  h.commitTo("main", "other.txt", "main moved\n");
+  await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  assert.match((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).text, /^Lane L1 lands once /);
+  await new Promise((resolve) => setTimeout(resolve, 2));
+  assert.equal((await h.call(reviewer, "reviewer", "done", { verdict: "changes", answer: "four is wrong" })).ok, true);
+  await h.idle(sup);
+  for (const id of [reviewer, lane.lead!]) {
+    h.agents.get(id)!.status = "idle";
+    await h.endTurn(id, "done");
+  }
+  await h.runtime.desk.settled(h.project);
+  assert.equal(h.ledger().lanes.L1!.status, "open");
+  assert.match(
+    h.agents.get(sup)!.sent.join("\n"),
+    /NOT LANDED L1 \(Numbers\): the turn in its way ended, but L1-R1 came back, ending in changes since your land_lane/,
+  );
+});
+
 test("a lane carrying on the Human's branch is refused where there is none, started as a new branch that takes their work along, drawn without a base, and landed where it is", async () => {
   const h = harness();
   h.projectSettings({ hitl: { on: true } });

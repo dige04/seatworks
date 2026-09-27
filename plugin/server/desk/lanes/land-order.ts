@@ -22,7 +22,7 @@ export function carryOut(desk: DeskServices, project: Project, laneId: string, o
       const lane = ledger.lanes[laneId];
       if (lane?.status !== "open") return;
       const changed = await changedSince(project, ledger, lane, order);
-      if (changed) return void (await desk.mail.post(order.by, landLetters.calledOff(lane, changed)));
+      if (changed) return void (await desk.mail.post(order.by, landLetters.calledOff(lane, changed, true)));
       const closed = await closeLane(desk, project, order.by, {
         lane: laneId,
         land: true,
@@ -49,9 +49,7 @@ async function changedSince(
   if ((await headSha(project.root, lane.branch)) !== order.tip) return "its branch moved";
   if (lane.ready?.at !== order.ready) return lane.ready ? "it was reported ready again" : "its READY was taken back";
   if ((lane.amended?.length ?? 0) !== order.amended) return "it was amended";
-  const reviews = tasksOf(ledger, lane.id).filter((task) => task.kind === "review");
-  const started = reviews.find((task) => task.openedAt > order.at);
-  if (started) return `${started.id} started reading it`;
-  const back = reviews.find((task) => (task.handback?.at ?? 0) > order.at);
+  // A review started since took the order back itself; one already reading when it was given may have come back.
+  const back = tasksOf(ledger, lane.id).find((task) => task.kind === "review" && (task.handback?.at ?? 0) > order.at);
   return back ? `${back.id} came back, ending in ${back.handback!.outcome}` : undefined;
 }

@@ -201,6 +201,8 @@ test("a lane reported ready carries what its reviews leave standing, and each fa
 
   // Latest by when it came back, not by when it was asked for.
   const [asked, second] = [await start(), await start()];
+  const withdrawn = h.runtime.outbox.pending(sup).find((letter) => letter.text.startsWith("READY WITHDRAWN L1"));
+  assert.equal(withdrawn?.wakes, false, "a READY taken back asks nothing of whoever supervises");
   assert.match(
     await ready("while they read"),
     /^What the record has of the lane's reviews went with it: L1-R2 and L1-R3 are still reading: their verdicts come to you after this report\./,
