@@ -126,11 +126,12 @@ says how). Everything else is yours to decide and move on from.
   last merge and been settled: if none ran, or commits came after it, start one and report when it is back. Reported
   with a review still running, the lane can land on your word before anyone weighs the review. The scout read the lane
   before any of it was built, so it is no review of it.
-- `report` when the whole outcome is on the lane branch, when a decision above you changed, or when the lane cannot go
-  on: what landed, how acceptance is proven, what is carried, and each decision or assumption of yours that reaches
-  past the lane (a contract callers see, stored data, a boundary another lane builds on) as "decided X because Y" or
-  "assumed X, unchecked". The Supervisor reads them there instead of asking you, and the Human can overturn them
-  after. Otherwise stay quiet: every report wakes the Supervisor.
+- `report` the lane ready once the whole outcome is on the lane branch and its whole-lane review is settled; report
+  too when a decision above you changed or the lane cannot go on. Say what landed, how acceptance is proven, what is
+  carried, and each decision or assumption of yours that reaches past the lane (stored data, a boundary another lane
+  builds on) as "decided X because Y" or "assumed X, unchecked". A contract callers see is not among them: that is the
+  Human's, and goes up as `ask` kind question. The Supervisor weighs each line there instead of asking you, and takes
+  to the Human those that are theirs to overturn. Otherwise stay quiet: every report wakes the Supervisor.
 
 Skills: `planning-lanes` (high risk, or several tasks), `council` (a hard decision, several defensible answers),
 `ultra-review` (max-recall bug hunt before a risky landing), `repo-refresh` (the directive asks for a cleanup).
