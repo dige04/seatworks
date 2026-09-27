@@ -103,6 +103,7 @@ export class Patrol {
       ["what a lane's history shows could not be read", () => this.history(project, ledger(), seats)],
       ["how full a seat's context is could not be told", () => this.pressure(project, seats)],
       ["what the seats spent could not be recorded", async () => desk.recordSpend(project, seats.values())],
+      ["a lane past its appetite could not be told", () => desk.pastAppetite(project)],
       ["sweeping failed", () => this.sweep(project, ledger(), seats)],
       ["waiting lanes could not be opened", () => desk.openWaiting(project)],
       ["finished lanes could not be archived", () => desk.archiveFinished(project, gone)],

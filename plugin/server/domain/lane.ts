@@ -42,6 +42,8 @@ export type Lane = {
   humanSaid?: string;
   acceptance: string[];
   appetite?: string;
+  /** When its seats' spend first passed what its appetite said it was worth, told to whoever supervises once. */
+  pastAppetite?: { at: number; spent: number };
   deadline?: string;
   outOfScope: string[];
   /** What must hold; the Supervisor's own choices, open to the Lead's question; what nobody knows yet, with how to find out. */

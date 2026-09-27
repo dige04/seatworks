@@ -1,7 +1,7 @@
 import type { Kit, SensorSpec } from "../catalog/kit/kit.ts";
 import type { Team } from "../catalog/team/team.ts";
 import { KeyedQueue } from "../core/keyed-queue.ts";
-import { recordSpend } from "./seats/spend.ts";
+import { recordSpend, tellPastAppetite } from "./seats/spend.ts";
 import { dueAsks } from "./messaging/due-asks.ts";
 import { type WorkerTurn, workerEnded } from "./tasks/silence.ts";
 import { Limiter } from "../core/limiter.ts";
@@ -236,6 +236,10 @@ export class Desk {
 
   recordSpend(project: Project, seats: Iterable<SeatView>): void {
     recordSpend(this.services, project, seats);
+  }
+
+  pastAppetite(project: Project): Promise<void> {
+    return tellPastAppetite(this.services, project);
   }
 
   /** The patrol's net under a close or accept that never started what waited on it; a failed start waits for more. */

@@ -82,6 +82,17 @@ export const workLetters = {
     return mail("report", [lane.id, hash(`${text}\n${next}`)], text, next);
   },
 
+  /** A lane whose seats spent past what its appetite said it was worth: whether it goes on is a cost the Human agrees to. */
+  pastAppetite(lane: Lane, spent: number, worth: number): Letter {
+    const dollars = (value: number) => `$${value.toFixed(2)}`;
+    return mail(
+      "pastappetite",
+      [lane.id],
+      `PAST ITS APPETITE ${lane.id} (${lane.title}): its seats spent ${dollars(spent)} of the ${dollars(worth)} it was worth.`,
+      "What it costs is the Human's to agree, in the loop or out of it: ask them whether it goes on, shrinks or stops, with what it has left and what more would cost. hold_lane meanwhile if going on spends much more.",
+    );
+  },
+
   amended(entry: Lane | Task, amendment: Amendment, reader: "lead" | "worker"): Letter {
     const now = entry as unknown as Record<string, string | string[]>;
     const show = (value: string | string[]) => (Array.isArray(value) ? list(value) : value || "none");

@@ -31,7 +31,7 @@
           },
           "appetite": {
             "type": "string",
-            "description": "What the outcome is worth, as a budget."
+            "description": "What the outcome is worth, as a budget in dollars like $20: the desk tells you once its seats spend past it."
           },
           "deadline": {
             "type": "string",

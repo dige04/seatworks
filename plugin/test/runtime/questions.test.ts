@@ -146,6 +146,9 @@ test("with the Human out of the loop nothing queues for them: the Supervisor dec
   const asked = await h.call(sup, "supervisor", "ask_human", packet());
   assert.equal(asked.ok, false);
   assert.match(asked.text, /out of the loop on this project, so nothing queues for them: decide it yourself/);
-  assert.match(asked.text, /ask them directly with your own question tool and write the answer into CONTEXT\.md/);
+  assert.match(
+    asked.text,
+    /or what a lane is for or what it costs past what they agreed, ask them directly with your own question tool; write what settles the concept into CONTEXT\.md/,
+  );
   assert.deepEqual(h.ledger().questions, {});
 });

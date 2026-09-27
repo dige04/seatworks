@@ -50,6 +50,7 @@ type Kind =
   | "notstarted"
   | "nudge"
   | "opened"
+  | "pastappetite"
   | "pending"
   | "permission"
   | "permitted"
