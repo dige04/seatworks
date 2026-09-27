@@ -156,6 +156,16 @@ test("an approval is for the lane as it was held, and for what the Human asked a
   );
   assert.equal((await h.call(sup, "supervisor", "set_project", { gate: "true" })).ok, false);
   assert.equal(readFileSync(orders, "utf-8"), misread, "a field that does not read is never written over");
+  // A key the desk does not keep is the Human's order misspelt: read past, the paths they meant would wait for nobody.
+  const misspelt = JSON.stringify({ ...(JSON.parse(kept) as object), askfirst: ["src/auth"] });
+  writeFileSync(orders, misspelt);
+  assert.match(
+    (await land()).text,
+    /The Human's standing orders cannot be read \(.*project\.json does not hold what the plugin keeps there: .*askfirst.*\), so no landing goes ahead without them\./,
+  );
+  assert.equal(onMain("src/auth/login.ts"), false);
+  assert.equal((await h.call(sup, "supervisor", "set_project", { gate: "true" })).ok, false);
+  assert.equal(readFileSync(orders, "utf-8"), misspelt, "nor is a key the desk does not keep");
   writeFileSync(orders, kept);
   const landed = await land();
   assert.equal(landed.ok, true, landed.text);
