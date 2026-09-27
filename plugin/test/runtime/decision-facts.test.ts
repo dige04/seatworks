@@ -41,6 +41,16 @@ test("an accept after reading the change, or with no hand-back letter in the rec
   await settle();
   await new Promise((resolve) => setTimeout(resolve, 30));
   assert.deepEqual(opened(h), []);
+
+  // No hand-back letter in the Lead's record: nothing to count from, so nothing is read into it.
+  const other = await laneWithPeer();
+  other.h.commit(other.h.ledger().tasks["L1-T1"]!.worktree!, "a.txt", "done\n");
+  await other.h.call(other.peer, "peer", "done", { outcome: "complete", summary: "done" });
+  const accepted = await other.h.call(other.lane.lead!, "lead", "accept", { task: "L1-T1" });
+  assert.equal(accepted.ok, true, accepted.text);
+  await settle();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.deepEqual(opened(other.h), []);
 });
 
 test("a sending-back on a review that ran nothing, and a review's accept with nothing run, are evidence", async () => {
