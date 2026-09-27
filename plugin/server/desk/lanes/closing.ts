@@ -4,11 +4,10 @@ import { plural } from "../../core/text.ts";
 import { ASK } from "../../domain/ask.ts";
 import { LANE } from "../../domain/lane.ts";
 import { QUESTION } from "../../domain/question.ts";
-import { TASK } from "../../domain/task.ts";
+import { TASK, openWork } from "../../domain/task.ts";
 import { workKey } from "../claims.ts";
 import { no, ok, str } from "../context.ts";
 import { landLetters } from "../letters/land-letters.ts";
-import { unfinished } from "./land-facts.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, findLane } from "../../domain/ledger.ts";
 import type { Task } from "../../domain/task.ts";
@@ -121,6 +120,7 @@ async function retire(
   const reason = str(args.reason);
   recordEvent(project, { kind: "lane.closed", lane: lane.id, land: args.land, landing: landed.how, reason, writers });
   const moved = args.land && !lane.onBranch ? await tellBaseMoved(desk, project, lane) : "";
+  if (args.land && !lane.onBranch) await tellAudit(desk, project, lane, landed.how);
   const read = readProjectConfig(project.state);
   const base = "config" in read ? read.config.base : undefined;
   const sends = base ? `push sends ${base}` : "push sends the project's base, once set_project names it,";
@@ -151,6 +151,19 @@ async function tellBaseMoved({ mail }: Pick<DeskServices, "mail">, project: Proj
   return hit.length > 0
     ? `\n\n${landed.base} now conflicts with lanes still open: ${hit.join("; ")}. Their Leads have the facts; who takes ${landed.base} in for each is yours to choose.`
     : "";
+}
+
+/** The open lane that audits what goes out from the base a landing moved, if one does, hears what landed there. */
+async function tellAudit(
+  { mail }: Pick<DeskServices, "mail">,
+  project: Project,
+  landed: Lane,
+  how: string,
+): Promise<void> {
+  const audits = Object.values(loadLedger(project.state).lanes).filter(
+    (other) => other.status === "open" && other.audit && other.base === landed.base && other.id !== landed.id,
+  );
+  for (const audit of audits) await mail.post(audit.lead, landLetters.landedForAudit(landed, how));
 }
 
 /**
@@ -190,7 +203,7 @@ function settleLeftovers(ledger: Ledger, lane: Lane): Leftovers {
   const tasks: Task[] = [];
   const cut: string[] = [];
   for (const task of Object.values(ledger.tasks).filter((item) => item.lane === lane.id)) {
-    const lost = unfinished(task);
+    const lost = openWork(task);
     if (TASK.move(task, "cut") && lost) cut.push(task.id);
     tasks.push({ ...task });
   }

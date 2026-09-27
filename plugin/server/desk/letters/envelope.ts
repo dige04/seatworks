@@ -19,12 +19,12 @@ type Kind =
   | "answer"
   | "answeredFor"
   | "ask"
+  | "audit"
   | "amended"
   | "baseconflict"
   | "basemoved"
   | "beside"
   | "blockchanged"
-  | "canland"
   | "case"
   | "closed"
   | "detour"
@@ -61,7 +61,8 @@ type Kind =
   | "settling"
   | "silent"
   | "started"
-  | "unanswered";
+  | "unanswered"
+  | "withdrawn";
 
 /**
  * A letter to a seat: a second one with its key is the same letter, and `wakes` false is word that asks nothing of its

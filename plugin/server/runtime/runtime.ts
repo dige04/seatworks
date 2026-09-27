@@ -20,8 +20,10 @@ import type {
   TurnEnded,
   Workspaces,
 } from "../core/ports.ts";
+import type { ToolReply, ToolRequest } from "../desk/context.ts";
 import { Desk } from "../desk/desk.ts";
 import { type Project, projectOf } from "../desk/project/project.ts";
+import { loadLedger } from "../desk/store/ledger.ts";
 import { appendRecord } from "../desk/store/records.ts";
 import { TOOLS } from "../desk/tools/registry.ts";
 import { stampKit } from "../upkeep/older-seats.ts";
@@ -86,7 +88,11 @@ export class Runtime implements HostHooks {
     this.makeIndex = options.codeIndex ?? codeIndex;
     this.source = new TeamSource(kit);
     this.seating = new Seating(kit, this.source, { node: nodeBin(), socket: deskSocket() });
-    const rules = mailRules(kit, (agentId) => this.socket.calling(agentId));
+    const rules = mailRules(
+      kit,
+      (agentId) => this.socket.calling(agentId),
+      (agentId) => this.registry.known().find((project) => loadLedger(project.state).agents[agentId]),
+    );
     this.outbox = new Outbox(options.outboxFile ?? join(stateRoot(), "outbox.json"), composeMail, host.seats, rules);
     const log = (project: Project, line: string) => this.log(project, line);
     const remember = (project: Project) => this.remember(project);
@@ -220,14 +226,23 @@ export class Runtime implements HostHooks {
     return new TeamSocket(deskSocket(), {
       whose: (key) => this.keys.whose(key),
       choices: (role, cwd) => choicesFor(this.kit, this.source.teamFor(projectOf(cwd)), role),
-      // A reloaded plugin has Paseo's API only once a hook or a panel call brings it: a call waits for it rather than fail to reach a seat.
       answer: (request, cancelled) =>
-        this.host
-          .reached()
-          .then(() => this.desk.answer(request, { cancelled }))
-          .catch((error) => ({ ok: false, text: `The desk failed: ${errorText(error)}` })),
+        this.answer(request, cancelled).catch((error) => ({ ok: false, text: `The desk failed: ${errorText(error)}` })),
       mailLost: (request, reply) => this.desk.mailLost(request, reply),
     });
+  }
+
+  /**
+   * A seat's call, answered with the mail held for it: its turn reads it there, with nothing sent that could replace
+   * that turn, so a seat whose turns are all short still reads word that asks nothing. A reloaded plugin has Paseo's API
+   * only once a hook or a panel call brings it: a call waits for it rather than fail to reach a seat.
+   */
+  async answer(request: ToolRequest, cancelled: AbortSignal): Promise<ToolReply> {
+    await this.host.reached();
+    const reply = await this.desk.answer(request, { cancelled });
+    // A stopped call's reply is read by nobody: its seat's mail stays held for the next.
+    const held = request.agent ? await this.outbox.take(request.agent, () => !cancelled.aborted) : undefined;
+    return held ? { ...reply, text: `${reply.text}\n\n---\n\nMail the desk held for you:\n\n${held}` } : reply;
   }
 
   /** Paseo refuses a seat on a provider it lacks, and a team may have moved since the last pass. */

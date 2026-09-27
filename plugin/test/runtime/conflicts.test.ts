@@ -136,7 +136,7 @@ test("the merge queue hands a conflict to its Peer, merges nothing as nothing, w
   await h.idle(lead);
   assert.match(
     h.agents.get(lead)!.sent.at(-1) ?? "",
-    /MERGED L1-T1 \(B\) into the lane branch\.[^]*Next: Every task of the lane is settled/,
+    /MERGED L1-T1 \(B\) into the lane branch\.[^]*Every task of the lane is settled\.\n\nNext: If its outcome is met/,
   );
 
   const look = await beside("l", "Look", "d.txt");

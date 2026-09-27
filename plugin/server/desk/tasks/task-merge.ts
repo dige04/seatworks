@@ -1,6 +1,6 @@
 import { fileKinds } from "../../catalog/kit/ecosystem-patterns.ts";
 import { changedFiles, diffCounts } from "../../core/git-diff.ts";
-import { commitsAhead, currentBranch, headSha, uncommittedIn } from "../../core/git.ts";
+import { commitsAhead, conflictsWith, currentBranch, headSha, uncommittedIn } from "../../core/git.ts";
 import { advance, mergeCommit } from "../../core/land.ts";
 import { TASK } from "../../domain/task.ts";
 import type { DeskBase } from "../base.ts";
@@ -10,7 +10,7 @@ import type { Task, TaskMove } from "../../domain/task.ts";
 import { loadLedger } from "../store/ledger.ts";
 import { othersLeft } from "../../domain/ledger.ts";
 import type { Letter } from "../letters/envelope.ts";
-import { mergeLetters } from "../letters/merge-letters.ts";
+import { type Settled, mergeLetters } from "../letters/merge-letters.ts";
 import { type Project, gitTimeout, serialIn } from "../project/project.ts";
 import { reachNotes } from "./reach.ts";
 import { recordEvent } from "../store/event-log.ts";
@@ -174,7 +174,7 @@ export class TaskMerge {
     const serial = await serialIn(this.desk.kit, project, cwd);
     this.desk.ledgers.transact(project, (ledger) => {
       const entry = ledger.tasks[task.id];
-      if (entry) Object.assign(entry, { mergeSha: merged.after, updatedAt: Date.now() });
+      if (entry) Object.assign(entry, { mergeSha: merged.after, mergedAt: Date.now(), updatedAt: Date.now() });
       // The lane branch moved: what its Lead reported ready is not what it holds now.
       if (merged.after !== merged.before) delete ledger.lanes[lane.id]?.ready;
     });
@@ -184,7 +184,8 @@ export class TaskMerge {
     // The gate ran before the merge, on the tree it made: the verdict on record, or its Lead's word over it, stands.
     const gate = gateNote(project, now.tasks[task.id] ?? task);
     const reach = reachNotes(now, task, lane, counts?.files ?? [], serial, true);
-    const letter = mergeLetters.merged(task, counts, reach, gate, othersLeft(now, task).length === 0);
+    const settled = othersLeft(now, task).length === 0 ? await settledOf(project, lane) : undefined;
+    const letter = mergeLetters.merged(task, counts, reach, gate, settled);
     await this.finish(project, task, lane, "merged", letter);
   }
 
@@ -199,4 +200,10 @@ export class TaskMerge {
     recordEvent(project, { kind: `merge.${outcome}`, task: task.id });
     if (moved.status === "merged") await this.merged(project);
   }
+}
+
+/** A lane with nothing left: where its base, read without touching a copy, would conflict with it when it lands. */
+async function settledOf(project: Project, lane: Lane): Promise<Settled> {
+  if (lane.onBranch) return { conflicts: [] };
+  return { base: lane.base, conflicts: (await conflictsWith(project.root, lane.branch, lane.base)) ?? [] };
 }

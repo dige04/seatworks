@@ -425,6 +425,11 @@ test("a Lead's directive says what its lane writes, depends on and keeps to one 
     new RegExp(`is in ${concept.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\. Read it before you start`),
   );
   assert.match(pointed, /ask with kind question, and leave the file as it is/);
+  assert.match(
+    pointed,
+    /Peers never see the file: quote into each task's context, word for word, the lines that task touches, so the quote is all a Peer needs\./,
+    "a Peer's brief names the Human's word it needs, never a file it cannot reach",
+  );
 
   await h.call(sup, "supervisor", "set_project", { serialOnly: ["b.txt"] });
   await open("Own list", { writeSet: ["e.txt"] });

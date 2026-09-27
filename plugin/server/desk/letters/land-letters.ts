@@ -16,12 +16,43 @@ export const landLetters = {
     );
   },
 
-  canLand(lane: Lane): Letter {
+  /** A landing the desk carried out for whoever asked once the turns in its way ended: what land_lane would have answered. */
+  carried(lane: Lane, landed: boolean, text: string): Letter {
     return mail(
-      "canland",
-      [lane.id, Date.now()],
-      `CAN LAND ${lane.id} (${lane.title}): the turn that was in the way has ended.`,
-      "land_lane it again.",
+      "land",
+      [lane.id, "carried", Date.now()],
+      `${landed ? "LANDED" : "NOT LANDED"} ${lane.id} (${lane.title}): ${text}`,
+      landed
+        ? `Know it when you next speak of ${lane.id}; nothing of it waits on you.`
+        : "Act on what it names; land_lane then lands it as it is.",
+    );
+  },
+
+  /**
+   * An ordered landing called off, as the lane is no longer what whoever asked for it judged: found when the turn in its
+   * way `ended`, or at once by what changed it.
+   */
+  calledOff(lane: Lane, changed: string, ended: boolean): Letter {
+    const said = ended
+      ? `the turn in its way ended, but ${changed} since your land_lane, so the desk did not land it`
+      : `${changed} since your land_lane, so the desk will not land it`;
+    return mail(
+      "land",
+      [lane.id, "calledoff", Date.now()],
+      `NOT LANDED ${lane.id} (${lane.title}): ${said}.`,
+      "land_lane it again to land it as it is now, or drop_lane it.",
+    );
+  },
+
+  /** Its Lead went on reviewing a lane it had reported ready: the READY is gone, and comes again with a new report. */
+  readyWithdrawn(lane: Lane, review: string): Letter {
+    return fyi(
+      mail(
+        "withdrawn",
+        [lane.id, review],
+        `READY WITHDRAWN ${lane.id} (${lane.title}): its Lead started ${review} after reporting it ready, so its READY no longer stands.`,
+        "Nothing now: a new ready report comes as mail.",
+      ),
     );
   },
 
@@ -59,6 +90,16 @@ export const landLetters = {
         text,
         "Nothing now; a merge into the lane before they decide restarts their look.",
       ),
+    );
+  },
+
+  /** Another lane landed on the base the audit lane reads: new there, so the audit looks at it before it goes out. */
+  landedForAudit(landed: Lane, how: string): Letter {
+    return mail(
+      "audit",
+      [landed.id],
+      `LANDED ${landed.id} (${landed.title}) on ${landed.base}: ${how}. Your lane audits what goes out from ${landed.base}, and this is new there.`,
+      `Take what it brought to ${landed.base} into your audit.`,
     );
   },
 
@@ -105,16 +146,27 @@ export const landLetters = {
     );
   },
 
-  landDecided(lane: Lane, how: "landed" | "blocked" | "again" | "changed" | "sent back", text: string): Letter {
+  /** Each wakes whoever supervises: what the Human decided changes where the lane stands, which it would otherwise tell them wrong. */
+  landDecided(
+    lane: Lane,
+    how: "landed" | "ordered" | "blocked" | "again" | "changed" | "sent back",
+    text: string,
+  ): Letter {
     const told = (said: string, next: string) => mail("land", [lane.id, how, Date.now()], said, next);
     if (how === "landed")
-      return fyi(told(`LANDED ${lane.id} (${lane.title}) after the Human approved it: ${text}`, "Nothing now."));
+      return told(
+        `LANDED ${lane.id} (${lane.title}) after the Human approved it: ${text}`,
+        `Know it when you next speak of ${lane.id}; nothing of it waits on you.`,
+      );
+    if (how === "ordered")
+      return told(
+        `APPROVED ${lane.id} (${lane.title}) by the Human: ${text}`,
+        `Know it when you next speak of ${lane.id}; LANDED or NOT LANDED comes as mail.`,
+      );
     if (how === "sent back")
-      return fyi(
-        told(
-          `SENT BACK ${lane.id} (${lane.title}) by the Human: ${ended(text || "no reason was given")} The lane stays open, and its Lead has the note.`,
-          "Nothing now.",
-        ),
+      return told(
+        `SENT BACK ${lane.id} (${lane.title}) by the Human: ${ended(text || "no reason was given")} The lane stays open, and its Lead has the note.`,
+        `Know it when you next speak of ${lane.id}; its Lead acts on the note.`,
       );
     if (how === "again")
       return told(

@@ -135,7 +135,7 @@ test("two calls reaching for the same paths at once: tasks do not both get them,
   assert.match((await cart).text, /It now works beside lanes that may write what it does: L3 \(g\.txt\)/);
 });
 
-test("two seats' turns ending at once tell whoever tried to land once, and put a copy back once, one ending while the other is still being ended", async () => {
+test("two seats' turns ending at once land an ordered lane once, and put a copy back once, one ending while the other is still being ended", async () => {
   const { h, sup, lane, peer } = await laneWithPeer();
   const lead = lane.lead!;
   /** Ends `first`'s turn up to `call` on it in Paseo and `second`'s whole, checking what stands before and after, then lets `first` go on. */
@@ -155,7 +155,11 @@ test("two seats' turns ending at once tell whoever tried to land once, and put a
     held.release();
     await ending;
   };
-  const landings = () => h.heard(sup).join("\n").split("CAN LAND L1").length - 1;
+  const landings = () =>
+    h
+      .heard(sup)
+      .join("\n")
+      .match(/(?<!NOT )LANDED L1 /g)?.length ?? 0;
   h.commit(lane.worktree!, "a.txt", "A\n");
   await h.call(peer, "peer", "done", { outcome: "complete", summary: "a" });
   await h.idle(peer);
@@ -164,15 +168,15 @@ test("two seats' turns ending at once tell whoever tried to land once, and put a
   await h.call(lead, "lead", "start_review", { task: "L1-T1", focus: "Is a right?" });
   const reviewer = h.ledger().tasks["L1-R1"]!.peer!;
   h.commitTo("main", "other.txt", "main moved\n");
-  assert.match((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).text, /a seat is mid-turn there/);
+  assert.match((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).text, /^Lane L1 lands once /);
   assert.deepEqual(h.ledger().lanes.L1!.landing?.writers.sort(), [lead, reviewer].sort());
   await endTogether(reviewer, "refresh", lead, (ended) => {
     assert.deepEqual(h.ledger().lanes.L1!.landing?.writers, ended ? undefined : [lead]);
-    assert.equal(landings(), ended ? 1 : 0);
   });
+  await h.runtime.desk.settled(h.project);
+  assert.equal(h.ledger().lanes.L1!.status, "closed");
   await h.idle(sup);
   assert.equal(landings(), 1);
-  assert.equal((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).ok, true);
 
   await h.call(sup, "supervisor", "open_lane", { title: "Again", ...scope });
   const again = h.ledger().lanes.L2!;

@@ -83,7 +83,7 @@ export class Patrol {
       this.resumed = true;
       await this.resume(seats);
     }
-    await this.deliver();
+    await this.deliver(seats, now);
   }
 
   /** A project's round in order, each step reading the ledger as the steps before it left it. */
@@ -116,8 +116,14 @@ export class Patrol {
     ];
   }
 
-  private async deliver(): Promise<void> {
+  /** Mail for seats gone is given up first, on the round's own listing; what is left goes where it can. */
+  private async deliver(seats: SeatMap, now: number): Promise<void> {
     const { outbox } = this.deps;
+    try {
+      await outbox.sweep(new Set(seats.keys()), now);
+    } catch (error) {
+      daemonLog.error("mail for seats that are gone could not be given up:", error);
+    }
     for (const to of new Set(outbox.letters().map((letter) => letter.to))) {
       try {
         await outbox.pump(to);

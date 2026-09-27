@@ -22,6 +22,7 @@ export const openLane = defineTool({
     detourOf: z.string().optional(),
     role: z.string().optional(),
     humanSaid: z.string().optional(),
+    audit: z.boolean().optional(),
   }),
   handle: (desk, caller, args) => open(desk, caller, args),
 });

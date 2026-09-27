@@ -95,16 +95,32 @@ async function tell(
     return ok(
       `Nobody supervising this project is seated, so the report reached no one. It is kept in ${project.state}/events.log for whoever comes back; there is nothing to wait for until someone does.`,
     );
-  // Its reviews only: the rest may name an incident, which never reaches the seat it could be about.
-  const reviews = ready ? reviewFacts(loadLedger(project.state), lane) : [];
-  const also =
-    reviews.length > 0 ? ` It also carries what the record has of the lane's reviews: ${reviews.join(" ")}` : "";
   const held = parked
     ? ` The lane is on hold: ${parked}; nothing starts in it and nothing lands until it resumes.`
     : "";
   return ok(
-    `Reported to ${to}${gate && !gate.ok ? ", with what the gate did in it" : ""}.${also}${held} Stay quiet until mail arrives.`,
+    `${ready ? reviewsFirst(project, lane) : ""}Reported to ${to}${gate && !gate.ok ? ", with what the gate did in it" : ""}.${held} Stay quiet until mail arrives.`,
   );
+}
+
+/**
+ * What the record has of the lane's reviews, first, as the evidence READY went with: reviews still reading, and what the
+ * rest leave standing. Its reviews only: the rest may name an incident, which never reaches the seat it could be about.
+ */
+function reviewsFirst(project: Project, lane: Lane): string {
+  const ledger = loadLedger(project.state);
+  const reading = tasksOf(ledger, lane.id)
+    .filter((task) => task.kind === "review" && task.status === "running")
+    .map((task) => task.id);
+  const facts = [
+    ...(reading.length > 0
+      ? [
+          `${reading.join(" and ")} ${plural(reading.length, "is", "are")} still reading: ${plural(reading.length, "its verdict comes", "their verdicts come")} to you after this report.`,
+        ]
+      : []),
+    ...reviewFacts(ledger, lane),
+  ];
+  return facts.length > 0 ? `What the record has of the lane's reviews went with it: ${facts.join(" ")} ` : "";
 }
 
 /**

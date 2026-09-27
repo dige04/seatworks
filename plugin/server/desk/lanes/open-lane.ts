@@ -43,6 +43,7 @@ type OpenLaneCall = {
   detourOf?: string;
   role?: string;
   humanSaid?: string;
+  audit?: boolean;
 };
 
 type Place = { base: string; onBranch: boolean; branch?: string };
@@ -259,6 +260,7 @@ function laneOf(
     onBranch: place.onBranch || undefined,
     writeSet: strs(args.writeSet),
     contracts: strs(args.contracts),
+    audit: args.audit === true || undefined,
     opener: caller.id,
     status: after ? "waiting" : "open",
     after,

@@ -4,7 +4,7 @@ import { coverOf, globToRegex, uncovered } from "../../core/scope.ts";
 import { capped, plural } from "../../core/text.ts";
 import type { Kit } from "../../catalog/kit/kit.ts";
 import { fileKinds, testMarkers, weakened } from "../../catalog/kit/ecosystem-patterns.ts";
-import { SETTLED } from "../../domain/task.ts";
+import { openWork } from "../../domain/task.ts";
 import { loadIncidents } from "../store/incidents.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Ledger, tasksOf } from "../../domain/ledger.ts";
@@ -25,11 +25,22 @@ type Reviewed = Task & { handback: NonNullable<Task["handback"]> };
 
 type Over = { task: string; review: string; outcome: string; again: boolean; since: boolean };
 
+/**
+ * Whether the lane had its own review, the review of the whole lane: none, one that read it before its last merge, or
+ * one that read it as it has stood since. A review reads the lane as it is when it starts.
+ */
+type Whole = { none: true } | { before: string } | { since: true };
+
+function wholeOf(reviews: Reviewed[], merged: Task[]): Whole {
+  const own = reviews.filter((review) => review.scope === "lane");
+  if (own.length === 0) return { none: true };
+  const mergedAt = (task: Task) => task.mergedAt ?? task.acceptedAt ?? 0;
+  const last = merged.toSorted((a, b) => mergedAt(a) - mergedAt(b)).at(-1);
+  return !last || own.some((review) => review.openedAt >= mergedAt(last)) ? { since: true } : { before: last.id };
+}
+
 /** A lane's reviews as the record has them, by when each came back rather than when it was asked for. */
-function reviewRecord(
-  ledger: Ledger,
-  lane: Lane,
-): { whole: boolean; latest?: Reviewed; after: string[]; over: Over[] } {
+function reviewRecord(ledger: Ledger, lane: Lane): { whole: Whole; latest?: Reviewed; after: string[]; over: Over[] } {
   const tasks = tasksOf(ledger, lane.id);
   const reviews = tasks
     .filter((task): task is Reviewed => task.kind === "review" && task.handback !== undefined)
@@ -59,7 +70,7 @@ function reviewRecord(
       },
     ];
   });
-  return { whole: reviews.some((review) => !review.of), latest, after, over };
+  return { whole: wholeOf(reviews, accepted), latest, after, over };
 }
 
 /**
@@ -68,7 +79,12 @@ function reviewRecord(
  */
 export function reviewFacts(ledger: Ledger, lane: Lane): string[] {
   const { whole, latest, after, over } = reviewRecord(ledger, lane);
-  const facts = whole ? [] : ["No review of the whole lane is on record."];
+  const facts =
+    "none" in whole
+      ? ["No review of the whole lane is on record."]
+      : "before" in whole
+        ? [`No review of the whole lane after its last merge, ${whole.before}.`]
+        : [];
   if (latest && latest.handback.outcome !== "accept") {
     const since =
       after.length > 0
@@ -137,11 +153,6 @@ export function askFirstHits(project: Project, change: Change): AskHit[] {
   });
 }
 
-/** Work closing a lane would lose: a code task not merged, or a review still reading; one that handed back is done. */
-export function unfinished(task: Task): boolean {
-  return !SETTLED.includes(task.status) && !(task.kind === "review" && task.status === "done");
-}
-
 /**
  * What a lane brings onto its base, read from git and the record rather than from anything a seat said: evidence for
  * whoever lands it and the Human, never a reason to hold it. `gate` is left out where its own verdict is given.
@@ -191,7 +202,7 @@ export async function landFacts(
 /** How far the lane has moved past the commit its latest review of the whole lane read: its verdict is on that commit. */
 async function reviewedFacts(root: string, ledger: Ledger, lane: Lane): Promise<string[]> {
   const review = tasksOf(ledger, lane.id)
-    .filter((task) => task.kind === "review" && !task.of && task.handback?.commit)
+    .filter((task) => task.scope === "lane" && task.handback?.commit)
     .sort((a, b) => a.handback!.at - b.handback!.at)
     .at(-1);
   const read = review?.handback?.commit;
@@ -249,7 +260,7 @@ function recordFacts(project: Project, ledger: Ledger, lane: Lane): string[] {
     ...tasks
       .filter((task) => task.status === "merged" && task.handback?.gate?.ok === false)
       .map((task) => `${task.id} was accepted over its red gate: ${task.handback!.gate!.note}.`),
-    ...tasks.filter(unfinished).map((task) => `${task.id} is ${task.status}: landing cuts it.`),
+    ...tasks.filter(openWork).map((task) => `${task.id} is ${task.status}: landing cuts it.`),
     ...open.map((incident) => `Incident ${incident.id} on this lane is still open: ${incident.kind}.`),
     ...tasks
       .filter((task) => task.kind === "review" && task.handback)

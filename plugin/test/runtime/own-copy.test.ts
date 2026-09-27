@@ -124,7 +124,7 @@ test("a lane works in the project's own copy from open to landing, and hands it 
   );
 });
 
-test("a lane whose base moved lands only once nobody writes in its copy: main is brought in there as one commit, CAN LAND tells whoever tried, and a project may land by merge", async () => {
+test("a lane whose base moved lands only once nobody writes in its copy: the desk lands it itself when their turn ends, main brought in there as one commit, and a project may land by merge", async () => {
   const h = harness();
   const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
   const land = (lane: string) => h.call(sup, "supervisor", "land_lane", { lane });
@@ -139,24 +139,27 @@ test("a lane whose base moved lands only once nobody writes in its copy: main is
   assert.match(h.heard(sup).join("\n"), /REPORT L1 \(Numbers\)[^]*- 1 commit; 1 file, 1 line changed\./);
 
   const head = h.git(h.root, "rev-parse", "HEAD");
-  const refused = await land("L1");
-  assert.equal(refused.ok, false, refused.text);
-  assert.match(refused.text, /a seat is mid-turn there/);
+  const ordered = await land("L1");
+  assert.equal(ordered.ok, true, `a turn in the way is no failure to call again over: ${ordered.text}`);
+  assert.match(ordered.text, new RegExp(`^Lane L1 lands once ${lane.lead!}'s turn ends:`));
   assert.equal(h.git(h.root, "rev-parse", "HEAD"), head);
   assert.doesNotMatch(h.git(h.root, "show", "main:a.txt"), /four/);
   assert.equal(h.ledger().lanes.L1!.status, "open");
-  assert.doesNotMatch(h.heard(sup).join("\n"), /CAN LAND/);
-  h.agents.get(lane.lead!)!.status = "idle";
-  await h.endTurn(lane.lead!, "reported");
-  assert.match(h.heard(sup).join("\n"), /CAN LAND L1/);
   // A project's own hooks, as husky or commitlint install them, judge its people's commits, not the desk's merges.
   const hooks = join(h.git(h.root, "rev-parse", "--absolute-git-dir").trim(), "hooks");
   for (const hook of ["pre-merge-commit", "commit-msg"])
     writeFileSync(join(hooks, hook), "#!/bin/sh\necho refused by the project >&2\nexit 1\n", { mode: 0o755 });
-  const landed = await land("L1");
+  await h.idle(sup);
+  h.agents.get(lane.lead!)!.status = "idle";
+  await h.endTurn(lane.lead!, "reported");
+  await h.runtime.desk.settled(h.project);
   for (const hook of ["pre-merge-commit", "commit-msg"]) rmSync(join(hooks, hook));
-  assert.equal(landed.ok, true, landed.text);
-  assert.match(landed.text, /Gate: none set, so nothing ran the lane's checks\./);
+  assert.equal(h.ledger().lanes.L1!.status, "closed");
+  assert.match(
+    h.agents.get(sup)!.sent.join("\n"),
+    /LANDED L1 \(Numbers\): Lane L1 closed; [^]*Gate: none set, so nothing ran the lane's checks\./,
+    "whoever ordered it hears at once, since it acts on what landed",
+  );
   assert.match(h.git(h.root, "show", "main:a.txt"), /four/);
   assert.equal(h.git(h.root, "rev-parse", "main^").trim(), moved);
   assert.equal(
@@ -176,6 +179,56 @@ test("a lane whose base moved lands only once nobody writes in its copy: main is
   h.agents.get(more.lead!)!.status = "idle";
   assert.match((await land("L2")).text, /merged lane\/l2-more into main/);
   assert.deepEqual(h.git(h.root, "log", "-1", "--format=%P", "main").trim().split(" "), [before, tip]);
+});
+
+test("a landing ordered while a turn was in the way is not carried out on a lane that changed since, and whoever ordered it hears what changed", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  await h.call(sup, "supervisor", "open_lane", { title: "Numbers", outcome: "a.txt gains words", ...scope });
+  const lane = h.ledger().lanes.L1!;
+  h.commit(h.root, "a.txt", "one\ntwo\nthree\nfour\n");
+  h.commitTo("main", "other.txt", "main moved\n");
+  await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  assert.equal((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).ok, true);
+  // Its Lead's turn goes on after the order, and a Peer's work reaches the lane meanwhile.
+  h.commit(h.root, "a.txt", "one\ntwo\nthree\nfour\nfive\n");
+  await h.idle(sup);
+  h.agents.get(lane.lead!)!.status = "idle";
+  await h.endTurn(lane.lead!, "went on");
+  await h.runtime.desk.settled(h.project);
+  assert.equal(h.ledger().lanes.L1!.status, "open");
+  assert.doesNotMatch(h.git(h.root, "show", "main:a.txt"), /four/);
+  assert.equal(h.ledger().lanes.L1!.landing, undefined, "an order is carried out or called off once");
+  assert.match(
+    h.agents.get(sup)!.sent.join("\n"),
+    /NOT LANDED L1 \(Numbers\): the turn in its way ended, but its branch moved since your land_lane, so the desk did not land it\.\n\nNext: land_lane it again to land it as it is now, or drop_lane it\./,
+  );
+});
+
+test("a review already reading when a landing was ordered is new evidence once it comes back, so the landing waits for the Supervisor's word again", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  await h.call(sup, "supervisor", "open_lane", { title: "Numbers", outcome: "a.txt gains words", ...scope });
+  const lane = h.ledger().lanes.L1!;
+  h.commit(h.root, "a.txt", "one\ntwo\nthree\nfour\n");
+  await h.call(lane.lead!, "lead", "start_review", { focus: "Does the whole lane hold?" });
+  const reviewer = h.ledger().tasks["L1-R1"]!.peer!;
+  h.commitTo("main", "other.txt", "main moved\n");
+  await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  assert.match((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).text, /^Lane L1 lands once /);
+  await new Promise((resolve) => setTimeout(resolve, 2));
+  assert.equal((await h.call(reviewer, "reviewer", "done", { verdict: "changes", answer: "four is wrong" })).ok, true);
+  await h.idle(sup);
+  for (const id of [reviewer, lane.lead!]) {
+    h.agents.get(id)!.status = "idle";
+    await h.endTurn(id, "done");
+  }
+  await h.runtime.desk.settled(h.project);
+  assert.equal(h.ledger().lanes.L1!.status, "open");
+  assert.match(
+    h.agents.get(sup)!.sent.join("\n"),
+    /NOT LANDED L1 \(Numbers\): the turn in its way ended, but L1-R1 came back, ending in changes since your land_lane/,
+  );
 });
 
 test("a lane carrying on the Human's branch is refused where there is none, started as a new branch that takes their work along, drawn without a base, and landed where it is", async () => {

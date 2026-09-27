@@ -3,7 +3,7 @@ import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { tempDir } from "../tempdir.ts";
-import { laneWithPeer } from "./harness.ts";
+import { harness, laneWithPeer } from "./harness.ts";
 
 /** Whether `check` comes true within `ms`, looked at every 20 ms. */
 async function within(ms: number, check: () => boolean): Promise<boolean> {
@@ -100,4 +100,35 @@ test("a READY is what the lane's copy holds with nobody writing there, and whate
   assert.equal(answer.ok, false, answer.text);
   assert.match(answer.text, /amended while its gate ran/);
   assert.equal(ready(), undefined);
+});
+
+test("a review started on a lane reported ready takes the READY back and calls off its ordered landing, and whoever supervises hears both", async () => {
+  const h = harness();
+  const sup = h.add("sw2-supervisor-claude/claude-opus-5", h.root, "sup");
+  const scope = { acceptance: ["a"], outOfScope: ["anything else"] };
+  await h.call(sup, "supervisor", "open_lane", { title: "Numbers", outcome: "a.txt gains words", ...scope });
+  const lane = h.ledger().lanes.L1!;
+  h.commit(h.root, "a.txt", "one\ntwo\nthree\nfour\n");
+  h.commitTo("main", "other.txt", "main moved\n");
+  await h.call(lane.lead!, "lead", "report", { summary: "done", ready: true });
+  assert.match((await h.call(sup, "supervisor", "land_lane", { lane: "L1" })).text, /^Lane L1 lands once /);
+  await h.idle(sup);
+
+  const started = await h.call(lane.lead!, "lead", "start_review", { focus: "Does the whole lane hold?" });
+  assert.equal(started.ok, true, started.text);
+  assert.deepEqual([h.ledger().lanes.L1!.ready, h.ledger().lanes.L1!.landing], [undefined, undefined]);
+  assert.match(
+    h.agents.get(sup)!.sent.join("\n"),
+    /NOT LANDED L1 \(Numbers\): L1-R1 started reading it since your land_lane, so the desk will not land it\./,
+  );
+  assert.match(
+    h.agents.get(sup)!.sent.join("\n"),
+    /READY WITHDRAWN L1 \(Numbers\): its Lead started L1-R1 after reporting it ready/,
+    "riding with the word that asks",
+  );
+
+  h.agents.get(lane.lead!)!.status = "idle";
+  await h.endTurn(lane.lead!, "reviewing");
+  await h.runtime.desk.settled(h.project);
+  assert.equal(h.ledger().lanes.L1!.status, "open", "nothing lands on a READY taken back");
 });

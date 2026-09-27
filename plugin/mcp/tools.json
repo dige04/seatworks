@@ -96,6 +96,10 @@
           "humanSaid": {
             "type": "string",
             "description": "The Human's words from this chat the lane comes from, whole or twenty characters of a message; its Lead reads them as theirs."
+          },
+          "audit": {
+            "type": "boolean",
+            "description": "True for the lane that audits what lands on its base before it goes out: its Lead hears of each landing there."
           }
         },
         "required": [
@@ -941,7 +945,7 @@
     {
       "name": "start_review",
       "title": "Start a review",
-      "description": "Start a reviewer with clean context in a copy of its own at the commit it reads, which goes when you cut it. With task: it reviews that task's commits. Without task: it answers the open question on your lane branch, which is how a council seat, a scout or an audit reader starts.",
+      "description": "Start a reviewer with clean context in a copy of its own at the commit it reads; it goes when you cut it. With task: that task's commits. With scope lane: the review of the whole lane against its acceptance. With neither: your open question on the lane branch, as a council seat, scout or audit reader asks.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -954,6 +958,13 @@
           "task": {
             "type": "string",
             "description": "Optional task id (L1-T2) whose branch is reviewed."
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "lane"
+            ],
+            "description": "lane: the review of the whole lane before READY, against its acceptance. Left out: a scout's, council seat's or audit reader's question."
           },
           "focus": {
             "type": "string",

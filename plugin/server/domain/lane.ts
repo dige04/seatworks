@@ -20,6 +20,21 @@ export const LANE = new Lifecycle<LaneStatus, LaneMove>(MOVES);
  */
 type Restoring = { writers: string[]; base: string; branch: string; into?: string };
 
+/**
+ * A land_lane that met seats mid-turn in the lane's copy, carried out by the desk once their turns end: for `by`, over
+ * the gate as it asked, and only on the lane as it stood when asked, at `tip` with the READY and amendments it had.
+ */
+export type LandOrder = {
+  by: string;
+  writers: string[];
+  at: number;
+  tip: string;
+  ready?: number;
+  amended: number;
+  overGate: boolean;
+  reason: string;
+};
+
 export type Lane = {
   id: string;
   title: string;
@@ -39,6 +54,8 @@ export type Lane = {
   slot?: string;
   writeSet: string[];
   contracts: string[];
+  /** The lane that audits what lands on its base before it goes out: its Lead hears of each landing there. */
+  audit?: true;
   lead?: string;
   workspaceId?: string;
   opener: string;
@@ -63,7 +80,7 @@ export type Lane = {
   closedAt?: number;
   amended?: Amendment[];
   restoring?: Restoring;
-  landing?: { by: string; writers: string[] };
+  landing?: LandOrder;
   openedAt: number;
   tasks: number;
   reviews?: number;

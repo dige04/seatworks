@@ -44,6 +44,11 @@ export const HOLDS_COPY: readonly TaskStatus[] = [
 ];
 export const ACTIVE: readonly TaskStatus[] = ["running", "rework", "queued", "merging"];
 
+/** Work a task still stands for: a code task not merged or cut, or a review still reading; one that handed back is done. */
+export function openWork(task: Task): boolean {
+  return !SETTLED.includes(task.status) && !(task.kind === "review" && task.status === "done");
+}
+
 /** How a review marks a finding an earlier review of the same work made. */
 export type Mark = "resolved" | "open" | "wrong";
 
@@ -67,6 +72,8 @@ export type Task = {
   id: string;
   lane: string;
   kind: "code" | "review";
+  /** A review of the whole lane, against its acceptance, as its Lead asked for before READY; not a scout's or a council's. */
+  scope?: "lane";
   mode: "lane" | "parallel";
   of?: string;
   asked?: string[];
@@ -84,6 +91,7 @@ export type Task = {
   slot?: string;
   startSha?: string;
   mergeSha?: string;
+  mergedAt?: number;
   status: TaskStatus;
   openedAt: number;
   updatedAt: number;
