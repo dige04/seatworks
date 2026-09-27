@@ -51,11 +51,12 @@ async function watched() {
   const { h, sup, lane, peer, timeline } = await laneWithPeer();
   judgedBy("seat");
   let turns = 0;
-  const thinks = (thought: string, stream = timeline) => {
+  const thinks = (thought: string, stream = timeline, ...calls: Record<string, unknown>[]) => {
     const id = `t${++turns}`;
     stream.beat("turn_started", id);
     stream.add({ type: "user_message", text: "Go on.", clientMessageId: `sw2-message-${id}` }, id);
     stream.add({ type: "reasoning", text: thought }, id);
+    for (const call of calls) stream.add(call, id);
     stream.beat("turn_completed", id);
   };
   const judge = (by: string, text: string, says: string, why = "Nothing shows it.") =>
@@ -177,9 +178,17 @@ test("cases at once seat one Watcher, and a case is given up only when nobody ca
   assert.match(String(kept(h.project.state)[0]!.unasked), /no Supervisor is seated/);
 
   h.agents.get(sup)!.archivedAt = null;
-  // The Peer's turn and its Lead's end together: three cases, the Lead's look and the brief it laid out, for one Watcher.
+  // The Peer's turn and its Lead's end together, each with a fact the code raised: three cases, the Lead's look and the
+  // brief it laid out beside the Peer's, for one Watcher.
   thinks("Half of it is done.");
-  thinks("The Peer is halfway there.", h.timelineOf(lane.lead!));
+  const write = { type: "write", filePath: "src/cart.js", content: "x" };
+  thinks("The Peer is halfway there.", h.timelineOf(lane.lead!), {
+    type: "tool_call",
+    callId: "w",
+    name: "Write",
+    status: "completed",
+    detail: write,
+  });
   const cases = () => {
     const [watcher] = watchersOf(h);
     if (!watcher) return 0;

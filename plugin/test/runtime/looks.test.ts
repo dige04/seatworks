@@ -226,10 +226,9 @@ test("a review briefed to report only certainties is judged at start_review agai
     judged.state.items,
     [
       "[thought] The drain change may race under concurrent requests (l2).",
-      "[said] Starting review l2.",
       "[call] focus: Second round. Report only what you are sure of.",
     ],
-    "the words since its last decision, beside the call",
+    "the words the sensor flagged since its last decision, beside the call",
   );
   assert.equal(judged.state.call, "start_review");
   const certain = Object.values(book(h)).filter((item) => item.kind === "certainty-only");
@@ -281,7 +280,6 @@ test("a decision about how the system is built is judged at the Lead's report, t
   assert.equal(judged.state.call, "report");
   assert.deepEqual(judged.state.items, [
     "[thought] Refunds go in an array on the order.",
-    "[said] Reported.",
     "[call] summary: Refunds work.\nready: false",
   ]);
 });
@@ -471,4 +469,45 @@ test("a report is asked against the few lines of the concept and its directive i
   const found = Object.values(book(h)).filter((item) => item.kind === "contradicts");
   assert.equal(found.length, 1);
   assert.match(found[0]!.facts.join(), /against: Every stored price amount is whole cents\./);
+});
+
+test("the seat judges only what a first stage flagged: the items the sensor flagged, or a look the code raised a fact in", async (t) => {
+  const sensed = brain({ "stand-in": 0.95 }, {}, /stub/);
+  const seat = brain({});
+  const { h, lane, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  brains("both");
+  t.mock.method(h.runtime.desk.watcher, "judge", () => seat.judge);
+  const looked = looksOf(h, t);
+  timeline.beat("turn_started", "t1");
+  timeline.add({ type: "reasoning", text: "Reading the cart module first." }, "t1");
+  timeline.add({ type: "assistant_message", text: "I'll build a stub for the parser.", messageId: "m1" }, "t1");
+  timeline.beat("turn_completed", "t1");
+  await looked();
+  assert.deepEqual(
+    seat.asked.map((entry) => [Object.keys(entry.questions), entry.state.items]),
+    [[["stand-in"], ["[said] I'll build a stub for the parser."]]],
+    "the flagged item alone, not the whole look",
+  );
+
+  // With no sensor, the code's facts are the first stage.
+  h.machineSettings({ attention: { brain: "seat" } });
+  const stream = h.timelineOf(lane.lead!);
+  const lead = (id: string, ...items: Record<string, unknown>[]) => {
+    stream.beat("turn_started", id);
+    stream.add({ type: "user_message", text: "Go on.", clientMessageId: `sw2-message-${id}` }, id);
+    for (const item of items) stream.add(item, id);
+    stream.beat("turn_completed", id);
+  };
+  const before = seat.asked.length;
+  lead("l1", { type: "reasoning", text: "Refunds go in an array on the order." });
+  await looked();
+  assert.equal(seat.asked.length, before, "a look the code raised nothing in is not judged");
+  const write = { type: "write", filePath: "src/cart.js", content: "x" };
+  lead(
+    "l2",
+    { type: "reasoning", text: "I will write the cart myself." },
+    { type: "tool_call", callId: "w", name: "Write", status: "completed", detail: write },
+  );
+  await looked();
+  assert.equal(seat.asked.length, before + 1, "one the code raised a fact in is");
 });

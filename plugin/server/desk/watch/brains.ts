@@ -4,7 +4,7 @@ import { recordPatterns } from "../../catalog/kit/ecosystem-patterns.ts";
 import { can, seatOf } from "../../catalog/kit/roles.ts";
 import type { Judge, Judgement, Question } from "../../core/ports.ts";
 import { clip } from "../../core/text.ts";
-import type { Finding } from "../../domain/incident.ts";
+import { type Finding, factTitle } from "../../domain/incident.ts";
 import type { Lane } from "../../domain/lane.ts";
 import { type Project, conceptFile } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
@@ -42,7 +42,8 @@ type Case = { episode: string; items: Item[]; patterns: Pattern[]; fields: Recor
  * The brains read a seat's words against the patterns that watch it: the words of each look against the patterns judged
  * in looks, and each decision it made through the desk, the call with the words that led to it, against the patterns
  * judged at that call. The sensor asks each item its patterns' one-condition questions; the seat judges the whole case.
- * In `both` the seat hears only what the sensor flagged or left unsure. What they find goes
+ * In `both` the seat hears only the items the sensor flagged or left unsure; with no sensor, only a look the code raised
+ * a fact in. What they find goes
  * to the incident book, which tells whoever supervises; every answer is kept for labels.
  */
 export async function readLook(services: Services, project: Project, seat: Noticed, look: Look): Promise<void> {
@@ -121,19 +122,23 @@ async function judgeCase(
   const sensor = brains.sensor?.key ? services.sensorFor(brains.sensor.sensor, brains.sensor.key) : undefined;
   const about = { subject, episode: one.episode };
   const sifted =
-    sensor && brains.sensor
+    sensor && brains.sensor && brains.mode !== "seat"
       ? await sift(project, about, brains.sensor, sensor, one.items, one.patterns, asked, attention.quoteChars)
       : undefined;
   if (brains.mode === "sensor") return sifted?.found ?? [];
   if (!brains.seat) return [];
-  const judged =
-    sifted && brains.mode === "both" ? one.patterns.filter(([id]) => sifted.flagged.has(id)) : one.patterns;
+  // Two stages: the seat judges only what a first stage flagged, the sensor's flags or, with no sensor, a look the code
+  // raised a fact in; the call a decision is judged at always goes with what was flagged in it.
+  const raised = one.facts.some((kind) => factTitle(kind) !== undefined);
+  const judged = sifted ? one.patterns.filter(([id]) => sifted.flagged.has(id)) : raised ? one.patterns : [];
   if (judged.length === 0) return [];
+  const flagged = sifted ? new Set(judged.flatMap(([id]) => sifted.flagged.get(id)!)) : undefined;
+  const items = one.items.filter((item) => !flagged || item.kind === "call" || flagged.has(item));
   const state = {
     seat: place.where,
     ...asked,
     ...one.fields,
-    items: one.items.map((item) => `[${item.kind}] ${item.text}`),
+    items: items.map((item) => `[${item.kind}] ${item.text}`),
     ...(one.facts.length > 0 ? { facts: one.facts } : {}),
   };
   const judge = services.watcher.judge(project, brains.seat, { seat, ...about });
@@ -235,7 +240,7 @@ async function sift(
   patterns: Pattern[],
   asked: Record<string, unknown>,
   quote: number,
-): Promise<{ found: Finding[]; flagged: Set<string> }> {
+): Promise<{ found: Finding[]; flagged: Map<string, Item[]> }> {
   const read: { id: string; item: Item; verdict: "yes" | "no" | "unclear"; likely: number }[] = [];
   for (const item of items) {
     const mine = patterns.filter(([, pattern]) => pattern.reads.includes(item.kind));
@@ -250,13 +255,14 @@ async function sift(
     }
   }
   const found: Finding[] = [];
-  const flagged = new Set<string>();
+  const flagged = new Map<string, Item[]>();
   for (const [id, pattern, rule] of patterns) {
     const mine = read.filter((entry) => entry.id === id);
     const against = pattern.missingFrom && mine.find((entry) => entry.item.kind === pattern.missingFrom);
     const words = against ? mine.filter((entry) => entry !== against) : mine;
     if (against?.verdict === "yes") continue;
-    if (words.some((entry) => entry.verdict !== "no")) flagged.add(id);
+    const unsure = words.filter((entry) => entry.verdict !== "no").map((entry) => entry.item);
+    if (unsure.length > 0) flagged.set(id, unsure);
     if (pattern.level === "note" || (against && against.verdict !== "no")) continue;
     for (const { item, verdict, likely } of words)
       if (verdict === "yes")
