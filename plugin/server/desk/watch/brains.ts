@@ -47,17 +47,14 @@ export async function readLook(
     text: clip(item.text, cut.item),
   }));
   if (items.length === 0) return;
-  const signs = new Set([
-    ...look.facts,
-    ...(place.task?.reworks ? ["reworked"] : []),
-    ...(place.task?.handback ? ["handed-back"] : []),
-  ]);
+  const signs = signsOf(look, place);
   const read = new Set(items.map((item) => item.kind));
   const patterns = Object.entries(kit.patterns).filter(
     ([, pattern]) =>
       pattern.watches.some((capability) => can(role, capability)) &&
       pattern.reads.some((kind) => read.has(kind)) &&
-      (!pattern.gate || pattern.gate.some((sign) => signs.has(sign))),
+      (!pattern.gate || pattern.gate.some((sign) => signs.has(sign))) &&
+      !pattern.except?.some((sign) => signs.has(sign)),
   );
   if (patterns.length === 0) return;
   const asked = askedOf(place);
@@ -80,6 +77,20 @@ export async function readLook(
     }
   }
   if (findings.length > 0) await notice(services, project, seat, findings, place);
+}
+
+/**
+ * What the look knows of the seat's work besides its words. A task is `reworking` while sent back, and in the look that
+ * reads the hand-back answering it, since a Peer hands back just before its turn ends.
+ */
+function signsOf(look: Look, { task }: Placed): Set<string> {
+  const answering = task?.handback && task.handback.reworks > 0 && task.handback.at >= look.since;
+  return new Set([
+    ...look.facts,
+    ...(task?.reworks ? ["reworked"] : []),
+    ...(task?.status === "rework" || answering ? ["reworking"] : []),
+    ...(task?.handback ? ["handed-back"] : []),
+  ]);
 }
 
 /** What the seat's work asks of it, which a judgement that leaves it out gets wrong, and what it last handed back. */

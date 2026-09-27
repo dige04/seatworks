@@ -66,8 +66,15 @@ export const ChecksFile = z.record(
 );
 
 /**
+ * What the brains know of a seat's work besides its words: a fact the code raised in the look (`stuck`, `edit-before-look`),
+ * its task sent back before (`reworked`) or answering a sending-back in this look (`reworking`), and a hand-back on record.
+ */
+const Sign = z.enum(["stuck", "reworked", "reworking", "handed-back", "edit-before-look"]);
+
+/**
  * What the brains read a seat's own words for: whom it watches, what it reads, the sensor's one-condition question on an
- * item's `text` (none when only the seat can judge) and the seat's on the whole look, the signs a yes needs, and its level.
+ * item's `text` (none when only the seat can judge) and the seat's on the whole look, the signs a yes needs (`gate`) and
+ * those that keep it from being asked (`except`), and its level.
  */
 const Pattern = z
   .strictObject({
@@ -78,7 +85,8 @@ const Pattern = z
     instructions: text.includes("`text`").optional(),
     seat: text,
     criteria: z.strictObject({ true: text, false: text }),
-    gate: z.array(z.enum(["stuck", "reworked", "handed-back", "edit-before-look"])).optional(),
+    gate: z.array(Sign).optional(),
+    except: z.array(Sign).optional(),
     level: z.enum(["attend", "note"]).optional(),
     next: text.optional(),
     yes: unit,

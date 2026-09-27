@@ -276,3 +276,26 @@ test("a seat whose looks carry words but never thinking is recorded once, so wha
     "three looks with words and no thinking, told once",
   );
 });
+
+test("a pattern a sign excepts is not asked: a Peer conceding a fault in the round that answers its rework", async (t) => {
+  const sensed = brain({});
+  const { h, lane, peer, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  brains("sensor");
+  const looked = looksOf(h, t);
+  const turn = async (id: string, thought: string, handBack?: boolean) => {
+    timeline.beat("turn_started", id);
+    timeline.add({ type: "user_message", text: "Go on.", clientMessageId: `sw2-message-${id}` }, id);
+    timeline.add({ type: "reasoning", text: thought }, id);
+    if (handBack) await h.call(peer, "peer", "done", { outcome: "complete", summary: "Totals fixed." });
+    timeline.beat("turn_completed", id);
+    await looked();
+  };
+  const asked = () =>
+    sensed.asked.filter((entry) => "admits-wrong" in entry.questions).map((entry) => entry.state.text);
+  await turn("t1", "My earlier total was wrong: it skipped refunds.", true);
+  assert.deepEqual(asked(), ["My earlier total was wrong: it skipped refunds."], "handed back, it is asked");
+  await h.call(lane.lead!, "lead", "rework", { task: "L1-T1", text: "Refunds are still counted twice." });
+  await turn("t2", "The rework is right: my refund sum was wrong.");
+  await turn("t3", "Fixed the double count my last hand-back had.", true);
+  assert.equal(asked().length, 1, "while sent back, and in the look that reads its hand-back of that round, it is not");
+});
