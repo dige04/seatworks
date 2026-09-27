@@ -4,7 +4,6 @@ import { type Fact, fact } from "../../domain/incident.ts";
 import { type Rules, str } from "./facts.ts";
 import type { Call } from "./window.ts";
 
-const SCRATCH = /^(?:\$\{?TMPDIR\}?|\/tmp|\/private\/tmp)(?:\/|$)/;
 const MKTEMP = /\b([A-Za-z_]\w*)=["']?(?:\$\(\s*mktemp\b[^)]*\)|`\s*mktemp\b[^`]*`)/g;
 const VARIABLE = /^\$\{?([A-Za-z_]\w*)\}?(?:\/|$)/;
 const DIRNAME = /^\$\(\s*dirname\s+([^)]*)\)$/;
@@ -51,7 +50,11 @@ function shellWords(line: string): string[] {
   return words;
 }
 
-const targetsOf = (words: string[]) => words.slice(1).filter((word) => !word.startsWith("-"));
+/** What removes files, as each shell names it; cmd's flags start with a slash. */
+const REMOVES = new Set(["rm", "remove-item", "rmdir", "rd"]);
+
+const targetsOf = (words: string[]) =>
+  words.slice(1).filter((word) => !word.startsWith("-") && !/^\/[a-z]$/i.test(word));
 
 function madeBy(parts: string[]): { variables: Set<string>; paths: string[] } {
   const variables = new Set([...parts.join("\n").matchAll(MKTEMP)].map((match) => match[1]!));
@@ -70,14 +73,14 @@ const inside = (path: string) => !/^(?:[/\\~$%`]|[A-Za-z]:)/.test(path) && !CLIM
 /** Git's own folder, which a copy the desk made needs to stay one. */
 const GIT = /^(?:\.\/)?\.git(?:[/\\]|$)/;
 
-/** Whether a path is scratch space: $TMPDIR, /tmp, the machine's temporary directory, or what the same command made. */
-function scratchIn(made: ReturnType<typeof madeBy>, temp?: string) {
+/** Whether a path is scratch space: what the catalog names so, the machine's temporary directory, or what the same command made. */
+function scratchIn(made: ReturnType<typeof madeBy>, { scratch: named, temp }: Rules) {
   const scratch = (target: string): boolean => {
     if (CLIMBS.test(target)) return false;
     const folder = DIRNAME.exec(target)?.[1];
     if (folder !== undefined) return shellWords(folder).length === 1 && scratch(shellWords(folder)[0]!);
     return (
-      SCRATCH.test(target) ||
+      named.test(target) ||
       Boolean(temp && isAbsolute(target) && !relative(temp, target).startsWith("..")) ||
       made.variables.has(VARIABLE.exec(target)?.[1] ?? "") ||
       made.paths.some((path) => target === path || target.startsWith(`${path.replace(/\/$/, "")}/`))
@@ -91,7 +94,7 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
   // A command at a time: removing a commit message's temp file once paged a Lead.
   const pieces = str(call.detail.command).split(/(&&|\|\||;|\n)/);
   const parts = pieces.filter((_, index) => index % 2 === 0);
-  const scratch = scratchIn(madeBy(parts), rules.temp);
+  const scratch = scratchIn(madeBy(parts), rules);
   let at: At = "start";
   for (const [index, part] of parts.entries()) {
     const words = shellWords(part);
@@ -105,7 +108,7 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
     const targets = targetsOf(words);
     // In a copy the desk made for this seat alone, what it removes there is its own; throwing work away with git still pages.
     const removesOwn =
-      words[0] === "rm" &&
+      REMOVES.has(words[0]?.toLowerCase() ?? "") &&
       targets.length > 0 &&
       targets.every(
         (target) =>

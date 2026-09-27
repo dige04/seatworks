@@ -23,6 +23,7 @@ export function weakened(before: string, after: string, markers: TestMarkers): s
 export function watchPatterns(kit: Kit, attention: Attention) {
   return {
     destructive: new RegExp(attention.destructive, "i"),
+    scratch: new RegExp(attention.scratch),
     testPath: new RegExp(attention.testPath, "i"),
     suppressed: new RegExp(attention.suppressed, "i"),
     checkerPath: new RegExp(attention.checkerPath, "i"),

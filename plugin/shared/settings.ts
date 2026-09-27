@@ -60,6 +60,8 @@ export const AttentionChoice = z.strictObject({
   /** With the Human out of the loop, how long a Lead's ask waits on whoever supervises before it goes back to the Lead. */
   askLapseMinutes: z.number().int().min(1).optional(),
   destructive: Pattern.optional(),
+  /** Where removing is scratch clean-up rather than a page: a path it matches, read case by case as it is written. */
+  scratch: Pattern.optional(),
   testPath: Pattern.optional(),
   repeatsAt: z.number().int().min(2).optional(),
   /** Steps after a failed command with neither it nor the gate passing, before the watch calls it no recovery. */

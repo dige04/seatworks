@@ -12,6 +12,7 @@ import type { Call, Unit } from "./window.ts";
  */
 export type Rules = {
   destructive: RegExp;
+  scratch: RegExp;
   testPath: RegExp;
   suppressed: RegExp;
   checkerPath: RegExp;

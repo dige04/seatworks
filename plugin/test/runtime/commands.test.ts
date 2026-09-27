@@ -141,3 +141,17 @@ test("in a seat's own desk-made copy, removing relative paths is not a page, whi
     );
   }
 });
+
+test("Windows removals are read as the shell's own, and what counts as scratch is the catalog's", () => {
+  for (const command of ["Remove-Item -Recurse -Force src", "rmdir /s /q build", "rd /S build"])
+    assert.equal(paged(command).length, 1, command);
+  for (const command of ["Remove-Item a.txt", "rmdir build", "rd empty"]) assert.deepEqual(paged(command), [], command);
+  assert.deepEqual(paged(`Remove-Item -Recurse -Force "$env:TEMP\\probe"`), []);
+  assert.deepEqual(paged("rmdir /s /q %TEMP%\\probe && rd /s %TEMP%\\other"), []);
+  assert.deepEqual(
+    paged("rm -rf /scratch/run", rules({ scratch: /^\/scratch\// })),
+    [],
+    "a settings layer names its own",
+  );
+  assert.equal(paged("rm -rf /tmp/run", rules({ scratch: /^\/scratch\// })).length, 1);
+});
