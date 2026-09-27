@@ -332,6 +332,31 @@ test("a newer look at the same seat and subject folds into its case still queued
   assert.equal(h.events("watch.superseded").length, 1, "a case its Watcher already has is not folded into");
 });
 
+test("a newer look folds into the case still queued even while its Watcher reads an older one of the same seat and subject", async () => {
+  const { h, peer, thinks } = await watched();
+  thinks("The parser is missing, so I'll build a stub for it.");
+  await until(() => watchersOf(h).length === 1, "a Watcher is seated for the case");
+  const [watcher] = watchersOf(h);
+  const reading = caseIn(watcher!.prompt!);
+  const held = () => h.runtime.outbox.pending(watcher!.id);
+
+  // It has the first case and has not answered it; the next waits behind its turn.
+  watcher!.status = "running";
+  thinks("A placeholder will do for the refund path.");
+  await until(() => held().length === 1, "the next case waits in the outbox");
+  const queued = caseIn(held()[0]!.text);
+  thinks("And a stub for the tax table.");
+  await until(() => h.events("watch.superseded").length === 1, "the newest folds into the one queued");
+  assert.equal(held().length, 1, "one case waits, not two");
+  const folded = caseIn(held()[0]!.text);
+  assert.deepEqual(
+    h.events("watch.superseded").map((event) => [event.agent, event.case, event.into]),
+    [[peer, queued, folded]],
+    "the queued case is folded, never the one its Watcher is reading",
+  );
+  assert.notEqual(folded, reading);
+});
+
 test("a case still waiting when the plugin restarts is answered all the same, and found as its look would have", async () => {
   const { h, peer, thinks, judge } = await watched();
   thinks("The parser is missing, so I'll build a stub for it.");
