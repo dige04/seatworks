@@ -206,3 +206,38 @@ test("seat text names only logs the desk keeps, and every notebook section it se
       );
   }
 });
+
+test("the severities the Lead and the reviewers name are the review tool's own, and what a Peer or reviewer reads never sends it to the concept file its copy lacks", () => {
+  const done = tools.reviewer!.find((tool) => tool.name === "done")!;
+  const severity = (done.inputSchema?.properties?.findings?.items?.properties?.severity ?? {}) as Schema & {
+    enum?: string[];
+  };
+  const levels = new Set(severity.enum ?? []);
+  assert.ok(levels.size > 0, "the review tool rates findings");
+  for (const role of kit.roles.filter((entry) => entry.role === "lead" || entry.prompt === "prompts/REVIEWER.md")) {
+    const text = readFileSync(join(PLUGIN, "content", role.prompt), "utf-8");
+    const named = new Set([...text.matchAll(/\bP\d\b/g)].map(([level]) => level));
+    assert.deepEqual(
+      [...named].filter((level) => !levels.has(level)),
+      [],
+      `${role.role}: a severity the review tool does not take is one no finding can carry`,
+    );
+    assert.deepEqual(
+      [...levels].filter((level) => !named.has(level)),
+      [],
+      `${role.role}: every severity a finding can carry says what it means for the lane`,
+    );
+  }
+  for (const role of kit.roles.filter((entry) => entry.hidesWords?.includes("supervisor"))) {
+    const texts = [
+      [role.prompt, readFileSync(join(PLUGIN, "content", role.prompt), "utf-8")],
+      ...[...skillSources(kit, role).values()].map((dir) => [dir, readFileSync(join(dir, "SKILL.md"), "utf-8")]),
+    ] as const;
+    for (const [where, text] of texts)
+      assert.doesNotMatch(
+        text,
+        /CONTEXT\.md/,
+        `${where} names the concept file, which is not in the ${role.role}'s copy: it reads the concept as its brief quotes it`,
+      );
+  }
+});

@@ -25,6 +25,15 @@ is its call, not yours.
   where, the failure (which input or timing, for whom), the smallest durable fix, and how you confirmed it: reproduced
   by running something, or traced by reading only, so your Lead knows which to lean on. Your Lead filters; you do
   not, and a defect you found but held back as minor is one nobody fixes.
+- Rate severity by what a user or caller meets, not by how sure you are: P0 breaks the goal, data or security as the
+  change stands; P1 fails for inputs real callers send; P2 fails at an edge a caller can reach through what ships; P3
+  needs a caller neither the code nor the brief has, or is minor. Losing or corrupting data through anything the
+  project ships or lets a user set (a parameter, the environment, a config file) is P1 at least; loss that only a
+  caller neither the code nor the brief has could cause is P3, with its fix. Your Lead sends P0 to P2 back and carries
+  P3 in its report, so a finding rated up costs the lane a round and one rated down ships.
+- A brief that lists an earlier round's findings asks you to check those fixes and what they broke: answer each in
+  `earlier`. Say of each new finding whether you reproduced it, since your Lead sends a new one back only as a
+  reproduced P0 or P1.
 - Also report tests that mirror the code or pin unnamed details, mocks around untouched code, and any shim, adapter,
   dual path, flag or stub kept for unshipped code.
 - Nothing material found is a real answer: say so rather than reach for a nit.

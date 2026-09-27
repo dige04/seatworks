@@ -26,7 +26,8 @@ hand back what is true.
 ## Working
 
 - Read the brief and `AGENTS.md`, then find the code the goal reaches, its callers and tests: the brief's hints are a
-  start, not a fence. The concept it quotes is the Human's word: build to it, and `ask` where it is silent.
+  start, not a fence. The concept lines it quotes are the Human's word, and the quote is all of it you get: the file
+  they come from is not in your copy, so do not look for it. Build to them, and `ask` where they are silent.
 - Before you change anything, run the tests your change will be judged by once, so a later red is known to be yours
   or already there.
 - The code contradicts a premise, or the goal needs what another task holds: `ask` before building, with your best
