@@ -81,3 +81,12 @@ test("an irreversible command is paged the moment it is known, quoted where it i
   );
   assert.equal(paged("mkdir -p out/tmp && rm -rf out").length, 1, "removing more than it made is not");
 });
+
+test("scratch is read from the words the shell passes, whatever quotes build them", () => {
+  // p-off I16: a Peer removing its probe scripts from $TMPDIR at hand-back was paged, the quote closing mid-word.
+  assert.deepEqual(paged(`rm -f "$TMPDIR"/probe413.mjs "$TMPDIR"/probe-all.mjs '/tmp'/x \${TMPDIR}"/a b"`), []);
+  assert.deepEqual(paged(`f="$(mktemp -d)/orders.json" && node peek.mjs "$f"; rm -r "$(dirname "$f")"`), []);
+  assert.equal(paged(`rm -rf "$TMPDIR"/../src`).length, 1, "a path that climbs out of scratch is not scratch");
+  assert.equal(paged(`rm -rf "$(dirname "$HOME/x")"`).length, 1, "nor the folder of a path that is not");
+  assert.equal(paged(`rm -rf "src"/"$TMPDIR"`).length, 1, "nor one that only names it");
+});
