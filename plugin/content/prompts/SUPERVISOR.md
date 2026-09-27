@@ -65,9 +65,10 @@ turn you read its mail.
     agents add code faster than they fold it, and nobody else will ask for that lane.
 12. With the Human out of the loop, every `push` is audited by a lane that runs beside the last lanes, not after them:
     open it as soon as you know the lanes the push will ship. Its outcome is every line of CONTEXT.md matched to
-    evidence on the base, a test that exercises it or a run that shows it, adding the test where none does. Tell its
-    Lead of each landing with `message`, so it checks each lane as it lands; before the push, its last pass covers only
-    what landed since, and its report names each line's evidence or its gap. A gap is a lane before the push, never a
+    evidence on the base, a test that exercises it or a run that shows it, adding the test where none does. Its
+    reviewers read only its own branch, so as each lane lands its Lead has a Peer bring the base in, then checks what
+    landed against it; before the push, its last pass covers only what landed since, and its report names each line's
+    evidence or its gap. A gap is a lane before the push, never a
     note on it: nobody reads the release after you, and an "ok" the Human gave your summary was never their word on
     what it left out.
 13. Mark each incident told to you once you have read its record: unmarked, it stays on your list, and the same kind
