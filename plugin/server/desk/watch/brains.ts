@@ -172,6 +172,10 @@ const asQuestion = (pattern: PatternSpec, instructions: string): Question => ({
   criteria: pattern.criteria,
 });
 
+/**
+ * Each item asked its patterns' one condition by the sensor; a yes on an item is found in its words. A pattern with
+ * `missingFrom` holds on the words only where the call itself answers no: what the words say, the call leaves out.
+ */
 async function sift(
   project: Project,
   { subject, episode }: { subject: string; episode: string },
@@ -182,8 +186,7 @@ async function sift(
   asked: Record<string, unknown>,
   quote: number,
 ): Promise<{ found: Finding[]; flagged: Set<string> }> {
-  const found: Finding[] = [];
-  const flagged = new Set<string>();
+  const read: { id: string; item: Item; verdict: "yes" | "no" | "unclear"; likely: number }[] = [];
   for (const item of items) {
     const mine = patterns.filter(([, pattern]) => pattern.instructions && pattern.reads.includes(item.kind));
     if (mine.length === 0) continue;
@@ -192,21 +195,31 @@ async function sift(
     const judged = await askKept(project, WATCH, { subject, episode, by: by.id, state }, judge, questions);
     if (!judged) continue;
     for (const [id, pattern] of mine) {
-      const answer = judged.answers[id];
-      const verdict = holds(pattern, answer);
-      if (verdict !== "no") flagged.add(id);
-      if (verdict === "yes" && pattern.level !== "note")
+      const answer = judged.answers[id] as { likely: number } | undefined;
+      read.push({ id, item, verdict: holds(pattern, answer), likely: answer?.likely ?? 0 });
+    }
+  }
+  const found: Finding[] = [];
+  const flagged = new Set<string>();
+  for (const [id, pattern] of patterns) {
+    const mine = read.filter((entry) => entry.id === id);
+    const against = pattern.missingFrom && mine.find((entry) => entry.item.kind === pattern.missingFrom);
+    const words = against ? mine.filter((entry) => entry !== against) : mine;
+    if (against?.verdict === "yes") continue;
+    if (words.some((entry) => entry.verdict !== "no")) flagged.add(id);
+    if (pattern.level === "note" || (against && against.verdict !== "no")) continue;
+    for (const { item, verdict, likely } of words)
+      if (verdict === "yes")
         found.push({
           ...finding(
             id,
             item.text,
             quote,
-            `seen by ${by.sensor.label}, ${(answer as { likely: number }).likely.toFixed(2)} sure, in its ${item.kind}`,
+            `seen by ${by.sensor.label}, ${likely.toFixed(2)} sure, in its ${item.kind}`,
           ),
           theirs: true,
           ...(pattern.joins ? { joins: pattern.joins } : {}),
         });
-    }
   }
   return { found, flagged };
 }

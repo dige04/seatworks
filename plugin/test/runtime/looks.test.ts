@@ -193,7 +193,7 @@ test("a Lead's brief is judged once, at the add_tasks that wrote it, on what the
 });
 
 test("a review briefed to report only certainties is judged at start_review against the Lead's own doubt, as evidence on the code's fact", async (t) => {
-  const sensed = brain({ "steered-review": 0.9 });
+  const sensed = brain({ "steered-review": 0.9 }, {}, /drain change/);
   const seat = brain(
     { "steered-review": 0.9 },
     { "steered-review": 'It fears "a race in the drain" and asks for certainties.' },
@@ -217,7 +217,9 @@ test("a review briefed to report only certainties is judged at start_review agai
   assert.equal(sensed.asked.filter((entry) => "steered-review" in entry.questions).length, 0, "an open brief is not");
 
   await review("l2", "Second round. Report only what you are sure of.");
-  const read = sensed.asked.find((entry) => "steered-review" in entry.questions)!;
+  const read = sensed.asked.find(
+    (entry) => "steered-review" in entry.questions && String(entry.state.text).startsWith("focus:"),
+  )!;
   const judged = seat.asked.find((entry) => "steered-review" in entry.questions)!;
   assert.match(String(read.state.text), /^focus: Second round\. Report only what you are sure of\.$/);
   assert.deepEqual(
@@ -340,29 +342,44 @@ test("what a look reads and an incident quotes is cut where the owner says, and 
   );
 });
 
-test("a hand-back whose thinking saw a part fail or go undone is read beside what the hand-back says, once there is one", async (t) => {
+test("a gap the words name is found at the hand-back only when the hand-back itself leaves it out", async (t) => {
   const sensed = brain({ "withholds-gap": 0.9 }, {}, /still fails/);
-  const { h, peer, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
+  const { h, peer, lane, timeline } = await laneWithPeer(undefined, { sensor: () => sensed.judge });
   brains("sensor");
   const looked = looksOf(h, t);
-  timeline.beat("turn_started", "t1");
-  timeline.add({ type: "reasoning", text: "The refund path still fails; I will leave it for now." }, "t1");
-  timeline.beat("turn_completed", "t1");
-  await looked();
-  assert.equal(
-    sensed.asked.some((entry) => "withholds-gap" in entry.questions),
-    false,
-    "before a hand-back there is nothing it could withhold from",
+  const asked = () => sensed.asked.filter((entry) => "withholds-gap" in entry.questions);
+  const turn = async (id: string, thought: string, summary?: string) => {
+    timeline.beat("turn_started", id);
+    timeline.add({ type: "user_message", text: "Go on.", clientMessageId: `sw2-message-${id}` }, id);
+    timeline.add({ type: "reasoning", text: thought }, id);
+    if (summary) await h.call(peer, "peer", "done", { outcome: "complete", summary });
+    timeline.beat("turn_completed", id);
+    await looked();
+  };
+  await turn("t1", "The refund path still fails; I will leave it for now.");
+  assert.equal(asked().length, 0, "before a hand-back there is nothing it could leave out");
+  await turn("t2", "The refund path still fails, but the totals are right.", "Totals round half up.");
+  assert.deepEqual(
+    asked().map((entry) => entry.state.text),
+    [
+      "The refund path still fails; I will leave it for now.",
+      "The refund path still fails, but the totals are right.",
+      "outcome: complete\nsummary: Totals round half up.",
+    ],
+    "the words since, and the hand-back itself, each asked the one question",
   );
-  timeline.beat("turn_started", "t2");
-  timeline.add({ type: "user_message", text: "Go on.", clientMessageId: "sw2-message-t2" }, "t2");
-  timeline.add({ type: "reasoning", text: "The refund path still fails, but the totals are right." }, "t2");
-  await h.call(peer, "peer", "done", { outcome: "complete", summary: "Totals round half up." });
-  timeline.beat("turn_completed", "t2");
-  await looked();
-  const read = sensed.asked.find((entry) => "withholds-gap" in entry.questions)!;
-  assert.equal(read.state.handback, "Totals round half up.", "what it handed back is read beside its thinking");
-  assert.ok(Object.values(book(h)).some((item) => item.kind === "withholds-gap"));
+  const gaps = () => Object.values(book(h)).filter((item) => item.kind === "withholds-gap");
+  assert.equal(gaps().length, 1, "the words say it and the hand-back does not");
+  assert.equal(gaps()[0]!.quote, "The refund path still fails; I will leave it for now.");
+
+  await h.call(lane.lead!, "lead", "rework", { task: "L1-T1", text: "Fix the refund path." });
+  await h.call(h.ledger().lanes.L1!.opener, "supervisor", "mark_incident", { id: gaps()[0]!.id, verdict: "useful" });
+  await turn(
+    "t3",
+    "The refund path still fails on a zero total.",
+    "Refunds work; the refund path still fails on zero.",
+  );
+  assert.equal(gaps().filter((item) => item.open).length, 0, "a hand-back that says so leaves nothing out");
 });
 
 test("a seat whose looks carry words but never thinking is recorded once, so what reads thinking is known to be blind to it", async (t) => {
