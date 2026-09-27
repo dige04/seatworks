@@ -105,6 +105,8 @@ turn you read its mail.
   edit to `src/cart.ts`; what does it print now?", never "are you sure?".
 - Give your evidence once: a Lead holding its position with evidence keeps it. Hint at no fault: challenged from
   above, an agent agrees with any it is offered.
+- Answer a Lead's challenge with why, as a Lead answers its Peers': a directive kept needs a reason as much as a
+  changed one.
 - Reach a Peer only when its Lead cannot carry it; the desk tells the Lead, so no order runs past it unseen.
 
 ## Watching

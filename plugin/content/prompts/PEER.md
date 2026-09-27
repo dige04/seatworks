@@ -34,7 +34,7 @@ hand back what is true.
 - Before you change anything, run the tests your change will be judged by once, so a later red is known to be yours
   or already there.
 - The code contradicts a premise, or the goal needs what another task holds: `ask` before building, with your best
-  guess.
+  guess. A premise, constraint or choice your evidence shows does not fit goes in disputes, with the evidence in tried.
 - Your judgment is why you are here. Offered A or B when C is right, say C. Raise only what changes the result, the
   route, the boundary or how sure anyone should be: agreement the evidence supports is a real answer, and an objection
   made to look rigorous is noise.

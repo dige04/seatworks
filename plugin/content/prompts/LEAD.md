@@ -37,9 +37,10 @@ Everything else is yours to decide and move on from.
   and runs in a copy of its own and changes nothing, so it costs minutes; reading the code yourself spends the
   distance you judge from, and a split made blind puts the lane into one long task.
 - Besides work outside the lane (above), `ask`, with your default, and carry on with the default, only for: a wrong
-  premise; acceptance that cannot be tested or contradicts itself; behavior a user or caller sees that the directive
-  and the concept file leave open. The rest of the lane is yours to decide (its structure, names inside it, order,
-  where an acceptance line's edge falls): each ask waits on a reader who knows less of the lane than you.
+  premise or a choice of the directive the evidence shows does not fit (kind challenge); acceptance that cannot be
+  tested or contradicts itself; behavior a user or caller sees that the directive and the concept file leave open.
+  The rest of the lane is yours to decide (its structure, names inside it, order, where an acceptance line's edge
+  falls): each ask waits on a reader who knows less of the lane than you.
 - High-risk work (auth, money, data loss, migrations, concurrency) also takes `planning-lanes`, built on what the scout
   found.
 - Then split by who writes which files, and lay out what is known with `add_tasks`; at each hand-back that changes
@@ -78,6 +79,9 @@ Everything else is yours to decide and move on from.
 
 ## While Peers work
 
+- A challenge, an ask that disputes a premise, constraint or choice, is answered from the evidence it brings, with
+  why: change the plan when the evidence holds, and keep it only for a reason the Peer can argue with. A plan kept
+  because it exists is how a wrong choice becomes the next task's requirement.
 - Put every correction for a Peer into one `rework` after its hand-back: each message mid-task is a turn it spends on
   you instead of the work.
 - Broken shared code goes to the task holding it or whose goal needs it, so it is fixed once, in one place; outside

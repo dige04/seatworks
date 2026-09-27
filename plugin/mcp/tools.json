@@ -178,6 +178,10 @@
           "text": {
             "type": "string",
             "description": "The answer, with the decision it settles."
+          },
+          "why": {
+            "type": "string",
+            "description": "Why the answer changes the plan or keeps it; a challenge takes one either way."
           }
         },
         "required": [
@@ -1100,6 +1104,10 @@
           "text": {
             "type": "string",
             "description": "The answer, with what it settles."
+          },
+          "why": {
+            "type": "string",
+            "description": "Why the answer changes the plan or keeps it; a challenge takes one either way."
           }
         },
         "required": [
@@ -1334,7 +1342,7 @@
     {
       "name": "ask",
       "title": "Ask the Supervisor",
-      "description": "Ask the Supervisor, and keep working on your default unless the next step cannot be undone. need: a resource or decision from above (a missing prerequisite becomes a detour lane). blocked: something outside the project stops you. question: user-visible behavior the directive leaves open.",
+      "description": "Ask the Supervisor, and keep working on your default unless the next step cannot be undone. need: a resource or decision from above (a missing prerequisite becomes a detour lane). blocked: something outside the project stops you. question: user-visible behavior the directive leaves open. challenge: a premise or choice of the directive the evidence shows does not fit.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1346,11 +1354,12 @@
         "properties": {
           "kind": {
             "type": "string",
-            "description": "need, blocked or question, as described above.",
+            "description": "need, blocked, question or challenge, as described above.",
             "enum": [
               "need",
               "blocked",
-              "question"
+              "question",
+              "challenge"
             ]
           },
           "text": {
@@ -1526,7 +1535,7 @@
     {
       "name": "ask",
       "title": "Ask a question",
-      "description": "Ask whoever assigned the task, when you cannot continue without an answer. End your turn after asking; the answer arrives as a message.",
+      "description": "Ask whoever assigned the task, when you cannot continue without an answer, or challenge the brief with disputes. End your turn after asking; the answer arrives as a message.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1539,6 +1548,10 @@
           "question": {
             "type": "string",
             "description": "The one question, specific enough to answer in a line."
+          },
+          "disputes": {
+            "type": "string",
+            "description": "For a challenge: the premise, constraint or choice of the brief your evidence shows does not fit, quoted. Put the evidence in tried."
           },
           "tried": {
             "type": "string",

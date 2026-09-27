@@ -41,16 +41,15 @@ export const askLetters = {
   /** `concept` is where the project's CONTEXT.md is, when there is one: a Lead answers its Peers from it first. */
   askTo(ask: Ask, from: string, reader: "lead" | "supervisor", concept?: string): Letter {
     const read = concept ? `${concept}, the brief and the code` : "the brief and the code";
-    const next =
-      reader === "lead"
+    const challenge = ask.kind === "challenge";
+    const next = challenge
+      ? `Weigh the evidence and answer ${ask.id} with why: changing the plan needs its basis, and keeping it needs a reason the asker can argue with.`
+      : reader === "lead"
         ? `Answer ${ask.id} from ${read}; if only the Supervisor can, ask up and tell the Peer to wait.`
         : askNext(ask);
-    return mail(
-      "ask",
-      [ask.id],
-      [`ASK ${ask.id} (${ask.kind}) from ${from}`, "", ask.text, ...theirDefault(ask)].join("\n"),
-      next,
-    );
+    const head = challenge ? `CHALLENGE ${ask.id} from ${from}` : `ASK ${ask.id} (${ask.kind}) from ${from}`;
+    const disputes = ask.disputes ? ["", `Disputes: ${ask.disputes}`] : [];
+    return mail("ask", [ask.id], [head, ...disputes, "", ask.text, ...theirDefault(ask)].join("\n"), next);
   },
 
   humanAnswered(question: Question, lane: Lane | undefined): Letter {
@@ -76,7 +75,7 @@ export const askLetters = {
     return mail(
       "answer",
       [ask.id],
-      [`ANSWER to your ask ${ask.id}`, "", ask.answer ?? ""].join("\n"),
+      [`ANSWER to your ask ${ask.id}`, "", ask.answer ?? "", ...(ask.why ? ["", `Why: ${ask.why}`] : [])].join("\n"),
       "Go on with your work from it.",
     );
   },
@@ -95,6 +94,7 @@ export const askLetters = {
       "",
       "The answer it was given:",
       ask.answer ?? "",
+      ...(ask.why ? [`Why: ${ask.why}`] : []),
       "",
       // Only an ask with a task has a Peer to speak of, and acceptance is only a Lead's to judge.
       ask.task && leads

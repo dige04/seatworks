@@ -10,7 +10,7 @@ import { conceptFile } from "../project/project.ts";
 import type { DeskServices } from "../services.ts";
 import { recordEvent } from "../store/event-log.ts";
 
-type Asking = Pick<Ask, "from" | "fromRole" | "to" | "lane" | "task" | "kind" | "text" | "default">;
+type Asking = Pick<Ask, "from" | "fromRole" | "to" | "lane" | "task" | "kind" | "disputes" | "text" | "default">;
 
 function newAsk(ledger: Ledger, asking: Asking): Ask {
   return { id: nextAskId(ledger), ...asking, status: "open", openedAt: Date.now() };
@@ -50,7 +50,7 @@ export async function askOwner(
 export async function askUp(
   { ledgers, mail, roster }: Pick<DeskServices, "ledgers" | "mail" | "roster">,
   caller: Caller,
-  asked: { question: string; tried: string; guess?: string },
+  asked: { question: string; disputes?: string; tried: string; guess?: string },
 ): Promise<ToolReply> {
   const { project } = caller;
   const ledger = loadLedger(project.state);
@@ -67,7 +67,14 @@ export async function askUp(
     const now = taskOfPeer(current, caller.id);
     if (now?.id !== task.id || now.status === "cut") return undefined;
     const from = { from: caller.id, fromRole: caller.role.role, to, lane: lane.id, task: task.id };
-    const created = newAsk(current, { ...from, kind: "question", text, default: asked.guess });
+    const kind = asked.disputes ? "challenge" : "question";
+    const created = newAsk(current, {
+      ...from,
+      kind,
+      disputes: asked.disputes || undefined,
+      text,
+      default: asked.guess,
+    });
     current.asks[created.id] = created;
     return { ...created };
   });
@@ -91,10 +98,10 @@ export async function askUp(
 export async function answerAsk(
   { kit, ledgers, mail, roster }: Pick<DeskServices, "kit" | "ledgers" | "mail" | "roster">,
   caller: Caller,
-  answered: { ask: string; text: string },
+  answered: { ask: string; text: string; why?: string },
 ): Promise<ToolReply> {
   const id = answered.ask.toUpperCase();
-  const { text } = answered;
+  const { text, why } = answered;
   // Only whoever supervises reads incidents, so only its answer could carry one to a seat it is about: the asker, the
   // seat it was put to, and the Lead of a Peer answered past it each read the answer.
   if (can(caller.role, "supervise")) {
@@ -113,8 +120,11 @@ export async function answerAsk(
     if (!ask) return `There is no ask ${id}.`;
     if (!ASK.may(ask.status, "answer")) return `Ask ${id} is already answered.`;
     if (ask.to !== caller.id && !can(caller.role, "supervise")) return `Ask ${id} was not addressed to you.`;
+    if (ask.kind === "challenge" && !why)
+      return `${id} is a challenge: answer it with why. Changing the plan needs its basis, and keeping it needs a reason the asker can argue with.`;
     ASK.move(ask, "answer");
     ask.answer = text;
+    if (why) ask.why = why;
     return { ask: { ...ask }, waitingRole: ledger.agents[ask.to]?.role };
   });
   if (typeof result === "string") return no(result);
