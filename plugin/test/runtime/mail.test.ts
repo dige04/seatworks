@@ -434,3 +434,24 @@ test("word held for a seat rides the reply to its own call inside a short turn, 
   await h.endTurn(sup, "L1 has landed.");
   assert.deepEqual(h.agents.get(sup)!.sent, [], "nothing is sent to start another turn");
 });
+
+test("mail given up for a seat that is gone is on its project's record", async () => {
+  const h = harness();
+  const sup = h.add(SUPERVISOR, h.root, "sup");
+  await h.call(sup, "supervisor", "open_lane", {
+    title: "Numbers",
+    outcome: "a.txt gains words",
+    acceptance: ["four"],
+    outOfScope: ["the rest"],
+  });
+  const lead = h.ledger().lanes.L1!.lead!;
+  await h.call(lead, "lead", "status", {});
+  await h.runtime.outbox.post({ to: lead, key: "closed:L1", text: "LANE CLOSED L1", wakes: false });
+  h.agents.get(lead)!.archivedAt = new Date(Date.now() - 2 * 24 * 3_600_000).toISOString();
+  await h.tick();
+  assert.deepEqual(h.runtime.outbox.pending(lead), []);
+  assert.deepEqual(
+    h.events("mail.dropped").map((event) => [event.to, event.key, event.why]),
+    [[lead, "closed:L1", "its seat has been archived a day"]],
+  );
+});

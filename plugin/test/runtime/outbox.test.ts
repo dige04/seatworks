@@ -234,3 +234,44 @@ test("held mail rides the reply to a seat's own call, word that asks nothing inc
     assert.equal(outbox.pending(id).length, 1);
   }
 });
+
+test("mail for a seat that is gone is given up and said so: word that asks nothing once it is archived, the rest a day on, and all once Paseo no longer knows it", async () => {
+  const hours = (count: number) => new Date(Date.now() - count * 3_600_000).toISOString();
+  const agents: Record<string, FakeAgent> = {
+    archived: agent("idle", { archivedAt: hours(2) }),
+    long: agent("idle", { archivedAt: hours(25) }),
+    asking: agent("idle", { pendingPermissions: [{ id: "p1" }] }),
+  };
+  const dropped: string[] = [];
+  const outbox = new Outbox(
+    join(tempDir(), "outbox.json"),
+    (_seat, list) => list.map((letter) => letter.text).join("|"),
+    fakeSeats(agents),
+    { dropped: (letter, _at, why) => dropped.push(`${letter.to} ${letter.key}: ${why}`) },
+  );
+  const post = (to: string, key: string, wakes?: false) =>
+    outbox.post({ to, key, text: key, ...(wakes === false ? { wakes } : {}) });
+  await post("archived", "closed:L1", false);
+  await post("archived", "ask:A1");
+  await post("long", "ask:A2");
+  await post("asking", "ask:A3");
+  await post("deleted", "merge:L1-T1");
+  const listed = new Set(["asking"]);
+
+  await outbox.sweep(listed);
+  assert.deepEqual(dropped.sort(), [
+    "archived closed:L1: its seat is archived, and it asked nothing",
+    "long ask:A2: its seat has been archived a day",
+  ]);
+  assert.deepEqual(
+    outbox.letters().map((letter) => letter.key),
+    ["ask:A1", "ask:A3", "merge:L1-T1"],
+    "an archived seat may be started again that day; one on a permission is there",
+  );
+  await outbox.sweep(listed);
+  await outbox.sweep(new Set());
+  assert.equal(outbox.pending("deleted").length, 1, "a listing that could not show the rest proves nothing");
+  await outbox.sweep(listed);
+  assert.match(dropped.at(-1)!, /^deleted merge:L1-T1: Paseo no longer knows its seat$/);
+  assert.equal(outbox.pending("asking").length, 1, "never a seat stopped on a permission");
+});

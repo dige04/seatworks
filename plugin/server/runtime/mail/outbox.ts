@@ -11,10 +11,11 @@ const isLetter = (value: unknown): value is Letter =>
 type Compose = (seat: SeatLook, letters: Letter[]) => string;
 /**
  * `steers`: the seat's harness takes a text into a running turn instead of replacing it; `calling`: the seat waits on a desk
- * call, where a text steered in reads as the call cut short; `delivered`: letters reached their seat, at `at`.
+ * call, where a text steered in reads as the call cut short; `delivered`: letters reached their seat, at `at`; `dropped`:
+ * a letter given up on, and why.
  */
 export type Rules = {
-  dropped?: (letter: Letter, now: number) => void;
+  dropped?: (letter: Letter, now: number, why: string) => void;
   delivered?: (letters: Letter[], at: number) => void;
   steers?: (seat: SeatLook) => boolean;
   calling?: (agentId: string) => boolean;
@@ -25,6 +26,10 @@ const KEEP_MS = 7 * 24 * 3_600_000;
 const DUPLICATE_MS = 30 * 60_000;
 const GRACE_MS = 10 * 60_000;
 const SETTLE_MS = 60_000;
+/** How long an archived seat may yet be started again for the mail that asks something of it. */
+const GONE_MS = 24 * 3_600_000;
+/** Rounds a seat must be missing from Paseo, each listing the rest, before its mail is given up. */
+const MISSES = 3;
 
 export class Outbox {
   private readonly file: string;
@@ -35,6 +40,7 @@ export class Outbox {
   private readonly started = new Map<string, number>();
   private readonly sentKeys = new Map<string, number>();
   private readonly gone = new Set<string>();
+  private readonly misses = new Map<string, number>();
 
   /** Keyed on the reader too: desk ids are unique only per project, and this one file serves them all. */
   private static keyOf(letter: { to: string; key: string }): string {
@@ -57,12 +63,12 @@ export class Outbox {
     return read.value.filter(isLetter);
   }
 
-  /** The one place a letter is given up on, and it says so. */
+  /** Letters kept a week are given up on whoever they were for, and it says so. */
   private keep(letters: Letter[], now: number): Letter[] {
     const kept: Letter[] = [];
     for (const letter of letters) {
       if (now - letter.at < KEEP_MS) kept.push(letter);
-      else this.rules.dropped?.(letter, now);
+      else this.rules.dropped?.(letter, now, "it was kept a week and never taken");
     }
     for (const agent of this.gone) if (!kept.some((letter) => letter.to === agent)) this.gone.delete(agent);
     return kept;
@@ -70,6 +76,43 @@ export class Outbox {
 
   private save(letters: Letter[]): void {
     writeJson(this.file, letters);
+  }
+
+  /**
+   * Gives up mail for seats `listed`, a round's listing of the seats Paseo has open, does not name: word that asks nothing
+   * once its seat is archived, the rest a day on, and all of it once Paseo has not known the seat for a few rounds. A
+   * seat stopped on a permission or in a held lane is listed, so its mail waits; an empty listing says nothing.
+   */
+  async sweep(listed: Set<string>, now = Date.now()): Promise<void> {
+    if (listed.size === 0) return;
+    for (const to of new Set(this.letters().map((letter) => letter.to))) {
+      if (listed.has(to)) this.misses.delete(to);
+      else await this.perSeat.run(to, () => this.sweepOne(to, now));
+    }
+  }
+
+  private async sweepOne(to: string, now: number): Promise<void> {
+    const seat = await this.seats.look(to).catch(() => undefined);
+    if (!seat) {
+      const missed = (this.misses.get(to) ?? 0) + 1;
+      this.misses.set(to, missed);
+      if (missed >= MISSES) this.drop(to, now, () => true, "Paseo no longer knows its seat");
+      return;
+    }
+    this.misses.delete(to);
+    if (!seat.archivedAt) return;
+    if (now - Date.parse(seat.archivedAt) >= GONE_MS)
+      this.drop(to, now, () => true, "its seat has been archived a day");
+    else this.drop(to, now, (letter) => letter.wakes === false, "its seat is archived, and it asked nothing");
+  }
+
+  private drop(to: string, now: number, which: (letter: Letter) => boolean, why: string): void {
+    const letters = this.letters();
+    const given = letters.filter((letter) => letter.to === to && which(letter));
+    if (given.length === 0) return;
+    this.save(letters.filter((letter) => !given.includes(letter)));
+    if (!letters.some((letter) => letter.to === to && !which(letter))) this.misses.delete(to);
+    for (const letter of given) this.rules.dropped?.(letter, now, why);
   }
 
   async post(letter: Omit<Letter, "id" | "at">): Promise<Posted> {

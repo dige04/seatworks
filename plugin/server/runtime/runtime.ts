@@ -23,6 +23,7 @@ import type {
 import type { ToolReply, ToolRequest } from "../desk/context.ts";
 import { Desk } from "../desk/desk.ts";
 import { type Project, projectOf } from "../desk/project/project.ts";
+import { loadLedger } from "../desk/store/ledger.ts";
 import { appendRecord } from "../desk/store/records.ts";
 import { TOOLS } from "../desk/tools/registry.ts";
 import { stampKit } from "../upkeep/older-seats.ts";
@@ -87,7 +88,11 @@ export class Runtime implements HostHooks {
     this.makeIndex = options.codeIndex ?? codeIndex;
     this.source = new TeamSource(kit);
     this.seating = new Seating(kit, this.source, { node: nodeBin(), socket: deskSocket() });
-    const rules = mailRules(kit, (agentId) => this.socket.calling(agentId));
+    const rules = mailRules(
+      kit,
+      (agentId) => this.socket.calling(agentId),
+      (agentId) => this.registry.known().find((project) => loadLedger(project.state).agents[agentId]),
+    );
     this.outbox = new Outbox(options.outboxFile ?? join(stateRoot(), "outbox.json"), composeMail, host.seats, rules);
     const log = (project: Project, line: string) => this.log(project, line);
     const remember = (project: Project) => this.remember(project);
