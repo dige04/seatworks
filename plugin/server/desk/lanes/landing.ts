@@ -1,5 +1,6 @@
 import { currentBranch, headSha, isAncestor, landedRef, mergeBranch } from "../../core/git.ts";
 import { landLane as landOnBase } from "../../core/land.ts";
+import { plural } from "../../core/text.ts";
 import { no, ok } from "../context.ts";
 import { laneGate } from "../project/gates.ts";
 import type { Lane } from "../../domain/lane.ts";
@@ -16,8 +17,8 @@ import { type Closed, type Held, type OverGate, checkLanding, waitsForHuman } fr
 /** How a lane landed, as its CLOSED reply and letters say; `note` is the evidence that went with it. */
 export type Landed = { how: string; note: string };
 
-/** What stops the base merge a landing starts with; `writers` are the seats mid-turn in the lane's copy. */
-type Stop = { why: string; then: string; writers?: string[] };
+/** What stops the base merge a landing starts with, or the seats mid-turn in the lane's copy it waits for. */
+type Stop = { why: string; then: string } | { writers: string[] };
 
 const SETTLE = "land_lane it again once the Lead reports it ready, or drop_lane it.";
 
@@ -43,14 +44,9 @@ export async function landLane(
   }
   // Land before closing: a closed lane cannot be closed again, so a landing that cannot happen is refused while open.
   const stop = await bringBaseIn(desk, project, ledger, lane);
-  if (stop) {
-    const { writers } = stop;
-    if (writers)
-      desk.ledgers.setLane(project, lane.id, (entry) => {
-        entry.landing = { by, writers };
-      });
-    return { ...no(`Lane ${lane.id} was not closed: ${stop.why}. ${stop.then}`), blocked: stop.why };
-  }
+  if (stop && "writers" in stop)
+    return ordered(desk, project, lane, { by, tip: tip ?? "", writers: stop.writers, over });
+  if (stop) return { ...no(`Lane ${lane.id} was not closed: ${stop.why}. ${stop.then}`), blocked: stop.why };
   // Base merged in by the desk itself is not the lane changing under an approval.
   const merged = approved ? await headSha(project.root, lane.branch) : tip;
   if (approved && merged && merged !== tip) {
@@ -59,6 +55,26 @@ export async function landLane(
     });
   }
   return gateThenLand(desk, project, ledger, lane, by, over, approved);
+}
+
+/**
+ * Taking base in waits for seats mid-turn in the lane's copy, so the desk carries this landing out once their turns end:
+ * on the lane as it stands now, which is what whoever asked for it judged.
+ */
+function ordered(
+  { ledgers }: Pick<DeskServices, "ledgers">,
+  project: Project,
+  lane: Lane,
+  { by, tip, writers, over }: { by: string; tip: string; writers: string[]; over: OverGate },
+): Closed {
+  ledgers.setLane(project, lane.id, (entry) => {
+    const ready = entry.ready ? { ready: entry.ready.at } : {};
+    entry.landing = { by, writers, at: Date.now(), tip, ...ready, amended: entry.amended?.length ?? 0, ...over };
+  });
+  const whose = `${writers.join(" and ")}'s ${plural(writers.length, "turn ends", "turns end")}`;
+  return ok(
+    `Lane ${lane.id} lands once ${whose}: ${lane.base} has moved on, and taking it into the lane's copy waits for ${plural(writers.length, "that seat", "those seats")}. The desk carries out this land_lane then, on the lane as it is now: a commit, an amendment, another READY, or a review started or come back meanwhile calls it off. LANDED or NOT LANDED comes as mail.`,
+  );
 }
 
 async function gateThenLand(
@@ -155,12 +171,7 @@ async function baseMergeBlocked(
   // Readers count too: a merge changes the files under whoever is reading them.
   const inCopy = tasksOf(ledger, lane.id).filter((task) => task.mode !== "parallel");
   const busy = await midTurnAmong(roster, [lane.lead, ...inCopy.map((task) => task.peer)]);
-  if (busy.length === 0) return undefined;
-  return {
-    why: `${lane.base} has moved on, so landing it starts with merging ${lane.base} into ${lane.branch} in its copy, and a seat is mid-turn there`,
-    then: "CAN LAND comes as mail when that turn ends; land_lane it again then, or drop_lane it.",
-    writers: busy,
-  };
+  return busy.length > 0 ? { writers: busy } : undefined;
 }
 
 function landMessage(ledger: Ledger, lane: Lane): string {

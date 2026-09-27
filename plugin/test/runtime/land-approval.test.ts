@@ -239,6 +239,26 @@ test("an approval that cannot land yet stands through a dirty base, a hold and a
   assert.ok(onMain("src/auth/login.ts"));
 });
 
+test("an approval that meets a turn in the lane's copy lands by itself when that turn ends, and whoever supervises hears each step", async () => {
+  const { h, sup, lane, land, onMain } = await laneWith(risky, ["src/auth"]);
+  await land();
+  h.commitTo("main", "other.txt", "main moved\n");
+  h.agents.get(lane.lead!)!.status = "running";
+  await h.idle(sup);
+  assert.match(await decide(h, true, ""), new RegExp(`^Approved: Lane L1 lands once ${lane.lead!}'s turn ends:`));
+  assert.match(
+    h.agents.get(sup)!.sent.join("\n"),
+    /APPROVED L1 \(Cart\) by the Human: Lane L1 lands once [^]*\n\nNext: Know it when you next speak of L1; LANDED or NOT LANDED comes as mail\./,
+  );
+  assert.equal(onMain("src/auth/login.ts"), false);
+  await h.idle(sup);
+  h.agents.get(lane.lead!)!.status = "idle";
+  await h.endTurn(lane.lead!, "went on");
+  await h.runtime.desk.settled(h.project);
+  assert.ok(onMain("src/auth/login.ts"));
+  assert.match(h.agents.get(sup)!.sent.join("\n"), /LANDED L1 \(Cart\): Lane L1 closed[^]*The Human approved it\./);
+});
+
 test("a landing the Human approves twice at once lands once, and the second approval hears there is nothing left to approve", async () => {
   const { h, sup, land } = await laneWith(risky, ["src/auth"]);
   await land();

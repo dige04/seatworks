@@ -16,12 +16,25 @@ export const landLetters = {
     );
   },
 
-  canLand(lane: Lane): Letter {
+  /** A landing the desk carried out for whoever asked once the turns in its way ended: what land_lane would have answered. */
+  carried(lane: Lane, landed: boolean, text: string): Letter {
     return mail(
-      "canland",
-      [lane.id, Date.now()],
-      `CAN LAND ${lane.id} (${lane.title}): the turn that was in the way has ended.`,
-      "land_lane it again.",
+      "land",
+      [lane.id, "carried", Date.now()],
+      `${landed ? "LANDED" : "NOT LANDED"} ${lane.id} (${lane.title}): ${text}`,
+      landed
+        ? `Know it when you next speak of ${lane.id}; nothing of it waits on you.`
+        : "Act on what it names; land_lane then lands it as it is.",
+    );
+  },
+
+  /** An ordered landing called off: the lane is no longer what whoever asked for it judged. */
+  calledOff(lane: Lane, changed: string): Letter {
+    return mail(
+      "land",
+      [lane.id, "calledoff", Date.now()],
+      `NOT LANDED ${lane.id} (${lane.title}): the turn in its way ended, but ${changed} since your land_lane, so the desk did not land it.`,
+      "land_lane it again to land it as it is now, or drop_lane it.",
     );
   },
 
@@ -106,12 +119,21 @@ export const landLetters = {
   },
 
   /** Each wakes whoever supervises: what the Human decided changes where the lane stands, which it would otherwise tell them wrong. */
-  landDecided(lane: Lane, how: "landed" | "blocked" | "again" | "changed" | "sent back", text: string): Letter {
+  landDecided(
+    lane: Lane,
+    how: "landed" | "ordered" | "blocked" | "again" | "changed" | "sent back",
+    text: string,
+  ): Letter {
     const told = (said: string, next: string) => mail("land", [lane.id, how, Date.now()], said, next);
     if (how === "landed")
       return told(
         `LANDED ${lane.id} (${lane.title}) after the Human approved it: ${text}`,
         `Know it when you next speak of ${lane.id}; nothing of it waits on you.`,
+      );
+    if (how === "ordered")
+      return told(
+        `APPROVED ${lane.id} (${lane.title}) by the Human: ${text}`,
+        `Know it when you next speak of ${lane.id}; LANDED or NOT LANDED comes as mail.`,
       );
     if (how === "sent back")
       return told(

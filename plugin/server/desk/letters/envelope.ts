@@ -24,7 +24,6 @@ type Kind =
   | "basemoved"
   | "beside"
   | "blockchanged"
-  | "canland"
   | "case"
   | "closed"
   | "detour"

@@ -36,6 +36,7 @@ import { reapKept } from "./seats/kept.ts";
 import { Roster } from "./seats/roster.ts";
 import { Teardowns } from "./seats/teardown.ts";
 import { turnsEnded } from "./seats/turn-ends.ts";
+import { orderKey } from "./lanes/land-order.ts";
 import type { DeskServices, ToolDef } from "./services.ts";
 import { archiveFinished } from "./store/archive.ts";
 import { recordEvent } from "./store/event-log.ts";
@@ -114,8 +115,10 @@ export class Desk {
     this.human = new Human(this.services);
   }
 
-  settled(project: Project): Promise<unknown> {
-    return this.services.merges.settled(project);
+  /** Once the merges and ordered landings under way for the project have run. */
+  async settled(project: Project): Promise<void> {
+    await this.services.merges.settled(project);
+    await this.services.landings.idle(orderKey(project));
   }
 
   event(project: Project, data: DeskEvent): void {

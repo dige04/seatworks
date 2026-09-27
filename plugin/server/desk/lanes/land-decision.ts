@@ -86,6 +86,10 @@ async function landApproved(
     await tell("landed", `${note ? `${note}. ` : ""}${closed.text}`);
     return ok(`Approved: ${closed.text}`);
   }
+  if (now?.landing) {
+    await tell("ordered", closed.text);
+    return ok(`Approved: ${closed.text}`);
+  }
   if (now?.landApproval && !now.landApproval.approved) {
     await tell("again", closed.text);
     return ok(`Approved, but landing lane ${lane.id} turned up more, so it waits for you again: ${closed.text}`);

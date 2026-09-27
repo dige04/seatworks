@@ -151,7 +151,7 @@ test("what waited on a turn when the plugin stopped goes on at its first round",
   h.git(side, "commit", "-qm", "moved", "--allow-empty");
   h.git(h.root, "branch", "-f", "main", "side");
   h.git(h.root, "worktree", "remove", "--force", side);
-  assert.match((await h.call(sup, "supervisor", "land_lane", { lane: "L2" })).text, /a seat is mid-turn there/);
+  assert.match((await h.call(sup, "supervisor", "land_lane", { lane: "L2" })).text, /^Lane L2 lands once /);
   // L1's Lead and Peer are mid-turn, so closing the lane leaves the Peer, and the copy they write in, until their turns end.
   assert.equal((await h.call(sup, "supervisor", "drop_lane", { lane: "L1", reason: "no longer wanted" })).ok, true);
   assert.equal(h.agents.get(peer)!.archivedAt, null, "not while it is mid-turn");
@@ -163,8 +163,9 @@ test("what waited on a turn when the plugin stopped goes on at its first round",
   assert.ok(h.agents.get(peer)!.archivedAt, "the Peer waiting to be archived");
   assert.equal(h.agents.get(lane.lead!)!.archivedAt, null, "the Lead stays until it is released");
   assert.equal(h.git(h.root, "branch", "--show-current").trim(), "main", "and the copy they wrote in is put back");
-  assert.match(h.heard(sup).join("\n"), /CAN LAND L2/, "the landing that waited on a turn can go");
-  assert.equal((await h.call(sup, "supervisor", "land_lane", { lane: "L2" })).ok, true);
+  await h.runtime.desk.settled(h.project);
+  assert.match(h.heard(sup).join("\n"), /LANDED L2 /, "the landing that waited on a turn is carried out");
+  assert.equal(h.ledger().lanes.L2!.status, "closed");
   await h.tick();
   assert.equal(
     h.agents.get(lane.lead!)!.archivedAt,
