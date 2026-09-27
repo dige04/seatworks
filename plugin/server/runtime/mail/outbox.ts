@@ -141,14 +141,16 @@ export class Outbox {
 
   /**
    * Everything held for a seat, as one text for the reply to a call of its own: read inside the turn it makes the call
-   * in, with no send to replace that turn, so word that asks nothing goes too. Held as a pump holds it otherwise.
+   * in, with no send to replace that turn, so word that asks nothing goes too. Held as a pump holds it otherwise, and
+   * kept when the reply is no longer `wanted` by the time it is taken.
    */
-  take(to: string): Promise<string | undefined> {
+  take(to: string, wanted: () => boolean = () => true): Promise<string | undefined> {
     return this.perSeat.run(to, async () => {
       const mine = this.pending(to);
       const seat = mine.length > 0 ? await this.reachable(to) : undefined;
       // As a pump holds it: a permission waiting, or its lane on hold.
       if (!seat || (seat.pendingPermissions?.length ?? 0) > 0 || this.rules.holding?.(seat)) return undefined;
+      if (!wanted()) return undefined;
       const ids = new Set(mine.map((letter) => letter.id));
       this.save(this.letters().filter((letter) => !ids.has(letter.id)));
       this.sent(mine, Date.now());

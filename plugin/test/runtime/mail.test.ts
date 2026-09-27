@@ -409,3 +409,28 @@ test("with the Human out of the loop, a Lead's ask nobody answers in time goes b
   await h.tick(start + 200 * 60_000);
   assert.equal(h.ledger().asks[kept]!.status, "open", "in the loop, the Human's answer is waited for");
 });
+
+test("word held for a seat rides the reply to its own call inside a short turn, and wakes nobody", async () => {
+  const h = harness();
+  const sup = h.add(SUPERVISOR, h.root, "sup");
+  let n = 0;
+  const status = (stop = new AbortController()) =>
+    h.runtime.answer(
+      { id: `c${++n}`, agent: sup, role: "supervisor", tool: "status", args: {}, cwd: h.root, at: Date.now() },
+      stop.signal,
+    );
+  await h.idle(sup);
+  await h.runtime.outbox.post({ to: sup, key: "land:L1:landed", text: "LANDED L1 (Cart)", wakes: false });
+  // The Human writes, and the Supervisor answers in a turn too short for mail to be steered into it.
+  h.agents.get(sup)!.status = "running";
+  await h.beginTurn(sup);
+  const stopped = new AbortController();
+  stopped.abort();
+  assert.doesNotMatch((await status(stopped)).text, /LANDED L1/, "a reply nobody will read carries nothing");
+  const reply = await status();
+  assert.match(reply.text, /\n\n---\n\nMail the desk held for you:\n\n[^]*LANDED L1 \(Cart\)/);
+  assert.deepEqual(h.runtime.outbox.pending(sup), []);
+  h.agents.get(sup)!.status = "idle";
+  await h.endTurn(sup, "L1 has landed.");
+  assert.deepEqual(h.agents.get(sup)!.sent, [], "nothing is sent to start another turn");
+});
