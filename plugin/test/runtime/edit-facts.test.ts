@@ -293,6 +293,11 @@ test("a hand-back that names a command as run, when no call since its instructio
     "says `npm run lint` ran, and no call since its instruction ran it",
   ]);
   assert.deepEqual(claimed("Totals fixed; `npm test` passes.", shell("g", 3, "npm test")), []);
+  assert.deepEqual(
+    claimed("Totals fixed; `npm test` passes.", shell("g", 3, "cd pkg && npm test -- --reporter dot")),
+    [],
+    "a command run as part of a longer one ran",
+  );
   assert.deepEqual(claimed("Renamed `totalOf` to `sum`."), [], "a name in backticks that is no command claims no run");
 });
 
