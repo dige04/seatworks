@@ -154,7 +154,7 @@ test("the lane's last task merging wakes its Lead, a review that came back being
   assert.notEqual(merged.wakes, false, "it asks something of the Lead, so its turn ending sends it");
   assert.match(
     merged.text,
-    /Every task of the lane is settled\.\n\nNext: If its outcome is met, have the whole lane reviewed \(start_review, no task\), then report it ready\./,
+    /Every task of the lane is settled\.\n\nNext: If its outcome is met, start the whole-lane review \(start_review with scope lane\), then report it ready\./,
   );
   assert.doesNotMatch(merged.text, /hand-back arrives/, "no hand-back is coming");
 });

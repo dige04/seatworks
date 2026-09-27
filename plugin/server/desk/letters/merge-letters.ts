@@ -8,12 +8,13 @@ export type Settled = { base?: string; conflicts: string[] };
 /** What a lane asks of its Lead once its last task merged: its base taken in first where they conflict, then its review. */
 function whatIsLeft({ base, conflicts }: Settled): { said: string[]; next: string } {
   const said = ["Every task of the lane is settled."];
-  const review = "have the whole lane reviewed (start_review, no task), then report it ready.";
-  if (!base || conflicts.length === 0) return { said, next: `If its outcome is met, ${review}` };
+  // Its last merge is this one, so no review of the whole lane has read the lane as it now stands.
+  const review = "start the whole-lane review (start_review with scope lane)";
+  if (!base || conflicts.length === 0) return { said, next: `If its outcome is met, ${review}, then report it ready.` };
   said.push(
     `${base} conflicts with it in ${conflicts.join(", ")}, so it does not land as it is: a Peer takes ${base} in with git merge --no-edit ${base} on its task's branch and commits what it settles.`,
   );
-  return { said, next: `Have a task take ${base} in first; then ${review}` };
+  return { said, next: `Have a task take ${base} in first; then ${review} and report it ready.` };
 }
 
 export const mergeLetters = {
