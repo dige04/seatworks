@@ -6,44 +6,50 @@ something here costs no context and no tokens.
 Each entry is a rule, the words that give it away, and where this plugin stands on it today. The
 examples are only on the rules that cannot be stated in one sentence.
 
-**Where a thing can be caught** — three answers, used throughout:
+**Where a thing can be caught** — four answers, used throughout:
 
 | | Meaning |
 |---|---|
 | **caught** | A code fact fires on it today. |
-| **desk** | In the ledger, across tasks, rounds or lanes, and nothing reads it for this yet. |
+| **asked** | A model is asked one condition about it when it shows, and a yes is booked as a fact is. |
+| **desk** | In the ledger, and nothing reads it for this yet. |
 | **outside** | This plugin cannot see it, and saying why is the useful part. |
 
-Of the thirty-five rules below, **five are caught**, two more in part and one in half its cases.
-Twelve are desk-shaped: in the ledger, with nothing reading them for this. Fifteen are outside what
-the code can observe, and for those the entry says why, because that is the part worth knowing. Five
-of those need a model to read the turn. The watch can ask a model, but only in shadow, and only one
-of its questions touches these five.
+Of the thirty-five rules below, **twelve are caught**, five more in part, three of those with a
+model asked the rest, and one in half its cases. Six are asked. One is desk-shaped. Ten are outside
+what the plugin can observe, and for those the entry says why, because that is the part worth
+knowing.
 
 The thirty-five come from one list. Section 8 holds one that does not, kept here because the watch
 now catches it and everything the watch catches belongs in this file.
 
-The watch reads two things, both in code. From a seat's timeline: a destructive command, a seat
-repeating itself or not recovering from a failure, a weakened test or a silenced check, a hand-back
-after edits the gate never ran on or called complete over a failed check, and a turn running far
-longer than usual. In code, from the lane's own record — the ledger the patrol already holds — the
-shapes no window can hold, because a letter restarts the window: a task sent back again and again, a
-lane patching several tasks at once, reviews piling up with nothing accepted, a review told to report
-only what it is certain of, a brief that writes the work out instead of setting an outcome, and a
-task taken in although its Peer never said it was finished.
+The code reads three things. From a seat's timeline: a destructive command, a secret added or read,
+data sent off the machine, a new dependency, a guard or a check changed, a seat repeating itself or
+not recovering from a failure, a weakened test or a silenced check, a hand-back after edits the gate
+never ran on or called complete over a failed check, and a turn running far longer than usual. From
+the lane's own record, the shapes no window can hold because a letter restarts the window: a task
+sent back again and again, a lane patching several tasks at once, reviews piling up with nothing
+accepted or fanned out with none reconciled, a review told to report only what it is certain of, a
+brief that writes the work out instead of setting an outcome, a detour opened late, and a task taken
+in although its Peer never said it was finished. And at each decision a seat makes through the desk,
+from its own record: an accept with nothing read since the hand-back, a sending-back on a review
+that ran nothing, far more test than source, a lane ready with no push-back or over a gate growing
+slower, a brief carrying a pasted history, and a review's accept with nothing run.
 
-Both go through one incident book and are read and marked the one way: an attention-level one about
-a Peer goes to its Lead, the rest to the Supervisor, and none of them ever reaches the seat it is
-about.
+The watch also asks a model, as `attention.brain` sets it: `sensor`, `seat`, `both` or `off`. The
+questions are the patterns in `catalog/patterns.json`, one condition each, put to a seat's words at
+each look and at the decisions it makes through the desk. With `both`, the sensor asks each item
+first and the Watcher seat judges only what it said yes to, and in a decision what it was unsure of.
+Every question and answer is kept in `assessments.log`. Review asks its own checks, in
+`catalog/checks.json`, as evidence for the review, not the watch.
 
-The watch can also put a question to a model, when `attention.judge` names a sensor or the Watcher:
-one condition at a time, at a hand-back or at a moment a fact marks. Every question ships in shadow:
-its answer goes to `assessments.log` and acts on nothing.
+Everything goes into one incident book and is read and marked the one way: every incident goes to
+the Supervisor, and none ever reaches the seat it is about. The watch only sees and reports; what to
+do about it is the Supervisor's.
 
 One thing is worth knowing before trusting it: a condition read from the ledger stands still — a task sent
 back three times stays sent back three times — so it is raised once and then only when the record
-says something new; the book itself is that memory, so a restart does not raise it again, and a
-lane's budget for the day, a kind on probation or a watch that is off does not lose it.
+says something new; the book itself is that memory, so a restart does not raise it again.
 
 Two facts explain most of the blindness, and each is a design choice rather than a defect:
 
@@ -65,8 +71,9 @@ the system can actually do.
 hole stops and names it, and does not invent a private stand-in.
 **Signs.** "there is no X here", "I'll add a minimal", "for now I'll", "simple version of",
 "placeholder until", a new file whose name ends in `-stub`, `-mock`, `-simple`.
-**Here.** *outside* — only a model reading the turn can tell a missing mechanism from ordinary new
-code, and nothing does now. The desk already owns the remedy: a detour lane with its own Lead.
+**Here.** *asked* — `stand-in`: whether a Peer's words say it builds a stub, mock, placeholder or
+simplified version in place of something missing. In code, `architecture` notes a Lead widening a
+task past the paths it held. The remedy stays the desk's: a detour lane with its own Lead.
 
 ### Brake Pattern
 **Rule.** When several defects share one missing mechanism, build the mechanism. Fixing them one by
@@ -82,25 +89,26 @@ can see whether they share a cause.
 foundation.
 **Signs.** "compat", "adapter", "shim", "legacy path", "fallback", "for backward compatibility", a
 second copy of state, a mutex added to make two copies agree.
-**Here.** *outside* — telling a wrapper from a change takes a model reading the turn. `PEER.md`
-forbids it in words, and `outside-scope` cannot check it because that fact fires on where a file is,
-not on what it is for.
+**Here.** *asked* — `wrapper`: whether a Peer's words say it adds a compat layer, adapter, shim,
+fallback or a second copy of state. `PEER.md` forbids it in words, and `outside-scope` cannot check
+it because that fact fires on where a file is, not on what it is for.
 
 ### Architecture lock-in
 **Rule.** The first design is a proposal. A worker that cannot say what would make it wrong has not
 checked it.
 **Signs.** absence — no push-back at all across a long lane; "as designed", "per the plan",
 "following the existing pattern" as the whole reason.
-**Here.** *desk* — nothing fires on an absence. What bears on it is the ask record: every push-back
-a seat made.
+**Here.** *caught* — `no-pushback`, when a Lead reports its lane ready after
+`attention.quietLaneTasks` (4) code tasks with no ask from any of its seats. The ask record is every
+push-back a seat made.
 
 ### Priority myopia
 **Rule.** Order by what unblocks, not by label. A P2 that is the foundation of a P0 is done first.
 **Signs.** a detour lane opened late; a lane whose tasks already have sendings-back when the detour
 appears; "we'll come back to", "blocked on, working around it meanwhile".
-**Here.** *desk* — `Lane.detourOf` is exactly the record of "this should have come first", and it is
-its lateness relative to the waiting lane's reworks that carries the signal. It spans lanes, so no
-timeline can hold it.
+**Here.** *caught* — `detour-late`, when a detour is opened for a lane whose tasks were already sent
+back: `Lane.detourOf` is the record of "this should have come first", and the sendings-back before
+it opened are its lateness.
 
 ---
 
@@ -115,15 +123,17 @@ ioredis, put it in `src/session/redis.ts`, key `sess:<id>`, TTL 3600 — confirm
 answer wearing a goal's clothes, and what comes back is agreement, not engineering.
 **Signs.** in a brief: "just", "simply", "confirm", "verify that", "the approach is", a file path
 and a function name the worker was not asked to choose.
-**Here.** *caught in part* — `brief-prewritten` catches the form that writes the work out, steps and
-file names and all. The subtler form, a brief that simply states the chosen answer in prose, is
-still only in the ledger with nothing reading it.
+**Here.** *caught in part, and asked* — `brief-prewritten` catches the form that writes the work
+out, steps and file names and all. At `add_tasks` and `amend_task` a model is asked the rest:
+`pre-solves`, whether the brief tells the Peer which files, functions or approach to use, and
+`closed-choice`, whether it offers a fixed set of options.
 
 ### Authority gradient
 **Rule.** A worker may refuse the framing. A bounded task is not a gag.
 **Signs.** "the task says to, so I will", "not in scope to question", shipping something the worker
 said was wrong in the same turn.
-**Here.** *outside* — the words are in the turn, and reading them for this takes a model.
+**Here.** *asked* — `obeys-against-judgement`: whether a Peer's words say it does what the task says
+although it said the task is wrong.
 
 ### Sycophancy
 **Rule.** Agreement that cost nothing is not a check. An answer must name what was read or run.
@@ -133,26 +143,30 @@ The Peer did not check; it deferred. This is why the Supervisor's prompt forbids
 carries its own answer, and why "Are you sure?" is banned outright.
 **Signs.** "you're right", "good catch", "I'll change it" with no command or read between the
 challenge and the change.
-**Here.** *outside* — `edit-before-look` notes a turn that changed a file after an instruction before
-it read, searched or ran anything, but a note opens no incident. Whether the instruction doubted the
-work or ordered a change takes a model: `instruction_kind` asks one, in shadow, after a rework, a
-message, an answer, an amendment, a landing sent back or the Human's own words.
+**Here.** *asked* — `edit-before-look` notes, without an incident, a turn that changed a file after
+an instruction before it read, searched or ran anything, and only on such a turn is a model asked
+`defers`: whether the words agree the work was wrong, as in "you're right". Whether the instruction
+doubted the work or ordered a change, `instruction_kind`, is asked as review's evidence, not the
+watch's.
 
 ### Reflexive contrarianism
 **Rule.** The opposite failure. A reviewer that never approves is as useless as one that always
 does.
 **Signs.** every verdict is "changes requested"; findings that are restatements of taste; "I would
 have done this differently" as a blocking reason.
-**Here.** *desk* — a Reviewer has no `watched` capability, so the watch never reads a reviewer's
-timeline. What exists is every verdict, in the handback files and on `Task.handback.outcome`.
+**Here.** *caught in part* — the watch reads no Reviewer's turns, but the desk reads a verdict at
+the decision it feeds: `rework-unrun`, when a Lead sends a task back on a review that ran nothing. A
+reviewer that never approves is in its verdicts, in the hand-back files and on
+`Task.handback.outcome`, and nothing counts them.
 
 ### Scout-as-Judge
 **Rule.** A cheap search finds candidates. It does not decide. Whoever decides must read the
 evidence.
 **Signs.** "the scan found", "flagged by", a verdict quoting a tool's output and no source.
-**Here.** *desk* — a review's verdict followed by the Lead's accept with nothing between is the
-record. Note the plugin's own shape is the opposite of the anti-pattern and worth keeping straight:
-the regex fact is the scout, whoever marks it reads the record before judging, and the Supervisor still decides.
+**Here.** *caught* — `accepted-unread`, when a Lead accepts with nothing read, searched or run since
+the task's last hand-back or its review's verdict. The plugin's own shape is the opposite of the
+anti-pattern and worth keeping straight: a fact is the scout, whoever marks it reads the record
+before judging, and the Supervisor still decides.
 
 ---
 
@@ -162,8 +176,8 @@ the regex fact is the scout, whoever marks it reads the record before judging, a
 **Rule.** Test the contract that holds now. A test whose purpose is to prove an old behaviour is
 gone pins history and outlives its reason.
 **Signs.** "should no longer", "must not still", "removed in", a test named after a bug number.
-**Here.** *outside* — the diff of a test file is in the window, but what a test is for takes a model
-to read.
+**Here.** *asked* — `legacy-test`: whether a Peer's words say a test checks that an old behaviour no
+longer happens.
 
 ### Proof distorts product
 **Rule.** A proof observes the system. It does not reshape it. Logging added to make a demo work, an
@@ -171,11 +185,12 @@ interface widened so a test can reach it, a check relaxed so a run goes green �
 product to serve the evidence.
 **Signs.** "so the test can see it", "exporting for testability", "temporarily disable", a non-test
 file edited in the same breath as a failing check.
-**Here.** *caught in part* — `suppressed` fires when an edit adds a suppression such as `@ts-ignore`
-or `eslint-disable`, and `test-weakened` when a test loses assertions or gains a skip; `asked_for`
-asks a model, in shadow, whether the work asked for either. Logging added for a demo or an interface
-widened for a test takes a model to tell from the work, and loosening a check inside the task's own
-paths raises no `outside-scope` fact.
+**Here.** *caught in part, and asked* — `suppressed` fires when an edit adds a suppression such as
+`@ts-ignore` or `eslint-disable`, `test-weakened` when a test loses assertions or gains a skip, and
+`checker-touched` when an edit changes what checks the work or instructs the agents; `asked_for`
+asks, as review's evidence, whether the work asked for it. A model is asked `proof-bends-product`,
+whether the words say a product file changes so a test can see or pass it, and `gaming`, whether a
+check is made to pass without the behaviour working.
 
 ### Flaky false-red
 **Rule.** A red that two runs disagree about is not a defect in the code. Find the contention before
@@ -191,9 +206,10 @@ logs, each named for when it began.
 contract is a liability that reads as an asset.
 **Signs.** gate seconds climbing run over run; "only run this in CI"; a suite nobody ran before
 handing back.
-**Here.** *desk* — a lane's gate run logs its seconds as an event, a task's notes them on its
-hand-back when it passes, and no code reads either back. The other half has a skill
-(`test-proof-debt-audit`) and no detection.
+**Here.** *caught* — `gate-slowing`, when a lane is reported ready over a gate whose last three runs
+each took longer, the last at least `attention.gateSlowerTimes` (2) times the first. The other half,
+a test that no longer protects the current contract, has a skill (`test-proof-debt-audit`) and no
+detection.
 
 ---
 
@@ -223,18 +239,20 @@ is where the plugin says how.
 does not earn an abstraction.
 **Signs.** "to be safe", "in case", "future-proof", a new interface with one implementation, an
 option nobody asked for.
-**Here.** *desk* — each merged task's MERGED letter gives its source, test and doc line counts, and
-its goal is in the ledger, so proportion is judgable. `Lane.appetite` — "what the outcome is worth,
-as a budget" — is recorded, printed once and read by no code, and that is the number that would make
-this a judgement rather than a guess.
+**Here.** *caught in part, and asked* — `overbuilt`, at an accept whose change has at least
+`attention.testToSourceAt` (5) test lines for each source line, or no source at all; a model is
+asked `builds-for-maybe`, whether a Peer's words say it builds for a case nobody asked for.
+`Lane.appetite`, what the outcome is worth, is printed in the Lead's directive and read by no code,
+and that is the number that would make proportion a judgement rather than a guess.
 
 ### False-positive intolerance
 **Rule.** Telling a reviewer to report only what it is certain of buys precision with recall, and
 the bugs it drops are real.
 **Signs.** in a review's focus line: "only if you are certain", "no speculation", "high confidence
 only".
-**Here.** *caught* — `certainty-only`, on the review task's own focus line. The plugin's own
-`ultra-review` content pushes the other way, so this fires on a Lead overriding it.
+**Here.** *caught* — `certainty-only`, on the review task's own focus line. Only then is a model
+asked `steered-review`: whether the Lead's own words name a gap the review is not briefed on. The
+plugin's own `ultra-review` content pushes the other way, so this fires on a Lead overriding it.
 
 ---
 
@@ -249,10 +267,11 @@ framing from each other.
 ### Reviewer bias
 **Rule.** Judge a verdict by the checks behind it, not by how sharply it is written.
 **Signs.** a review hand-back whose `Ran:` line says "nothing", followed by a sending-back.
-**Here.** *desk* — every review hand-back records what it read and what it ran, and the Lead's
-response is counted as a rework. A model is asked, in shadow, only whether a review that accepts a
-change under a risk rule ran that rule's invariant. The watch never reads a reviewer's timeline; a
-Lead or the Supervisor can, with `record`.
+**Here.** *caught* — `rework-unrun`, when a Lead sends a task back on a review that ran nothing, and
+`review-unchecked`, when a review accepts with no command run or with files its change touched never
+read, as the Reviewer's own calls show at its `done`. As review's evidence, a model is asked whether
+a review that accepts a change under a risk rule ran that rule's invariant. A Lead or the Supervisor
+can read a reviewer's turns with `record`.
 
 ### Naive chat-room debate
 **Rule.** Two models arguing freely is not a council. A council needs sealed positions, a rubric and
@@ -263,16 +282,16 @@ capability. There is no room and no thread to be naive in.
 ### Context fan-out
 **Rule.** Do not hand every worker the whole history. Give each one the field-shaped brief it needs.
 **Signs.** a brief that pastes a transcript; a context field longer than the goal it serves.
-**Here.** *desk* — no transcript is ever forked; each seat is a fresh session with a shaped brief.
-The surface that remains is the brief itself: a task's `context` and a lane's outcome are printed
-unclipped while other outside text is clipped.
+**Here.** *caught* — `brief-pasted`, when a brief's context runs past `attention.briefContextChars`
+(4000). No transcript is ever forked; each seat is a fresh session with a shaped brief.
 
 ### Sub-agent explosion
 **Rule.** Every fan-out needs a reconciler named before it starts.
 **Signs.** several reviews open on one task with no convergence step; a lane whose running count
 climbs while nothing is accepted.
-**Here.** *desk* — only `lead` and `supervise` can seat anyone, which bounds the shape; within a
-lane nothing caps the count. The desk knows what is running; the reconciler is a person.
+**Here.** *caught in part* — `reviews-fanned`, when `attention.reviewsAt` (3) reviews are open at
+once in a lane with none handed back. Only `lead` and `supervise` can seat anyone, which bounds the
+shape; within a lane nothing else caps the count.
 
 ### Polling waste / lifecycle mismatch
 **Rule.** Ask to be woken; do not spin. A worker that says it is done and a supervisor that waits
@@ -310,16 +329,15 @@ description states the intent; this is what notices when a brief ignored it.
 can either, and it will burn a budget producing plausible work.
 **Signs.** "improve", "clean up", "make it better", "handle edge cases", a goal with no noun a test
 could name.
-**Here.** *desk* — a goal is fixed for the task's whole life, so it belongs where the other standing
-conditions are read, in the ledger; and judging "observable" is not something a regular expression
-can do, so it waits.
+**Here.** *asked* — `vague-goal`, at `add_tasks` and `amend_task`: whether the goal names no outcome
+a test or a person could observe. In code, `goal-turned` notes a Lead changing what a task is for.
 
 ### Ceremony attention dilution
 **Rule.** Every step in a checklist spends attention that the problem needed. Count what the process
 asks before adding to it.
 **Here.** *outside* — nothing at runtime reads how many steps a seat was told to follow. At build
-time, `test/catalog/lint.test.ts` holds each role prompt to a budget of words and rule lines, and
-each skill, tool description and harness delta to a budget of words.
+time, `test/catalog/lint.test.ts` holds each tool description to 60 words and each parameter to 25.
+Role prompts have no budget: a prompt is judged by whether its seat works, not by its length.
 
 ### Conflicting instruction debt
 **Rule.** One rule, one home. A rule in a prompt and again in a tool description will drift, and the
@@ -359,9 +377,9 @@ nothing.
 **Rule.** A model already tends to overbuild. A checklist that rewards thoroughness makes it worse.
 **Signs.** test lines far above source lines; no source lines changed at all; a diff much larger
 than the appetite.
-**Here.** *desk* — source, test and doc line counts are measured for every accepted task and two of
-them already become notes to the Lead. The number that would make it a judgement, the lane's
-appetite, is printed once and read by nothing.
+**Here.** *caught* — `overbuilt`, at an accept whose change has at least `attention.testToSourceAt`
+(5) test lines for each source line, or no source at all. The lane's appetite, the number that would
+make the rest a judgement, is printed once and read by nothing.
 
 ---
 
@@ -408,6 +426,8 @@ afterwards carried the raised thing forward — cannot be told from the ledger w
 prose, and no record says it carries on what another left: `Task.of` names only a review's target,
 and `Lane.detourOf` only the lane a detour clears the way for. The outcome word is the part that is
 structured, so the outcome word is the part that is read.
+A model is also asked `withholds-gap` at `done` and `report`: whether the seat's own words say part
+of the work does not work, fails or was skipped, when the hand-back or report leaves it out.
 
 ---
 
@@ -420,5 +440,5 @@ proofs pile up locally → review patches further → the debt grows while the d
 So the question to ask before letting an agent fix a list of findings is the one this list was
 compiled around: **do these findings share one missing mechanism?**
 
-What the watch detects today is in `plugin/server/runtime/watch/fact-kinds.ts` and
-`plugin/server/runtime/watch/history.ts`; its settings are `attention` in `plugin/shared/settings.ts`.
+What the watch detects today is named in `plugin/server/domain/incident.ts` and asked in
+`plugin/catalog/patterns.json`; its settings are `attention` in `plugin/shared/settings.ts`.
