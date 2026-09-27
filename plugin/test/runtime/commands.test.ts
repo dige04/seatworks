@@ -90,3 +90,17 @@ test("scratch is read from the words the shell passes, whatever quotes build the
   assert.equal(paged(`rm -rf "$(dirname "$HOME/x")"`).length, 1, "nor the folder of a path that is not");
   assert.equal(paged(`rm -rf "src"/"$TMPDIR"`).length, 1, "nor one that only names it");
 });
+
+test("a relative rm after cd into scratch in the same command removes scratch", () => {
+  // p-on I3, I9 and p-off I9: a Lead probing a commit in $TMPDIR cleaned its own probe folder there.
+  assert.deepEqual(paged(`cd "$TMPDIR" && rm -rf probe`), []);
+  assert.deepEqual(paged(`demo=$(mktemp -d) && pushd "$demo" && rm -rf out`), []);
+  // p-on I1: the folder of a mktemp file, and a script the Peer wrote beside it in $TMPDIR.
+  assert.deepEqual(
+    paged(`f="$(mktemp -d)/orders.json" && cd "$TMPDIR" && node peek.mjs "$f" && rm -r "$(dirname "$f")" peek.mjs`),
+    [],
+  );
+  assert.equal(paged(`cd "$TMPDIR" && rm -rf ../src`).length, 1, "climbing out of it is not");
+  assert.equal(paged(`cd "$TMPDIR" && cd ~/work && rm -rf dist`).length, 1, "nor after a cd elsewhere");
+  assert.equal(paged(`cd "$TMPDIR" || true; rm -rf probe`).length, 1, "a cd that may have failed moves nothing");
+});

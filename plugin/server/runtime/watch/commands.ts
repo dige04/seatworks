@@ -62,11 +62,13 @@ function madeBy(parts: string[]): { variables: Set<string>; paths: string[] } {
   return { variables, paths };
 }
 
-/** An `rm` whose every target is scratch space: $TMPDIR, /tmp, the machine's temporary directory, or what the same command made. */
-function scratchOnly(part: string, made: ReturnType<typeof madeBy>, temp?: string): boolean {
-  const words = shellWords(part);
-  if (words[0] !== "rm") return false;
-  const targets = targetsOf(words);
+/** Where a relative path points: where the seat runs, in scratch space, or nowhere the watch can tell. */
+type At = "start" | "scratch" | "elsewhere";
+
+const inside = (path: string) => !/^(?:[/\\~$%`]|[A-Za-z]:)/.test(path) && !CLIMBS.test(path);
+
+/** Whether a path is scratch space: $TMPDIR, /tmp, the machine's temporary directory, or what the same command made. */
+function scratchIn(made: ReturnType<typeof madeBy>, temp?: string) {
   const scratch = (target: string): boolean => {
     if (CLIMBS.test(target)) return false;
     const folder = DIRNAME.exec(target)?.[1];
@@ -78,16 +80,34 @@ function scratchOnly(part: string, made: ReturnType<typeof madeBy>, temp?: strin
       made.paths.some((path) => target === path || target.startsWith(`${path.replace(/\/$/, "")}/`))
     );
   };
-  return targets.length > 0 && targets.every(scratch);
+  return scratch;
 }
 
 export function onDetail(call: Call, rules: Rules): Fact[] {
   if (call.detail.type !== "shell") return [];
   // A command at a time: removing a commit message's temp file once paged a Lead.
-  const parts = str(call.detail.command).split(/&&|\|\||;|\n/);
-  const made = madeBy(parts);
-  const risky = parts.find((part) => rules.destructive.test(part) && !scratchOnly(part, made, rules.temp));
-  return risky ? [fact("destructive", around(oneLine(risky, Infinity), rules.destructive, 200))] : [];
+  const pieces = str(call.detail.command).split(/(&&|\|\||;|\n)/);
+  const parts = pieces.filter((_, index) => index % 2 === 0);
+  const scratch = scratchIn(madeBy(parts), rules.temp);
+  let at: At = "start";
+  for (const [index, part] of parts.entries()) {
+    const words = shellWords(part);
+    if (words[0] === "cd" || words[0] === "pushd" || words[0] === "popd") {
+      const target = targetsOf(words)[0];
+      const to: At = target && scratch(target) ? "scratch" : target && inside(target) ? at : "elsewhere";
+      // Only `&&` says the cd took: after any other separator the next part may run where the seat was.
+      at = pieces[2 * index + 1] === "&&" || to === at ? to : "elsewhere";
+      continue;
+    }
+    const targets = targetsOf(words);
+    const removesScratch =
+      words[0] === "rm" &&
+      targets.length > 0 &&
+      targets.every((target) => scratch(target) || (at === "scratch" && inside(target)));
+    if (rules.destructive.test(part) && !removesScratch)
+      return [fact("destructive", around(oneLine(part, Infinity), rules.destructive, 200))];
+  }
+  return [];
 }
 
 /** Cuts around the match, not from the front: what makes a long command irreversible is often at its end. */
