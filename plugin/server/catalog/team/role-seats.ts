@@ -1,5 +1,5 @@
 import type { Layer } from "../../../shared/settings.ts";
-import { supportsRole } from "../kit/harness-files.ts";
+import { allowsHarness, supportsRole } from "../kit/harness-files.ts";
 import type { HarnessSpec, Kit, ModelSpec, RoleSpec } from "../kit/kit.ts";
 import { type McpState, transportOf } from "./mcp-states.ts";
 import { agentDefault } from "../kit/roles.ts";
@@ -33,7 +33,9 @@ export function resolveRole(
     errors.push(`The ${role.label} runs on ${choice.harness}, which is not in the harness catalog`);
     return undefined;
   }
-  if (!supportsRole(kit, harness, role))
+  if (!allowsHarness(role, harness))
+    errors.push(`The ${role.label} does not list ${harness.label} among the harnesses it may sit on`);
+  else if (!supportsRole(kit, harness, role))
     errors.push(
       `${harness.label} has no ${role.role} settings under harness/${harness.id}/settings, so it can't run the ${role.label}`,
     );
@@ -56,7 +58,7 @@ export function presetOn(
   harness: HarnessSpec,
   roles: RoleSpec[],
 ): { model?: ModelSpec; thinking?: string } {
-  const preset = harness.id === role.defaults.harness ? role.defaults : undefined;
+  const preset = harness.id === role.defaults.harness ? role.defaults : role.harnesses?.[harness.id];
   // The kit's own model for its own harness, whether or not the catalog lists it, as resolveRole keeps it.
   const model = modelFor(harness, preset?.model, roles);
   return { model, thinking: thinkingFor(harness, model, preset?.thinking) };
@@ -90,7 +92,8 @@ function chosen(role: RoleSpec, layers: Layer[], origin: Choice): { choice: Choi
     if (!next) continue;
     // Back on the role's own harness restores the preset; reset to the harness alone, it lost the preset's model and thinking.
     if (next.harness && next.harness !== choice.harness)
-      choice = next.harness === origin.harness ? { ...origin } : { harness: next.harness };
+      choice =
+        next.harness === origin.harness ? { ...origin } : { harness: next.harness, ...pinnedOn(role, next.harness) };
     if (next.model) choice.model = next.model;
     if (next.thinking) choice.thinking = next.thinking;
     if (next.rules?.trim()) rules.push(next.rules.trim());
@@ -124,4 +127,10 @@ function serversFor(role: RoleSpec, harness: HarnessSpec, mcp: Record<string, Mc
       errors.push(`${harness.label} can't reach ${state.label} over ${transport}, so the ${role.label} can't use it`);
   }
   return enabled.map((state) => state.id);
+}
+
+/** The model and thinking the role lists for a harness other than its default, if any. */
+function pinnedOn(role: RoleSpec, harness: string): { model?: string; thinking?: string } {
+  const own = role.harnesses?.[harness];
+  return own ? { ...(own.model ? { model: own.model } : {}), ...(own.thinking ? { thinking: own.thinking } : {}) } : {};
 }

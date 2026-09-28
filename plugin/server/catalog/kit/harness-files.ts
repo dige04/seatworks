@@ -15,8 +15,14 @@ export function harnessFileSources(kit: Kit, harness: HarnessSpec, role: RoleSpe
   );
 }
 
+/** Whether the role lists the harness, when it lists any: its default harness is always allowed. */
+export function allowsHarness(role: RoleSpec, harness: HarnessSpec): boolean {
+  return !role.harnesses || harness.id === role.defaults.harness || harness.id in role.harnesses;
+}
+
 export function supportsRole(kit: Kit, harness: HarnessSpec, role: RoleSpec): boolean {
   return (
+    allowsHarness(role, harness) &&
     existsSync(roleSettingsFile(kit, harness, role)) &&
     Object.values(harnessFileSources(kit, harness, role)).every((sources) =>
       sources.every((source) => existsSync(source)),

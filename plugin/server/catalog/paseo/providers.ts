@@ -59,7 +59,8 @@ function desiredProvider(kit: Kit, team: Team, role: RoleSpec, harness: HarnessS
   const command = (harness.provider.command ?? []).map((part) => part.replaceAll("KIT", kit.dir));
   if (command.length > 0) entry.command = command;
   const models = defaultModel(harness, choiceFor(team, role, harness));
-  if (models.length > 0) entry.additionalModels = models;
+  // A pinned harness offers only its model, so the seat cannot be moved onto another from Paseo's picker.
+  if (models.length > 0) entry[role.harnesses?.[harness.id]?.only ? "models" : "additionalModels"] = models;
   const tools = paseoToolsPolicy(kit, role);
   if (tools) entry.paseoTools = tools;
   return entry;

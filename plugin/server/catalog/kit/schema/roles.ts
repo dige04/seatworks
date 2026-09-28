@@ -11,6 +11,10 @@ const Role = z.strictObject({
   tools: text.optional(),
   follows: text.optional(),
   defaults: z.strictObject({ harness: text, model: text.optional(), thinking: text.optional() }).optional(),
+  // The harnesses the role may sit on besides its default, each with the model and thinking it starts on; `only` pins that model.
+  harnesses: z
+    .record(text, z.strictObject({ model: text.optional(), thinking: text.optional(), only: z.boolean().optional() }))
+    .optional(),
   prompt: text,
   skills: text.nullable(),
   extraSkills: z.array(z.string().regex(/^[^:]+:[^:]+$/, { error: "is not written set:name" })).optional(),

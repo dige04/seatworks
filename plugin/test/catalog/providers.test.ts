@@ -130,3 +130,27 @@ test("the plugin writes one provider and profile per seat into Paseo's config, k
     "a role on an agent its preset does not name starts on another role's preset there, not the first listed",
   );
 });
+
+test("a role that lists its harnesses gets seats on those alone, each starting on the model it names, and a pinned one offers no other model", () => {
+  const kit = makeKit();
+  mkdirSync(dirname(paseoConfigPath()), { recursive: true });
+  writeFileSync(paseoConfigPath(), JSON.stringify({ agents: { providers: {} }, daemon: { agentProfiles: [] } }));
+  const role = (name: string) => kit.roles.find((entry) => entry.role === name)!;
+  role("lead").harnesses = { omp: { model: "flash", thinking: "high", only: true } };
+  role("scribe").harnesses = {};
+
+  applyReconcile(kit, resolveTeam(kit));
+  const { agents, daemon } = written();
+  assert.deepEqual(
+    Object.keys(agents.providers).sort(),
+    ["sw2-lead-claude", "sw2-lead-omp", "sw2-peer-omp", "sw2-scribe-omp", "sw2-supervisor-claude"],
+    "the scribe keeps only its default harness, as it lists no other",
+  );
+  assert.deepEqual(agents.providers["sw2-lead-omp"]!.models, [{ id: "flash", label: "flash", isDefault: true }]);
+  assert.equal(agents.providers["sw2-lead-omp"]!.additionalModels, undefined);
+  const profile = daemon.agentProfiles.find((entry) => entry.id === "sw2-lead-omp") as {
+    model?: string;
+    thinkingOptionId?: string;
+  };
+  assert.deepEqual([profile.model, profile.thinkingOptionId], ["flash", "high"]);
+});
