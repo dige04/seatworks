@@ -5,16 +5,24 @@ Claude Max, Codex, Antigravity (omp) and a TypeSafe key. Upstream now carries th
 (Architect, Auditor, a Supervisor across projects, measurements that hold the machine, no mail inside a running turn),
 so this fork changes only the team and the Jev endpoint.
 
-## Install
+## Install, on this machine or another
+
+Needs macOS, Paseo >=0.9.1 <0.10 (not 0.10.x yet), Node 24 or newer (mise or Homebrew), `jq`, and `claude`, `codex`
+and `omp` each logged in once.
 
 ```bash
-./pp/install.sh   # checks, team files, Paseo plugin install; keeps the machine's sensor keys
+# Outside ~/Documents: macOS privacy settings keep the Paseo daemon from reading there.
+git clone -b main-pp git@github.com:dige04/seatworks.git ~/.local/share/seatworks-src
+cd ~/.local/share/seatworks-src && ./pp/install.sh
+paseo restart   # when no agent is working, so Paseo takes the team's providers
 ```
 
-Then in Paseo: **Seatworks › Add project**, **Health › Run**, and start the Supervisor in that project.
+The installer runs the checks, puts the team in `~/.local/share/seatworks-v3`, keeps the machine's sensor keys,
+installs the plugin (or reloads it when it is already installed from the same folder; from another folder it says to
+remove that one first) and checks each agent's login. Then in Paseo: **Seatworks › Add project**, **Health › Run**,
+put the TypeSafe key under **Machine defaults**, and start the Supervisor in that project.
 
-Claude seats share the machine's own Claude login: upstream starts them with `CLAUDE_SECURESTORAGE_CONFIG_DIR=""`,
-so no token is needed.
+Each machine keeps its own projects, ledgers and keys: nothing of that is in this repo.
 
 ## The team (`pp/roles.json`)
 
