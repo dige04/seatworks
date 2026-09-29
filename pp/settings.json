@@ -1,0 +1,15 @@
+{
+  "roles": {
+    "lead": {
+      "rules": "Pick the Peer role for each task in add_tasks:\n- peer (default): most tasks, and every task whose premise or design is still open.\n- peer-flash (Gemini 3.8 Flash): a well-bounded task with a settled contract and an acceptance a focused check shows, such as a mechanical change across files, tests written to a stated acceptance, or docs. Never auth, money, migrations, concurrency, security or data loss. A task peer-flash hands back wrong once goes to peer.\nReviews: reviewer (Codex) is the default lens; second-reviewer (Claude) is the other half when a decision is hard or a landing risky, so the two lenses are two vendors."
+    }
+  },
+  "attention": {
+    "brain": "sensor",
+    "sensor": "jev"
+  },
+  "review": {
+    "sensor": "jev"
+  },
+  "language": "Vietnamese"
+}
