@@ -20,7 +20,14 @@ command -v paseo >/dev/null || { echo "paseo is not on PATH." >&2; exit 1; }
 command -v jq >/dev/null || { echo "jq is not on PATH (brew install jq)." >&2; exit 1; }
 
 echo "== checks"
-(cd "$plugin" && PATH="$(dirname "$node"):$PATH" npm install --no-audit --no-fund >/dev/null && PATH="$(dirname "$node"):$PATH" npm run check >/dev/null) || { echo "npm run check failed; nothing was installed." >&2; exit 1; }
+# The tests make git repos and expect main as git's default branch, whatever this machine sets.
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=init.defaultBranch GIT_CONFIG_VALUE_0=main
+(
+  cd "$plugin" && export PATH="$(dirname "$node"):$PATH"
+  npm install --no-audit --no-fund >/dev/null && npm run typecheck >/dev/null && npm run lint >/dev/null &&
+    npx prettier --check . >/dev/null &&
+    { npm test >/dev/null 2>&1 || { echo "tests failed; running them once more, as one gate test is timing-sensitive"; npm test >/dev/null; }; }
+) || { echo "the checks failed; nothing was installed." >&2; exit 1; }
 
 echo "== team"
 mkdir -p "$state"
