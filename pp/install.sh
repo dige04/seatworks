@@ -47,8 +47,7 @@ fi
 echo "== paseo"
 version=$(paseo --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 case "$version" in
-  0.9.*) ;;
-  *) echo "Paseo $version is not supported: this plugin needs Paseo >=0.9.1 <0.10.0." >&2; exit 1 ;;
+  0.[0-9].*|"") echo "Paseo ${version:-(not found)} is not supported: this plugin needs Paseo 0.10.0 or newer." >&2; exit 1 ;;
 esac
 cp "$HOME/.paseo/config.json" "$HOME/.paseo/config.json.bak-seatworks-$(date +%Y%m%d-%H%M%S)"
 plugin_dir=$(cd "$plugin" && pwd -P)

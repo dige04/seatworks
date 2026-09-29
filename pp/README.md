@@ -7,7 +7,7 @@ so this fork changes only the team and the Jev endpoint.
 
 ## Install, on this machine or another
 
-Needs macOS, Paseo >=0.9.1 <0.10 (not 0.10.x yet), Node 24 or newer (mise or Homebrew), `jq`, and `claude`, `codex`
+Needs macOS, Paseo 0.10.0 or newer, Node 24 or newer (mise or Homebrew), `jq`, and `claude`, `codex`
 and `omp` each logged in once.
 
 ```bash
