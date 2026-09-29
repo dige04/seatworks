@@ -4,7 +4,6 @@ import type { ReactElement } from "react";
 import { Text } from "react-native";
 import type { CatalogView } from "../../../shared/views.ts";
 import { modelRow } from "../../model/layer.ts";
-import { ModelPicker } from "./model-picker.tsx";
 
 type Props = {
   catalog: CatalogView;
@@ -45,13 +44,14 @@ export function seatPick(props: Props) {
   ];
   if (models.length > 1 || row.stray)
     rows.push(
-      <ModelPicker
+      // Paseo's own select, not ModelPicker: seatPick renders inside a dialog, and ModelPicker's react-native Modal
+      // fights the dialog's focus trap there, which froze the whole app.
+      <SettingsSelect
         key={`${role.id}-model`}
         label="Model"
         hint={row.stray ? `${row.value} is not one this agent offers. Pick one it does.` : `For the ${role.label}.`}
         value={row.value}
         options={row.options}
-        theme={theme}
         onValueChange={onModel}
         disabled={disabled}
       />,

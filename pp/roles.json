@@ -153,8 +153,8 @@
       "like": "reviewer",
       "prompt": "prompts/AUDITOR.md",
       "defaults": {
-        "harness": "codex",
-        "model": "gpt-6-sol",
+        "harness": "omp",
+        "model": "google-antigravity/gemini-3.8-flash",
         "thinking": "high"
       }
     },
@@ -162,7 +162,6 @@
       "role": "watcher",
       "label": "Watcher",
       "description": "Judges what the watch's eye read of a Lead or a Peer against its patterns; it cannot touch the work",
-      "follows": "peer",
       "can": [
         "judge"
       ],
@@ -173,7 +172,12 @@
         "enabled": false
       },
       "hidesWords": [],
-      "writes": []
+      "writes": [],
+      "defaults": {
+        "harness": "omp",
+        "model": "google-antigravity/gemini-3.8-flash",
+        "thinking": "high"
+      }
     }
   ]
 }
