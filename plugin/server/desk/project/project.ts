@@ -115,7 +115,11 @@ export function gateCommands(root: string, gate: string | undefined, ecosystem: 
   if (!gate?.trim()) return [];
   const script = new RegExp(`^(?:${ecosystem.scriptRunners.join("|")})(?: run)? ([\\w:.-]+)$`).exec(gate.trim())?.[1];
   const body = script ? scriptBody(join(root, "package.json"), script) : undefined;
-  if (body === undefined) return [gate];
+  if (body === undefined) {
+    // A chain's last command runs the tests; the rest set up what it runs with.
+    const last = gate.split(/&&|;/).at(-1)!.trim();
+    return /&&|;/.test(gate) && last ? [gate, last] : [gate];
+  }
   // The script's last command runs the tests; its runner is the program plus at most one word, never a path.
   const words = body
     .split(/&&|\|\||;/)

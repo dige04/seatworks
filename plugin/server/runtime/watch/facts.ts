@@ -155,7 +155,12 @@ function outside(path: string, rules: Rules): boolean {
   if (!path || /\s/.test(path) || !rules.cwd) return false;
   const rel = isAbsolute(path) ? relative(rules.cwd, path) : normalize(path);
   // The temp directory is scratch only outside the copy: a copy that lies in it is still read by its scope.
-  if (rel.startsWith("..")) return !(rules.temp && isAbsolute(path) && !relative(rules.temp, path).startsWith(".."));
+  // A seat's agent may keep a temp directory of its own apart from the daemon's: scratch space by name is scratch too.
+  if (rel.startsWith(".."))
+    return !(
+      (rules.temp && isAbsolute(path) && !relative(rules.temp, path).startsWith("..")) ||
+      rules.scratch.test(path)
+    );
   // A Lead holds no product file: the lane's code is its Peers' to write.
   if (rules.lead && !PROSE.test(path)) return true;
   return rules.scope !== undefined && rules.scope.length > 0 && !covers(rules.scope, rel);

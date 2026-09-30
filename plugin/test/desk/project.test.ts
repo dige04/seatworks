@@ -50,6 +50,18 @@ test("a project's gate is found from its files, and so is the runner that gate s
   assert.deepEqual(gateCommands(root, "npm test", ecosystem), ["npm test", "node --test"]);
   assert.deepEqual(gateCommands(root, "npm run check", ecosystem), ["npm run check", "vitest run"]);
   assert.deepEqual(gateCommands(root, "npm run missing", ecosystem), ["npm run missing"]);
+  assert.deepEqual(
+    gateCommands(
+      root,
+      'export PATH="$HOME/x/bin:$PATH" && pnpm install --frozen-lockfile && pnpm --filter @app/web exec tsc --noEmit && pnpm lint && pnpm --filter @app/web test',
+      ecosystem,
+    ),
+    [
+      'export PATH="$HOME/x/bin:$PATH" && pnpm install --frozen-lockfile && pnpm --filter @app/web exec tsc --noEmit && pnpm lint && pnpm --filter @app/web test',
+      "pnpm --filter @app/web test",
+    ],
+    "a chain's last command runs the tests: a seat that ran it after its last edit ran the gate's check",
+  );
   writeFileSync(join(root, "pnpm-lock.yaml"), "");
   assert.equal(detectGate(root, ecosystem), "pnpm test");
 });

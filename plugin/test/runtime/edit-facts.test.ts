@@ -109,6 +109,9 @@ test("an edit is read for weakened tests, silenced checks and writes outside the
   const scoped = rules({ cwd: "/var/folders/xy/T/work", temp: "/var/folders/xy/T", scope: ["src/pricing"] });
   const writes = [
     edit("m", 2, { filePath: "/var/folders/xy/T/msg" }),
+    // A seat's own temp directory, which its agent may set apart from the daemon's.
+    edit("t", 2, { filePath: "/tmp/claude-501/ctl/apps/web/src/server/social.ts" }),
+    edit("u", 2, { filePath: "/tmp/msg" }),
     edit("k", 3, { filePath: "/Users/me/.ssh/config" }),
     edit("o", 4, { filePath: "/var/folders/xy/T/work/src/pricing/rates.ts" }),
     edit("s", 5, { filePath: "/var/folders/xy/T/work/lib/x.ts" }),

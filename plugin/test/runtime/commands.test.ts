@@ -177,6 +177,17 @@ test("what else throws work or data away is paged: stashes, discarded changes, d
     assert.deepEqual(paged(command), [], command);
 });
 
+test("removing what a variable set to scratch space in the same command names is clean-up, not a page", () => {
+  for (const command of [
+    `C=$TMPDIR/ctl-web; rm -rf $C`,
+    `C="$TMPDIR/ctl"; fresh(){ rm -rf "$C/src"; }; fresh`,
+    "OUT=/tmp/claude-501/run && rm -rf $OUT/cache",
+  ])
+    assert.deepEqual(paged(command), [], command);
+  for (const command of ["C=src; rm -rf $C", "C=$HOME/work; rm -rf $C", "rm -rf $C"])
+    assert.equal(paged(command).length, 1, command);
+});
+
 test("a command that reads, prints, dumps or stages a secret is paged, and one on an example file is not", () => {
   for (const command of [
     "cat .env",
@@ -193,8 +204,26 @@ test("a command that reads, prints, dumps or stages a secret is paged, and one o
     "cat config/credentials.json",
   ])
     assert.equal(raised("secret", command).length, 1, command);
-  for (const command of ["cat .env.example", "cp .env.example .env", "env NODE_ENV=test node x.js", "echo done"])
+  for (const command of [
+    "cat .env.example",
+    "cp .env.example .env",
+    "env NODE_ENV=test node x.js",
+    "echo done",
+    // Only the names of what is set: what cuts every value away before it prints shows no secret.
+    "env | grep -o '^FVN_DB[A-Z_]*'",
+    "env | grep -o -E '^(FVN|DATABASE|PG)[A-Z_]*'",
+    `env | grep -iE "^PG|DATABASE" | sed 's/=.*/=<set>/'`,
+    "env | cut -d= -f1 | sort",
+    "printenv | awk -F= '{print $1}'",
+  ])
     assert.deepEqual(raised("secret", command), [], command);
+  for (const command of [
+    // Keeping part of each value prints part of a secret: one such once put a hook token in a transcript.
+    `env | grep -iE "CERT|CA_|SSL" | sed 's/=\\(.\\{0,60\\}\\).*/=\\1/'`,
+    "env | grep -o 'TOKEN=.*'",
+    "env | grep FVN_DB",
+  ])
+    assert.equal(raised("secret", command).length, 1, command);
   assert.equal(
     play(
       [...opening(), again(piRow(11), "c", 2, (detail) => Object.assign(detail, { command: "cat .env" }))],

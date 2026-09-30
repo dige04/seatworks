@@ -6,6 +6,7 @@ import type { Call } from "./window.ts";
 
 const MKTEMP = /\b([A-Za-z_]\w*)=["']?(?:\$\(\s*mktemp\b[^)]*\)|`\s*mktemp\b[^`]*`)/g;
 const VARIABLE = /^\$\{?([A-Za-z_]\w*)\}?(?:\/|$)/;
+const ASSIGN = /^(?:export\s+)?([A-Za-z_]\w*)=("[^"]*"|'[^']*'|\S+)$/g;
 const DIRNAME = /^\$\(\s*dirname\s+([^)]*)\)$/;
 const CLIMBS = /(?:^|[/\\])\.\.(?:[/\\]|$)/;
 
@@ -56,13 +57,14 @@ const REMOVES = new Set(["rm", "remove-item", "rmdir", "rd"]);
 const targetsOf = (words: string[]) =>
   words.slice(1).filter((word) => !word.startsWith("-") && !/^\/[a-z]$/i.test(word));
 
-function madeBy(parts: string[]): { variables: Set<string>; paths: string[] } {
+function madeBy(parts: string[]): { variables: Set<string>; paths: string[]; assigned: RegExpMatchArray[] } {
   const variables = new Set([...parts.join("\n").matchAll(MKTEMP)].map((match) => match[1]!));
+  const assigned = parts.flatMap((part) => [...part.trim().matchAll(ASSIGN)]);
   const paths = parts.flatMap((part) => {
     const words = shellWords(part);
     return words[0] === "mkdir" || words[0] === "touch" ? targetsOf(words) : [];
   });
-  return { variables, paths };
+  return { variables, paths, assigned };
 }
 
 /** Where a relative path points: where the seat runs, in scratch space, or nowhere the watch can tell. */
@@ -86,6 +88,9 @@ function scratchIn(made: ReturnType<typeof madeBy>, { scratch: named, temp }: Ru
       made.paths.some((path) => target === path || target.startsWith(`${path.replace(/\/$/, "")}/`))
     );
   };
+  // A variable the same command set to scratch space names scratch space wherever it is used after.
+  for (const [, name, value] of made.assigned)
+    if (!made.variables.has(name!) && scratch(shellWords(value!)[0] ?? "")) made.variables.add(name!);
   return scratch;
 }
 
@@ -105,6 +110,8 @@ export function onDetail(call: Call, rules: Rules): Fact[] {
   const found: Fact[] = [];
   for (const [index, part] of parts.entries()) {
     const words = shellWords(part);
+    // A function's body or a group runs its first command: `fresh(){ rm -rf "$C"` removes as `rm -rf "$C"` does.
+    while (words[0] !== undefined && /^(?:[A-Za-z_][\w-]*\(\)\{?|\{|\()$/.test(words[0])) words.shift();
     if (words[0] === "cd" || words[0] === "pushd" || words[0] === "popd") {
       const target = targetsOf(words)[0];
       const to: At = target && scratch(target) ? "scratch" : target && inside(target) ? at : "elsewhere";
@@ -170,7 +177,34 @@ function touchesSecret(words: string[], part: string, rules: Rules): boolean {
   if (command === "rm" || command === "remove-item") return false;
   // What cp and mv write to is not read.
   const read = command === "cp" || command === "mv" ? words.slice(1, -1) : words.slice(1);
-  return rules.secretCommand.test(part.trim()) || read.some((word) => secretFile(word, rules));
+  return (rules.secretCommand.test(part.trim()) && !namesOnly(part)) || read.some((word) => secretFile(word, rules));
+}
+
+/** What keeps only the part before `=` of each line: a name, never its value. */
+const NAMES = [
+  /^grep\b(?=[^=]*$)(?=.*\s-[a-zA-Z]*o)/,
+  /^cut\b(?=.*-d\s*['"]?=['"]?(?:\s|$))(?=.*-f\s*1(?:\s|$))/,
+  /^sed\b.*\bs\/=\.\*\/[^/\\]*\//,
+  /^awk\b(?=.*-F\s*['"]?=['"]?\s)(?=.*print \$1\b)/,
+];
+
+/** An environment dump piped through something that cuts every value away before it prints: only names are shown. */
+function namesOnly(part: string): boolean {
+  const stages: string[] = [];
+  let stage = "";
+  let quote: string | undefined;
+  for (const char of part) {
+    if (quote) quote = char === quote ? undefined : quote;
+    else if (char === "'" || char === '"') quote = char;
+    else if (char === "|") {
+      stages.push(stage.trim());
+      stage = "";
+      continue;
+    }
+    stage += char;
+  }
+  stages.push(stage.trim());
+  return stages.length > 1 && stages.slice(1).some((later) => NAMES.some((names) => names.test(later)));
 }
 
 /** Cuts around the match, not from the front: what makes a long command irreversible is often at its end. */
