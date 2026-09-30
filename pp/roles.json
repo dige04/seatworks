@@ -27,7 +27,8 @@
         "architecture-premise-audit/"
       ],
       "uses": [
-        "gh"
+        "gh",
+        "git"
       ]
     },
     {

@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { refusalSettings } from "../../server/catalog/seat/refusals.ts";
 import { seatBin } from "../../server/catalog/seat/seat-bin.ts";
+import { usedSettings } from "../../server/catalog/seat/seat-files.ts";
 import { fileURLToPath } from "node:url";
 import { tempDir } from "../tempdir.ts";
 
@@ -30,4 +31,33 @@ test("a role that uses a command the kit refuses finds it on its PATH and in its
     JSON.stringify(refusalSettings(kit, kit.harnesses["claude"]!, role, state)).includes("Bash(gh");
   assert.equal(denied(lead), true);
   assert.equal(denied(supervisor), false);
+});
+
+test("a role that uses git runs the real one: no shim on its PATH and no deny rule for it", () => {
+  const kit = loadKit(PLUGIN);
+  const supervisor = { ...kit.roles.find((role) => role.role === "supervisor")!, uses: ["gh", "git"] };
+  const state = tempDir("sw2-uses-git-state-");
+  const own = seatBin(kit, state, supervisor)!;
+  assert.deepEqual(
+    readdirSync(own).sort(),
+    Object.keys(kit.refused)
+      .filter((name) => name !== "gh")
+      .sort(),
+    "neither the git shim nor gh's refusal is in its directory",
+  );
+  assert.ok(readdirSync(seatBin(kit, state)!).includes("git"), "every other seat still runs git through the shim");
+});
+
+test("what a role uses is neither denied nor sandboxed in its settings; a role that uses nothing keeps both", () => {
+  const kit = loadKit(PLUGIN);
+  const supervisor = kit.roles.find((role) => role.role === "supervisor")!;
+  const settings = {
+    permissions: { deny: ["Edit", "Bash(git merge *)", "Bash(git -C * reset *)", "Bash(gh)", "Bash(sleep *)"] },
+    sandbox: { enabled: true, excludedCommands: ["docker"] },
+  };
+  assert.deepEqual(usedSettings({ ...supervisor, uses: ["gh", "git"] }, settings), {
+    permissions: { deny: ["Edit", "Bash(sleep *)"] },
+    sandbox: { enabled: true, excludedCommands: ["docker", "gh", "gh *", "git", "git *"] },
+  });
+  assert.equal(usedSettings(supervisor, settings), settings);
 });

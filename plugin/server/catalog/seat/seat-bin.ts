@@ -21,18 +21,20 @@ function realGit(...skip: string[]): string | undefined {
  * refuses one that says why and fails. Nothing where this machine has no git.
  */
 export function seatBin(kit: Kit, root = stateRoot(), role?: RoleSpec): string | undefined {
-  // A role that uses a command the kit refuses has a directory without that command's refusal in it.
-  const uses = (role?.uses ?? []).filter((name) => name in kit.refused);
+  // A role that uses a command the kit refuses, or git itself, has a directory without that refusal or the git shim in it.
+  const uses = (role?.uses ?? []).filter((name) => name in kit.refused || name === "git");
   const dir = join(root, uses.length > 0 ? `bin-${role!.role}` : "bin");
   const git = realGit(dir, join(root, "bin"));
   if (!git) return undefined;
   const [node, shim] = [nodeBin(), join(kit.dir, "bin", "git-shim.mjs")];
-  const commands: Record<string, { sh: string; cmd: string }> = {
-    git: {
-      sh: `#!/bin/sh\nexec ${quoted(node)} ${quoted(shim)} ${quoted(git)} "$@"\n`,
-      cmd: `@echo off\r\n"${node}" "${shim}" "${git}" %*\r\n`,
-    },
-  };
+  const commands: Record<string, { sh: string; cmd: string }> = uses.includes("git")
+    ? {}
+    : {
+        git: {
+          sh: `#!/bin/sh\nexec ${quoted(node)} ${quoted(shim)} ${quoted(git)} "$@"\n`,
+          cmd: `@echo off\r\n"${node}" "${shim}" "${git}" %*\r\n`,
+        },
+      };
   for (const [name, why] of Object.entries(kit.refused).filter(([name]) => !uses.includes(name))) {
     const said = `${name}: refused: ${why}. Say what you need to whoever gave you the work.`;
     commands[name] = {

@@ -89,7 +89,36 @@ export function writeRoleSettings(
     refusalSettings(kit, harness, role, seat.homeDir),
   ) as Json;
   const wanted = layered(layered(inherited(harness, seat.homeDir), kitSettings), extra) as Json;
-  record.note(writeConfigIfChanged(join(seat.dir, file), wanted), file);
+  record.note(writeConfigIfChanged(join(seat.dir, file), usedSettings(role, wanted)), file);
+}
+
+/**
+ * What a role `uses` it runs as its owner would: no deny rule for it, and outside the agent's sandbox where the settings
+ * have one, so a Supervisor's git reaches the checkout's `.git` and its gh the keychain. Settings of another shape pass as
+ * they are.
+ */
+export function usedSettings(role: RoleSpec, settings: Json): Json {
+  const uses = role.uses ?? [];
+  if (uses.length === 0 || !isRecord(settings)) return settings;
+  const mine = (rule: string) => uses.some((name) => rule === `Bash(${name})` || rule.startsWith(`Bash(${name} `));
+  const permissions = isRecord(settings.permissions) ? settings.permissions : undefined;
+  const deny = Array.isArray(permissions?.deny) ? permissions.deny : undefined;
+  const sandbox = isRecord(settings.sandbox) ? settings.sandbox : undefined;
+  const excluded = Array.isArray(sandbox?.excludedCommands) ? sandbox.excludedCommands.map(String) : [];
+  return {
+    ...settings,
+    ...(permissions && deny
+      ? { permissions: { ...permissions, deny: deny.filter((rule) => !mine(String(rule))) } }
+      : {}),
+    ...(sandbox
+      ? {
+          sandbox: {
+            ...sandbox,
+            excludedCommands: [...new Set([...excluded, ...uses.flatMap((name) => [name, `${name} *`])])],
+          },
+        }
+      : {}),
+  };
 }
 
 const catalogs = new Map<string, string>();
