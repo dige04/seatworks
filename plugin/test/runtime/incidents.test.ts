@@ -216,3 +216,38 @@ test("a brain never lowers or clears a code fact: what it reads of the same kind
   );
   assert.deepEqual((await read("it says it is nearly there")).opened, [], "while its own reading stays settled");
 });
+
+test("a code fact marked noise on one seat settles the same words from any seat of its lane, however they are piped or logged", async () => {
+  const { h, sup, lane, peer } = await laneWithPeer();
+  await h.call(lane.lead!, "lead", "add_tasks", {
+    tasks: [
+      {
+        key: "r",
+        title: "Receipt",
+        goal: "g",
+        acceptance: ["a"],
+        holds: ["src/receipt/"],
+        outOfScope: ["the rest"],
+        parallel: true,
+      },
+    ],
+  });
+  const beside = h.ledger().tasks["L1-T2"]!.peer!;
+  const install = "pnpm install --frozen-lockfile";
+  const first = await notice(h, peer, "dependency", "attend", `${install} 2>&1 | tail -15`);
+  const id = first.opened[0]!.id;
+  assert.equal((await h.call(sup, "supervisor", "mark_incident", { id, verdict: "noise" })).ok, true);
+  for (const quote of [install, `${install} 2>&1 | tail -3`, `${install} > $TMPDIR/install.log 2>&1`])
+    assert.deepEqual((await notice(h, beside, "dependency", "attend", quote)).opened, [], quote);
+  assert.equal(book(h)[id]!.count, 4, "each is counted on the settled incident");
+  assert.equal(
+    (await notice(h, beside, "dependency", "attend", "pnpm add zod")).opened.length,
+    1,
+    "other words are another thing",
+  );
+  assert.equal(
+    (await notice(h, beside, "stuck", "attend", `${install} 2>&1 | tail -15`)).opened.length,
+    1,
+    "and so is another kind",
+  );
+});

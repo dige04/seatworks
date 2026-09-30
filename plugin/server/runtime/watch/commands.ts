@@ -156,8 +156,10 @@ const WRITERS = new Set(["cp", "mv", "tee", "sed", "rm", "ln", "chmod", "truncat
 /** A script run by its interpreter from a path outside the seat's copy and outside scratch space. */
 function runsOutside(words: string[], rules: Rules, scratch: (path: string) => boolean): boolean {
   if (!rules.interpreter.test(words[0] ?? "")) return false;
-  const script = words.slice(1).find((word) => !word.startsWith("-"));
-  if (!script || scratch(script) || inside(script)) return false;
+  // A lone `-` is code on stdin, the command's own; a script named by a variable other than home is one the watch cannot place.
+  const script = words.slice(1).find((word) => !word.startsWith("-") || word === "-");
+  if (!script || script === "-" || /^\$(?!\{?HOME\b)/.test(script)) return false;
+  if (scratch(script) || inside(script)) return false;
   const path = script.replace(/^(?:~|\$\{?HOME\}?)(?=\/)/, "/home");
   return !(rules.cwd && isAbsolute(path) && !relative(rules.cwd, path).startsWith(".."));
 }

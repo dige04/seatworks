@@ -51,10 +51,20 @@ export function saidBefore(incidents: Incidents, seat: string, kind: string, quo
 
 const episode = (item: { task?: string; lane?: string }) => item.task ?? item.lane;
 
+/** A command's words without where its output goes: a pipe into `tail` or `head`, a redirect, a closing parenthesis. */
+const said = (quote: string) =>
+  quote
+    .replace(/\s*\|\s*(?:tail|head)\b[^|]*$/, "")
+    .replace(/\s*\d*>>?&?\s*(?:\d\b|\S+)/g, "")
+    .replace(/\)+$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
 /**
- * Already settled as noise on this seat: counts the sighting and answers true. `mark_incident` closes an incident, so a
- * standing condition would reopen after every mark. A code fact settles in these exact words; a brain's reading, whose
- * words are new at every look, for the seat's task or lane. Each eye's marks settle only its own. Only `attend` settles.
+ * Already settled as noise: counts the sighting and answers true. `mark_incident` closes an incident, so a standing
+ * condition would reopen after every mark. A code fact settles in the same words, however they are piped or logged, on
+ * any seat of the lane it was marked in; a brain's reading, whose words are new at every look, for the seat's task or
+ * lane. Each eye's marks settle only its own. Only `attend` settles.
  */
 export function settledAsNoise(incidents: Incidents, sighting: Sighting, now: number): boolean {
   if (sighting.level === "page") return false;
@@ -63,10 +73,12 @@ export function settledAsNoise(incidents: Incidents, sighting: Sighting, now: nu
     (item) =>
       !item.open &&
       item.label === "noise" &&
-      item.seat === sighting.seat &&
       item.kind === sighting.kind &&
       Boolean(item.brain) === brain &&
-      (brain ? episode(item) === episode(sighting) : item.quote === sighting.quote),
+      (brain
+        ? item.seat === sighting.seat && episode(item) === episode(sighting)
+        : (item.seat === sighting.seat || (item.lane !== undefined && item.lane === sighting.lane)) &&
+          said(item.quote) === said(sighting.quote)),
   );
   if (!marked) return false;
   marked.count += 1;

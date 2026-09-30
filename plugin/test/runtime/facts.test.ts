@@ -192,9 +192,25 @@ test("a seat going round in circles is stuck: failing, repeating, alternating or
 
 test("a failure not climbed out of in ten steps is noticed, ended only by the same program or the gate passing", () => {
   const lost = (messages: StreamMessage[]) => found(messages, "no-recovery").map((fact) => fact.quote);
-  assert.equal(lost([run("bad", 2, "cat ./does-not-exist.txt", false), ...steps(10, 3)]).length, 1);
-  const cured = run("good", 3, "cat ./does-not-exist.txt", true);
-  assert.deepEqual(lost([run("bad", 2, "cat ./does-not-exist.txt", false), cured, ...steps(10, 4)]), []);
+  assert.equal(lost([run("bad", 2, "npm run build", false), ...steps(10, 3)]).length, 1);
+  const cured = run("good", 3, "npm run build", true);
+  assert.deepEqual(lost([run("bad", 2, "npm run build", false), cured, ...steps(10, 4)]), []);
+  for (const look of [
+    "cat ./does-not-exist.txt",
+    "cat apps/web/playwright.config.ts apps/web/package.json && sed -n 1,120p apps/web/e2e/journey.e2e.ts",
+    "cd docs/reviews && ls -la | head -5",
+  ])
+    assert.deepEqual(
+      lost([run("look", 2, look, false), ...steps(12, 3)]),
+      [],
+      `a look that finds nothing is an answer, not a failure to climb out of: ${look}`,
+    );
+  assert.equal(
+    lost([run("look", 2, "cat missing.txt", false), run("f", 3, "npm test", false), ...steps(10, 4)]).length,
+    1,
+    "a failure after a look is still followed",
+  );
+  assert.equal(lost([run("edit", 2, "sed -i '' s/a/b/ x.ts", false), ...steps(10, 3)]).length, 1, "sed -i writes");
   assert.deepEqual(
     lost([run("f", 2, "npm test", false), run("p", 3, "npm test 2>&1 | tail -30", true), ...steps(12, 4)]),
     [],

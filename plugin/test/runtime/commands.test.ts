@@ -227,6 +227,10 @@ test("sending data out, running a download or code from outside the copy is page
     "node /work/scripts/check.js",
     `node "$TMPDIR"/probe413.mjs`,
     "python3 /var/folders/xy/T/probe.py",
+    // Code from the command itself, or a script named only by a variable the watch cannot read: nothing shows it outside.
+    `python3 - "$f" <<'E'`,
+    "bash -n $f",
+    "python3 -B $C/factory/make.py --take",
   ])
     assert.deepEqual(raised("boundary", command, cwd), [], command);
   for (const command of [
@@ -243,8 +247,22 @@ test("sending data out, running a download or code from outside the copy is page
       ["attend"],
       command,
     );
-  for (const command of ["npm install", "npm ci", "pip install -r requirements.txt", "pip install -e ."])
+  for (const command of [
+    "npm install",
+    "npm ci",
+    "pip install -r requirements.txt",
+    "pip install -e .",
+    // A lockfile install and where it writes or logs: no package is named.
+    "pnpm install --frozen-lockfile 2>&1 | tail -15",
+    `pnpm install --frozen-lockfile --store-dir "$TMPDIR/l1-lane/pnpm-store" 2>&1 | tail -3`,
+    "pnpm install --frozen-lockfile --store-dir /tmp/claude-501/l1-lane/pnpm-store",
+    `pnpm install --frozen-lockfile > $TMPDIR/install.log 2>&1`,
+    "pnpm install --filter @francaisvn/web",
+    "npm install --prefix apps/web",
+  ])
     assert.deepEqual(raised("dependency", command, cwd), [], command);
+  for (const command of ["pnpm add --filter web zod", "npm install --save-dev vitest 2>&1", "pnpm add @scope/pkg"])
+    assert.equal(raised("dependency", command, cwd).length, 1, command);
 });
 
 test("skipping hooks, changing what fences a seat, or pointing git's hooks elsewhere is paged", () => {

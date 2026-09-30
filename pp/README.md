@@ -38,14 +38,18 @@ Each machine keeps its own projects, ledgers and keys: nothing of that is in thi
 | Auditor | Codex · GPT-6 Sol · high |
 | Watcher | follows the Peer |
 
-`pp/settings.json` tells the Lead when to pick `peer-flash`, has Jev sift the watch and review's checks, and has the
-Supervisor speak Vietnamese to the Human.
+`pp/settings.json` tells the Lead when to pick `peer-flash`, has Jev sift the watch with the Watcher seat judging only
+what Jev flagged (Jev alone sent the Supervisor a flag it marked noise nine times in ten), has Jev ask review's checks,
+and has the Supervisor speak Vietnamese to the Human.
 
 ## What this fork changes in code
 
 | Change | Why |
 |---|---|
 | Jev asked of TypeSafe directly (`catalog/sensor/jev.json`) | the key is a TypeSafe key, not OpenRouter's |
+| A lockfile install (`pnpm install --frozen-lockfile --store-dir …`) is no new dependency; a script on stdin or named by a variable is not run from outside the copy | each paged a Supervisor with nothing to act on |
+| A failed look (`cat`, `ls`, `rg`, `sed -n` …) opens no `no-recovery` | finding nothing is an answer; none of these was useful |
+| A code fact marked noise settles the same words from any seat of its lane, however piped or logged | every new Peer re-sent the lane's install command |
 
 Dropped from the earlier `v3-pp` fork because upstream covers them: the keychain token (shared login), the landing guard
 for a running review, the SLP rules, and the per-role harness lists (upstream registers one provider per role of an

@@ -278,6 +278,44 @@ function head(command: string, runners: Set<string>): string {
   return words.slice(0, /^(run|exec|-m|x|dlx)$/.test(words[1] ?? "") ? 3 : 2).join(" ");
 }
 
+/** Programs that only read: a failure of one says what is not there, and changes nothing. */
+const LOOKS = new Set([
+  "cat",
+  "ls",
+  "head",
+  "tail",
+  "grep",
+  "rg",
+  "find",
+  "fd",
+  "wc",
+  "stat",
+  "file",
+  "which",
+  "tree",
+  "du",
+]);
+
+/** Whether every program a command runs only reads: `sed` so only when it edits nothing in place. */
+function onlyLooks(command: string): boolean {
+  const programs = command
+    .split(/&&|\|\||;|\||\n/)
+    .map((part) =>
+      part
+        .trim()
+        .split(/\s+/)
+        .filter((word) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(word)),
+    )
+    .filter((words) => words.length > 0 && words[0] !== "cd");
+  return (
+    programs.length > 0 &&
+    programs.every(
+      ([program, ...rest]) =>
+        LOOKS.has(program!) || (program === "sed" && !rest.some((word) => /^(?:-[a-zA-Z]*i|--in-place)/.test(word))),
+    )
+  );
+}
+
 /**
  * A failure followed until it or the gate passes: `no-recovery` when it goes on too long, and `flaky` when the very
  * command passes with no edit since it failed, a red two runs disagree about.
@@ -288,7 +326,8 @@ export class Recovery {
   step(call: Call, rules: Rules): Fact[] {
     const shell = call.detail.type === "shell";
     const command = str(call.detail.command);
-    const bad = failed(call);
+    // A look that finds nothing is an answer the seat reads and moves on from, not a failure it has to climb out of.
+    const bad = failed(call) && !(shell && onlyLooks(command));
     if (shell && bad && (!this.open || head(command, rules.runners) !== this.open.head)) {
       this.open = { command, head: head(command, rules.runners), steps: 0, told: false, edited: false };
       return [];

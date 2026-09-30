@@ -5,7 +5,7 @@
     }
   },
   "attention": {
-    "brain": "sensor",
+    "brain": "both",
     "sensor": "jev"
   },
   "review": {
