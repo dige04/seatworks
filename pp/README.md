@@ -50,6 +50,7 @@ and has the Supervisor speak Vietnamese to the Human.
 | A lockfile install (`pnpm install --frozen-lockfile --store-dir …`) is no new dependency; a script on stdin or named by a variable is not run from outside the copy | each paged a Supervisor with nothing to act on |
 | A failed look (`cat`, `ls`, `rg`, `sed -n` …) opens no `no-recovery` | finding nothing is an answer; none of these was useful |
 | A code fact marked noise settles the same words from any seat of its lane, however piped or logged | every new Peer re-sent the lane's install command |
+| A role may `uses` a command `refused.json` refuses: the Supervisor uses `gh`, run outside its sandbox (`sandbox.excludedCommands`) | it could not read CI, file an issue or merge, so the Human did it by hand |
 
 Dropped from the earlier `v3-pp` fork because upstream covers them: the keychain token (shared login), the landing guard
 for a running review, the SLP rules, and the per-role harness lists (upstream registers one provider per role of an

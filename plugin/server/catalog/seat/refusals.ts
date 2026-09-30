@@ -11,6 +11,7 @@ const MACHINE_OWNED = [
   "kit.json",
   "models.json",
   "bin",
+  "bin-*",
   "content",
   "guides",
 ];
@@ -31,11 +32,13 @@ const AGENTS_WHY = "the desk alone starts agents";
 type Command = { words: string[]; why: string };
 
 /** Every way a seat's shell could start what the desk refuses it: the kit's agents, which Paseo alone starts, and refused.json's commands, bare and through each launcher. */
-function refusedCommands(kit: Kit): Command[] {
+function refusedCommands(kit: Kit, role?: RoleSpec): Command[] {
   const agents = Object.values(kit.harnesses).flatMap((harness) => harness.provider.env?.SEATWORKS_AGENT_BIN ?? []);
   const named = [
     ...[...new Set(agents)].map((name) => ({ name, why: AGENTS_WHY })),
-    ...Object.entries(kit.refused).map(([name, why]) => ({ name, why })),
+    ...Object.entries(kit.refused)
+      .filter(([name]) => !role?.uses?.includes(name))
+      .map(([name, why]) => ({ name, why })),
   ];
   return named.flatMap(({ name, why }) => [
     { words: [name], why },
@@ -105,7 +108,7 @@ export function refusalSettings(kit: Kit, harness: HarnessSpec, role: RoleSpec, 
     commands
       ? laid(
           commands,
-          refusedCommands(kit).map(({ words }) => ({ command: words.join(" ") })),
+          refusedCommands(kit, role).map(({ words }) => ({ command: words.join(" ") })),
         )
       : {},
     refuses.edits ? laid(refuses.edits, paths(edits)) : {},

@@ -18,5 +18,10 @@
       "Bash(git -C * rebase *)",
       "Bash(git -C * cherry-pick *)"
     ]
+  },
+  "sandbox": {
+    "excludedCommands": [
+      "gh"
+    ]
   }
 }

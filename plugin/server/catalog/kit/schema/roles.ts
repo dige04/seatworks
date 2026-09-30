@@ -17,6 +17,8 @@ const Role = z.strictObject({
     .strictObject({ enabled: z.boolean().optional(), disabledTools: texts.optional(), allow: texts.optional() })
     .optional(),
   hidesWords: texts.optional(),
+  /** Commands `refused.json` refuses that this role's seats may run: a Supervisor that speaks to the forge. */
+  uses: texts.optional(),
   writes: z
     .array(
       z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.-]*\/?$/, {

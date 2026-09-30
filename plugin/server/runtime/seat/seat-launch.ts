@@ -59,7 +59,7 @@ export class SeatLaunch {
     }
     this.seating.ensure(seat.role.role, seat.harness, project);
     const dir = seatDir(this.kit, seat.role, seat.harness, home(), project);
-    const opened = seatEnv(this.kit, request, dir, project, seatBin(this.kit));
+    const opened = seatEnv(this.kit, request, dir, project, seatBin(this.kit, undefined, seat.role));
     // Created, the seat brings the key made for it; opened again, it is given back the one it was bound to.
     const key = request.reason === "create" ? request.env[SEAT_KEY] : this.keys.keyOf(request.agentId);
     if (request.reason === "create" && key) this.keys.bind(request.agentId, key);

@@ -2,16 +2,16 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:f
 import { join } from "node:path";
 import { writeConfigAtomic } from "../../core/config-file.ts";
 import { executableIn, nodeBin, pathDirs, stateRoot } from "../../core/paths.ts";
-import type { Kit } from "../kit/kit.ts";
+import type { Kit, RoleSpec } from "../kit/kit.ts";
 
 const quoted = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`;
 /** `text` as a batch file's `echo` prints it: cmd's own characters escaped, and `%` doubled. */
 const echoed = (text: string) => text.replace(/[\^&|<>()]/g, "^$&").replaceAll("%", "%%");
 
 /** The git a seat's PATH finds past the shim: the shim's directory is skipped, since what is there is named git too. */
-function realGit(skip: string): string | undefined {
+function realGit(...skip: string[]): string | undefined {
   return executableIn(
-    pathDirs().filter((dir) => dir && dir !== skip),
+    pathDirs().filter((dir) => dir && !skip.includes(dir)),
     "git",
   );
 }
@@ -20,9 +20,11 @@ function realGit(skip: string): string | undefined {
  * Writes the directory a seat's PATH starts at: a git that runs the kit's shim over the real git, and for each command the kit
  * refuses one that says why and fails. Nothing where this machine has no git.
  */
-export function seatBin(kit: Kit, root = stateRoot()): string | undefined {
-  const dir = join(root, "bin");
-  const git = realGit(dir);
+export function seatBin(kit: Kit, root = stateRoot(), role?: RoleSpec): string | undefined {
+  // A role that uses a command the kit refuses has a directory without that command's refusal in it.
+  const uses = (role?.uses ?? []).filter((name) => name in kit.refused);
+  const dir = join(root, uses.length > 0 ? `bin-${role!.role}` : "bin");
+  const git = realGit(dir, join(root, "bin"));
   if (!git) return undefined;
   const [node, shim] = [nodeBin(), join(kit.dir, "bin", "git-shim.mjs")];
   const commands: Record<string, { sh: string; cmd: string }> = {
@@ -31,7 +33,7 @@ export function seatBin(kit: Kit, root = stateRoot()): string | undefined {
       cmd: `@echo off\r\n"${node}" "${shim}" "${git}" %*\r\n`,
     },
   };
-  for (const [name, why] of Object.entries(kit.refused)) {
+  for (const [name, why] of Object.entries(kit.refused).filter(([name]) => !uses.includes(name))) {
     const said = `${name}: refused: ${why}. Say what you need to whoever gave you the work.`;
     commands[name] = {
       sh: `#!/bin/sh\necho ${quoted(said)} >&2\nexit 1\n`,

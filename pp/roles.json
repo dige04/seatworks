@@ -25,6 +25,9 @@
         "notebook.md",
         "pre-mortem/",
         "architecture-premise-audit/"
+      ],
+      "uses": [
+        "gh"
       ]
     },
     {
