@@ -251,3 +251,24 @@ test("a code fact marked noise on one seat settles the same words from any seat 
     "and so is another kind",
   );
 });
+
+test("with a list of what to tell, only those kinds reach whoever supervises; the rest stay on the record as findings", async () => {
+  const { h, sup, peer } = await laneWithPeer();
+  h.projectSettings({ attention: { tell: ["guard", "claim-contradicted"] } });
+  const quiet = await notice(h, peer, "destructive", "page", "rm -rf build");
+  assert.deepEqual(quiet.opened, [], "a kind off the list opens nothing, not even a page");
+  assert.deepEqual(await notice(h, peer, "stand-in", "attend", "I'll stub the fetcher"), {
+    opened: [],
+    sent: [],
+    place: quiet.place,
+  });
+  assert.equal(
+    h.events("watch.finding").filter((event) => event.finding === "destructive").length,
+    1,
+    "what was seen is still kept on the record",
+  );
+  const told = await notice(h, peer, "guard", "page", "ran the refused command another way");
+  assert.equal(told.opened.length, 1);
+  assert.match(h.heard(sup).join("\n"), /INCIDENT I1 \(guard, page\)/);
+  assert.doesNotMatch(h.heard(sup).join("\n"), /destructive|stand-in/);
+});

@@ -15,8 +15,15 @@
     }
   },
   "attention": {
-    "brain": "sensor",
-    "sensor": "jev"
+    "brain": "off",
+    "sensor": "jev",
+    "tell": [
+      "secret",
+      "guard",
+      "claim-contradicted",
+      "test-weakened",
+      "checker-touched"
+    ]
   },
   "review": {
     "sensor": "jev"

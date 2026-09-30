@@ -62,7 +62,7 @@ export const CatalogView = z.object({
 export type CatalogView = z.infer<typeof CatalogView>;
 
 /** The attention settings in force, every one resolved: what the watch and the round run on; a kit may name no sensor. */
-const Attention = AttentionChoice.required().extend({ sensor: z.string() });
+const Attention = AttentionChoice.required().extend({ sensor: z.string(), tell: AttentionChoice.shape.tell });
 export type Attention = z.infer<typeof Attention>;
 
 /** Whether the Human is in the loop, resolved: the project's word over the machine's, and the machine's daily question limit. */

@@ -61,11 +61,15 @@ export async function notice(
       facts: finding.facts,
     });
   }
+  // What the owner chose not to be told of stays on the record above, and opens nothing.
+  const tell = services.teamFor(project).attention.tell;
+  const told = tell ? findings.filter((finding) => tell.includes(finding.kind)) : findings;
+  if (told.length === 0) return { opened: [], sent: [], place };
   let booked: { opened: Incident[]; sending: Incident[] };
   try {
-    booked = openIncidents(services, project, seat, place, findings, now);
+    booked = openIncidents(services, project, seat, place, told, now);
   } catch (error) {
-    await pageUnbooked(services, project, seat, place, findings, errorText(error));
+    await pageUnbooked(services, project, seat, place, told, errorText(error));
     throw error;
   }
   const { opened, sending } = booked;
