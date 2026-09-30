@@ -114,7 +114,13 @@ export function usedSettings(role: RoleSpec, settings: Json): Json {
       ? {
           sandbox: {
             ...sandbox,
-            excludedCommands: [...new Set([...excluded, ...uses.flatMap((name) => [name, `${name} *`])])],
+            // git itself stays sandboxed whatever this says; its seat-bin twin sgit is what runs outside.
+            excludedCommands: [
+              ...new Set([
+                ...excluded,
+                ...[...uses, ...(uses.includes("git") ? ["sgit"] : [])].flatMap((name) => [name, `${name} *`]),
+              ]),
+            ],
           },
         }
       : {}),

@@ -40,10 +40,8 @@ test("a role that uses git runs the real one: no shim on its PATH and no deny ru
   const own = seatBin(kit, state, supervisor)!;
   assert.deepEqual(
     readdirSync(own).sort(),
-    Object.keys(kit.refused)
-      .filter((name) => name !== "gh")
-      .sort(),
-    "neither the git shim nor gh's refusal is in its directory",
+    ["sgit", ...Object.keys(kit.refused).filter((name) => name !== "gh")].sort(),
+    "neither the git shim nor gh's refusal is in its directory, and sgit runs the real git",
   );
   assert.ok(readdirSync(seatBin(kit, state)!).includes("git"), "every other seat still runs git through the shim");
 });
@@ -57,7 +55,7 @@ test("what a role uses is neither denied nor sandboxed in its settings; a role t
   };
   assert.deepEqual(usedSettings({ ...supervisor, uses: ["gh", "git"] }, settings), {
     permissions: { deny: ["Edit", "Bash(sleep *)"] },
-    sandbox: { enabled: true, excludedCommands: ["docker", "gh", "gh *", "git", "git *"] },
+    sandbox: { enabled: true, excludedCommands: ["docker", "gh", "gh *", "git", "git *", "sgit", "sgit *"] },
   });
   assert.equal(usedSettings(supervisor, settings), settings);
 });

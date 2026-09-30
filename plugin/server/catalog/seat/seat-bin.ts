@@ -27,8 +27,15 @@ export function seatBin(kit: Kit, root = stateRoot(), role?: RoleSpec): string |
   const git = realGit(dir, join(root, "bin"));
   if (!git) return undefined;
   const [node, shim] = [nodeBin(), join(kit.dir, "bin", "git-shim.mjs")];
+  // Claude Code keeps git in its sandbox whatever the exclusions say, so a role that uses git runs it as sgit, which it can
+  // exclude: the real git, writing the checkout's .git and reaching the remote with the owner's keychain.
   const commands: Record<string, { sh: string; cmd: string }> = uses.includes("git")
-    ? {}
+    ? {
+        sgit: {
+          sh: `#!/bin/sh\nexec ${quoted(git)} "$@"\n`,
+          cmd: `@echo off\r\n"${git}" %*\r\n`,
+        },
+      }
     : {
         git: {
           sh: `#!/bin/sh\nexec ${quoted(node)} ${quoted(shim)} ${quoted(git)} "$@"\n`,
