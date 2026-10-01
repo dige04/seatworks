@@ -14,6 +14,7 @@ esac
 
 ln -sf "$here/sw-usage.py" "$HOME/.local/bin/sw-usage"
 ln -sf "$here/codex-budget.py" "$HOME/.local/bin/codex-budget"
+ln -sf "$here/pg-usage.py" "$HOME/.local/bin/pg-usage"
 echo "sw-usage: sw-usage <project> [--save | --since]."
 
 LABEL=dev.seatworks.codex-budget

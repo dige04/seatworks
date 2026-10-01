@@ -55,6 +55,8 @@ and has the Supervisor speak Vietnamese to the Human.
 - `sw-usage`: tokens by role, lane and review for a project, from each seat's session file beside the desk's ledger.
   `--save` keeps a snapshot; `--since` shows what a wave spent against the one before. `verify-exp.py` is the offline
   trial that measured a second model checking Jev's flags against the Supervisor's labels.
+- `pg-usage`: the same measure for a piggery team, by role and member, from each worker's session, with the mail
+  kinds its team exchanged.
 
 ## What this fork changes in code
 
