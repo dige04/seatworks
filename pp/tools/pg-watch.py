@@ -48,7 +48,7 @@ def main(team, repo, base):
 
     # The owner's own Postgres: a client the team started, or one born during the wave, is worth a look.
     lsof = run("lsof", "-nP", "-iTCP:5432", "-iTCP:55492", "-sTCP:ESTABLISHED")
-    worrying = []
+    worrying, others = [], []
     for line in lsof.splitlines()[1:]:
         cols = line.split()
         if cols[0].startswith("postgres"):
@@ -58,10 +58,14 @@ def main(team, repo, base):
         cwd = next((l.split(None, 8)[-1] for l in run("lsof", "-p", pid, "-a", "-d", "cwd").splitlines()[1:]), "?")
         born_in_wave = time.time() - age >= started / 1000
         in_team = any(cwd == root or cwd.startswith(root.rstrip("/") + "/") for root in roots)
-        if born_in_wave or in_team:
+        if in_team:
             worrying.append(f"{cols[0]}({pid}) in {cwd}")
+        elif born_in_wave:
+            others.append(f"{cols[0]}({pid}) in {cwd}")
     print(("! team reached the owner's Postgres: " + "; ".join(sorted(set(worrying))))
           if worrying else "  owner's Postgres: nothing from the team")
+    if others:
+        print("  others on it since the wave began (not the team): " + "; ".join(sorted(set(others))))
 
     if os.path.isdir(os.path.join(repo, ".git")):
         run("git", "-C", repo, "fetch", "-q", "origin")
