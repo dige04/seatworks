@@ -44,7 +44,10 @@
     "roleSource": "settings/ROLE.settings.json"
   },
   "login": {
-    "run": ["auth", "status"],
+    "run": [
+      "auth",
+      "status"
+    ],
     "field": "loggedIn",
     "help": "Log in with claude once, outside any seat; every Claude seat shares that login, or a CLAUDE_CODE_OAUTH_TOKEN on Paseo's claude provider."
   },
@@ -74,6 +77,11 @@
     "forceFlags": {
       "--setting-sources": "user",
       "--thinking-display": "summarized"
+    },
+    "usesFlags": {
+      "chrome": [
+        "--chrome"
+      ]
     }
   },
   "contextFile": "CLAUDE.md",

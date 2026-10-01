@@ -118,3 +118,32 @@ test("the seat room starts the agent only on the seat's own settings and with th
       );
   }
 });
+
+test("a seat whose role uses what its agent turns on by a flag starts with that flag, once", async () => {
+  for (const [uses, args, started] of [
+    ["chrome", ["-p"], "/seats/claude-sup -p --setting-sources user --thinking-display summarized --chrome\n"],
+    [
+      "gh,chrome,git",
+      ["--chrome", "-p"],
+      "/seats/claude-sup --chrome -p --setting-sources user --thinking-display summarized\n",
+    ],
+    ["gh,git", ["-p"], "/seats/claude-sup -p --setting-sources user --thinking-display summarized\n"],
+  ] as const) {
+    const dir = tempDir("sw2-seat-room-uses-");
+    const launched = join(dir, "launched");
+    const agent = join(dir, "agent");
+    writeFileSync(agent, `#!/bin/sh\necho "$CLAUDE_CONFIG_DIR $*" > ${JSON.stringify(launched)}\n`);
+    chmodSync(agent, 0o755);
+    const env = {
+      PATH: process.env.PATH!,
+      SEATWORKS_KIT: PLUGIN,
+      SEATWORKS_HARNESS: "claude",
+      SEATWORKS_AGENT_BIN: agent,
+      CLAUDE_CONFIG_DIR: "/seats/claude-sup",
+      SEATWORKS_USES: uses,
+    };
+    const ran = await open(env, [...args]);
+    assert.equal(ran.code, 0, ran.stderr);
+    assert.equal(readFileSync(launched, "utf-8"), started, uses);
+  }
+});

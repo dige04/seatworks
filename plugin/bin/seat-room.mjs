@@ -40,6 +40,11 @@ if (!configDir || process.env[configDir])
     args = seen ? forced : [...forced, flag, String(value)];
   }
 
+// What the seat's role uses and its agent turns on by a flag: Claude Code's browser for a role that uses chrome.
+if (!configDir || process.env[configDir])
+  for (const name of (process.env.SEATWORKS_USES ?? "").split(",").filter(Boolean))
+    for (const flag of harness.provider?.usesFlags?.[name] ?? []) if (!args.includes(flag)) args.push(flag);
+
 // cmd's own characters escaped, and quoted where it would split: how Windows runs a command through its shell.
 const forCmd = (value) => {
   const escaped = value.replace(/([&|^<>()!])/g, "^$1");

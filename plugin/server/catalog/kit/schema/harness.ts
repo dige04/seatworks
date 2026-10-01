@@ -102,6 +102,8 @@ export const HarnessFile = z
       profileModeId: text.optional(),
       command: texts.optional(),
       forceFlags: z.record(z.string(), z.string()).optional(),
+      /** Flags the agent takes to turn on what a role `uses`, such as Claude Code's own browser for a role that uses chrome. */
+      usesFlags: z.record(z.string(), texts).optional(),
     }),
   })
   .refine((harness) => harness.mcp.delivery !== "file" || harness.mcp.key, {

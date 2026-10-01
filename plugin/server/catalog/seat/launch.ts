@@ -133,6 +133,8 @@ export function seatEnv(
         : {}),
       TMPDIR: request.env.TMPDIR ?? tmpdir(),
       SEATWORKS_ROLE: seat.role.role,
+      // What the role uses, for the seat room to turn on by the agent's own flags.
+      ...((seat.role.uses ?? []).length > 0 ? { SEATWORKS_USES: seat.role.uses!.join(",") } : {}),
       SEATWORKS_KIT: kit.dir,
       SEATWORKS_PROJECT: project.root,
       SEATWORKS_STATE: project.state,

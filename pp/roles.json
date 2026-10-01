@@ -29,7 +29,8 @@
       "uses": [
         "gh",
         "glab",
-        "git"
+        "git",
+        "chrome"
       ]
     },
     {
