@@ -68,10 +68,23 @@ def notify(text):
     subprocess.run(["osascript", "-e", f"display notification {json.dumps(text)} with title \"Codex budget\""], env=ENV)
 
 
+def spending_projects():
+    """The projects whose Codex seats wrote a session today, the day the budget counts: the ones that spent it."""
+    cutoff = datetime.datetime.combine(datetime.date.today(), datetime.time()).timestamp()
+    slugs = set()
+    for seat in glob.glob(f"{HOME}/.codex/seats/*"):
+        if any(os.path.getmtime(f) >= cutoff for f in glob.glob(f"{seat}/sessions/**/*.jsonl", recursive=True)):
+            slugs.update(slug for slug in os.listdir(STATE_ROOT) if os.path.basename(seat).endswith(f"-{slug}"))
+    return slugs
+
+
 def supervisors():
-    """Every project's Supervisor the desk still counts on, from each ledger."""
+    """The Supervisor of each project that spent Codex today; a project at rest is not woken for it."""
     found = []
+    spending = spending_projects()
     for path in glob.glob(f"{STATE_ROOT}/*/ledger.json"):
+        if os.path.basename(os.path.dirname(path)) not in spending:
+            continue
         try:
             agents = json.load(open(path)).get("agents", {}).values()
         except (OSError, ValueError):
