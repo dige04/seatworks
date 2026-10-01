@@ -42,6 +42,20 @@ Each machine keeps its own projects, ledgers and keys: nothing of that is in thi
 what Jev flagged (Jev alone sent the Supervisor a flag it marked noise nine times in ten), has Jev ask review's checks,
 and has the Supervisor speak Vietnamese to the Human.
 
+## Tools beside Seatworks
+
+`pp/tools/install-tools.sh` (add `--no-pg` to skip the Postgres) installs three tools, each safe to install again:
+
+- `lanes-pg`: PostgreSQL 16 on 127.0.0.1:55500, run by launchd outside every seat's sandbox, so lanes have a database
+  without touching the owner's. The superuser's password stays in the keychain; seats use `lanes_admin`
+  (`lanes-pg env`), and `lanes-pg ls` and `lanes-pg drop <lane>` clear what lanes made. Needs `brew install postgresql@16`.
+- `codex-budget`: every 15 minutes reads the Codex weekly quota from Codex's own session files; past 30 points in one
+  day (`CODEX_DAILY_LIMIT`) it stops running Codex seats, tells each project's Supervisor to hold Codex work, and shows
+  a notification. `codex-budget report` lists the sessions that spent the most.
+- `sw-usage`: tokens by role, lane and review for a project, from each seat's session file beside the desk's ledger.
+  `--save` keeps a snapshot; `--since` shows what a wave spent against the one before. `verify-exp.py` is the offline
+  trial that measured a second model checking Jev's flags against the Supervisor's labels.
+
 ## What this fork changes in code
 
 | Change | Why |

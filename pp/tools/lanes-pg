@@ -1,0 +1,26 @@
+#!/bin/sh
+# lanes-pg: the Postgres Seatworks lanes use (127.0.0.1:55500), apart from the founder's :5432 and :55492.
+#   lanes-pg env            print the connection settings (source it: eval "$(lanes-pg env)")
+#   lanes-pg ls             databases and roles lanes made
+#   lanes-pg drop <lane>    drop databases lane_<lane> and lane_<lane>_*, and roles <lane>_*
+set -eu
+D="$HOME/.local/share/lanes-pg"
+PSQL="$(brew --prefix postgresql@16 2>/dev/null)/bin/psql"; [ -x "$PSQL" ] || PSQL=$(command -v psql)
+set -a; . "$D/lanes.env"; set +a
+q() { "$PSQL" -X -q -v ON_ERROR_STOP=1 -d postgres "$@"; }
+case "${1:-}" in
+  env) sed 's/^/export /' "$D/lanes.env" ;;
+  ls)
+    q -c "select datname as database, pg_size_pretty(pg_database_size(datname)) as size from pg_database where datname not in ('postgres','template0','template1') order by 1"
+    q -c "select rolname as role from pg_roles where rolname not like 'pg\_%' and rolname not in ('postgres','lanes_admin') order by 1" ;;
+  drop)
+    lane=$(printf '%s' "${2:?which lane, e.g. l1}" | tr 'A-Z' 'a-z')
+    case "$lane" in *[!a-z0-9_]*|"") echo "lane must be letters, digits or _" >&2; exit 1 ;; esac
+    for db in $(q -At -c "select datname from pg_database where datname = 'lane_$lane' or datname like 'lane\_${lane}\_%'"); do
+      q -c "drop database \"$db\" with (force)"; echo "dropped database $db"
+    done
+    for r in $(q -At -c "select rolname from pg_roles where rolname like '${lane}\_%'"); do
+      q -c "drop owned by \"$r\"" 2>/dev/null || true; q -c "drop role \"$r\""; echo "dropped role $r"
+    done ;;
+  *) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac
