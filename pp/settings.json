@@ -28,5 +28,6 @@
   "review": {
     "sensor": "jev"
   },
-  "language": "Vietnamese"
+  "language": "Vietnamese",
+  "gatesAtOnce": 2
 }
