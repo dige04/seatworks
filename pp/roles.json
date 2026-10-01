@@ -29,8 +29,7 @@
       "uses": [
         "gh",
         "glab",
-        "git",
-        "chrome"
+        "git"
       ]
     },
     {
@@ -163,6 +162,21 @@
         "model": "google-antigravity/gemini-3.8-flash",
         "thinking": "high"
       }
+    },
+    {
+      "role": "scout",
+      "label": "Scout",
+      "description": "A Peer the Lead asks to find out something on the web through the Human's own signed-in Chrome: it reads and looks, and changes nothing",
+      "like": "reviewer",
+      "prompt": "prompts/SCOUT.md",
+      "defaults": {
+        "harness": "claude",
+        "model": "claude-sonnet-5-5",
+        "thinking": "high"
+      },
+      "uses": [
+        "chrome"
+      ]
     },
     {
       "role": "watcher",

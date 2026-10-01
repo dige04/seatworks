@@ -38,6 +38,8 @@ const LikeRole = z.strictObject({
   description: z.string().optional(),
   like: text,
   prompt: text.optional(),
+  /** What this role uses that the one it is like does not, such as a browser: see the role's own `uses`. */
+  uses: texts.optional(),
   defaults: z.strictObject({ harness: text, model: text.optional(), thinking: text.optional() }),
 });
 

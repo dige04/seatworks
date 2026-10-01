@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readdirSync } from "node:fs";
+import { copyFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { test } from "node:test";
 import { loadKit } from "../../server/catalog/kit/kit.ts";
 import { refusalSettings } from "../../server/catalog/seat/refusals.ts";
@@ -67,4 +68,14 @@ test("GitLab is the forge too: a seat is refused glab as it is gh, a GitLab toke
   const { mask } = await import("../../server/core/mask.ts");
   assert.equal(mask("token glpat-AbCdEfGhIjKlMnOpQrSt12 here"), "token [token] here");
   assert.match("glpat-AbCdEfGhIjKlMnOpQrSt12", new RegExp(kit.attention.secretString));
+});
+
+test("the fork's Scout is a reading Peer that uses the Human's Chrome, and the Supervisor no longer does", async () => {
+  const state = tempDir("sw2-scout-state-");
+  copyFileSync(join(PLUGIN, "..", "pp", "roles.json"), join(state, "roles.json"));
+  const kit = loadKit(PLUGIN, state);
+  const scout = kit.roles.find((role) => role.role === "scout")!;
+  assert.deepEqual([scout.like, scout.uses, scout.prompt], ["reviewer", ["chrome"], "prompts/SCOUT.md"]);
+  assert.ok(!kit.roles.find((role) => role.role === "supervisor")!.uses?.includes("chrome"));
+  assert.deepEqual(kit.problems, [], "every role of the fork's team loads, its prompts free of words it must not see");
 });
