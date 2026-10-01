@@ -93,6 +93,27 @@ def supervisors():
     return found
 
 
+def abort_piggery_codex():
+    """Cancel the turn of every Codex worker in a piggery team: it stays alive, its next turn is the team's call."""
+    piggery = os.path.join(HOME, ".local/bin/piggery")
+    if not os.path.exists(piggery):
+        return []
+    try:
+        ps = json.loads(subprocess.run([piggery, "ps", "--json", "--no-start"], env=ENV, capture_output=True, text=True,
+                                       timeout=60).stdout or "{}")
+    except Exception as error:
+        log(f"piggery ps failed: {error}")
+        return []
+    aborted = []
+    for team in ps.get("teams") or []:
+        for member in team.get("members") or []:
+            if str(member.get("harness", "")).startswith("codex") and member.get("name"):
+                subprocess.run([piggery, "abort", member["name"], "--team", team.get("name", "")], env=ENV,
+                               capture_output=True, timeout=60)
+                aborted.append(f"piggery {team.get('name')}/{member['name']}")
+    return aborted
+
+
 def trip(used, spent):
     notify(f"Codex used {spent:.0f}% of its weekly quota today (now {used:.0f}%). Codex seats stopped.")
     stopped = []
@@ -113,6 +134,7 @@ def trip(used, spent):
         "review stays as it is. Tell the Human, in their language, which lanes and reviews ran on Codex today, how long each "
         "took, and why you think it cost so much. Tokens by session: codex-budget report."
     )
+    stopped += abort_piggery_codex()
     for supervisor in supervisors():
         subprocess.run([PASEO, "send", "--no-wait", supervisor, message], env=ENV, capture_output=True, timeout=60)
     log(f"TRIPPED used={used} spent={spent} stopped={stopped}")
