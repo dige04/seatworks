@@ -127,6 +127,7 @@ def trip(used, spent):
         if "codex" in provider and agent.get("status") == "running":
             subprocess.run([PASEO, "stop", agent["id"]], env=ENV, capture_output=True, timeout=60)
             stopped.append(f"{agent['id'][:8]} {provider}")
+    stopped += abort_piggery_codex()
     message = (
         f"CODEX BUDGET: Codex has used {spent:.0f} points of its weekly quota today (limit {LIMIT:.0f}), now at {used:.0f}%. "
         f"The Human wants to stop and see why it costs so much. Codex seats that were running have been stopped: "
@@ -134,7 +135,6 @@ def trip(used, spent):
         "review stays as it is. Tell the Human, in their language, which lanes and reviews ran on Codex today, how long each "
         "took, and why you think it cost so much. Tokens by session: codex-budget report."
     )
-    stopped += abort_piggery_codex()
     for supervisor in supervisors():
         subprocess.run([PASEO, "send", "--no-wait", supervisor, message], env=ENV, capture_output=True, timeout=60)
     log(f"TRIPPED used={used} spent={spent} stopped={stopped}")
