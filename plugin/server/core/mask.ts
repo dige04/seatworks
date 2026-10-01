@@ -4,6 +4,7 @@ const SECRETS: [RegExp, string][] = [
   [/\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, "[key]"],
   [/\b(sk|rk|pk)(-|_(live|test)_)[\w-]{16,}/g, "[key]"],
   [/\b(ghp|gho|ghs|ghu|github_pat)_[\w]{16,}/g, "[token]"],
+  [/\bglpat-[\w-]{20,}/g, "[token]"],
   [/\bxox[abpr]-[\w-]{10,}/g, "[token]"],
   [/(\bbearer|authorization\W{1,8}basic)\s+[\w.~+/=-]{8,}/gi, "$1 [redacted]"],
   [/(\/\/[^\s:/@]+:)[^\s@/]+@/g, "$1[redacted]@"],

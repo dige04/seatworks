@@ -74,5 +74,6 @@ fi
 rm -rf "$probe"
 codex login status >/dev/null 2>&1 && echo "Codex: logged in." || echo "Codex: run codex login once (the Reviewer and the Auditor sit on Codex)."
 [ -f "$HOME/.omp/agent/agent.db" ] && echo "Oh My Pi: logged in." || echo "Oh My Pi: log in with omp once (the Flash Peer sits on it)."
+command -v glab >/dev/null && { glab auth status >/dev/null 2>&1 && echo "GitLab: glab logged in." || echo "GitLab: run glab auth login once (the Supervisor speaks to GitLab through it)."; }
 echo "Jev: put a TypeSafe key under Machine defaults in the Seatworks panel; without one the watch runs on the code's own facts."
 echo "Done. In Paseo: Seatworks > Add project, then Health > Run."

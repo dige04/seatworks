@@ -59,3 +59,12 @@ test("what a role uses is neither denied nor sandboxed in its settings; a role t
   });
   assert.equal(usedSettings(supervisor, settings), settings);
 });
+
+test("GitLab is the forge too: a seat is refused glab as it is gh, a GitLab token is masked and is a secret to the watch", async () => {
+  const kit = loadKit(PLUGIN);
+  assert.ok("glab" in kit.refused, "glab is refused like gh");
+  assert.ok(readdirSync(seatBin(kit, tempDir("sw2-glab-state-"))!).includes("glab"));
+  const { mask } = await import("../../server/core/mask.ts");
+  assert.equal(mask("token glpat-AbCdEfGhIjKlMnOpQrSt12 here"), "token [token] here");
+  assert.match("glpat-AbCdEfGhIjKlMnOpQrSt12", new RegExp(kit.attention.secretString));
+});
