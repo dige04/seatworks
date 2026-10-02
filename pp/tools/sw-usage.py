@@ -36,6 +36,7 @@ def session_index():
         f"{HOME}/.codex/seats/*/sessions/**/*.jsonl",
         f"{HOME}/.codex/sessions/**/*.jsonl",
         f"{HOME}/.omp/seats/*/sessions/**/*.jsonl",
+        f"{HOME}/.omp/agent/sessions/**/*.jsonl",
     ]
     index = {}
     for pattern in patterns:
