@@ -32,6 +32,23 @@ def worker_sessions(participant):
     return found
 
 
+def log_usage(participant):
+    """An omp worker's tokens, read from the message_end events piggery logged for it: omp names no session id there."""
+    tokens = sw.zero()
+    for path in glob.glob(f"{LOGS}/{participant}/*.jsonl"):
+        for line in open(path, errors="ignore"):
+            if '"message_end"' not in line or '"usage"' not in line:
+                continue
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            u = (entry.get("message") or {}).get("usage") or {}
+            sw.add(tokens, {"fresh": u.get("input", 0), "cache": u.get("cacheRead", 0),
+                            "write": u.get("cacheWrite", 0), "out": u.get("output", 0)})
+    return tokens
+
+
 def row(label, tokens, extra=""):
     return (f"  {label:<22}{sw.human(sw.weight(tokens)):>8}{sw.human(tokens['fresh']):>9}{sw.human(tokens['cache']):>9}"
             f"{sw.human(tokens['write']):>8}{sw.human(tokens['out']):>8}  {extra}")
@@ -59,6 +76,8 @@ def main(wanted):
             tokens = sw.zero()
             for path in paths:
                 sw.add(tokens, sw.usage(path))
+            if not paths and harness == "omp":
+                tokens = log_usage(pid)
             key = (member, role)
             # A founder joins as a peer, then becomes the gate: one session, counted once, under its last role.
             if any(m == member for m, _ in by_member):
